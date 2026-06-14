@@ -6,4 +6,5 @@ public class UserGetDto : BaseEntityDto<Guid>
     public string Email { get; set; }
     public string PasswordHash { get; set; }
     public string Salt { get; set; }
+    public string CompanyId { get; set; }
 }
