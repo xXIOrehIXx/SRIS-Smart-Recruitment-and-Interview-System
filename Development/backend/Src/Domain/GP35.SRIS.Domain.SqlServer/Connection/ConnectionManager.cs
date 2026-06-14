@@ -7,21 +7,31 @@ namespace GP35.SRIS.Domain.SqlServer.Connection;
 
 public class ConnectionManager : IConnectionManager
 {
-  private readonly string _connectionString;
-  private SqlConnection _dbConnection;
+    private readonly string _connectionString;
+    private SqlConnection? _dbConnection;
 
-  public ConnectionManager(string connectionString)
-  {
-    _connectionString = connectionString;
-  }
-
-  public async Task<IDbConnection> GetDbConnectionAsync()
-  {
-    if (_dbConnection == null)
+    public ConnectionManager(string connectionString)
     {
-      _dbConnection = new SqlConnection(_connectionString);
-      await _dbConnection.OpenAsync();
+        _connectionString = connectionString;
     }
-    return _dbConnection;
-  }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_dbConnection != null)
+        {
+            await _dbConnection.CloseAsync();
+            await _dbConnection.DisposeAsync();
+            _dbConnection = null;
+        }
+    }
+
+    public async Task<IDbConnection> GetDbConnectionAsync()
+    {
+        if (_dbConnection == null)
+        {
+            _dbConnection = new SqlConnection(_connectionString);
+            await _dbConnection.OpenAsync();
+        }
+        return _dbConnection;
+    }
 }

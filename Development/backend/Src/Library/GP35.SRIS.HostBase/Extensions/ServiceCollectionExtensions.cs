@@ -9,6 +9,7 @@ using GP35.SRIS.Domain.Connection;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.SqlServer;
+using GP35.SRIS.Domain.SqlServer.Configs;
 using GP35.SRIS.Domain.SqlServer.Connection;
 using GP35.SRIS.Domain.SqlServer.Extensions;
 using GP35.SRIS.Domain.SqlServer.Repos;
@@ -16,12 +17,18 @@ using GP35.SRIS.Lib.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Reflection;
 
 namespace GP35.SRIS.HostBase.Extensions
 {
     public static class ServiceCollectionExtensions
     {
+        public static void ConfigureCommonConfig(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.InitConfig<DefaultConfig>(configuration);
+        }
+
         public static void ConfigureCommonServices(this IServiceCollection services)
         {
             // Register common services here
@@ -46,6 +53,7 @@ namespace GP35.SRIS.HostBase.Extensions
 
                 return connectionString;
             });
+            services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
 
@@ -57,6 +65,15 @@ namespace GP35.SRIS.HostBase.Extensions
             {
                 cfg.CreateMap<User, UserGetDto>();
             });
+        }
+        public static IConfig InitConfig<IConfig>(this IServiceCollection services, IConfiguration configuration) where IConfig : DefaultConfig
+        {
+            var config = Activator.CreateInstance<IConfig>();
+            new ConfigureFromConfigurationOptions<IConfig>(configuration).Configure(config);
+
+            services.AddSingleton(config);
+
+            return config;
         }
     }
 }
