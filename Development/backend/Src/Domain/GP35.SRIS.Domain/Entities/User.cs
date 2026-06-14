@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using GP35.SRIS.Domain;
 
 namespace GP35.SRIS.Domain.Entities;
 
