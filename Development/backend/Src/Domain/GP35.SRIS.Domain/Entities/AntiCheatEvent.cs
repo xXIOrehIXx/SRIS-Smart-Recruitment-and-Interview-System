@@ -16,6 +16,10 @@ public class AntiCheatEvent : BaseEntity<long>, IHasCompanyInfo
     public long AttemptId { get; set; }
     [Column("event_type")]
     public string EventType { get; set; } = null!;
+    [Column("severity")]
+    public string? Severity { get; set; }
+    [Column("detail")]
+    public string? Detail { get; set; }
     [Column("occurred_at")]
     public DateTime OccurredAt { get; set; }
 }

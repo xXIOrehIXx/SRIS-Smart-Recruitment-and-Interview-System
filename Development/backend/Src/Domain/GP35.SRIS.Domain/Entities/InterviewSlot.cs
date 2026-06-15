@@ -18,6 +18,12 @@ public class InterviewSlot : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, I
     public long InterviewerId { get; set; }
     [Column("start_time")]
     public DateTime StartTime { get; set; }
+    [Column("end_time")]
+    public DateTime? EndTime { get; set; }
+    [Column("location")]
+    public string? Location { get; set; }
+    [Column("meeting_link")]
+    public string? MeetingLink { get; set; }
     [Column("status")]
     public string Status { get; set; } = null!;
     [Column("created_at")]

@@ -16,8 +16,14 @@ public class EmailLog : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     public long ApplicationId { get; set; }
     [Column("template_id")]
     public long? TemplateId { get; set; }
+    [Column("to_email")]
+    public string? ToEmail { get; set; }
+    [Column("subject")]
+    public string? Subject { get; set; }
     [Column("status")]
     public string Status { get; set; } = null!;
+    [Column("error_message")]
+    public string? ErrorMessage { get; set; }
     [Column("sent_at")]
     public DateTime? SentAt { get; set; }
     [Column("created_at")]

@@ -20,10 +20,16 @@ public class OfferDetail : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHa
     public string Currency { get; set; } = null!;
     [Column("start_date")]
     public DateTime? StartDate { get; set; }
+    [Column("decided_by")]
+    public long? DecidedBy { get; set; }
+    [Column("note")]
+    public string? Note { get; set; }
     [Column("status")]
     public string Status { get; set; } = null!;
     [Column("sent_at")]
     public DateTime? SentAt { get; set; }
+    [Column("expires_at")]
+    public DateTime? ExpiresAt { get; set; }
     [Column("responded_at")]
     public DateTime? RespondedAt { get; set; }
     [Column("created_at")]

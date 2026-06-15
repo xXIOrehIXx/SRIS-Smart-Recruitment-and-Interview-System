@@ -18,6 +18,12 @@ public class ActivityLog : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     public long? UserId { get; set; }
     [Column("action")]
     public string Action { get; set; } = null!;
+    [Column("from_state")]
+    public string? FromState { get; set; }
+    [Column("to_state")]
+    public string? ToState { get; set; }
+    [Column("detail")]
+    public string? Detail { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
 }

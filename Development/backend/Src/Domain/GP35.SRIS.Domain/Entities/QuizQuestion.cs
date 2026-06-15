@@ -20,6 +20,14 @@ public class QuizQuestion : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IH
     public string OptionsJson { get; set; } = null!;
     [Column("correct_option")]
     public string CorrectOption { get; set; } = null!;
+    [Column("explanation")]
+    public string? Explanation { get; set; }
+    [Column("topic")]
+    public string? Topic { get; set; }
+    [Column("difficulty")]
+    public string? Difficulty { get; set; }
+    [Column("display_order")]
+    public int DisplayOrder { get; set; }
     [Column("points")]
     public int Points { get; set; }
     [Column("created_at")]
