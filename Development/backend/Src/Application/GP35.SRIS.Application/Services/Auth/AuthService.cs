@@ -33,7 +33,15 @@ public class AuthService : BaseService<AuthService>, IAuthService
 
         var _jwtService = _serviceProvider.GetRequiredService<IJwtService>();
 
-        var (accessToken, refreshToken) = _jwtService.GenerateTokens(user.UserId, user.Email, new List<string>(), user.CompanyId);
+        var (accessToken, refreshToken) = _jwtService.GenerateTokens(
+            user.UserId,
+            user.Email,
+            new List<string>(),
+            user.CompanyId,
+            user.Email,
+            user.Phone,
+            user.FullName,
+            user.UserId.ToString());
 
         //await SaveRefreshTokenAsync(user.Id, refreshToken, user.TenantId);
 
