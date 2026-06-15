@@ -13,15 +13,26 @@ public class User : BaseEntity<Guid>, IHasCreateInfo, IHasModifyInfo, IHasCompan
     [Column("company_id")]
     public long CompanyId { get; set; }
 
+    [Column("email")]
     public string Email { get; set; }
 
     [Column("password_hash")]
     public string PasswordHash { get; set; }
 
-    public string Salt { get; set; }
+    [Column("role")]
     public string Role { get; set; }
 
+    [Column("full_name")]
+    public string? FullName { get; set; }
+
+    [Column("phone")]
+    public string? Phone { get; set; }
+
+    [Column("status")]
     public string Status { get; set; } = "Active";
+
+    [Column("last_login_at")]
+    public DateTime? LastLoginAt { get; set; }
 
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }

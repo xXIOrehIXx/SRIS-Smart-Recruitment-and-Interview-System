@@ -16,6 +16,8 @@ public class InterviewSchedule : BaseEntity<long>, IHasCreateInfo, IHasModifyInf
     public long ApplicationId { get; set; }
     [Column("round_number")]
     public int RoundNumber { get; set; }
+    [Column("round_name")]
+    public string? RoundName { get; set; }
     [Column("status")]
     public string Status { get; set; } = null!;
     [Column("confirmed_slot_id")]

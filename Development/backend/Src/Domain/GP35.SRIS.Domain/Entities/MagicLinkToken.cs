@@ -13,9 +13,7 @@ public class MagicLinkToken : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     [Column("company_id")]
     public long CompanyId { get; set; }
     [Column("application_id")]
-    public long? ApplicationId { get; set; }
-    [Column("interviewer_id")]
-    public long? InterviewerId { get; set; }
+    public long ApplicationId { get; set; }
     [Column("token_hash")]
     public string TokenHash { get; set; } = null!;
     [Column("purpose")]
@@ -24,6 +22,8 @@ public class MagicLinkToken : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     public DateTime ExpiresAt { get; set; }
     [Column("used_at")]
     public DateTime? UsedAt { get; set; }
+    [Column("access_count")]
+    public int AccessCount { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
 }

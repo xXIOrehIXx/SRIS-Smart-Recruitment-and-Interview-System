@@ -20,6 +20,14 @@ public class QuizAttempt : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     public DateTime? StartedAt { get; set; }
     [Column("submitted_at")]
     public DateTime? SubmittedAt { get; set; }
+    [Column("status")]
+    public string Status { get; set; } = null!;
+    [Column("duration_seconds")]
+    public int? DurationSeconds { get; set; }
+    [Column("monitor_count")]
+    public int? MonitorCount { get; set; }
+    [Column("ip_address")]
+    public string? IpAddress { get; set; }
     [Column("score")]
     public decimal? Score { get; set; }
     [Column("risk_score")]

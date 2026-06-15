@@ -14,10 +14,22 @@ public class Quiz : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHasCompan
     public long CompanyId { get; set; }
     [Column("job_id")]
     public long JobId { get; set; }
+    [Column("title")]
+    public string? Title { get; set; }
     [Column("type")]
     public string Type { get; set; } = null!;
+    [Column("stage")]
+    public string? Stage { get; set; }
     [Column("duration_min")]
     public int? DurationMin { get; set; }
+    [Column("total_questions")]
+    public int? TotalQuestions { get; set; }
+    [Column("pass_score")]
+    public decimal? PassScore { get; set; }
+    [Column("shuffle_questions")]
+    public bool ShuffleQuestions { get; set; }
+    [Column("tab_switch_limit")]
+    public int? TabSwitchLimit { get; set; }
     [Column("generated_by_ai")]
     public bool GeneratedByAi { get; set; }
     [Column("status")]

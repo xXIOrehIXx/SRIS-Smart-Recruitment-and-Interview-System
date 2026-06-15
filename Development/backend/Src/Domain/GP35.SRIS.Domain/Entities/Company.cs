@@ -18,6 +18,22 @@ public class Company : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo
     public string? LogoUrl { get; set; }
     [Column("primary_color")]
     public string? PrimaryColor { get; set; }
+    [Column("industry")]
+    public string? Industry { get; set; }
+    [Column("email_domain")]
+    public string? EmailDomain { get; set; }
+    [Column("smtp_host")]
+    public string? SmtpHost { get; set; }
+    [Column("smtp_port")]
+    public int? SmtpPort { get; set; }
+    [Column("smtp_username")]
+    public string? SmtpUsername { get; set; }
+    [Column("smtp_from_email")]
+    public string? SmtpFromEmail { get; set; }
+    [Column("subscription_plan")]
+    public string SubscriptionPlan { get; set; } = null!;
+    [Column("status")]
+    public string Status { get; set; } = null!;
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]

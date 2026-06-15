@@ -14,10 +14,14 @@ public class EmailTemplate : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, I
     public long CompanyId { get; set; }
     [Column("type")]
     public string Type { get; set; } = null!;
+    [Column("name")]
+    public string? Name { get; set; }
     [Column("subject")]
     public string Subject { get; set; } = null!;
     [Column("body")]
     public string Body { get; set; } = null!;
+    [Column("is_active")]
+    public bool IsActive { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]

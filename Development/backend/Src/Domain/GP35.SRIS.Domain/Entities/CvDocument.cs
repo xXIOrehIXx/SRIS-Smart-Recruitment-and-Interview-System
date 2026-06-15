@@ -14,6 +14,14 @@ public class CvDocument : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHas
     public long CompanyId { get; set; }
     [Column("candidate_id")]
     public long CandidateId { get; set; }
+    [Column("file_url")]
+    public string? FileUrl { get; set; }
+    [Column("file_name")]
+    public string? FileName { get; set; }
+    [Column("file_size")]
+    public int? FileSize { get; set; }
+    [Column("mime_type")]
+    public string? MimeType { get; set; }
     [Column("extracted_text")]
     public string? ExtractedText { get; set; }
     [Column("embedding")]

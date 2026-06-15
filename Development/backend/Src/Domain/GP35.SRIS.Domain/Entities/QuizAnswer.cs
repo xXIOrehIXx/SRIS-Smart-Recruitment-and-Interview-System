@@ -20,6 +20,10 @@ public class QuizAnswer : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     public string? SelectedOption { get; set; }
     [Column("is_correct")]
     public bool? IsCorrect { get; set; }
+    [Column("answered_at")]
+    public DateTime? AnsweredAt { get; set; }
+    [Column("time_spent_seconds")]
+    public int? TimeSpentSeconds { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
 }

@@ -24,6 +24,12 @@ public class Application : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHa
     public decimal? AiMatchScore { get; set; }
     [Column("reject_reason")]
     public string? RejectReason { get; set; }
+    [Column("stage_updated_at")]
+    public DateTime? StageUpdatedAt { get; set; }
+    [Column("rejected_at")]
+    public DateTime? RejectedAt { get; set; }
+    [Column("hired_at")]
+    public DateTime? HiredAt { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]

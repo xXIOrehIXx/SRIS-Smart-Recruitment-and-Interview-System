@@ -20,6 +20,12 @@ public class Candidate : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHasC
     public string? Phone { get; set; }
     [Column("source")]
     public string? Source { get; set; }
+    [Column("linkedin_url")]
+    public string? LinkedinUrl { get; set; }
+    [Column("current_position")]
+    public string? CurrentPosition { get; set; }
+    [Column("years_experience")]
+    public decimal? YearsExperience { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]

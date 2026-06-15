@@ -24,6 +24,8 @@ public class InterviewScore : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, 
     public string? Note { get; set; }
     [Column("status")]
     public string Status { get; set; } = null!;
+    [Column("submitted_at")]
+    public DateTime? SubmittedAt { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]
