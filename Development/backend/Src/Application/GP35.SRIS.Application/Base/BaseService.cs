@@ -1,7 +1,7 @@
 using GP35.SRIS.Application.Contracts;
 using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
-using GP35.SRIS.Domain.SqlServer.Configs;
+using GP35.SRIS.Domain.Shared.Configs;
 
 namespace GP35.SRIS.Application;
 
