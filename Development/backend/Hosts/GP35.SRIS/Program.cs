@@ -164,13 +164,14 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<AuthMiddleware>();
-
 app.UseSwagger();
 app.UseSwaggerUI((c) =>
 {
-  c.SwaggerEndpoint("/swagger/v1/swagger.json", "GP35.SRIS API V1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "GP35.SRIS API V1");
 });
+app.UseMiddleware<AuthMiddleware>();
+
+
 
 app.MapControllers();
 
