@@ -1,5 +1,7 @@
 using System.Net;
 
+using Newtonsoft.Json;
+
 namespace GP35.SRIS.Domain.Shared.Exceptions;
 
 public class BaseException : Exception
@@ -26,7 +28,6 @@ public class BaseException : Exception
 
   public virtual string GetClientReturn()
   {
-    // return JsonConvert.SerializeObject(this);
-    return "";
+    return JsonConvert.SerializeObject(this);
   }
 }
