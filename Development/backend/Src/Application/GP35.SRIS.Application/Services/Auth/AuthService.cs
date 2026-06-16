@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using GP35.SRIS.Lib.Services;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Application.Contracts.Services;
+using GP35.SRIS.Domain.Shared.Constants;
+using Microsoft.AspNetCore.Http;
 
 namespace GP35.SRIS.Application;
 
@@ -20,7 +22,12 @@ public class AuthService : BaseService<AuthService>, IAuthService
 
         if (user == null)
         {
-            throw new AuthException();
+            throw new AuthException
+            {
+                ErrorCode = AuthErrorCode.UserNotLoggedIn,
+                ErrorMessage = AuthErrorMessage.UserNotLoggedIn,
+                HttpStatus = StatusCodes.Status401Unauthorized
+            };
         }
 
         var _encodeService = _serviceProvider.GetRequiredService<IEncodeService>();
@@ -28,7 +35,12 @@ public class AuthService : BaseService<AuthService>, IAuthService
 
         if (hashed != user.PasswordHash)
         {
-            throw new AuthException();
+            throw new AuthException
+            {
+                ErrorCode = AuthErrorCode.UsernameOrPwdInvalid,
+                ErrorMessage = AuthErrorMessage.UsernameOrPwdInvalid,
+                HttpStatus = StatusCodes.Status401Unauthorized
+            };
         }
 
         var _jwtService = _serviceProvider.GetRequiredService<IJwtService>();

@@ -30,6 +30,7 @@ namespace GP35.SRIS.HostBase.Extensions
                     {
                         var exception = contextFeature.Error;
                         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                        Console.WriteLine(exception);
                         if (exception is BaseException)
                         {
                             var baseEx = exception as BaseException;
