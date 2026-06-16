@@ -9,6 +9,7 @@ using GP35.SRIS.Domain.Connection;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Configs;
+using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.SqlServer;
 using GP35.SRIS.Domain.SqlServer.Connection;
 using GP35.SRIS.Domain.SqlServer.Extensions;
@@ -19,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Reflection;
+using Serilog;
 
 namespace GP35.SRIS.HostBase.Extensions
 {
@@ -27,6 +29,7 @@ namespace GP35.SRIS.HostBase.Extensions
         public static void ConfigureCommonConfig(this IServiceCollection services, IConfiguration configuration)
         {
             services.InitConfig<DefaultConfig>(configuration);
+            services.AddSingleton<Serilog.ILogger>(Log.Logger);
         }
 
         public static void ConfigureCommonServices(this IServiceCollection services)
@@ -36,12 +39,15 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Example: services.AddSingleton<IMyService, MyService>();
 
+            services.AddHttpContextAccessor();
             services.AddScoped<IEncodeService, EncodeService>();
+            services.AddScoped<IContextData, ContextData>();
         }
 
         public static void AddBusinessServices(this IServiceCollection services)
         {
             services.AddScoped<IUserRepo, UserRepo>();
+            services.AddScoped<ICompanyRepo, CompanyRepo>();
         }
 
         public static void AddBusinessRepos(this IServiceCollection services, IConfiguration configuration)
@@ -56,6 +62,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ICompanyService, CompanyService>();
 
         }
 
@@ -64,6 +71,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddAutoMapper(cfg =>
             {
                 cfg.CreateMap<User, UserGetDto>();
+                cfg.CreateMap<Company, CompanyGetDto>();
             });
         }
         public static IConfig InitConfig<IConfig>(this IServiceCollection services, IConfiguration configuration) where IConfig : DefaultConfig

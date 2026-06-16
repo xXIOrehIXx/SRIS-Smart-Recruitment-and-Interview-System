@@ -18,15 +18,45 @@ public class JwtService : BaseService<AuthService>, IJwtService
     {
     }
 
-    public (string AccessToken, string RefreshToken) GenerateTokens(long userId, string username, IEnumerable<string> roles, string companyId)
+    public (string AccessToken, string RefreshToken) GenerateTokens(
+        long userId,
+        string username,
+        IEnumerable<string> roles,
+        string companyId,
+        string? email = null,
+        string? phoneNumber = null,
+        string? fullName = null,
+        string? code = null)
     {
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.UniqueName, username),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("userId", userId.ToString()),
             new Claim("companyId", companyId)
         };
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            claims.Add(new Claim(ClaimTypes.Email, email));
+        }
+
+        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            claims.Add(new Claim(ClaimTypes.MobilePhone, phoneNumber));
+        }
+
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            claims.Add(new Claim(ClaimTypes.Name, fullName));
+            claims.Add(new Claim("full_name", fullName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(code))
+        {
+            claims.Add(new Claim("code", code));
+        }
 
         foreach (var role in roles)
             claims.Add(new Claim(ClaimTypes.Role, role));
