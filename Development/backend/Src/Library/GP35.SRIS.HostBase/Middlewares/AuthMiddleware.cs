@@ -75,7 +75,7 @@ namespace GP35.SRIS.HostBase.Middlewares
                 return false;
             }
 
-            contextData.UserId = user.GetRequiredClaim<long>(JwtRegisteredClaimNames.Sub);
+            contextData.UserId = user.GetRequiredClaim<long>("userId");
             contextData.CompanyId = user.GetRequiredClaim<long>("companyId");
 
             return true;

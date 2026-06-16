@@ -46,6 +46,17 @@ namespace GP35.SRIS.HostBase.Extensions
                 return (T)(object)Guid.Parse(value);
             if (typeof(T) == typeof(int))
                 return (T)(object)int.Parse(value);
+            if (typeof(T) == typeof(long))
+                return (T)(object)long.Parse(value);
+            if (typeof(T) == typeof(bool))
+                return (T)(object)bool.Parse(value);
+            if (typeof(T) == typeof(decimal))
+                return (T)(object)decimal.Parse(value);
+            if (typeof(T) == typeof(double))
+                return (T)(object)double.Parse(value);
+            if (typeof(T) == typeof(DateTime))
+                return (T)(object)DateTime.Parse(value);
+
             return (T)Convert.ChangeType(value, typeof(T));
         }
     }

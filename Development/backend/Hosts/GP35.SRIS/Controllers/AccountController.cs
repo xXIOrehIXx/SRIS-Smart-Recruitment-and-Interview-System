@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GP35.SRIS
 {
@@ -15,7 +16,7 @@ namespace GP35.SRIS
       _authService = authService;
     }
 
-    // POST: api/Account/Login
+    [AllowAnonymous]
     [HttpPost("Login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {

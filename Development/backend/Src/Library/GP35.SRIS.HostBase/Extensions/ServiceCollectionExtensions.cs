@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Reflection;
+using Serilog;
 
 namespace GP35.SRIS.HostBase.Extensions
 {
@@ -28,6 +29,7 @@ namespace GP35.SRIS.HostBase.Extensions
         public static void ConfigureCommonConfig(this IServiceCollection services, IConfiguration configuration)
         {
             services.InitConfig<DefaultConfig>(configuration);
+            services.AddSingleton<Serilog.ILogger>(Log.Logger);
         }
 
         public static void ConfigureCommonServices(this IServiceCollection services)

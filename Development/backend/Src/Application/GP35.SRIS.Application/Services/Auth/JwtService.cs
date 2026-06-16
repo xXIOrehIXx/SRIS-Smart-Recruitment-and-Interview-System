@@ -33,6 +33,7 @@ public class JwtService : BaseService<AuthService>, IJwtService
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.UniqueName, username),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("userId", userId.ToString()),
             new Claim("companyId", companyId)
         };
 
