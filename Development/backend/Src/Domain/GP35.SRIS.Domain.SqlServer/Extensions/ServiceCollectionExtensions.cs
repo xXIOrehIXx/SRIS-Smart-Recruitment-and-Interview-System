@@ -1,18 +1,24 @@
-using GP35.SRIS.Domain.Connection;
 using Microsoft.Extensions.DependencyInjection;
-using GP35.SRIS.Domain.SqlServer.Connection;
+using GP35.SRIS.Domain.SqlServer.Persistence;
+using GP35.SRIS.Domain.Shared.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace GP35.SRIS.Domain.SqlServer.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        public static void AddScopedBusinessSqlServerConnectionManager(this IServiceCollection services, Func<string> action)
+        /// <summary>
+        /// Đăng ký EF Core DbContext cho tầng dữ liệu (5.11). Scoped để khớp vòng đời
+        /// request + IContextData. Interceptor set SESSION_CONTEXT('CompanyId') cho RLS.
+        /// </summary>
+        public static void AddSrisDbContext(this IServiceCollection services, Func<string> connectionStringFactory)
         {
-            services.AddScoped<IConnectionManager>(sp =>
+            services.AddDbContext<SrisDbContext>((sp, options) =>
             {
-                var connectionString = action.Invoke();
-                return new ConnectionManager(connectionString);
-            });
+                options.UseSqlServer(connectionStringFactory.Invoke());
+                options.AddInterceptors(
+                    new TenantSessionConnectionInterceptor(sp.GetService<IContextData>()));
+            }, ServiceLifetime.Scoped);
         }
     }
 }

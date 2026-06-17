@@ -4,6 +4,7 @@
     <ProjectReference Include="..\..\Domain\GP35.SRIS.Domain.SqlServer\GP35.SRIS.Domain.SqlServer.csproj" />
     <ProjectReference Include="..\GP35.SRIS.Application.Contracts\GP35.SRIS.Application.Contracts.csproj" />
     <ProjectReference Include="..\..\Library\GP35.SRIS.Lib\GP35.SRIS.Lib.csproj" />
+    <ProjectReference Include="..\..\Library\GP35.SRIS.Storage\GP35.SRIS.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>
