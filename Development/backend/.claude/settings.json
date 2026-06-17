@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet restore*)",
+      "Bash(dotnet build*)",
+      "Bash(dotnet run*)",
+      "Bash(dotnet test*)",
+      "Bash(dotnet watch*)",
+      "Bash(dotnet add*)",
+      "Bash(dotnet remove*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git fetch*)"
+    ]
+  }
+}

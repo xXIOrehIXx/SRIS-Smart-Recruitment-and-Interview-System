@@ -6,4 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Minio" Version="6.0.3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+    <PackageReference Include="Serilog" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GP35.SRIS.Storage\GP35.SRIS.Storage.csproj" />
+    <ProjectReference Include="..\..\Domain\GP35.SRIS.Domain.Shared\GP35.SRIS.Domain.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

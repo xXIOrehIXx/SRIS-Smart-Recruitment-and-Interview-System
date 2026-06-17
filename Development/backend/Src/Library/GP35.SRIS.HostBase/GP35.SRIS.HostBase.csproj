@@ -17,6 +17,8 @@
     <ProjectReference Include="..\..\Application\GP35.SRIS.Application\GP35.SRIS.Application.csproj" />
     <ProjectReference Include="..\..\Domain\GP35.SRIS.Domain\GP35.SRIS.Domain.csproj" />
     <ProjectReference Include="..\..\Domain\GP35.SRIS.Domain.SqlServer\GP35.SRIS.Domain.SqlServer.csproj" />
+    <ProjectReference Include="..\GP35.SRIS.Storage\GP35.SRIS.Storage.csproj" />
+    <ProjectReference Include="..\GP35.SRIS.Storage.Minio\GP35.SRIS.Storage.Minio.csproj" />
   </ItemGroup>
 
 </Project>

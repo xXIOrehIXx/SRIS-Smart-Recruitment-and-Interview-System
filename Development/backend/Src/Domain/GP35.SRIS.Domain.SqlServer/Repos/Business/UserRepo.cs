@@ -1,36 +1,39 @@
-﻿using Dapper;
-using GP35.SRIS.Domain.Connection;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.SqlServer.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Data;
 
 namespace GP35.SRIS.Domain.SqlServer.Repos;
 
 public class UserRepo : BaseRepo<Guid, User>, IUserRepo
 {
-    protected IConnectionManager _connectionManager;
+    private readonly SrisDbContext _db;
 
     public UserRepo(IServiceProvider serviceProvider) : base(serviceProvider)
     {
-        _connectionManager = serviceProvider.GetRequiredService<IConnectionManager>();
+        _db = serviceProvider.GetRequiredService<SrisDbContext>();
     }
+
     public async Task<User> GetByEmail(string email)
     {
-        var connection = await _connectionManager.GetDbConnectionAsync();
-
-        connection.Execute("ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);");
-
-        var cmd = $"SELECT * FROM {_tableName} WHERE email = @email";
+        // Lúc login chưa biết company -> phải tra User XUYÊN tenant:
+        //  - IgnoreQueryFilters(): bỏ Global Query Filter company_id ở tầng code.
+        //  - Tắt RLS policy (DB-level) trong lúc tra, vì SESSION_CONTEXT('CompanyId') chưa được set.
+        // ALTER SECURITY POLICY là trạng thái toàn DB nên có hiệu lực bất kể connection nào EF dùng.
+        await _db.Database.ExecuteSqlRawAsync(
+            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);");
         try
         {
-            var user = await connection.QuerySingleOrDefaultAsync<User>(cmd, new { email });
-
-            return user;
+            return await _db.Users
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
         finally
         {
-            connection.Execute("ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);");
+            await _db.Database.ExecuteSqlRawAsync(
+                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);");
         }
     }
 }
