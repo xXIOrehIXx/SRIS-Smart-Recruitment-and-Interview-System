@@ -45,10 +45,14 @@ public class AuthService : BaseService<AuthService>, IAuthService
 
         var _jwtService = _serviceProvider.GetRequiredService<IJwtService>();
 
+        var roles = string.IsNullOrWhiteSpace(user.Role)
+            ? new List<string>()
+            : new List<string> { user.Role };
+
         var (accessToken, refreshToken) = _jwtService.GenerateTokens(
             user.UserId,
             user.Email,
-            new List<string>(),
+            roles,
             user.CompanyId,
             user.Email,
             user.Phone,

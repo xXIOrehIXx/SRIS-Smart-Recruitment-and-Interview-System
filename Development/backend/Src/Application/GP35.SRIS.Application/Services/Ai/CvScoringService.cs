@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos.Ai;
 using GP35.SRIS.Application.Contracts.Services.Ai;
@@ -35,11 +37,11 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
     }
 
     public async Task<CvScoreResultDto> ScoreUploadedCvAsync(
-        long companyId, long jobId, string candidateName, string candidateEmail,
+        long companyId, long jobId, string candidateName, string candidateEmail, string? candidatePhone,
         string fileName, string? mimeType, byte[] fileBytes)
     {
         // (0) Tạo/lấy ứng viên + lưu file CV gốc lên MinIO trước (dùng cho mọi nhánh kết quả).
-        var candidateId = await UpsertCandidateAsync(companyId, candidateName, candidateEmail);
+        var candidateId = await UpsertCandidateAsync(companyId, candidateName, candidateEmail, candidatePhone);
         var fileUrl = await StoreOriginalFileAsync(companyId, candidateId, fileName, mimeType, fileBytes);
 
         // --- Bước "PDF -> text" đứng TRƯỚC luồng AI ---
@@ -120,13 +122,6 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
         }
     }
 
-    public async Task<CvScoreResultDto> ScoreCvTextAsync(long companyId, CvScoreTextRequest request)
-    {
-        var candidateId = await UpsertCandidateAsync(companyId, request.CandidateName, request.CandidateEmail);
-        return await ScoreCoreAsync(companyId, request.JobId, candidateId, request.CandidateName,
-            request.CvText, fileUrl: null, fileName: null, mimeType: null, fileSize: null);
-    }
-
     public async Task<IEnumerable<CandidateRankingDto>> GetRankingAsync(long companyId, long jobId)
     {
         var rows = await _applicationRepo.GetRankingByJobAsync(companyId, jobId);
@@ -146,7 +141,40 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
         if (info is null || string.IsNullOrWhiteSpace(info.FileUrl))
             return null;
 
-        return await _fileStorage.GetPresignedUrlAsync(info.FileUrl);
+        var downloadName = BuildCvDownloadName(info.CandidateName, info.FileName);
+        var contentType = string.IsNullOrWhiteSpace(info.MimeType) ? "application/pdf" : info.MimeType;
+        return await _fileStorage.GetPresignedUrlAsync(
+            info.FileUrl, downloadFileName: downloadName, contentType: contentType);
+    }
+
+    /// <summary>
+    /// Tên file khi tải về: "CV_&lt;tên ứng viên&gt;.pdf" — bỏ dấu tiếng Việt + ký tự lạ
+    /// để an toàn cho HTTP header (vd "Nguyễn Văn A" -> "CV_Nguyen_Van_A.pdf").
+    /// </summary>
+    private static string BuildCvDownloadName(string? candidateName, string? originalFileName)
+    {
+        var raw = string.IsNullOrWhiteSpace(candidateName) ? "candidate" : candidateName;
+
+        // Bỏ dấu: tách dấu (FormD) rồi loại ký tự dấu (NonSpacingMark), xử lý riêng đ/Đ.
+        var decomposed = raw.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+        foreach (var ch in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+                sb.Append(ch);
+        }
+        var ascii = sb.ToString().Normalize(NormalizationForm.FormC)
+            .Replace('đ', 'd').Replace('Đ', 'D');
+
+        // Chỉ giữ chữ/số; còn lại -> '_'; gộp '_' thừa.
+        var clean = new string(ascii.Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray()).Trim('_');
+        while (clean.Contains("__")) clean = clean.Replace("__", "_");
+        if (string.IsNullOrWhiteSpace(clean)) clean = "candidate";
+
+        var ext = Path.GetExtension(originalFileName);
+        if (string.IsNullOrWhiteSpace(ext)) ext = ".pdf";
+
+        return $"CV_{clean}{ext}";
     }
 
     // ============================================================
@@ -224,7 +252,8 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
     }
 
     /// <summary>Tìm ứng viên theo email; chưa có thì tạo mới. Trả về candidate_id.</summary>
-    private async Task<long> UpsertCandidateAsync(long companyId, string fullName, string email)
+    private async Task<long> UpsertCandidateAsync(
+        long companyId, string fullName, string email, string? phone = null)
     {
         var existing = await _candidateRepo.GetByEmailAsync(companyId, email);
         if (existing is not null)
@@ -233,7 +262,9 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
         return await _candidateRepo.InsertAsync(companyId, new Candidate
         {
             FullName = fullName,
-            Email = email
+            Email = email,
+            Phone = phone,
+            Source = "Career Site"
         });
     }
 

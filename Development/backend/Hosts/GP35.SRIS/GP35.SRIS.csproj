@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Src\Library\GP35.SRIS.HostBase\GP35.SRIS.HostBase.csproj" />
+    <ProjectReference Include="..\..\tools\GP35.SRIS.DbMigrator\GP35.SRIS.DbMigrator.csproj" />
   </ItemGroup>
 
   <ItemGroup>

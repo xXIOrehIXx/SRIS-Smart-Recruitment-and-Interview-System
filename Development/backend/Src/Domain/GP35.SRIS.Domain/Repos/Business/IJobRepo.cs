@@ -7,6 +7,12 @@ public record JobEmbeddingInfo(long JobId, string? JdText, bool HasEmbedding);
 
 public interface IJobRepo : IBaseRepo<long, Job>
 {
+    /// <summary>Tạo Job mới (set company_id, trả về job_id IDENTITY).</summary>
+    Task<long> InsertAsync(long companyId, Job job);
+
+    /// <summary>Danh sách Job của công ty (Global Query Filter tự kèm company_id).</summary>
+    Task<IEnumerable<Job>> GetListByCompanyAsync(long companyId);
+
     /// <summary>Lấy jd_text + cờ JD đã có embedding chưa (lọc theo company).</summary>
     Task<JobEmbeddingInfo?> GetEmbeddingInfoAsync(long companyId, long jobId);
 

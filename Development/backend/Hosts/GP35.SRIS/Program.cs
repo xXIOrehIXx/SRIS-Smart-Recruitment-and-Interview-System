@@ -143,9 +143,37 @@ services
 services.AddSwaggerGen(c =>
 {
   c.SwaggerDoc("v1", new() { Title = "GP35.SRIS API", Version = "v1" });
+
+  // Nút "Authorize" để dán JWT khi test các endpoint [Authorize].
+  c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
+  {
+    Name = "Authorization",
+    Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+    Scheme = "bearer",
+    BearerFormat = "JWT",
+    In = Microsoft.OpenApi.ParameterLocation.Header,
+    Description = "Dán accessToken lấy từ /api/Account/Login (KHÔNG cần gõ 'Bearer ')."
+  });
+  // QUAN TRỌNG: phải truyền host-document (doc) vào OpenApiSecuritySchemeReference,
+  // nếu không reference không phân giải được tên scheme -> key rỗng -> Swagger KHÔNG đính
+  // header Authorization vào request (mọi API [Authorize] sẽ trả 401 dù đã bấm Authorize).
+  c.AddSecurityRequirement(doc => new Microsoft.OpenApi.OpenApiSecurityRequirement
+  {
+    {
+      new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", doc),
+      new List<string>()
+    }
+  });
 });
 
 var app = builder.Build();
+
+// Tự động chạy DB migration (DbUp) lúc khởi động: có script mới (V003, ...) thì chạy, không thì bỏ qua.
+var dbConnection = configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrWhiteSpace(dbConnection))
+{
+  GP35.SRIS.DbMigrator.SrisMigrator.MigrateOrThrow(dbConnection);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -161,16 +189,18 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.UseMiddleware<AuthMiddleware>();
-
+// Swagger phải đứng TRƯỚC AuthMiddleware: AuthMiddleware trả 404 cho mọi request
+// không khớp endpoint controller, sẽ chặn cả /swagger nếu đặt sau.
 app.UseSwagger();
 app.UseSwaggerUI((c) =>
 {
   c.SwaggerEndpoint("/swagger/v1/swagger.json", "GP35.SRIS API V1");
 });
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseMiddleware<AuthMiddleware>();
 
 app.MapControllers();
 

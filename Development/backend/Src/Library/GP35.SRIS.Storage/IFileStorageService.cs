@@ -15,8 +15,14 @@ public interface IFileStorageService
         string objectName, Stream content, long size, string contentType,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Tạo URL tải tạm thời (presigned) cho 1 object — dùng khi cần cho client tải file gốc.</summary>
+    /// <summary>
+    /// Tạo URL tải tạm thời (presigned) cho 1 object.
+    /// <paramref name="downloadFileName"/>: nếu có, đặt header Content-Disposition để khi lưu
+    /// file có tên đẹp này (URL vẫn mở inline để xem trong trình duyệt — không ép tải).
+    /// <paramref name="contentType"/>: ép kiểu nội dung khi trả về (vd "application/pdf").
+    /// </summary>
     Task<string> GetPresignedUrlAsync(
         string objectName, int expirySeconds = 3600,
+        string? downloadFileName = null, string? contentType = null,
         CancellationToken cancellationToken = default);
 }

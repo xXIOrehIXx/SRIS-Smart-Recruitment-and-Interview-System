@@ -30,6 +30,7 @@ namespace GP35.SRIS.Controllers
             [FromForm] long jobId,
             [FromForm] string candidateName,
             [FromForm] string candidateEmail,
+            [FromForm] string? candidatePhone,
             IFormFile file)
         {
             if (file is null || file.Length == 0)
@@ -46,17 +47,9 @@ namespace GP35.SRIS.Controllers
             }
 
             var result = await _cvScoringService.ScoreUploadedCvAsync(
-                _contextData.CompanyId, jobId, candidateName, candidateEmail,
+                _contextData.CompanyId, jobId, candidateName, candidateEmail, candidatePhone,
                 file.FileName, file.ContentType, bytes);
 
-            return Ok(result);
-        }
-
-        /// <summary>Nộp CV dạng TEXT và chấm điểm.</summary>
-        [HttpPost("score-text")]
-        public async Task<IActionResult> ScoreText([FromBody] CvScoreTextRequest request)
-        {
-            var result = await _cvScoringService.ScoreCvTextAsync(_contextData.CompanyId, request);
             return Ok(result);
         }
 
@@ -69,20 +62,8 @@ namespace GP35.SRIS.Controllers
         }
 
         /// <summary>
-        /// Tải lại file CV gốc của 1 cv_id — chuyển hướng tới URL tải tạm thời (presigned) của MinIO.
-        /// </summary>
-        [HttpGet("cv/{cvId:long}/file")]
-        public async Task<IActionResult> DownloadCvFile(long cvId)
-        {
-            var url = await _cvScoringService.GetCvFileUrlAsync(_contextData.CompanyId, cvId);
-            if (url is null)
-                return NotFound(new { error = "CV không tồn tại hoặc không có file gốc." });
-
-            return Redirect(url);
-        }
-
-        /// <summary>
-        /// Như trên nhưng trả URL dưới dạng JSON (để frontend tự xử lý thay vì redirect).
+        /// Trả URL tạm thời (presigned, ~1h) để xem/tải file CV gốc. URL mở inline trong
+        /// trình duyệt (xem PDF); khi lưu sẽ có tên đẹp dạng CV_&lt;tên ứng viên&gt;.pdf.
         /// </summary>
         [HttpGet("cv/{cvId:long}/file-url")]
         public async Task<IActionResult> GetCvFileUrl(long cvId)

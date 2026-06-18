@@ -37,11 +37,12 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
 
     public async Task<CvFileInfo?> GetFileInfoAsync(long companyId, long cvId)
     {
-        // Global Query Filter tự kèm company_id.
-        return await _db.CvDocuments
-            .AsNoTracking()
-            .Where(c => c.CvId == cvId)
-            .Select(c => new CvFileInfo(c.FileUrl, c.FileName, c.MimeType))
+        // Global Query Filter tự kèm company_id; join Candidate lấy tên (đặt tên file tải về).
+        return await (
+            from c in _db.CvDocuments.AsNoTracking()
+            join cand in _db.Candidates.AsNoTracking() on c.CandidateId equals cand.CandidateId
+            where c.CvId == cvId
+            select new CvFileInfo(c.FileUrl, c.FileName, c.MimeType, cand.FullName))
             .FirstOrDefaultAsync();
     }
 }

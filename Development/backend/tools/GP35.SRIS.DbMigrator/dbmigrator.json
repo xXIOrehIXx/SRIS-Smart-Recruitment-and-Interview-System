@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=SRIS;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}

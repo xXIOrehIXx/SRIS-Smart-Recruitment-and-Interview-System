@@ -16,6 +16,23 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
         _db = serviceProvider.GetRequiredService<SrisDbContext>();
     }
 
+    public async Task<long> InsertAsync(long companyId, Job job)
+    {
+        job.CompanyId = companyId;
+        _db.Jobs.Add(job);
+        await _db.SaveChangesAsync();
+        return job.JobId; // EF đọc lại khóa IDENTITY + created_at (store-generated) sau khi lưu
+    }
+
+    public async Task<IEnumerable<Job>> GetListByCompanyAsync(long companyId)
+    {
+        // Global Query Filter tự kèm company_id; AsNoTracking cho truy vấn đọc.
+        return await _db.Jobs
+            .AsNoTracking()
+            .OrderByDescending(j => j.JobId)
+            .ToListAsync();
+    }
+
     public async Task<JobEmbeddingInfo?> GetEmbeddingInfoAsync(long companyId, long jobId)
     {
         // jd_text lấy qua LINQ (Global Query Filter tự kèm company_id).

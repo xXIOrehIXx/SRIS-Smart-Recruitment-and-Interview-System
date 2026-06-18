@@ -85,12 +85,14 @@ CREATE TABLE dbo.Job (
     jd_text               NVARCHAR(MAX)        NULL,
     embedding             VECTOR(384)          NULL,     -- JD đã vector hóa (so với CV)
     department_manager_id BIGINT               NULL,     -- người quyết tuyển (Department Manager); NULL = Recruiter quyết
+    created_by            BIGINT               NULL,     -- Recruiter mở job (người tạo)
     status                VARCHAR(20)          NOT NULL CONSTRAINT DF_Job_status DEFAULT 'Draft',
     created_at            DATETIME2(3)         NOT NULL CONSTRAINT DF_Job_created DEFAULT SYSUTCDATETIME(),
     updated_at            DATETIME2(3)         NULL,
     CONSTRAINT PK_Job        PRIMARY KEY (job_id),
     CONSTRAINT FK_Job_Company     FOREIGN KEY (company_id)            REFERENCES dbo.Company(company_id),
     CONSTRAINT FK_Job_DeptManager FOREIGN KEY (department_manager_id) REFERENCES dbo.[User](user_id),
+    CONSTRAINT FK_Job_CreatedBy   FOREIGN KEY (created_by)            REFERENCES dbo.[User](user_id),
     CONSTRAINT CK_Job_status CHECK (status IN ('Draft','Open','Closed'))
 );
 GO
