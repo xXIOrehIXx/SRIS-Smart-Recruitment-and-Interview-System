@@ -60,7 +60,6 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.EmploymentType);
             e.Ignore(x => x.Quantity);
             e.Ignore(x => x.CvScoreThreshold);
-            e.Ignore(x => x.CreatedBy);
             e.Ignore(x => x.ClosedAt);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);

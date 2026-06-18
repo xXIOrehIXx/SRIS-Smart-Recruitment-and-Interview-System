@@ -3,7 +3,7 @@ using GP35.SRIS.Domain.Entities;
 namespace GP35.SRIS.Domain.Repos;
 
 /// <summary>Thông tin file gốc của 1 CV (file_url = object key trong storage).</summary>
-public record CvFileInfo(string? FileUrl, string? FileName, string? MimeType);
+public record CvFileInfo(string? FileUrl, string? FileName, string? MimeType, string? CandidateName);
 
 public interface ICvDocumentRepo : IBaseRepo<long, CvDocument>
 {

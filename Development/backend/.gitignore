@@ -485,3 +485,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# === SRIS local dev (KHONG commit binary/data) ===
+# MinIO chay local: binary tu tai + data CV (moi dev tu chay tools/run_minio.ps1)
+tools/minio/
+# Python venv cho ai-service (moi dev tu tao bang run_ai.ps1)
+ai-service/.venv/

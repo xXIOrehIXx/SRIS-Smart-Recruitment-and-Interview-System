@@ -51,12 +51,30 @@ public class MinioFileStorageService : IFileStorageService
     }
 
     public async Task<string> GetPresignedUrlAsync(
-        string objectName, int expirySeconds = 3600, CancellationToken cancellationToken = default)
+        string objectName, int expirySeconds = 3600,
+        string? downloadFileName = null, string? contentType = null,
+        CancellationToken cancellationToken = default)
     {
-        return await _client.PresignedGetObjectAsync(new PresignedGetObjectArgs()
+        var args = new PresignedGetObjectArgs()
             .WithBucket(_bucket)
             .WithObject(objectName)
-            .WithExpiry(expirySeconds));
+            .WithExpiry(expirySeconds);
+
+        // S3 "response override" qua query param: ép Content-Disposition / Content-Type khi tải.
+        var reqParams = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (!string.IsNullOrWhiteSpace(downloadFileName))
+        {
+            // inline = mở xem trong trình duyệt; filename = tên khi người dùng bấm "lưu".
+            var safe = downloadFileName.Replace("\"", string.Empty).Replace("\n", string.Empty).Replace("\r", string.Empty);
+            reqParams["response-content-disposition"] = $"inline; filename=\"{safe}\"";
+        }
+        if (!string.IsNullOrWhiteSpace(contentType))
+            reqParams["response-content-type"] = contentType;
+
+        if (reqParams.Count > 0)
+            args = args.WithHeaders(reqParams);
+
+        return await _client.PresignedGetObjectAsync(args);
     }
 
     private async Task EnsureBucketAsync(CancellationToken cancellationToken)

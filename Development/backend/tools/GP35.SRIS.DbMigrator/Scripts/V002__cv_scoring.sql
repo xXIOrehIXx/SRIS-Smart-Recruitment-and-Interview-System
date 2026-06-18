@@ -4,9 +4,6 @@
    An toàn chạy lại (idempotent). DDL không bị RLS chặn nên không cần session context.
    ============================================================================= */
 
-USE SRIS;
-GO
-
 /* (1) CvDocument: thêm các cột metadata file để lưu CV gốc trên MinIO.
    - file_url  : object key trong bucket MinIO (vd 'cv/1/12/abc.pdf')
    - file_name : tên file gốc người dùng upload

@@ -10,11 +10,8 @@ public interface ICvScoringService : IBaseService
 {
     /// <summary>Nộp CV dạng FILE PDF và chấm điểm.</summary>
     Task<CvScoreResultDto> ScoreUploadedCvAsync(
-        long companyId, long jobId, string candidateName, string candidateEmail,
+        long companyId, long jobId, string candidateName, string candidateEmail, string? candidatePhone,
         string fileName, string? mimeType, byte[] fileBytes);
-
-    /// <summary>Nộp CV dạng TEXT và chấm điểm.</summary>
-    Task<CvScoreResultDto> ScoreCvTextAsync(long companyId, CvScoreTextRequest request);
 
     /// <summary>Bảng xếp hạng ứng viên của 1 job theo điểm giảm dần.</summary>
     Task<IEnumerable<CandidateRankingDto>> GetRankingAsync(long companyId, long jobId);
