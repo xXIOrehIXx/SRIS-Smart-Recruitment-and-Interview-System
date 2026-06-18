@@ -491,3 +491,6 @@ $RECYCLE.BIN/
 tools/minio/
 # Python venv cho ai-service (moi dev tu tao bang run_ai.ps1)
 ai-service/.venv/
+# Config local cua tung dev (de-len appsettings.json). KHONG commit; copy tu file .example.
+appsettings.Development.json
+!appsettings.Development.json.example

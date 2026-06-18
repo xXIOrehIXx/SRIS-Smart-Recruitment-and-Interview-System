@@ -1,0 +1,21 @@
+// ============================================================
+//  MAU config local cho tung dev (KHONG commit file that).
+//  ------------------------------------------------------------
+//  Cach dung:
+//    1. Copy file nay thanh "appsettings.Development.json" (bo duoi .example)
+//    2. Sua DefaultConnection thanh DB local CUA BAN (vd localhost)
+//  File "appsettings.Development.json" da duoc .gitignore -> de-len
+//  appsettings.json khi chay o moi truong Development, KHONG anh huong team.
+// ============================================================
+{
+  "DetailedErrors": true,
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=SRIS;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
