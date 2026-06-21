@@ -50,6 +50,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IHttpService, HttpService>();
             services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
             services.AddScoped<IEmbeddingClient, EmbeddingClient>();
+            services.AddScoped<IQuizGenClient, QuizGenClient>();
 
             // Lưu trữ file (MinIO, tương thích S3) — đổi sang S3 chỉ cần đổi config/registration này
             services.AddMinioStorage();
@@ -65,6 +66,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IJobRepo, JobRepo>();
             services.AddScoped<ICvDocumentRepo, CvDocumentRepo>();
             services.AddScoped<IApplicationRepo, ApplicationRepo>();
+            services.AddScoped<IQuizRepo, QuizRepo>();
         }
 
         public static void AddBusinessRepos(this IServiceCollection services, IConfiguration configuration)
@@ -81,6 +83,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvScoringService, CvScoringService>();
+            services.AddScoped<IQuizService, QuizService>();
 
         }
 

@@ -4,7 +4,7 @@
 
 **SRIS backend**
 
-ASP.NET Core 8 Web API for managing:
+ASP.NET Core 10 Web API for managing:
 
 * 
 * 
@@ -12,7 +12,7 @@ ASP.NET Core 8 Web API for managing:
 
 ### Technology Stack
 
-* .NET 8
+* .NET 10
 * SQLSERVER
 * Serilog
 * AutoMapper

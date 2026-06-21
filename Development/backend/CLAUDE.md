@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-ASP.NET Core 8 Web API — hệ thống tuyển dụng và phỏng vấn thông minh.
+ASP.NET Core 10 Web API — hệ thống tuyển dụng và phỏng vấn thông minh.
 
 **Solution:** `GP35.SRIS.sln`  
 **Entry point:** `Hosts/GP35.SRIS/`
@@ -11,7 +11,7 @@ ASP.NET Core 8 Web API — hệ thống tuyển dụng và phỏng vấn thông 
 
 ## Tech Stack
 
-- .NET 8 / ASP.NET Core 8
+- .NET 10 / ASP.NET Core 10
 - SQL Server 2025 (primary database, compatibility level 170 — kiểu VECTOR)
 - MinIO (file/document storage)
 - Redis (caching)
@@ -19,9 +19,10 @@ ASP.NET Core 8 Web API — hệ thống tuyển dụng và phỏng vấn thông 
 - AutoMapper
 - Swashbuckle (Swagger)
 
-> **Vector handling:** dùng SQL Server 2025 `VECTOR(384)`. Trên .NET 8 cần
-> package `EFCore.SqlServer.VectorSearch` để dùng `EF.Functions.VectorDistance("cosine", ...)`.
-> (Nếu nâng .NET 10 → EF Core 10 hỗ trợ native, bỏ extension.)
+> **Vector handling:** dùng SQL Server 2025 `VECTOR(384)`. EF Core 10 hỗ trợ native kiểu
+> vector (`SqlVector<float>` + `EF.Functions.VectorDistance("cosine", ...)`), không cần extension.
+> Hiện code vẫn xử lý vector bằng raw SQL (`CAST(... AS VECTOR(384))` + `Ignore(Embedding)` trong
+> `SrisDbContext`); chuyển sang map native là việc tối ưu riêng, cần spike verify trên SQL Server 2025 thật trước.
 
 ## Solution Structure
 

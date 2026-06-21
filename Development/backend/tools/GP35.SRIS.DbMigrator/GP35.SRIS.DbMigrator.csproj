@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>GP35.SRIS.DbMigrator</RootNamespace>
@@ -10,8 +10,12 @@
 
   <ItemGroup>
     <PackageReference Include="dbup-sqlserver" Version="5.0.41" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+    <!-- dbup-sqlserver kéo Microsoft.Data.SqlClient 5.1.4 (lỗ hổng transitive: Azure.Identity,
+         MSAL, IdentityModel). Pin trực tiếp bản 6.x đã vá để override transitive (chỉ ảnh hưởng
+         tool migration lúc dev, không ship trong API). -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
   </ItemGroup>
 
   <!-- Các file .sql được nhúng vào assembly và chạy theo thứ tự tên (V001, V002, ...). -->

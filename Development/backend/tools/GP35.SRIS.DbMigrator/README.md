@@ -53,4 +53,4 @@ dotnet run --project tools/GP35.SRIS.DbMigrator -- mark
   để không nhét tài khoản test vào DB của mọi người. Muốn seed tự động cho môi trường dev thì
   có thể thêm một script `V00X__seed_dev.sql` riêng.
 - Vector (`VECTOR(384)`) và RLS được viết SQL tay trong V001 — đó là lý do dùng DbUp (chạy raw SQL)
-  thay vì EF Core Migrations (EF Core 8 không map được kiểu VECTOR).
+  thay vì EF Core Migrations.
