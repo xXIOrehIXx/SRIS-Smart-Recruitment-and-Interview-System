@@ -79,8 +79,16 @@ Ok "venv Python = $pyVer"
 # ---------------------------------------------------------------
 # 2) Cai thu vien neu thieu (idempotent)
 # ---------------------------------------------------------------
-& $VenvPython -c "import fastapi, uvicorn, sentence_transformers" 2>$null
-$depsOk = ($LASTEXITCODE -eq 0)
+# Wrap trong try/catch: tren Windows PowerShell 5.1, stderr cua python (khi import loi
+# o venv moi) bi boc thanh NativeCommandError + ErrorActionPreference='Stop' -> dung ngang
+# script. Catch de coi nhu "chua co deps" roi di cai tiep.
+$depsOk = $false
+try {
+    & $VenvPython -c "import fastapi, uvicorn, sentence_transformers" 2>$null
+    $depsOk = ($LASTEXITCODE -eq 0)
+} catch {
+    $depsOk = $false
+}
 
 if ($Reinstall -or -not $depsOk) {
     Info "Cai/cap nhat thu vien (fastapi, uvicorn, sentence-transformers, torch)..."

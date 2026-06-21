@@ -12,8 +12,9 @@ namespace GP35.SRIS.Domain.SqlServer.Persistence;
 ///  - Lớp 1 (tầng DB): RLS đọc <c>SESSION_CONTEXT('CompanyId')</c> — được set qua
 ///    <see cref="TenantSessionConnectionInterceptor"/> mỗi khi EF mở connection (bẫy pooling).
 ///
-/// Cột VECTOR(384) <c>embedding</c> KHÔNG map ở đây (EF Core 8 chưa hỗ trợ kiểu vector) —
-/// mọi thao tác vector dùng raw SQL (cửa thoát <c>FromSqlRaw</c>/<c>ExecuteSqlRaw</c> — 5.11).
+/// Cột VECTOR(384) <c>embedding</c> hiện KHÔNG map ở đây — mọi thao tác vector dùng raw SQL
+/// (cửa thoát <c>FromSqlRaw</c>/<c>ExecuteSqlRaw</c> — 5.11). EF Core 10 đã hỗ trợ native kiểu
+/// vector (<c>SqlVector&lt;float&gt;</c>); chuyển sang map native là việc tối ưu riêng.
 /// </summary>
 public class SrisDbContext : DbContext
 {
@@ -31,6 +32,8 @@ public class SrisDbContext : DbContext
     public DbSet<Application> Applications => Set<Application>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Company> Companies => Set<Company>();
+    public DbSet<Quiz> Quizzes => Set<Quiz>();
+    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -95,6 +98,34 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.LastLoginAt);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             // Truy vấn User thường lọc theo company; login (GetByEmail) dùng IgnoreQueryFilters.
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<Quiz>(e =>
+        {
+            e.ToTable("Quiz");
+            e.HasKey(x => x.QuizId);
+            // Cột chỉ có ở entity (đầy đủ), schema local (rút gọn) chưa có -> bỏ map.
+            e.Ignore(x => x.Title);
+            e.Ignore(x => x.Stage);
+            e.Ignore(x => x.TotalQuestions);
+            e.Ignore(x => x.PassScore);
+            e.Ignore(x => x.ShuffleQuestions);
+            e.Ignore(x => x.TabSwitchLimit);
+            // duration_min CÓ trong schema -> giữ map (để null khi AI gen).
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<QuizQuestion>(e =>
+        {
+            e.ToTable("QuizQuestion");
+            e.HasKey(x => x.QuestionId);
+            e.Ignore(x => x.Explanation);
+            e.Ignore(x => x.Topic);
+            e.Ignore(x => x.Difficulty);
+            e.Ignore(x => x.DisplayOrder);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
