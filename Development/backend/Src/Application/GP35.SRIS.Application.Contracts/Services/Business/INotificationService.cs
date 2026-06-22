@@ -14,4 +14,10 @@ public interface INotificationService : IBaseService
 
     /// <summary>Email thông báo kết quả khi hồ sơ chốt: HIRED (chúc mừng) / REJECTED (cảm ơn lịch sự).</summary>
     Task SendResultAsync(long companyId, long applicationId, string toState);
+
+    /// <summary>
+    /// Email xác nhận lịch phỏng vấn sau khi ứng viên chốt khung: kèm file .ics đính kèm +
+    /// link "Add to Google Calendar" (không cần API). startTimeUtc = giờ khung đã chốt (UTC).
+    /// </summary>
+    Task SendInterviewConfirmedAsync(long companyId, long applicationId, DateTime startTimeUtc);
 }

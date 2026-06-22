@@ -15,6 +15,7 @@ namespace GP35.SRIS.Application.Services.Business;
 public class NotificationService : BaseService<NotificationService>, INotificationService
 {
     private const string DefaultBaseUrl = "http://localhost:3000";
+    private const int InterviewDurationMinutes = 60; // schema chưa lưu end_time -> dùng độ dài mặc định
 
     private readonly IApplicationRepo _appRepo;
     private readonly IEmailService _email;
@@ -102,6 +103,55 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         {
             _logger.Error(ex, "Notify: lỗi gửi email kết quả {State} (app={AppId}) — bỏ qua (best-effort).",
                 toState, applicationId);
+        }
+    }
+
+    public async Task SendInterviewConfirmedAsync(long companyId, long applicationId, DateTime startTimeUtc)
+    {
+        try
+        {
+            var info = await _appRepo.GetContactInfoAsync(companyId, applicationId);
+            if (info is null || string.IsNullOrWhiteSpace(info.CandidateEmail))
+            {
+                _logger.Warning("Notify: bỏ qua email xác nhận lịch — hồ sơ {AppId} không có email ứng viên.",
+                    applicationId);
+                return;
+            }
+
+            var startUtc = DateTime.SpecifyKind(startTimeUtc, DateTimeKind.Utc);
+            var endUtc = startUtc.AddMinutes(InterviewDurationMinutes);
+            var summary = $"Phỏng vấn — {info.JobTitle}";
+            var description = $"Buổi phỏng vấn cho vị trí {info.JobTitle}. Vui lòng tham gia đúng giờ.";
+
+            var ics = CalendarInviteBuilder.BuildIcs(summary, description, startUtc, endUtc);
+            var gcalUrl = CalendarInviteBuilder.BuildGoogleCalendarUrl(summary, description, startUtc, endUtc);
+
+            var intro = $"Lịch phỏng vấn vị trí <b>{info.JobTitle}</b> đã được xác nhận vào lúc " +
+                        $"<b>{startUtc:HH:mm dd/MM/yyyy} (UTC)</b>. File lịch (.ics) đính kèm — mở để thêm vào " +
+                        "ứng dụng lịch của bạn, hoặc dùng nút bên dưới để thêm vào Google Calendar.";
+            var body = HtmlEmail(info.CandidateName, intro, "Thêm vào Google Calendar", gcalUrl, null);
+
+            var attachment = new GP35.SRIS.Lib.Models.EmailAttachment
+            {
+                FileName = "interview",
+                FileExtension = ".ics",
+                FileContent = System.Text.Encoding.UTF8.GetBytes(ics)
+            };
+
+            await _email.SendEmailAttachmentOnlyAsync(
+                $"Xác nhận lịch phỏng vấn — {info.JobTitle}",
+                body,
+                info.CandidateEmail,
+                new List<string>(),
+                new List<GP35.SRIS.Lib.Models.EmailAttachment> { attachment });
+
+            _logger.Information("Notify: gửi email xác nhận lịch + .ics cho {Email} (app={AppId}).",
+                info.CandidateEmail, applicationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Notify: lỗi gửi email xác nhận lịch (app={AppId}) — bỏ qua (best-effort).",
+                applicationId);
         }
     }
 
