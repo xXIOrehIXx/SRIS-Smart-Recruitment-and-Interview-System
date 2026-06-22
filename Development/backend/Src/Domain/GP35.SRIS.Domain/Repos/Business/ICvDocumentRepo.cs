@@ -5,6 +5,14 @@ namespace GP35.SRIS.Domain.Repos;
 /// <summary>Thông tin file gốc của 1 CV (file_url = object key trong storage).</summary>
 public record CvFileInfo(string? FileUrl, string? FileName, string? MimeType, string? CandidateName);
 
+/// <summary>1 dòng kết quả Talent Pool: CV cũ gần JD (Distance nhỏ = hợp nhiều). UploadedAt để tính "tuổi CV".</summary>
+public record TalentPoolRow(
+    long CvId,
+    long CandidateId,
+    string CandidateName,
+    DateTime? UploadedAt,
+    double Distance);
+
 public interface ICvDocumentRepo : IBaseRepo<long, CvDocument>
 {
     /// <summary>
@@ -15,4 +23,13 @@ public interface ICvDocumentRepo : IBaseRepo<long, CvDocument>
 
     /// <summary>Lấy thông tin file gốc (object key + tên + mime) của 1 CV, lọc theo company.</summary>
     Task<CvFileInfo?> GetFileInfoAsync(long companyId, long cvId);
+
+    /// <summary>
+    /// Talent Pool (Việc 13): ĐẢO CHIỀU vector search — quét kho CvDocument CŨ của công ty, lấy Top N
+    /// CV gần embedding của JD. LUÔN kèm company_id (cô lập tenant). Chỉ CV còn "tươi" (created_at trong
+    /// withinMonths gần đây), CHƯA ứng vào chính job này, và ứng viên CHƯA được tuyển (HIRED) ở bất kỳ
+    /// job nào (đã là nhân viên -> bỏ). Sắp xếp Distance tăng dần (gần nhất trước).
+    /// </summary>
+    Task<IReadOnlyList<TalentPoolRow>> GetTalentPoolByJobAsync(
+        long companyId, long jobId, int withinMonths, int topN);
 }

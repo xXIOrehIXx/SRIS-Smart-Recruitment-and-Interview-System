@@ -45,4 +45,34 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
             select new CvFileInfo(c.FileUrl, c.FileName, c.MimeType, cand.FullName))
             .FirstOrDefaultAsync();
     }
+
+    public async Task<IReadOnlyList<TalentPoolRow>> GetTalentPoolByJobAsync(
+        long companyId, long jobId, int withinMonths, int topN)
+    {
+        // VECTOR_DISTANCE đo ngay trong SQL Server (cột embedding Ignore ở EF -> cửa thoát raw SQL 5.11).
+        // Đảo chiều truy vấn chấm CV: 1 JD -> quét kho CvDocument cũ. company_id kèm mọi bảng (cô lập tenant);
+        // bỏ CV chưa parse (embedding NULL), CV quá "cũ", CV đã ứng vào chính job này, và ỨNG VIÊN ĐÃ ĐƯỢC
+        // TUYỂN (HIRED) ở bất kỳ job nào trong công ty (đã là nhân viên -> không gợi ý lại).
+        var rows = await _db.Database
+            .SqlQueryRaw<TalentPoolRow>(
+                "SELECT TOP({3}) c.cv_id AS CvId, c.candidate_id AS CandidateId, cand.full_name AS CandidateName, " +
+                "       c.created_at AS UploadedAt, " +
+                "       VECTOR_DISTANCE('cosine', c.embedding, j.embedding) AS Distance " +
+                "FROM CvDocument c " +
+                "JOIN Job j ON j.job_id = {1} AND j.company_id = {0} " +
+                "JOIN Candidate cand ON cand.candidate_id = c.candidate_id AND cand.company_id = {0} " +
+                "WHERE c.company_id = {0} " +
+                "  AND c.embedding IS NOT NULL " +
+                "  AND c.created_at >= DATEADD(MONTH, -{2}, SYSUTCDATETIME()) " +
+                "  AND NOT EXISTS (SELECT 1 FROM Application a " +
+                "                  WHERE a.cv_id = c.cv_id AND a.job_id = {1} AND a.company_id = {0}) " +
+                "  AND NOT EXISTS (SELECT 1 FROM Application h " +
+                "                  WHERE h.candidate_id = c.candidate_id AND h.company_id = {0} " +
+                "                    AND h.current_state = 'HIRED') " +
+                "ORDER BY Distance ASC",
+                companyId, jobId, withinMonths, topN)
+            .ToListAsync();
+
+        return rows;
+    }
 }

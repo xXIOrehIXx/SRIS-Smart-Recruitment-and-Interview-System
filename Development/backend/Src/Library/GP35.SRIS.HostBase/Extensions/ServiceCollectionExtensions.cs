@@ -108,6 +108,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvScoringService, CvScoringService>();
+            services.AddScoped<ITalentPoolService, TalentPoolService>();
             services.AddScoped<IQuizService, QuizService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();
