@@ -34,6 +34,9 @@ Mở `GP35.SRIS.sln` trong Visual Studio → **F5**. Swagger tự mở.
 `POST /api/auth/login`:
 ```json
 { "Email": "recruiter@test.com", "Password": "123456" }
+interviewer@test.com 123456
+manager@test.com 123456
+
 ```
 Copy `token` trả về → nút **Authorize** (gõ `Bearer <token>` nếu Swagger không tự thêm).
 
