@@ -18,6 +18,7 @@ namespace GP35.SRIS.Domain.Shared.Constants
         public const string PasswordInvalidRule = "Auth:007";
         public const string EmailDoesntHaveAccount = "Auth:008";
         public const string ExpiredForgotPassword = "Auth:009";
+        public const string Forbidden = "Auth:010";
     }
 
     public class AuthErrorMessage
@@ -31,5 +32,6 @@ namespace GP35.SRIS.Domain.Shared.Constants
         public const string PasswordInvalidRule = "Mật khẩu không đúng định dạng";
         public const string CaptchaInvalid = "Sai quá số lần, vui lòng điền captcha hợp lệ";
         public const string SessionExpiredResetPassword = "Phiên làm việc đã hết hạn";
+        public const string Forbidden = "Bạn không có quyền thực hiện thao tác này";
     }
 }

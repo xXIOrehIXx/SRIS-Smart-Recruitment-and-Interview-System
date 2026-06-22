@@ -6,6 +6,7 @@ using System.Text;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
+using GP35.SRIS.HostBase.Authorization;
 using GP35.SRIS.HostBase.Extensions;
 
 using Microsoft.AspNetCore.Authorization;
@@ -52,8 +53,49 @@ namespace GP35.SRIS.HostBase.Middlewares
                 {
                     return;
                 }
+
+                if (!await this.AuthorizeRole(context, endpoint))
+                {
+                    return;
+                }
             }
             await _next(context);
+        }
+
+        /// <summary>
+        /// Role gating: nếu endpoint có [WithRole], role hiện tại phải thuộc danh sách cho phép.
+        /// Admin là superuser (luôn qua). Không có attribute -> không chặn. Trả false nếu đã ghi 403.
+        /// </summary>
+        private async Task<bool> AuthorizeRole(HttpContext context, Endpoint endpoint)
+        {
+            var withRole = endpoint.Metadata.GetMetadata<WithRoleAttribute>();
+            if (withRole is null || withRole.Roles.Length == 0)
+            {
+                return true;
+            }
+
+            var role = context.RequestServices.GetRequiredService<IContextData>().Role;
+            var allowed =
+                string.Equals(role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase) ||
+                withRole.Roles.Any(r => string.Equals(r, role, StringComparison.OrdinalIgnoreCase));
+
+            if (allowed)
+            {
+                return true;
+            }
+
+            _logger.Warning("Role gating: chặn role '{Role}' tại {Path} (cần {Roles}).",
+                role ?? "(null)", context.Request.Path, string.Join("/", withRole.Roles));
+
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = MediaTypeNames.Application.Json;
+            await context.Response.WriteAsync(new ErrorObjectCommon()
+            {
+                ErrorCode = AuthErrorCode.Forbidden,
+                DevMsg = $"Role '{role}' không có quyền. Yêu cầu: {string.Join(", ", withRole.Roles)}.",
+                UserMsg = AuthErrorMessage.Forbidden
+            }.ToString(), Encoding.UTF8);
+            return false;
         }
 
         private async Task<bool> ProcessSession(HttpContext context)
@@ -77,6 +119,7 @@ namespace GP35.SRIS.HostBase.Middlewares
 
             contextData.UserId = user.GetRequiredClaim<long>("userId");
             contextData.CompanyId = user.GetRequiredClaim<long>("companyId");
+            contextData.Role = user.FindFirst(ClaimTypes.Role)?.Value;
 
             return true;
         }

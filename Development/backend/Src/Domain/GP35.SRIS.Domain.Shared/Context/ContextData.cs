@@ -20,5 +20,6 @@ namespace GP35.SRIS.Domain.Shared.Context
         public string? UserName { get; set; }
         public string? Code { get; set; }
         public long CompanyId { get; set; }
+        public string? Role { get; set; }
     }
 }
