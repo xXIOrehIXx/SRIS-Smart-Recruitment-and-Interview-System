@@ -95,6 +95,9 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Dashboard / Analytics
             services.AddScoped<IDashboardRepo, DashboardRepo>();
+
+            // Ghi chú nội bộ
+            services.AddScoped<IInternalNoteRepo, InternalNoteRepo>();
         }
 
         public static void AddBusinessRepos(this IServiceCollection services, IConfiguration configuration)
@@ -124,6 +127,8 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IOfferService, OfferService>();
             services.AddScoped<ICandidateOfferService, CandidateOfferService>();
             services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<IInternalNoteService, InternalNoteService>();
+            services.AddScoped<IActivityLogService, ActivityLogService>();
 
         }
 
