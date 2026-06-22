@@ -16,6 +16,10 @@ using GP35.SRIS.Lib.Services;
 using GP35.SRIS.Lib.Services.Ai;
 using GP35.SRIS.Application.Contracts.Services.Ai;
 using GP35.SRIS.Application.Services.Ai;
+using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Application.Services.Business;
+using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
+using GP35.SRIS.Application.Services.CandidatePortal;
 using GP35.SRIS.Storage.Minio.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,6 +71,20 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICvDocumentRepo, CvDocumentRepo>();
             services.AddScoped<IApplicationRepo, ApplicationRepo>();
             services.AddScoped<IQuizRepo, QuizRepo>();
+
+            // Magic link + ứng viên làm quiz
+            services.AddScoped<IMagicLinkTokenRepo, MagicLinkTokenRepo>();
+            services.AddScoped<IQuizAttemptRepo, QuizAttemptRepo>();
+
+            // State machine pipeline
+            services.AddScoped<IActivityLogRepo, ActivityLogRepo>();
+
+            // Đặt lịch phỏng vấn
+            services.AddScoped<ISchedulingRepo, SchedulingRepo>();
+
+            // Collaborative scoring
+            services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
+            services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
         }
 
         public static void AddBusinessRepos(this IServiceCollection services, IConfiguration configuration)
@@ -84,6 +102,13 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvScoringService, CvScoringService>();
             services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<IMagicLinkService, MagicLinkService>();
+            services.AddScoped<ICandidateQuizService, CandidateQuizService>();
+            services.AddScoped<IApplicationStateService, ApplicationStateService>();
+            services.AddScoped<IInterviewSchedulingService, InterviewSchedulingService>();
+            services.AddScoped<ICandidateScheduleService, CandidateScheduleService>();
+            services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+            services.AddScoped<IInterviewScoringService, InterviewScoringService>();
 
         }
 

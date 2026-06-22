@@ -202,6 +202,9 @@ app.UseAuthorization();
 
 app.UseMiddleware<AuthMiddleware>();
 
+// Cổng ứng viên (magic link): giải tenant từ tiền tố token TRƯỚC khi controller/DbContext tạo.
+app.UseMiddleware<CandidateTenantMiddleware>();
+
 app.MapControllers();
 
 app.Run();
