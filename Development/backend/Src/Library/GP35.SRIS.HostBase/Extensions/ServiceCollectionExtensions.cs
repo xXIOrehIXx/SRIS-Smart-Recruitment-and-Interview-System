@@ -56,6 +56,10 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IEmbeddingClient, EmbeddingClient>();
             services.AddScoped<IQuizGenClient, QuizGenClient>();
 
+            // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
+            // Đổi sang EmailService nếu muốn gửi qua NotificationCenter (HTTP).
+            services.AddScoped<IEmailService, SmtpEmailService>();
+
             // Lưu trữ file (MinIO, tương thích S3) — đổi sang S3 chỉ cần đổi config/registration này
             services.AddMinioStorage();
         }
@@ -105,6 +109,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvScoringService, CvScoringService>();
             services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();
             services.AddScoped<ICandidateQuizService, CandidateQuizService>();
             services.AddScoped<IApplicationStateService, ApplicationStateService>();

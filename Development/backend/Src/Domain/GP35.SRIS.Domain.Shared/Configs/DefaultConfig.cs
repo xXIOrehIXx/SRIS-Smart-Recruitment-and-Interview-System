@@ -12,6 +12,17 @@ namespace GP35.SRIS.Domain.Shared.Configs
         public EmailServiceOptions EmailService { get; set; }
         public AiServiceOptions AiService { get; set; }
         public StorageOptions Storage { get; set; }
+        public CandidatePortalOptions CandidatePortal { get; set; }
+        public SmtpOptions Smtp { get; set; }
+    }
+
+    /// <summary>
+    /// Cổng ứng viên (frontend) — gốc URL để dựng magic link gửi qua email (docs 5.13 "Actionable Email").
+    /// Vd BaseUrl "https://apply.sris.vn" -> link "https://apply.sris.vn/quiz?token=...".
+    /// </summary>
+    public class CandidatePortalOptions
+    {
+        public string BaseUrl { get; set; }
     }
 
     public class StorageOptions
@@ -50,5 +61,21 @@ namespace GP35.SRIS.Domain.Shared.Configs
     {
         public string EmailURL { get; set; }
         public string PathApiSendEmail { get; set; }
+    }
+
+    /// <summary>
+    /// Cấu hình SMTP gửi email trực tiếp (vd Gmail smtp.gmail.com:587 + App Password). Để password
+    /// trong appsettings.Development.json (đã gitignore). Host trống -> SmtpEmailService bỏ qua (no-op).
+    /// </summary>
+    public class SmtpOptions
+    {
+        public string Host { get; set; }
+        public int Port { get; set; } = 587;
+        public string User { get; set; }
+        public string Password { get; set; }
+        public string FromEmail { get; set; }
+        public string FromName { get; set; }
+        /// <summary>true = STARTTLS (Gmail/Outlook port 587); false = SSL ngầm (port 465).</summary>
+        public bool UseStartTls { get; set; } = true;
     }
 }

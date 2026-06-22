@@ -53,6 +53,45 @@ Copy `token` trả về → nút **Authorize** (gõ `Bearer <token>` nếu Swagg
   dotnet run --project tools/GP35.SRIS.DbMigrator
   ```
 
+## Email (SMTP) — bật để gửi magic link & email kết quả
+
+Hệ thống tự gửi email cho ứng viên: mời làm quiz / chọn lịch / nhận offer (magic link)
+và email kết quả khi HIRED/REJECTED. Sender đang dùng là **SMTP trực tiếp (MailKit)**.
+
+- **Mặc định: TẮT (no-op).** `appsettings.json` để `Smtp.Host` rỗng → hệ thống chỉ log
+  "chưa cấu hình" rồi bỏ qua, **không lỗi**. Token gốc vẫn trả trong response API nên test
+  luồng ứng viên không cần bật email.
+- **Bật gửi thật:** điền config SMTP. Để mật khẩu trong `appsettings.Development.json`
+  (file này gitignored — không bị push):
+
+  ```json
+  {
+    "Smtp": {
+      "Host": "smtp.gmail.com",
+      "Port": 587,
+      "User": "ban@gmail.com",
+      "Password": "abcd efgh ijkl mnop",
+      "FromEmail": "ban@gmail.com",
+      "FromName": "SRIS Recruitment",
+      "UseStartTls": true
+    },
+    "CandidatePortal": { "BaseUrl": "http://localhost:3000" }
+  }
+  ```
+
+  Rồi **restart API**. (`CandidatePortal.BaseUrl` = gốc URL frontend để dựng link trong email.)
+
+**Gmail — lấy App Password** (bắt buộc, không dùng mật khẩu thường):
+1. Bật **2-Step Verification** ở Google Account.
+2. *Security → App passwords* → tạo → copy chuỗi **16 ký tự** vào `Smtp.Password`.
+
+**Nhà cung cấp khác:** Outlook `smtp.office365.com:587` (StartTls). Dùng SSL ngầm port 465
+thì đặt `"Port": 465, "UseStartTls": false`. Để test không gửi ra ngoài thật, dùng
+[Mailtrap](https://mailtrap.io) (sandbox) — chỉ đổi Host/User/Password.
+
+> Muốn đổi sang gửi qua NotificationCenter (HTTP) thay vì SMTP: đổi 1 dòng DI trong
+> `ServiceCollectionExtensions.cs` (`SmtpEmailService` → `EmailService`).
+
 ## Test nhanh gen quiz AI (cần AI service + Ollama)
 Trên Swagger, sau khi Authorize:
 1. `POST /api/quizzes/jobs/{jobId}/generate?numQuestions=10` → tạo quiz **DRAFT**.

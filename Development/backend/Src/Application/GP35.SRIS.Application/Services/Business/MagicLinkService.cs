@@ -17,11 +17,13 @@ public class MagicLinkService : BaseService<MagicLinkService>, IMagicLinkService
     private static readonly string[] ValidPurposes = { "QUIZ", "SCHEDULE", "STATUS", "OFFER_RESPONSE" };
 
     private readonly IMagicLinkTokenRepo _tokenRepo;
+    private readonly INotificationService _notify;
     private readonly ILogger _logger;
 
     public MagicLinkService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _tokenRepo = serviceProvider.GetRequiredService<IMagicLinkTokenRepo>();
+        _notify = serviceProvider.GetRequiredService<INotificationService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<MagicLinkService>();
     }
 
@@ -44,6 +46,10 @@ public class MagicLinkService : BaseService<MagicLinkService>, IMagicLinkService
 
         _logger.Information("MagicLink: phát token id={TokenId} purpose={Purpose} app={AppId} hết hạn {Exp}.",
             tokenId, purpose, applicationId, expiresAt);
+
+        // "Actionable Email" (5.13): mọi lần phát link đều gửi email kèm nút cho ứng viên.
+        // Best-effort — NotificationService tự nuốt lỗi, không làm rớt việc phát token.
+        await _notify.SendMagicLinkAsync(companyId, applicationId, purpose, raw, expiresAt);
 
         return new MagicLinkIssued(tokenId, raw, purpose, expiresAt);
     }
