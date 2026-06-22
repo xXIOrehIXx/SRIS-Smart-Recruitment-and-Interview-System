@@ -92,6 +92,9 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Offer
             services.AddScoped<IOfferRepo, OfferRepo>();
+
+            // Dashboard / Analytics
+            services.AddScoped<IDashboardRepo, DashboardRepo>();
         }
 
         public static void AddBusinessRepos(this IServiceCollection services, IConfiguration configuration)
@@ -120,6 +123,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IInterviewScoringService, InterviewScoringService>();
             services.AddScoped<IOfferService, OfferService>();
             services.AddScoped<ICandidateOfferService, CandidateOfferService>();
+            services.AddScoped<IDashboardService, DashboardService>();
 
         }
 
