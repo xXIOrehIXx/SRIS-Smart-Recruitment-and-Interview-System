@@ -20,6 +20,7 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
     private readonly IApplicationRepo _appRepo;
     private readonly ISchedulingRepo _schedulingRepo;
     private readonly IActivityLogRepo _activityLogRepo;
+    private readonly INotificationService _notify;
     private readonly ILogger _logger;
 
     public CandidateScheduleService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -28,6 +29,7 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _schedulingRepo = serviceProvider.GetRequiredService<ISchedulingRepo>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
+        _notify = serviceProvider.GetRequiredService<INotificationService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<CandidateScheduleService>();
     }
 
@@ -94,6 +96,9 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
             Action = "INTERVIEW_SCHEDULED",
             Detail = $"Vòng {schedule.RoundNumber}, khung {slot.StartTime:O}."
         });
+
+        // Email xác nhận + .ics + link Google Calendar (best-effort — không làm rớt việc chốt lịch).
+        await _notify.SendInterviewConfirmedAsync(v.CompanyId, v.ApplicationId, slot.StartTime);
 
         _logger.Information("Scheduling: ứng viên chốt khung slot={SlotId} schedule={ScheduleId}.",
             slot.SlotId, schedule.ScheduleId);
