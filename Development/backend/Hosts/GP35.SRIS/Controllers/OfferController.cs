@@ -1,6 +1,8 @@
 using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
+using GP35.SRIS.HostBase.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,10 +11,12 @@ namespace GP35.SRIS.Controllers;
 /// <summary>
 /// Offer — người quyết tuyển (docs 5.15). Tại cửa INTERVIEW->OFFER, Department Manager của job
 /// (job không gán DM -> Recruiter) chốt offer: đẩy state sang OFFER + tạo OfferDetail + phát link OFFER_RESPONSE.
+/// Service tự lọc DM theo job; ở đây chỉ chặn role được phép gọi (Recruiter / DepartmentManager).
 /// </summary>
 [Route("api/applications/{applicationId:long}/offer")]
 [ApiController]
 [Authorize]
+[WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
 public class OfferController : ControllerBase
 {
     private readonly IContextData _contextData;

@@ -1,6 +1,8 @@
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
+using GP35.SRIS.HostBase.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,6 +27,7 @@ public class InterviewScoringController : ControllerBase
 
     /// <summary>Các buổi phỏng vấn được giao cho interviewer hiện tại.</summary>
     [HttpGet("api/me/interview-schedules")]
+    [WithRole(RoleConstants.Interviewer)]
     public async Task<IActionResult> MySchedules()
     {
         return Ok(await _scoringService.GetMySchedulesAsync(_contextData.CompanyId, _contextData.UserId));
@@ -32,6 +35,7 @@ public class InterviewScoringController : ControllerBase
 
     /// <summary>Phiếu chấm của interviewer cho 1 buổi (chỉ điểm của chính họ).</summary>
     [HttpGet("api/interview-schedules/{scheduleId:long}/my-sheet")]
+    [WithRole(RoleConstants.Interviewer)]
     public async Task<IActionResult> GetSheet(long scheduleId)
     {
         return Ok(await _scoringService.GetSheetAsync(_contextData.CompanyId, _contextData.UserId, scheduleId));
@@ -39,6 +43,7 @@ public class InterviewScoringController : ControllerBase
 
     /// <summary>Lưu nháp phiếu (tự lưu server).</summary>
     [HttpPut("api/interview-schedules/{scheduleId:long}/my-sheet")]
+    [WithRole(RoleConstants.Interviewer)]
     public async Task<IActionResult> SaveDraft(long scheduleId, [FromBody] SaveScoreDraftDto dto)
     {
         return Ok(await _scoringService.SaveDraftAsync(_contextData.CompanyId, _contextData.UserId, scheduleId, dto));
@@ -46,6 +51,7 @@ public class InterviewScoringController : ControllerBase
 
     /// <summary>Nộp phiếu (mở blind). Guard: phải chấm đủ mọi tiêu chí.</summary>
     [HttpPost("api/interview-schedules/{scheduleId:long}/my-sheet/submit")]
+    [WithRole(RoleConstants.Interviewer)]
     public async Task<IActionResult> Submit(long scheduleId)
     {
         return Ok(await _scoringService.SubmitAsync(_contextData.CompanyId, _contextData.UserId, scheduleId));
@@ -53,6 +59,7 @@ public class InterviewScoringController : ControllerBase
 
     /// <summary>Bảng tổng hợp panel (chỉ phiếu đã nộp): Radar + std dev + điểm từng interviewer.</summary>
     [HttpGet("api/interview-schedules/{scheduleId:long}/aggregate")]
+    [WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
     public async Task<IActionResult> Aggregate(long scheduleId)
     {
         return Ok(await _scoringService.GetAggregateAsync(_contextData.CompanyId, scheduleId));

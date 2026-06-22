@@ -1,6 +1,8 @@
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
+using GP35.SRIS.HostBase.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,6 +15,7 @@ namespace GP35.SRIS.Controllers;
 [Route("api/applications/{applicationId:long}/interview-schedules")]
 [ApiController]
 [Authorize]
+[WithRole(RoleConstants.Recruiter)]
 public class InterviewScheduleController : ControllerBase
 {
     private readonly IContextData _contextData;

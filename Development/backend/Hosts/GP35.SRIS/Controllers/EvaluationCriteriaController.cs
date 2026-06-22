@@ -1,6 +1,8 @@
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
+using GP35.SRIS.HostBase.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +11,7 @@ namespace GP35.SRIS.Controllers;
 /// <summary>Tiêu chí chấm phỏng vấn per-job (docs 5.7) — Recruiter cấu hình (CRUD).</summary>
 [ApiController]
 [Authorize]
+[WithRole(RoleConstants.Recruiter)]
 public class EvaluationCriteriaController : ControllerBase
 {
     private readonly IContextData _contextData;

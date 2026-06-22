@@ -1,6 +1,8 @@
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
+using GP35.SRIS.HostBase.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +14,7 @@ namespace GP35.SRIS.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
+    [WithRole(RoleConstants.Recruiter)]
     public class JobsController : ControllerBase
     {
         private readonly IContextData _contextData;

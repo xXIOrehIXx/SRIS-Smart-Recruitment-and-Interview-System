@@ -1,6 +1,8 @@
 using GP35.SRIS.Application.Contracts.Dtos.Ai.Quiz;
 using GP35.SRIS.Application.Contracts.Services.Ai;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
+using GP35.SRIS.HostBase.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +16,7 @@ namespace GP35.SRIS.Controllers
     [Route("api/quizzes")]
     [ApiController]
     [Authorize]
+    [WithRole(RoleConstants.Recruiter)]
     public class QuizController : ControllerBase
     {
         private readonly IContextData _contextData;
