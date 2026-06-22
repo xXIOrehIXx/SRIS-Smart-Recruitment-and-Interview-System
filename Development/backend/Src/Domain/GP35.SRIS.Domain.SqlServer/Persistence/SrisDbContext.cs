@@ -34,6 +34,15 @@ public class SrisDbContext : DbContext
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Quiz> Quizzes => Set<Quiz>();
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
+    public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+    public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
+    public DbSet<AntiCheatEvent> AntiCheatEvents => Set<AntiCheatEvent>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
+    public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
+    public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
+    public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -81,9 +90,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("Application");
             e.HasKey(x => x.ApplicationId);
-            e.Ignore(x => x.StageUpdatedAt);
-            e.Ignore(x => x.RejectedAt);
-            e.Ignore(x => x.HiredAt);
+            // stage_updated_at / rejected_at / hired_at: đã thêm ở migration V004.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -125,6 +132,87 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.Topic);
             e.Ignore(x => x.Difficulty);
             e.Ignore(x => x.DisplayOrder);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<MagicLinkToken>(e =>
+        {
+            e.ToTable("MagicLinkToken");
+            e.HasKey(x => x.TokenId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<QuizAttempt>(e =>
+        {
+            e.ToTable("QuizAttempt");
+            e.HasKey(x => x.AttemptId);
+            e.Ignore(x => x.MonitorCount); // không có ở schema local
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<QuizAnswer>(e =>
+        {
+            e.ToTable("QuizAnswer");
+            e.HasKey(x => x.AnswerId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<AntiCheatEvent>(e =>
+        {
+            e.ToTable("AntiCheatEvent");
+            e.HasKey(x => x.EventId);
+            // Bảng này dùng occurred_at (không có created_at) — set tường minh trong repo.
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<ActivityLog>(e =>
+        {
+            e.ToTable("ActivityLog");
+            e.HasKey(x => x.LogId);
+            // from_state / to_state / detail: đã thêm ở migration V004.
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<InterviewSchedule>(e =>
+        {
+            e.ToTable("InterviewSchedule");
+            e.HasKey(x => x.ScheduleId);
+            e.Ignore(x => x.RoundName); // chưa có ở schema local
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<InterviewSlot>(e =>
+        {
+            e.ToTable("InterviewSlot");
+            e.HasKey(x => x.SlotId);
+            e.Ignore(x => x.EndTime);     // chưa có ở schema local
+            e.Ignore(x => x.Location);
+            e.Ignore(x => x.MeetingLink);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<EvaluationCriteria>(e =>
+        {
+            e.ToTable("EvaluationCriteria");
+            e.HasKey(x => x.CriteriaId);
+            e.Ignore(x => x.Description);   // chưa có ở schema local
+            e.Ignore(x => x.DisplayOrder);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<InterviewScore>(e =>
+        {
+            e.ToTable("InterviewScore");
+            e.HasKey(x => x.ScoreId);
+            e.Ignore(x => x.SubmittedAt);   // chưa có ở schema local (suy từ status + updated_at)
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

@@ -1,0 +1,43 @@
+using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
+using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Domain.Shared.Context;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace GP35.SRIS.Controllers;
+
+/// <summary>
+/// Đặt lịch phỏng vấn — Recruiter (docs Section 15). Tạo lịch (vòng) + mở khung cho hồ sơ đang ở
+/// INTERVIEW, hệ thống phát magic link SCHEDULE để gửi ứng viên. Nhiều vòng = round_number (5.12).
+/// </summary>
+[Route("api/applications/{applicationId:long}/interview-schedules")]
+[ApiController]
+[Authorize]
+public class InterviewScheduleController : ControllerBase
+{
+    private readonly IContextData _contextData;
+    private readonly IInterviewSchedulingService _schedulingService;
+
+    public InterviewScheduleController(IContextData contextData, IInterviewSchedulingService schedulingService)
+    {
+        _contextData = contextData;
+        _schedulingService = schedulingService;
+    }
+
+    /// <summary>Tạo Interview Request (1 vòng) + mở khung + phát magic link SCHEDULE.</summary>
+    [HttpPost]
+    public async Task<IActionResult> Create(long applicationId, [FromBody] CreateInterviewRequestDto dto)
+    {
+        var result = await _schedulingService.CreateRequestAsync(
+            _contextData.CompanyId, _contextData.UserId, applicationId, dto);
+        return Ok(result);
+    }
+
+    /// <summary>Xem mọi lịch (vòng) của hồ sơ.</summary>
+    [HttpGet]
+    public async Task<IActionResult> GetByApplication(long applicationId)
+    {
+        var result = await _schedulingService.GetByApplicationAsync(_contextData.CompanyId, applicationId);
+        return Ok(result);
+    }
+}

@@ -12,10 +12,4 @@ namespace GP35.SRIS.Domain.Shared.Constants
         /// <summary>Lỗi khi xử lý (file hỏng, AI service chết...).</summary>
         public const string Failed = "FAILED";
     }
-
-    /// <summary>Trạng thái hồ sơ (cột Application.current_state varchar(20)).</summary>
-    public static class ApplicationState
-    {
-        public const string New = "NEW";
-    }
 }

@@ -23,6 +23,13 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
         return application.ApplicationId;
     }
 
+    public async Task<Application?> GetByIdAsync(long companyId, long applicationId)
+    {
+        return await _db.Applications
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.ApplicationId == applicationId);
+    }
+
     public async Task<double> GetCvJdCosineDistanceAsync(long companyId, long cvId, long jobId)
     {
         // VECTOR_DISTANCE đo ngay trong SQL Server (cửa thoát raw SQL — 5.11). Khoảng cách nhỏ = giống nhiều.
@@ -44,6 +51,36 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             .ExecuteUpdateAsync(s => s
                 .SetProperty(a => a.AiMatchScore, score)
                 .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
+    }
+
+    public async Task<int> TransitionStateAsync(
+        long companyId, long applicationId, string toState, string? rejectReason,
+        DateTime stageUpdatedAt, DateTime? rejectedAt, DateTime? hiredAt)
+    {
+        // ExecuteUpdate tôn trọng Global Query Filter (tự kèm company_id); RLS BLOCK chặn ghi sai tenant.
+        return await _db.Applications
+            .Where(a => a.ApplicationId == applicationId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.CurrentState, toState)
+                .SetProperty(a => a.RejectReason, rejectReason)
+                .SetProperty(a => a.StageUpdatedAt, stageUpdatedAt)
+                .SetProperty(a => a.RejectedAt, rejectedAt)
+                .SetProperty(a => a.HiredAt, hiredAt)
+                .SetProperty(a => a.UpdatedAt, stageUpdatedAt));
+    }
+
+    public async Task<int> CountSubmittedInterviewScoresAsync(long companyId, long applicationId)
+    {
+        // InterviewScore nối hồ sơ qua InterviewSchedule (chưa map entity -> raw SQL, cửa thoát 5.11).
+        return await _db.Database
+            .SqlQueryRaw<int>(
+                "SELECT COUNT(*) AS Value " +
+                "FROM InterviewScore sc " +
+                "JOIN InterviewSchedule s ON s.schedule_id = sc.schedule_id " +
+                "WHERE s.application_id = {0} AND s.company_id = {1} " +
+                "  AND sc.company_id = {1} AND sc.status = 'SUBMITTED'",
+                applicationId, companyId)
+            .SingleAsync();
     }
 
     public async Task<IEnumerable<ApplicationRankingRow>> GetRankingByJobAsync(long companyId, long jobId)
