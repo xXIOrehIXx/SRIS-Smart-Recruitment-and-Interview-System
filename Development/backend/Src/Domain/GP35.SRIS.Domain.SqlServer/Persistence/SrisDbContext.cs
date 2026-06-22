@@ -43,6 +43,7 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
+    public DbSet<OfferDetail> OfferDetails => Set<OfferDetail>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -213,6 +214,15 @@ public class SrisDbContext : DbContext
             e.ToTable("InterviewScore");
             e.HasKey(x => x.ScoreId);
             e.Ignore(x => x.SubmittedAt);   // chưa có ở schema local (suy từ status + updated_at)
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<OfferDetail>(e =>
+        {
+            e.ToTable("OfferDetail");
+            e.HasKey(x => x.OfferId);
+            // decided_by / note / expires_at: đã thêm ở migration V005.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

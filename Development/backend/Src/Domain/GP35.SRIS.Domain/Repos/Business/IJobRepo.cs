@@ -13,6 +13,9 @@ public interface IJobRepo : IBaseRepo<long, Job>
     /// <summary>Danh sách Job của công ty (Global Query Filter tự kèm company_id).</summary>
     Task<IEnumerable<Job>> GetListByCompanyAsync(long companyId);
 
+    /// <summary>1 Job theo id (lọc theo company). Dùng để đọc department_manager_id ở bước offer.</summary>
+    Task<Job?> GetByIdAsync(long companyId, long jobId);
+
     /// <summary>Lấy jd_text + cờ JD đã có embedding chưa (lọc theo company).</summary>
     Task<JobEmbeddingInfo?> GetEmbeddingInfoAsync(long companyId, long jobId);
 
