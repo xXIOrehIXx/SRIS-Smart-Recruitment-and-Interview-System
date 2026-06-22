@@ -19,6 +19,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     private readonly IApplicationRepo _appRepo;
     private readonly IQuizAttemptRepo _attemptRepo;
     private readonly IActivityLogRepo _activityLogRepo;
+    private readonly INotificationService _notify;
     private readonly ILogger _logger;
 
     public ApplicationStateService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -26,6 +27,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _attemptRepo = serviceProvider.GetRequiredService<IQuizAttemptRepo>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
+        _notify = serviceProvider.GetRequiredService<INotificationService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<ApplicationStateService>();
     }
 
@@ -85,6 +87,9 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
 
         _logger.Information("Pipeline: hồ sơ {AppId} chuyển {From} → {To} (user={UserId}).",
             applicationId, from, toState, userId);
+
+        // Email kết quả khi chốt (HIRED/REJECTED). Best-effort — không làm rớt transition.
+        await _notify.SendResultAsync(companyId, applicationId, toState);
 
         return new ApplicationStateDto
         {

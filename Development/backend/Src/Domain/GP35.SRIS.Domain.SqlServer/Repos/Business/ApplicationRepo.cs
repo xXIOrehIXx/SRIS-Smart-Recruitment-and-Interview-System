@@ -83,6 +83,19 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             .SingleAsync();
     }
 
+    public async Task<ApplicationContactInfo?> GetContactInfoAsync(long companyId, long applicationId)
+    {
+        // Join Candidate (email/tên) + Job (tên vị trí). Global Query Filter kèm company_id mọi bảng.
+        return await (
+            from a in _db.Applications.AsNoTracking()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
+            where a.ApplicationId == applicationId
+            select new ApplicationContactInfo(
+                a.ApplicationId, c.Email, c.FullName, j.Title, a.CurrentState))
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<IEnumerable<ApplicationRankingRow>> GetRankingByJobAsync(long companyId, long jobId)
     {
         // Join Candidate lấy tên; Global Query Filter kèm company_id trên cả hai bảng (cùng tenant).
