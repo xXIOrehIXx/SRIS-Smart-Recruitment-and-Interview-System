@@ -33,6 +33,12 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
             .ToListAsync();
     }
 
+    public async Task<Job?> GetByIdAsync(long companyId, long jobId)
+    {
+        // Global Query Filter tự kèm company_id.
+        return await _db.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.JobId == jobId);
+    }
+
     public async Task<JobEmbeddingInfo?> GetEmbeddingInfoAsync(long companyId, long jobId)
     {
         // jd_text lấy qua LINQ (Global Query Filter tự kèm company_id).
