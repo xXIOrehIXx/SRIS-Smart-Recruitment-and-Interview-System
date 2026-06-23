@@ -89,6 +89,7 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Collaborative scoring
             services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
+            services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
 
             // Offer
@@ -131,6 +132,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICandidateScheduleService, CandidateScheduleService>();
             services.AddScoped<ICandidateStatusService, CandidateStatusService>();
             services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+            services.AddScoped<ICriteriaTemplateService, CriteriaTemplateService>();
             services.AddScoped<IInterviewScoringService, InterviewScoringService>();
             services.AddScoped<IOfferService, OfferService>();
             services.AddScoped<ICandidateOfferService, CandidateOfferService>();

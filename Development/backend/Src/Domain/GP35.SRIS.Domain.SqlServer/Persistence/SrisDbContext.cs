@@ -43,6 +43,8 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
+    public DbSet<CriteriaTemplate> CriteriaTemplates => Set<CriteriaTemplate>();
+    public DbSet<CriteriaTemplateItem> CriteriaTemplateItems => Set<CriteriaTemplateItem>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
     public DbSet<OfferDetail> OfferDetails => Set<OfferDetail>();
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
@@ -216,6 +218,22 @@ public class SrisDbContext : DbContext
             e.HasKey(x => x.CriteriaId);
             e.Ignore(x => x.Description);   // chưa có ở schema local
             e.Ignore(x => x.DisplayOrder);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<CriteriaTemplate>(e =>
+        {
+            e.ToTable("CriteriaTemplate");
+            e.HasKey(x => x.TemplateId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<CriteriaTemplateItem>(e =>
+        {
+            e.ToTable("CriteriaTemplateItem");
+            e.HasKey(x => x.ItemId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
