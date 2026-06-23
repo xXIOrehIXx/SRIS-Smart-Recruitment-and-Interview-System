@@ -5,6 +5,19 @@ namespace GP35.SRIS.Domain.Repos;
 /// <summary>1 lịch phỏng vấn (1 vòng) kèm các khung giờ của nó.</summary>
 public record ScheduleWithSlots(InterviewSchedule Schedule, IReadOnlyList<InterviewSlot> Slots);
 
+/// <summary>1 người trong cuộc (recruiter / interviewer) để gửi lời mời lịch.</summary>
+public record InterviewParticipant(string Email, string? Name);
+
+/// <summary>
+/// Người trong cuộc của buổi PV đã chốt (Đường A — gửi .ics cho cả nhóm). RoundNumber + RescheduleCount
+/// dùng để dựng UID ổn định + SEQUENCE cho việc dời/hủy event trên lịch.
+/// </summary>
+public record InterviewParticipants(
+    InterviewParticipant? Recruiter,
+    IReadOnlyList<InterviewParticipant> Interviewers,
+    int RoundNumber,
+    int RescheduleCount);
+
 /// <summary>
 /// Đặt lịch phỏng vấn nội bộ (docs Section 15). Pool slot theo từng schedule (vòng) của hồ sơ;
 /// chốt slot bằng khóa lạc quan (OPEN -> BOOKED, ai trước được trước — 15.3).
@@ -65,4 +78,10 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 
     /// <summary>Lấy 1 lịch theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<InterviewSchedule?> GetScheduleByIdAsync(long companyId, long scheduleId);
+
+    /// <summary>
+    /// Người trong cuộc của buổi PV đã chốt mới nhất của hồ sơ: recruiter (job.created_by) +
+    /// interviewer của khung đã chốt — để gửi kèm lời mời lịch (.ics) cho cả nhóm. Null nếu chưa chốt khung.
+    /// </summary>
+    Task<InterviewParticipants?> GetConfirmedParticipantsAsync(long companyId, long applicationId);
 }

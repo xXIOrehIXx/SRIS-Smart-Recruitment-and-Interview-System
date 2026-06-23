@@ -249,4 +249,52 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.ScheduleId == scheduleId);
     }
+
+    public async Task<InterviewParticipants?> GetConfirmedParticipantsAsync(long companyId, long applicationId)
+    {
+        // Lịch đã chốt khung mới nhất của hồ sơ.
+        var schedule = await _db.InterviewSchedules
+            .AsNoTracking()
+            .Where(s => s.ApplicationId == applicationId && s.ConfirmedSlotId != null)
+            .OrderByDescending(s => s.RoundNumber)
+            .ThenByDescending(s => s.ScheduleId)
+            .FirstOrDefaultAsync();
+        if (schedule is null) return null;
+
+        // Interviewer của khung đã chốt.
+        var interviewers = new List<InterviewParticipant>();
+        var interviewerUserId = await _db.InterviewSlots
+            .AsNoTracking()
+            .Where(sl => sl.SlotId == schedule.ConfirmedSlotId)
+            .Select(sl => (long?)sl.InterviewerId)
+            .FirstOrDefaultAsync();
+        if (interviewerUserId is long iuid)
+        {
+            var u = await _db.Users.AsNoTracking()
+                .Where(x => x.UserId == iuid)
+                .Select(x => new { x.Email, x.FullName })
+                .FirstOrDefaultAsync();
+            if (u is not null && !string.IsNullOrWhiteSpace(u.Email))
+                interviewers.Add(new InterviewParticipant(u.Email, u.FullName));
+        }
+
+        // Recruiter = người tạo job của hồ sơ (job.created_by).
+        InterviewParticipant? recruiter = null;
+        var recruiterUserId = await _db.Applications
+            .AsNoTracking()
+            .Where(a => a.ApplicationId == applicationId)
+            .Join(_db.Jobs, a => a.JobId, j => j.JobId, (a, j) => j.CreatedBy)
+            .FirstOrDefaultAsync();
+        if (recruiterUserId is long ruid)
+        {
+            var u = await _db.Users.AsNoTracking()
+                .Where(x => x.UserId == ruid)
+                .Select(x => new { x.Email, x.FullName })
+                .FirstOrDefaultAsync();
+            if (u is not null && !string.IsNullOrWhiteSpace(u.Email))
+                recruiter = new InterviewParticipant(u.Email, u.FullName);
+        }
+
+        return new InterviewParticipants(recruiter, interviewers, schedule.RoundNumber, schedule.RescheduleCount);
+    }
 }

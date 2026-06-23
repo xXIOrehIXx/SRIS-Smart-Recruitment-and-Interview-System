@@ -16,9 +16,11 @@ public class NotificationService : BaseService<NotificationService>, INotificati
 {
     private const string DefaultBaseUrl = "http://localhost:3000";
     private const int InterviewDurationMinutes = 60; // schema chưa lưu end_time -> dùng độ dài mặc định
+    private const string OrganizerFallbackEmail = "no-reply@sris.local"; // ORGANIZER khi job chưa gán recruiter
 
     private readonly IApplicationRepo _appRepo;
     private readonly IEmailTemplateRepo _templateRepo;
+    private readonly ISchedulingRepo _schedulingRepo;
     private readonly IEmailService _email;
     private readonly DefaultConfig _config;
     private readonly ILogger _logger;
@@ -27,6 +29,7 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     {
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _templateRepo = serviceProvider.GetRequiredService<IEmailTemplateRepo>();
+        _schedulingRepo = serviceProvider.GetRequiredService<ISchedulingRepo>();
         _email = serviceProvider.GetRequiredService<IEmailService>();
         _config = serviceProvider.GetRequiredService<DefaultConfig>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<NotificationService>();
@@ -157,7 +160,25 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var summary = $"Phỏng vấn — {info.JobTitle}";
             var description = $"Buổi phỏng vấn cho vị trí {info.JobTitle}. Vui lòng tham gia đúng giờ.";
 
-            var ics = CalendarInviteBuilder.BuildIcs(summary, description, startUtc, endUtc);
+            // Đường A: lời mời lịch (.ics METHOD:REQUEST) cho CẢ candidate + interviewer + recruiter.
+            // Gmail tự thêm event vào lịch từng người; UID ổn định + SEQUENCE để dời/hủy cập nhật đúng event.
+            var participants = await _schedulingRepo.GetConfirmedParticipantsAsync(companyId, applicationId);
+            var round = participants?.RoundNumber ?? 1;
+            var sequence = participants?.RescheduleCount ?? 0;
+            var organizer = participants?.Recruiter?.Email ?? OrganizerFallbackEmail;
+
+            var internalEmails = new List<string>();
+            if (participants?.Recruiter is { Email: { Length: > 0 } re }) internalEmails.Add(re);
+            internalEmails.AddRange(participants?.Interviewers
+                .Where(i => !string.IsNullOrWhiteSpace(i.Email)).Select(i => i.Email) ?? []);
+            internalEmails = internalEmails.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            var attendees = new List<string> { info.CandidateEmail };
+            attendees.AddRange(internalEmails);
+
+            var uid = CalendarInviteBuilder.StableUid(companyId, applicationId, round);
+            var ics = CalendarInviteBuilder.BuildInvite(
+                uid, sequence, "REQUEST", summary, description, startUtc, endUtc, organizer, attendees);
             var gcalUrl = CalendarInviteBuilder.BuildGoogleCalendarUrl(summary, description, startUtc, endUtc);
 
             var startText = $"{startUtc:HH:mm dd/MM/yyyy} (UTC)";
@@ -186,20 +207,22 @@ public class NotificationService : BaseService<NotificationService>, INotificati
 
             var attachment = new GP35.SRIS.Lib.Models.EmailAttachment
             {
-                FileName = "interview",
+                FileName = "invite",
                 FileExtension = ".ics",
+                MimeType = "text/calendar; method=REQUEST; charset=utf-8",
                 FileContent = System.Text.Encoding.UTF8.GetBytes(ics)
             };
 
+            // To = ứng viên; CC = interviewer + recruiter (đều là ATTENDEE -> đều nhận event vào lịch).
             await _email.SendEmailAttachmentOnlyAsync(
                 $"Xác nhận lịch phỏng vấn — {info.JobTitle}",
                 body,
                 info.CandidateEmail,
-                new List<string>(),
+                internalEmails,
                 new List<GP35.SRIS.Lib.Models.EmailAttachment> { attachment });
 
-            _logger.Information("Notify: gửi email xác nhận lịch + .ics cho {Email} (app={AppId}).",
-                info.CandidateEmail, applicationId);
+            _logger.Information("Notify: gửi lời mời lịch (.ics) cho ứng viên + {InternalCount} người nội bộ (app={AppId}).",
+                internalEmails.Count, applicationId);
         }
         catch (Exception ex)
         {
@@ -251,7 +274,49 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                 body = HtmlEmail(info.CandidateName, intro, null, null, null);
             }
 
-            await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
+            // Nếu trước đó đã chốt khung -> gửi kèm .ics METHOD:CANCEL để GỠ event khỏi lịch các bên (Đường A).
+            if (startTimeUtc is DateTime cancelStart)
+            {
+                var startUtc = DateTime.SpecifyKind(cancelStart, DateTimeKind.Utc);
+                var endUtc = startUtc.AddMinutes(InterviewDurationMinutes);
+                var summary = $"Phỏng vấn — {info.JobTitle}";
+
+                var participants = await _schedulingRepo.GetConfirmedParticipantsAsync(companyId, applicationId);
+                var round = participants?.RoundNumber ?? 1;
+                var sequence = (participants?.RescheduleCount ?? 0) + 1; // vượt SEQUENCE bản REQUEST để gỡ
+                var organizer = participants?.Recruiter?.Email ?? OrganizerFallbackEmail;
+
+                var internalEmails = new List<string>();
+                if (participants?.Recruiter is { Email: { Length: > 0 } re }) internalEmails.Add(re);
+                internalEmails.AddRange(participants?.Interviewers
+                    .Where(i => !string.IsNullOrWhiteSpace(i.Email)).Select(i => i.Email) ?? []);
+                internalEmails = internalEmails.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+                var attendees = new List<string> { info.CandidateEmail };
+                attendees.AddRange(internalEmails);
+
+                var uid = CalendarInviteBuilder.StableUid(companyId, applicationId, round);
+                var ics = CalendarInviteBuilder.BuildInvite(
+                    uid, sequence, "CANCEL", summary, $"Buổi phỏng vấn vị trí {info.JobTitle} đã bị hủy.",
+                    startUtc, endUtc, organizer, attendees);
+
+                var attachment = new GP35.SRIS.Lib.Models.EmailAttachment
+                {
+                    FileName = "cancel",
+                    FileExtension = ".ics",
+                    MimeType = "text/calendar; method=CANCEL; charset=utf-8",
+                    FileContent = System.Text.Encoding.UTF8.GetBytes(ics)
+                };
+
+                await _email.SendEmailAttachmentOnlyAsync(
+                    subject, body, info.CandidateEmail, internalEmails,
+                    new List<GP35.SRIS.Lib.Models.EmailAttachment> { attachment });
+            }
+            else
+            {
+                await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
+            }
+
             _logger.Information("Notify: gửi email hủy lịch cho {Email} (app={AppId}).",
                 info.CandidateEmail, applicationId);
         }

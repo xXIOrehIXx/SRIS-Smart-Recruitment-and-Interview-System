@@ -132,9 +132,9 @@ public class EmailService : IEmailService
         {
           var att = new FileAttachment
           {
-            AttachmentName = item.FileName,
+            AttachmentName = FullAttachmentName(item),
             Content = item.FileContent,
-            MimeType = "application/msword"
+            MimeType = string.IsNullOrEmpty(item.MimeType) ? "application/msword" : item.MimeType
           };
           emailReq.FileAttachments.Add(att);
         }
@@ -155,6 +155,17 @@ public class EmailService : IEmailService
     }
     return objRes;
   }
+
+  /// <summary>Tên file đính kèm kèm đuôi mở rộng (vd "invite" + ".ics" -> "invite.ics").</summary>
+  private static string FullAttachmentName(EmailAttachment item)
+  {
+    var name = item.FileName ?? "attachment";
+    var ext = item.FileExtension;
+    if (!string.IsNullOrEmpty(ext) && !name.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+      name += ext;
+    return name;
+  }
+
   public async Task<string> SendEmailAttachmentOnlyAsync(string subject, string body, string toEmail, List<string> ccEmail, List<EmailAttachment> attachments)
   {
     var objRes = string.Empty;
@@ -218,9 +229,9 @@ public class EmailService : IEmailService
         {
           var att = new FileAttachment
           {
-            AttachmentName = item.FileName,
+            AttachmentName = FullAttachmentName(item),
             Content = item.FileContent,
-            MimeType = "application/msword"
+            MimeType = string.IsNullOrEmpty(item.MimeType) ? "application/msword" : item.MimeType
           };
           emailReq.FileAttachments.Add(att);
         }

@@ -43,5 +43,7 @@ public class EmailAttachment
   public string FileName { get; set; }
   public string FileExtension { get; set; }
   public Byte[] FileContent { get; set; }
+  /// <summary>MIME type của file (vd "text/calendar; method=REQUEST"). Null = mặc định "application/msword".</summary>
+  public string MimeType { get; set; }
 }
 #endregion
