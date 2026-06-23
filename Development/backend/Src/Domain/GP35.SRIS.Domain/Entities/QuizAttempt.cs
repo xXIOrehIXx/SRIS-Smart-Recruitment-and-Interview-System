@@ -16,6 +16,8 @@ public class QuizAttempt : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     public long ApplicationId { get; set; }
     [Column("quiz_id")]
     public long QuizId { get; set; }
+    [Column("consent_at")]
+    public DateTime? ConsentAt { get; set; }
     [Column("started_at")]
     public DateTime? StartedAt { get; set; }
     [Column("submitted_at")]

@@ -22,6 +22,14 @@ public class CandidateQuizService : BaseService<CandidateQuizService>, ICandidat
     private const int DefaultTabSwitchLimit = 3; // ngưỡng chuyển tab (công khai cho ứng viên — 5.5)
     private const string Purpose = "QUIZ";
 
+    // Disclosure công khai (5.5): nêu rõ ngưỡng giám sát + cam kết làm bài độc lập.
+    private static string DisclosureText(int tabLimit) =>
+        "Bài thi này có GIÁM SÁT HÀNH VI trên trình duyệt. Trong lúc làm bài, hệ thống ghi nhận " +
+        "các hành vi như chuyển tab, rời khỏi cửa sổ, dán nội dung, mở công cụ nhà phát triển. " +
+        $"Bạn được chuyển tab tối đa {tabLimit} lần; lần thứ {tabLimit + 1} bài sẽ bị KHÓA và tự nộp. " +
+        "Khi bấm Đồng ý, bạn cam kết TỰ LÀM BÀI ĐỘC LẬP — không sử dụng tài liệu, công cụ hay AI hỗ trợ, " +
+        "không nhờ người khác làm hộ. Đồng hồ làm bài bắt đầu tính ngay khi bạn đồng ý.";
+
     private readonly IMagicLinkService _magicLink;
     private readonly IApplicationRepo _appRepo;
     private readonly IQuizRepo _quizRepo;
@@ -44,26 +52,15 @@ public class CandidateQuizService : BaseService<CandidateQuizService>, ICandidat
         var attempt = ctx.Attempt;
         if (attempt is null)
         {
-            // Lượt đầu — tạo mới, server đóng dấu started_at để khởi động timer.
-            var newAttempt = new QuizAttempt
-            {
-                ApplicationId = ctx.App.ApplicationId,
-                QuizId = ctx.Quiz.Quiz.QuizId,
-                Status = "IN_PROGRESS",
-                StartedAt = DateTime.UtcNow,
-                IpAddress = ipAddress
-            };
-            var attemptId = await _attemptRepo.InsertAttemptAsync(ctx.CompanyId, newAttempt);
-            newAttempt.AttemptId = attemptId;
-            attempt = newAttempt;
-            _logger.Information("Quiz: bắt đầu lượt làm attempt={AttemptId} app={AppId}.",
-                attemptId, ctx.App.ApplicationId);
+            // Lượt đầu — CHƯA tạo lượt làm, CHƯA chạy timer. Trả màn hình đồng ý trước (5.5);
+            // ứng viên tick Đồng ý -> gọi AcceptConsentAsync mới phát đề.
+            return BuildConsentView(ctx);
         }
-        else if (IsFinished(attempt))
-        {
+
+        if (IsFinished(attempt))
             throw Conflict("Bạn đã nộp bài thi này. Không thể làm lại.");
-        }
-        else if (RemainingSeconds(ctx.Quiz.Quiz, attempt) is <= 0)
+
+        if (RemainingSeconds(ctx.Quiz.Quiz, attempt) is <= 0)
         {
             // Mở lại nhưng đã quá giờ -> tự nộp phần đã làm.
             await GradeAndFinalizeAsync(ctx, attempt, "AUTO_SUBMITTED");
@@ -71,6 +68,43 @@ public class CandidateQuizService : BaseService<CandidateQuizService>, ICandidat
         }
 
         return BuildQuizView(ctx, attempt);
+    }
+
+    public async Task<CandidateQuizDto> AcceptConsentAsync(string rawToken, string? ipAddress)
+    {
+        var ctx = await LoadContextAsync(rawToken);
+
+        var attempt = ctx.Attempt;
+        if (attempt is not null)
+        {
+            // Đã có lượt làm -> đã đồng ý trước đó. Idempotent: hết giờ thì tự nộp, còn lại trả đề.
+            if (IsFinished(attempt))
+                throw Conflict("Bạn đã nộp bài thi này. Không thể làm lại.");
+            if (RemainingSeconds(ctx.Quiz.Quiz, attempt) is <= 0)
+            {
+                await GradeAndFinalizeAsync(ctx, attempt, "AUTO_SUBMITTED");
+                throw Gone("Đã hết thời gian làm bài — hệ thống đã tự nộp phần bạn đã làm.");
+            }
+            return BuildQuizView(ctx, attempt);
+        }
+
+        // Tick đồng ý -> tạo lượt làm, đóng dấu consent_at + started_at (timer bắt đầu từ đây).
+        var now = DateTime.UtcNow;
+        var newAttempt = new QuizAttempt
+        {
+            ApplicationId = ctx.App.ApplicationId,
+            QuizId = ctx.Quiz.Quiz.QuizId,
+            Status = "IN_PROGRESS",
+            ConsentAt = now,
+            StartedAt = now,
+            IpAddress = ipAddress
+        };
+        var attemptId = await _attemptRepo.InsertAttemptAsync(ctx.CompanyId, newAttempt);
+        newAttempt.AttemptId = attemptId;
+        _logger.Information("Quiz: ứng viên đồng ý + bắt đầu lượt làm attempt={AttemptId} app={AppId}.",
+            attemptId, ctx.App.ApplicationId);
+
+        return BuildQuizView(ctx, newAttempt);
     }
 
     public async Task SaveAnswerAsync(string rawToken, SaveAnswerDto dto)
@@ -191,6 +225,7 @@ public class CandidateQuizService : BaseService<CandidateQuizService>, ICandidat
         var totalPoints = 0;
         var earnedPoints = 0;
         var correctCount = 0;
+        var shuffle = ctx.Quiz.Quiz.ShuffleQuestions;
 
         foreach (var q in ctx.Quiz.Questions)
         {
@@ -199,7 +234,16 @@ public class CandidateQuizService : BaseService<CandidateQuizService>, ICandidat
 
             if (selectedByQuestion.TryGetValue(q.QuestionId, out var selected))
             {
-                var isCorrect = string.Equals(selected, q.CorrectOption, StringComparison.OrdinalIgnoreCase);
+                // selected = nhãn theo VỊ TRÍ HIỂN THỊ (đề đã trộn). Map ngược về chỉ số gốc
+                // qua CÙNG hoán vị đã phát đề rồi mới so với đáp án đúng (correct_option gốc).
+                var displayIndex = LabelToIndex(selected);
+                var optionCount = DeserializeOptions(q.OptionsJson).Count;
+                var isCorrect = false;
+                if (displayIndex >= 0 && displayIndex < optionCount)
+                {
+                    var perm = OptionPermutation(attempt.AttemptId, q.QuestionId, optionCount, shuffle);
+                    isCorrect = perm[displayIndex] == LabelToIndex(q.CorrectOption);
+                }
                 correctness[q.QuestionId] = isCorrect;
                 if (isCorrect)
                 {
@@ -228,23 +272,98 @@ public class CandidateQuizService : BaseService<CandidateQuizService>, ICandidat
         };
     }
 
+    /// <summary>Màn hình Disclosure &amp; Consent (5.5): chưa có đề, chưa chạy timer, chờ ứng viên đồng ý.</summary>
+    private static CandidateQuizDto BuildConsentView(QuizContext ctx) => new()
+    {
+        AttemptId = 0,
+        QuizId = ctx.Quiz.Quiz.QuizId,
+        DurationMin = ctx.Quiz.Quiz.DurationMin,
+        RemainingSeconds = null,
+        TabSwitchLimit = DefaultTabSwitchLimit,
+        RequiresConsent = true,
+        DisclosureText = DisclosureText(DefaultTabSwitchLimit),
+        Questions = new List<CandidateQuestionDto>()
+    };
+
     private static CandidateQuizDto BuildQuizView(QuizContext ctx, QuizAttempt attempt)
     {
-        var remaining = RemainingSeconds(ctx.Quiz.Quiz, attempt);
+        var quiz = ctx.Quiz.Quiz;
+        var shuffle = quiz.ShuffleQuestions;
+
+        // Xáo trộn câu + đáp án (anti-cheat Layer 2 — 5.5). Thứ tự XÁC ĐỊNH theo attempt_id nên
+        // mở lại link / refresh thấy CÙNG thứ tự, và lúc chấm điểm map ngược lại được.
+        var ordered = OrderedQuestions(ctx.Quiz.Questions, attempt.AttemptId, shuffle);
+
         return new CandidateQuizDto
         {
             AttemptId = attempt.AttemptId,
-            QuizId = ctx.Quiz.Quiz.QuizId,
-            DurationMin = ctx.Quiz.Quiz.DurationMin,
-            RemainingSeconds = remaining,
+            QuizId = quiz.QuizId,
+            DurationMin = quiz.DurationMin,
+            RemainingSeconds = RemainingSeconds(quiz, attempt),
             TabSwitchLimit = DefaultTabSwitchLimit,
-            Questions = ctx.Quiz.Questions.Select(q => new CandidateQuestionDto
+            RequiresConsent = false,
+            Questions = ordered.Select(q =>
             {
-                QuestionId = q.QuestionId,
-                Content = q.Content,
-                Options = JsonConvert.DeserializeObject<List<string>>(q.OptionsJson) ?? new List<string>()
+                var options = DeserializeOptions(q.OptionsJson);
+                var perm = OptionPermutation(attempt.AttemptId, q.QuestionId, options.Count, shuffle);
+                return new CandidateQuestionDto
+                {
+                    QuestionId = q.QuestionId,
+                    Content = q.Content,
+                    // Vị trí hiển thị d cho ra phương án gốc perm[d].
+                    Options = perm.Select(orig => options[orig]).ToList()
+                };
             }).ToList()
         };
+    }
+
+    private static List<string> DeserializeOptions(string optionsJson) =>
+        JsonConvert.DeserializeObject<List<string>>(optionsJson) ?? new List<string>();
+
+    /// <summary>Thứ tự câu hỏi hiển thị; xáo theo attempt nếu bật shuffle (chấm theo question_id nên khỏi map ngược).</summary>
+    private static IReadOnlyList<QuizQuestion> OrderedQuestions(
+        IReadOnlyList<QuizQuestion> questions, long attemptId, bool shuffle)
+    {
+        if (!shuffle || questions.Count < 2) return questions;
+        var arr = questions.ToArray();
+        DeterministicShuffle(arr, attemptId * 31 + 17);
+        return arr;
+    }
+
+    /// <summary>
+    /// Hoán vị "vị trí hiển thị -> chỉ số gốc" cho phương án của 1 câu: perm[d] = chỉ số gốc đang
+    /// hiện ở vị trí d. Xác định theo (attempt_id, question_id) nên phát đề và chấm dùng CÙNG hoán vị.
+    /// </summary>
+    private static int[] OptionPermutation(long attemptId, long questionId, int count, bool shuffle)
+    {
+        var perm = new int[count];
+        for (var i = 0; i < count; i++) perm[i] = i;
+        if (shuffle && count >= 2)
+            DeterministicShuffle(perm, attemptId * 100003 + questionId);
+        return perm;
+    }
+
+    /// <summary>
+    /// Fisher–Yates với LCG tự cài (hằng số Knuth MMIX) — KHÔNG dùng System.Random để thứ tự
+    /// tái lập ổn định bất kể phiên bản .NET (phát đề và chấm có thể ở 2 lần chạy khác nhau).
+    /// </summary>
+    private static void DeterministicShuffle<T>(T[] arr, long seed)
+    {
+        var state = unchecked((ulong)seed * 6364136223846793005UL + 1442695040888963407UL);
+        for (var i = arr.Length - 1; i > 0; i--)
+        {
+            state = unchecked(state * 6364136223846793005UL + 1442695040888963407UL);
+            var j = (int)((state >> 33) % (ulong)(i + 1));
+            (arr[i], arr[j]) = (arr[j], arr[i]);
+        }
+    }
+
+    /// <summary>'A' -> 0, 'B' -> 1 ... Trả -1 nếu nhãn rỗng/không hợp lệ.</summary>
+    private static int LabelToIndex(string? label)
+    {
+        if (string.IsNullOrWhiteSpace(label)) return -1;
+        var idx = char.ToUpperInvariant(label.Trim()[0]) - 'A';
+        return idx >= 0 ? idx : -1;
     }
 
     private static bool IsFinished(QuizAttempt a) =>

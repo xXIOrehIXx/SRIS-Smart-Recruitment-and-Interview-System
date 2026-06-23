@@ -47,7 +47,8 @@ public class QuizService : BaseService<QuizService>, IQuizService
             JobId = jobId,
             Type = "MCQ",
             Status = "DRAFT",
-            GeneratedByAi = true
+            GeneratedByAi = true,
+            ShuffleQuestions = true   // anti-cheat Layer 2 (5.5): trộn câu + đáp án khi phát đề
         };
         var questions = generated.Select(ToEntity).ToList();
 

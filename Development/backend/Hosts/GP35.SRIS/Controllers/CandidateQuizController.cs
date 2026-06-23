@@ -23,12 +23,23 @@ public class CandidateQuizController : ControllerBase
         _quizService = quizService;
     }
 
-    /// <summary>Mở/khôi phục bài thi: trả đề (ẩn đáp án) + số giây còn lại.</summary>
+    /// <summary>
+    /// Mở/khôi phục bài thi. Lượt đầu trả màn hình Disclosure &amp; Consent (requiresConsent=true,
+    /// chưa có đề, chưa chạy timer — 5.5). Đã đồng ý thì trả đề (ẩn đáp án) + số giây còn lại.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Start([FromQuery] string token)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
         return Ok(await _quizService.StartAsync(token, ip));
+    }
+
+    /// <summary>Ứng viên tick đồng ý (có giám sát + làm độc lập — 5.5): bắt đầu lượt làm + phát đề.</summary>
+    [HttpPost("consent")]
+    public async Task<IActionResult> Consent([FromQuery] string token)
+    {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        return Ok(await _quizService.AcceptConsentAsync(token, ip));
     }
 
     /// <summary>Lưu 1 đáp án nháp (chưa chốt).</summary>

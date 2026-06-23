@@ -8,8 +8,18 @@ namespace GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 /// </summary>
 public interface ICandidateQuizService : IBaseService
 {
-    /// <summary>Mở/khôi phục bài: trả đề (ẩn đáp án) + số giây còn lại. Tự nộp nếu đã hết giờ.</summary>
+    /// <summary>
+    /// Mở/khôi phục bài. Lượt đầu (chưa đồng ý) trả về màn hình Disclosure &amp; Consent
+    /// (RequiresConsent=true, chưa có đề, chưa chạy timer — 5.5). Đã đồng ý thì trả đề + số giây còn lại.
+    /// Tự nộp nếu đã hết giờ.
+    /// </summary>
     Task<CandidateQuizDto> StartAsync(string rawToken, string? ipAddress);
+
+    /// <summary>
+    /// Ứng viên tick đồng ý (có giám sát + làm bài độc lập — 5.5): tạo lượt làm, đóng dấu
+    /// consent_at + started_at (timer bắt đầu), rồi phát đề. Idempotent nếu đã đồng ý.
+    /// </summary>
+    Task<CandidateQuizDto> AcceptConsentAsync(string rawToken, string? ipAddress);
 
     /// <summary>Lưu 1 đáp án nháp (chưa chốt). Mở lại link vẫn còn.</summary>
     Task SaveAnswerAsync(string rawToken, SaveAnswerDto dto);

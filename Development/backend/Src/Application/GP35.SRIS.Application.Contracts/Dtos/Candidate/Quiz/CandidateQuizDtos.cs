@@ -19,6 +19,15 @@ public class CandidateQuizDto
     /// <summary>Ngưỡng chuyển tab tối đa trước khi khóa bài (anti-cheat — công khai cho ứng viên, 5.5).</summary>
     public int TabSwitchLimit { get; set; }
 
+    /// <summary>
+    /// True khi ứng viên CHƯA tick đồng ý (Disclosure &amp; Consent — 5.5): chưa phát đề,
+    /// chưa chạy timer. FE hiện <see cref="DisclosureText"/> + nút Đồng ý rồi gọi POST /consent.
+    /// </summary>
+    public bool RequiresConsent { get; set; }
+
+    /// <summary>Nội dung công khai cho ứng viên đọc trước khi đồng ý (ngưỡng giám sát + cam kết làm độc lập).</summary>
+    public string? DisclosureText { get; set; }
+
     public List<CandidateQuestionDto> Questions { get; set; } = new();
 }
 
