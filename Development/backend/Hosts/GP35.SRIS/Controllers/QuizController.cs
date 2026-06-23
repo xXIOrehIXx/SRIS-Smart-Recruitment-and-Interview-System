@@ -52,6 +52,14 @@ namespace GP35.SRIS.Controllers
             return Ok(quiz);
         }
 
+        /// <summary>Nút "Lấy từ ngân hàng" — kéo câu đã duyệt từ bank vào quiz DRAFT (tái dùng, không gọi AI).</summary>
+        [HttpPost("{quizId:long}/questions/from-bank")]
+        public async Task<IActionResult> AddFromBank(long quizId, [FromBody] AddFromBankDto dto)
+        {
+            var quiz = await _quizService.AddFromBankAsync(_contextData.CompanyId, quizId, dto);
+            return Ok(quiz);
+        }
+
         /// <summary>Nút "Gen lại câu này" — sinh 1 câu mới thay tại chỗ (giữ vị trí).</summary>
         [HttpPost("{quizId:long}/questions/{questionId:long}/regenerate")]
         public async Task<IActionResult> Regenerate(long quizId, long questionId)

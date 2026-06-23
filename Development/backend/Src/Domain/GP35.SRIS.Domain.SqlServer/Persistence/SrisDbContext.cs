@@ -34,6 +34,7 @@ public class SrisDbContext : DbContext
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Quiz> Quizzes => Set<Quiz>();
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<QuestionBankItem> QuestionBankItems => Set<QuestionBankItem>();
     public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
     public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
@@ -135,6 +136,14 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.Topic);
             e.Ignore(x => x.Difficulty);
             e.Ignore(x => x.DisplayOrder);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<QuestionBankItem>(e =>
+        {
+            e.ToTable("QuestionBankItem");
+            e.HasKey(x => x.BankItemId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

@@ -75,6 +75,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICvDocumentRepo, CvDocumentRepo>();
             services.AddScoped<IApplicationRepo, ApplicationRepo>();
             services.AddScoped<IQuizRepo, QuizRepo>();
+            services.AddScoped<IQuestionBankRepo, QuestionBankRepo>();
 
             // Magic link + ứng viên làm quiz
             services.AddScoped<IMagicLinkTokenRepo, MagicLinkTokenRepo>();
@@ -119,6 +120,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICvScoringService, CvScoringService>();
             services.AddScoped<ITalentPoolService, TalentPoolService>();
             services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<IQuestionBankService, QuestionBankService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();
