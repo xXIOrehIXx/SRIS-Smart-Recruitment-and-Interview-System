@@ -22,6 +22,8 @@ public class InterviewSchedule : BaseEntity<long>, IHasCreateInfo, IHasModifyInf
     public string Status { get; set; } = null!;
     [Column("confirmed_slot_id")]
     public long? ConfirmedSlotId { get; set; }
+    [Column("reschedule_count")]
+    public int RescheduleCount { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]

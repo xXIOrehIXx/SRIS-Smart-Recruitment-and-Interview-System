@@ -208,6 +208,60 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         }
     }
 
+    public async Task SendInterviewCancelledAsync(
+        long companyId, long applicationId, DateTime? startTimeUtc, string? reason)
+    {
+        try
+        {
+            var info = await _appRepo.GetContactInfoAsync(companyId, applicationId);
+            if (info is null || string.IsNullOrWhiteSpace(info.CandidateEmail))
+            {
+                _logger.Warning("Notify: bỏ qua email hủy lịch — hồ sơ {AppId} không có email ứng viên.",
+                    applicationId);
+                return;
+            }
+
+            var startText = startTimeUtc is DateTime t
+                ? $"{DateTime.SpecifyKind(t, DateTimeKind.Utc):HH:mm dd/MM/yyyy} (UTC)"
+                : "";
+            var reasonText = string.IsNullOrWhiteSpace(reason) ? "" : reason.Trim();
+
+            var placeholders = new Dictionary<string, string>
+            {
+                ["candidateName"] = info.CandidateName ?? "",
+                ["jobTitle"] = info.JobTitle ?? "",
+                ["startTime"] = startText,
+                ["reason"] = reasonText
+            };
+
+            string subject, body;
+            var rendered = await TryRenderTemplateAsync(
+                companyId, EmailTemplateType.InterviewCancelled, placeholders);
+            if (rendered is not null)
+            {
+                (subject, body) = rendered.Value;
+            }
+            else
+            {
+                subject = $"Lịch phỏng vấn đã bị hủy — vị trí {info.JobTitle}";
+                var when = string.IsNullOrEmpty(startText) ? "" : $" (dự kiến lúc <b>{startText}</b>)";
+                var because = string.IsNullOrEmpty(reasonText) ? "" : $" Lý do: {reasonText}.";
+                var intro = $"Lịch phỏng vấn vị trí <b>{info.JobTitle}</b>{when} đã bị hủy.{because} " +
+                            "Bộ phận tuyển dụng sẽ liên hệ lại nếu cần sắp xếp buổi mới.";
+                body = HtmlEmail(info.CandidateName, intro, null, null, null);
+            }
+
+            await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
+            _logger.Information("Notify: gửi email hủy lịch cho {Email} (app={AppId}).",
+                info.CandidateEmail, applicationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Notify: lỗi gửi email hủy lịch (app={AppId}) — bỏ qua (best-effort).",
+                applicationId);
+        }
+    }
+
     // ============================================================
 
     /// <summary>

@@ -160,6 +160,65 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
                 .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
     }
 
+    public async Task ReplaceSlotsAndReopenAsync(
+        long companyId, long scheduleId, IEnumerable<InterviewSlot> newSlots)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        // Bỏ toàn bộ khung cũ của lịch (khung đã chốt/khóa của lần trước không còn ý nghĩa).
+        await _db.InterviewSlots
+            .Where(x => x.ScheduleId == scheduleId)
+            .ExecuteDeleteAsync();
+
+        foreach (var s in newSlots)
+        {
+            s.CompanyId = companyId;
+            s.ScheduleId = scheduleId;
+            s.Status = InterviewSlotStatus.Open;
+            _db.InterviewSlots.Add(s);
+        }
+        await _db.SaveChangesAsync();
+
+        // Đưa lịch về PENDING + xóa khung đã chốt để ứng viên chọn lại + tăng bộ đếm dời (chặn dời lần 2).
+        await _db.InterviewSchedules
+            .Where(s => s.ScheduleId == scheduleId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Status, InterviewScheduleStatus.Pending)
+                .SetProperty(x => x.ConfirmedSlotId, (long?)null)
+                .SetProperty(x => x.RescheduleCount, x => x.RescheduleCount + 1)
+                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
+
+        await tx.CommitAsync();
+    }
+
+    public async Task<bool> CancelScheduleAsync(long companyId, long scheduleId)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        // Khóa lạc quan: chỉ hủy nếu lịch CHƯA bị hủy trước đó.
+        var cancelled = await _db.InterviewSchedules
+            .Where(s => s.ScheduleId == scheduleId && s.Status != InterviewScheduleStatus.Cancelled)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Status, InterviewScheduleStatus.Cancelled)
+                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
+
+        if (cancelled == 0)
+        {
+            await tx.RollbackAsync();
+            return false;
+        }
+
+        // Khóa mọi khung chưa khóa (giờ không còn dùng được).
+        await _db.InterviewSlots
+            .Where(x => x.ScheduleId == scheduleId && x.Status != InterviewSlotStatus.Locked)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Status, InterviewSlotStatus.Locked)
+                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
+
+        await tx.CommitAsync();
+        return true;
+    }
+
     public async Task<bool> IsInterviewerOnScheduleAsync(long companyId, long scheduleId, long interviewerId)
     {
         return await _db.InterviewSlots

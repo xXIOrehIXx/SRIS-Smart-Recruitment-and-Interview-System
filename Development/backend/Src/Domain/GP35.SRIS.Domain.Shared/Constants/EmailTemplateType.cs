@@ -14,9 +14,10 @@ public static class EmailTemplateType
     public const string Hired = "HIRED";
     public const string Rejected = "REJECTED";
     public const string InterviewConfirmed = "INTERVIEW_CONFIRMED";
+    public const string InterviewCancelled = "INTERVIEW_CANCELLED";
 
     public static readonly string[] All =
-        { Quiz, Schedule, OfferResponse, Status, Hired, Rejected, InterviewConfirmed };
+        { Quiz, Schedule, OfferResponse, Status, Hired, Rejected, InterviewConfirmed, InterviewCancelled };
 
     public static bool IsValid(string? type) =>
         type is not null && All.Any(t => string.Equals(t, type, StringComparison.OrdinalIgnoreCase));
