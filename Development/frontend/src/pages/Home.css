@@ -1,0 +1,163 @@
+/* Layout chung */
+.home-layout {
+  min-height: 100vh;
+  background-color: #fcfbfa; /* Màu nền hơi ngả vàng/hồng nhạt rất nhẹ */
+}
+
+/* Header */
+.home-header {
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  height: 80px;
+}
+
+.home-header .logo h2 {
+  margin: 0;
+  font-weight: 800;
+  font-size: 24px;
+  color: #111;
+  letter-spacing: -0.5px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 16px;
+}
+
+.nav-links .ant-btn {
+  font-weight: 500;
+  color: #555;
+}
+
+.nav-links .ant-btn:hover {
+  color: #111;
+  background-color: transparent;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.login-btn {
+  font-weight: 600;
+  color: #111;
+}
+
+/* Hero Section */
+.home-content {
+  padding: 60px 5% 100px;
+  display: flex;
+  align-items: center;
+}
+
+.hero-row {
+  width: 100%;
+}
+
+.hero-text-section {
+  max-width: 600px;
+}
+
+.hero-title.ant-typography {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin-bottom: 24px;
+  color: #111;
+}
+
+.hero-subtitle.ant-typography {
+  font-size: 20px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.hero-buttons .ant-btn {
+  font-weight: 600;
+  padding: 0 32px;
+  height: 50px;
+}
+
+/* Dashboard Mockup (Bảng Ứng viên) */
+.dashboard-mockup {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f0f0f0;
+  transform: perspective(1000px) rotateY(-5deg); /* Tạo hiệu ứng 3D nhẹ */
+  transition: transform 0.3s ease;
+}
+
+.dashboard-mockup:hover {
+  transform: perspective(1000px) rotateY(0deg);
+}
+
+.mockup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.pipeline-board {
+  min-height: 300px;
+}
+
+.pipeline-col {
+  background-color: #f4f5f7;
+  border-radius: 8px;
+  padding: 12px;
+  height: 100%;
+}
+
+.col-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.col-title span {
+  color: #999;
+}
+
+.candidate-card {
+  margin-bottom: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.candidate-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.candidate-card .ant-card-meta-title {
+  font-size: 14px;
+  margin-bottom: 4px !important;
+}
+
+.candidate-card .ant-card-meta-description {
+  font-size: 12px;
+}
+
+.offer-card {
+  border: 1px solid #b7eb8f;
+  background-color: #f6ffed;
+}

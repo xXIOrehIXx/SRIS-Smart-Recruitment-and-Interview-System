@@ -1,0 +1,28 @@
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: #ff6b81; /* Màu chủ đạo của Teamtailor */
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #e55a70;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: #111;
+  border: 1px solid #ccc;
+}
+
+.btn-secondary:hover {
+  border-color: #111;
+}
