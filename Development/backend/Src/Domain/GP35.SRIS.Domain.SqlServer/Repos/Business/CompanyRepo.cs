@@ -22,4 +22,28 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.CompanyId == companyId);
     }
+
+    public async Task<Company?> GetBySlugAsync(string slug)
+    {
+        // Company không nằm dưới RLS + không có Global Query Filter -> tra được trước khi
+        // tenant context được set (dùng để giải companyId cho Career Site công khai).
+        return await _db.Companies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Slug == slug);
+    }
+
+    public async Task<Company?> UpdateBrandAsync(long companyId, string? name, string? logoUrl, string? primaryColor)
+    {
+        // Tracking (không AsNoTracking) để EF phát UPDATE. Cô lập tenant: WHERE company_id tường minh + RLS.
+        var company = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId);
+        if (company is null) return null;
+
+        if (name is not null) company.Name = name;
+        company.LogoUrl = logoUrl ?? company.LogoUrl;
+        company.PrimaryColor = primaryColor ?? company.PrimaryColor;
+        company.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return company;
+    }
 }
