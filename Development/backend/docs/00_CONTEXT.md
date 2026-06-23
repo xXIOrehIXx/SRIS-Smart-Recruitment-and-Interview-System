@@ -403,8 +403,6 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. **MỘT tín
 - [ ] Việc 6: Email State Machine (gắn vào Việc 5).
 - [ ] Việc 7: Multi-tenant — RLS + Global Query Filter + test cô lập (5.2).
 
-**Tài liệu:** Việc 8: Cost Analysis (chi phí AI = 0đ; chi phí biên thêm 1 tenant ≈ 0). · Việc 9: Cập nhật Business Overview Document.
-
 **Phát sinh:** Việc 10: Interview Scheduling (Section 15) + multi-round (5.12) — làm sau Việc 5-6.
 - [ ] Việc 11 (ĐANG NGHIÊN CỨU): Pipeline + prompt gen quiz chất lượng (5.6) — trích skill → blueprint cấp vị trí → gen từng chủ đề + few-shot + câu tình huống + distractor + self-critique. Viết prompt cho từng bước; thử trên qwen2.5 / model nhỏ. KHÔNG chỉ gửi mỗi JD. **Phương pháp đánh giá + 5 bước thực hiện: xem Section 16** (chuẩn bị khung đo → v1 baseline → cải tiến từng version → tổng hợp → báo cáo; chạy → ghi số → mới viết).
 - [ ] Việc 12: Thư viện tiêu chí mẫu (template) + ngân hàng câu hỏi đã duyệt (5.6) — schema (thêm bảng gì, audit/nguồn gốc ra sao).
