@@ -205,6 +205,9 @@ app.UseMiddleware<AuthMiddleware>();
 // Cổng ứng viên (magic link): giải tenant từ tiền tố token TRƯỚC khi controller/DbContext tạo.
 app.UseMiddleware<CandidateTenantMiddleware>();
 
+// Career Site công khai (/api/public/{slug}): giải tenant từ slug TRƯỚC khi controller/DbContext tạo.
+app.UseMiddleware<CareerSiteTenantMiddleware>();
+
 app.MapControllers();
 
 app.Run();
