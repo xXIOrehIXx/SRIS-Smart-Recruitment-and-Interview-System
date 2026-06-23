@@ -3,6 +3,7 @@ using GP35.SRIS.Application.Contracts.Dtos.Ai.Quiz;
 using GP35.SRIS.Application.Contracts.Services.Ai;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Lib.Services.Ai;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,14 +22,18 @@ public class QuizService : BaseService<QuizService>, IQuizService
 
     private readonly IJobRepo _jobRepo;
     private readonly IQuizRepo _quizRepo;
+    private readonly IQuestionBankRepo _bankRepo;
     private readonly IQuizGenClient _quizGenClient;
+    private readonly IContextData _contextData;
     private readonly ILogger _logger;
 
     public QuizService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
         _quizRepo = serviceProvider.GetRequiredService<IQuizRepo>();
+        _bankRepo = serviceProvider.GetRequiredService<IQuestionBankRepo>();
         _quizGenClient = serviceProvider.GetRequiredService<IQuizGenClient>();
+        _contextData = serviceProvider.GetRequiredService<IContextData>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<QuizService>();
     }
 
@@ -138,6 +143,36 @@ public class QuizService : BaseService<QuizService>, IQuizService
         await _quizRepo.UpdateStatusAsync(companyId, quizId, "READY");
         _logger.Information("QuizService: duyệt quiz quizId={QuizId} -> READY.", quizId);
 
+        // Bank tự bồi: ghim các câu đã duyệt vào ngân hàng để tái dùng sau (best-effort —
+        // lỗi ghim KHÔNG được làm hỏng việc duyệt quiz).
+        await HarvestToBankAsync(companyId, quiz);
+
+        return await GetByIdOrThrowAsync(companyId, quizId);
+    }
+
+    public async Task<QuizDto> AddFromBankAsync(long companyId, long quizId, AddFromBankDto dto)
+    {
+        var quiz = await GetDraftQuizOrThrowAsync(companyId, quizId);
+
+        var count = dto.Count > 0 ? dto.Count : 5;
+        var existing = quiz.Questions.Select(q => q.Content).ToList();
+
+        var picked = await _bankRepo.PickAsync(companyId, dto.Topic, count, existing);
+        if (picked.Count == 0)
+            throw NotFound("Không tìm thấy câu phù hợp trong ngân hàng câu hỏi.");
+
+        var toAdd = picked.Select(b => new QuizQuestion
+        {
+            Content = b.Content,
+            OptionsJson = b.OptionsJson,
+            CorrectOption = b.CorrectOption,
+            Points = 1
+        }).ToList();
+
+        await _quizRepo.AddQuestionsAsync(companyId, quizId, toAdd);
+        _logger.Information("QuizService: kéo {Count} câu từ bank vào quiz quizId={QuizId}.",
+            toAdd.Count, quizId);
+
         return await GetByIdOrThrowAsync(companyId, quizId);
     }
 
@@ -156,6 +191,35 @@ public class QuizService : BaseService<QuizService>, IQuizService
     // ============================================================
     //  Helpers
     // ============================================================
+
+    /// <summary>Ghim các câu của 1 quiz vào ngân hàng (best-effort, bỏ trùng theo nội dung).</summary>
+    private async Task HarvestToBankAsync(long companyId, QuizWithQuestions quiz)
+    {
+        try
+        {
+            var candidates = quiz.Questions.Select(q => new QuestionBankItem
+            {
+                Content = q.Content,
+                OptionsJson = q.OptionsJson,
+                CorrectOption = q.CorrectOption,
+                Topic = q.Topic,
+                Difficulty = q.Difficulty,
+                SourceQuestionId = q.QuestionId,
+                SourceJobId = quiz.Quiz.JobId,
+                ApprovedBy = _contextData.UserId,
+                ApprovedAt = DateTime.UtcNow
+            }).ToList();
+
+            var added = await _bankRepo.HarvestAsync(companyId, candidates);
+            _logger.Information("QuizService: ghim {Added}/{Total} câu vào bank từ quiz quizId={QuizId}.",
+                added, candidates.Count, quiz.Quiz.QuizId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "QuizService: ghim bank thất bại cho quiz quizId={QuizId} (bỏ qua).",
+                quiz.Quiz.QuizId);
+        }
+    }
 
     /// <summary>Overload cho gen-lại: lấy JD theo jobId rồi gen đúng 1 câu (tránh trùng).</summary>
     private async Task<List<GeneratedQuizQuestion>> GenerateOrThrowAsync(

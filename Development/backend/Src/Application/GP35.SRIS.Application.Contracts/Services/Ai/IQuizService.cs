@@ -21,6 +21,9 @@ public interface IQuizService : IBaseService
     /// <summary>Nút "Thêm câu theo chủ đề" — gen 1 câu ràng buộc chủ đề, nối vào quiz DRAFT.</summary>
     Task<QuizDto> AddByTopicAsync(long companyId, long quizId, string topic);
 
+    /// <summary>Nút "Lấy từ ngân hàng" — kéo các câu đã duyệt từ bank vào quiz DRAFT (tái dùng, không gọi AI).</summary>
+    Task<QuizDto> AddFromBankAsync(long companyId, long quizId, AddFromBankDto dto);
+
     /// <summary>"Sửa tay" — Recruiter tự sửa nội dung/đáp án 1 câu (không gọi AI).</summary>
     Task<QuizDto> UpdateQuestionAsync(long companyId, long quizId, long questionId, UpdateQuizQuestionDto dto);
 

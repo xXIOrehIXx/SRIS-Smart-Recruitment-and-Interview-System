@@ -75,6 +75,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICvDocumentRepo, CvDocumentRepo>();
             services.AddScoped<IApplicationRepo, ApplicationRepo>();
             services.AddScoped<IQuizRepo, QuizRepo>();
+            services.AddScoped<IQuestionBankRepo, QuestionBankRepo>();
 
             // Magic link + ứng viên làm quiz
             services.AddScoped<IMagicLinkTokenRepo, MagicLinkTokenRepo>();
@@ -88,6 +89,7 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Collaborative scoring
             services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
+            services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
 
             // Offer
@@ -119,6 +121,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICvScoringService, CvScoringService>();
             services.AddScoped<ITalentPoolService, TalentPoolService>();
             services.AddScoped<IQuizService, QuizService>();
+            services.AddScoped<IQuestionBankService, QuestionBankService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();
@@ -129,6 +132,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICandidateScheduleService, CandidateScheduleService>();
             services.AddScoped<ICandidateStatusService, CandidateStatusService>();
             services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
+            services.AddScoped<ICriteriaTemplateService, CriteriaTemplateService>();
             services.AddScoped<IInterviewScoringService, InterviewScoringService>();
             services.AddScoped<IOfferService, OfferService>();
             services.AddScoped<ICandidateOfferService, CandidateOfferService>();
