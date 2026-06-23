@@ -43,4 +43,24 @@ public class InterviewScheduleController : ControllerBase
         var result = await _schedulingService.GetByApplicationAsync(_contextData.CompanyId, applicationId);
         return Ok(result);
     }
+
+    /// <summary>Dời 1 lịch: mở lại bộ khung mới + phát lại magic link SCHEDULE. Chỉ cho dời 1 lần / lịch.</summary>
+    [HttpPut("{scheduleId:long}/reschedule")]
+    public async Task<IActionResult> Reschedule(
+        long applicationId, long scheduleId, [FromBody] RescheduleRequestDto dto)
+    {
+        var result = await _schedulingService.RescheduleAsync(
+            _contextData.CompanyId, _contextData.UserId, applicationId, scheduleId, dto);
+        return Ok(result);
+    }
+
+    /// <summary>Hủy 1 lịch: set CANCELLED + khóa khung + email báo ứng viên.</summary>
+    [HttpPost("{scheduleId:long}/cancel")]
+    public async Task<IActionResult> Cancel(
+        long applicationId, long scheduleId, [FromBody] CancelScheduleDto dto)
+    {
+        await _schedulingService.CancelAsync(
+            _contextData.CompanyId, _contextData.UserId, applicationId, scheduleId, dto);
+        return NoContent();
+    }
 }

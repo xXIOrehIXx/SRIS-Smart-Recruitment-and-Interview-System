@@ -17,6 +17,21 @@ public class CreateInterviewRequestDto
     public List<SlotInputDto> Slots { get; set; } = new();
 }
 
+/// <summary>
+/// Recruiter dời lịch (mở lại khung cho ứng viên chọn). Cùng cấu trúc với tạo mới nhưng giữ nguyên
+/// vòng (round_number không đổi — dời không phải vòng mới); slots = bộ khung thay thế.
+/// </summary>
+public class RescheduleRequestDto
+{
+    public List<SlotInputDto> Slots { get; set; } = new();
+}
+
+/// <summary>Recruiter hủy lịch phỏng vấn. Lý do (tùy chọn) ghi vào nhật ký hoạt động + email báo ứng viên.</summary>
+public class CancelScheduleDto
+{
+    public string? Reason { get; set; }
+}
+
 /// <summary>1 khung giờ (góc nhìn nội bộ — có interviewer).</summary>
 public class SlotDto
 {
@@ -34,6 +49,8 @@ public class InterviewScheduleDto
     public int RoundNumber { get; set; }
     public string Status { get; set; } = null!;
     public long? ConfirmedSlotId { get; set; }
+    /// <summary>Số lần đã dời lịch. >= 1 nghĩa là không được dời nữa (chỉ cho dời 1 lần).</summary>
+    public int RescheduleCount { get; set; }
     public List<SlotDto> Slots { get; set; } = new();
 }
 
