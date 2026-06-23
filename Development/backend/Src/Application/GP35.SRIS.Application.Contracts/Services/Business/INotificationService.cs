@@ -20,4 +20,10 @@ public interface INotificationService : IBaseService
     /// link "Add to Google Calendar" (không cần API). startTimeUtc = giờ khung đã chốt (UTC).
     /// </summary>
     Task SendInterviewConfirmedAsync(long companyId, long applicationId, DateTime startTimeUtc);
+
+    /// <summary>
+    /// Email báo ứng viên lịch phỏng vấn đã bị hủy. startTimeUtc = giờ đã chốt trước đó (null nếu chưa chốt);
+    /// reason = lý do hủy (tùy chọn) hiển thị trong email.
+    /// </summary>
+    Task SendInterviewCancelledAsync(long companyId, long applicationId, DateTime? startTimeUtc, string? reason);
 }

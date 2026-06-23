@@ -34,6 +34,7 @@ public class SrisDbContext : DbContext
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Quiz> Quizzes => Set<Quiz>();
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<QuestionBankItem> QuestionBankItems => Set<QuestionBankItem>();
     public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
     public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
@@ -42,9 +43,12 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
+    public DbSet<CriteriaTemplate> CriteriaTemplates => Set<CriteriaTemplate>();
+    public DbSet<CriteriaTemplateItem> CriteriaTemplateItems => Set<CriteriaTemplateItem>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
     public DbSet<OfferDetail> OfferDetails => Set<OfferDetail>();
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
+    public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -138,6 +142,14 @@ public class SrisDbContext : DbContext
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
+        b.Entity<QuestionBankItem>(e =>
+        {
+            e.ToTable("QuestionBankItem");
+            e.HasKey(x => x.BankItemId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
         b.Entity<MagicLinkToken>(e =>
         {
             e.ToTable("MagicLinkToken");
@@ -210,6 +222,22 @@ public class SrisDbContext : DbContext
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
+        b.Entity<CriteriaTemplate>(e =>
+        {
+            e.ToTable("CriteriaTemplate");
+            e.HasKey(x => x.TemplateId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<CriteriaTemplateItem>(e =>
+        {
+            e.ToTable("CriteriaTemplateItem");
+            e.HasKey(x => x.ItemId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
         b.Entity<InterviewScore>(e =>
         {
             e.ToTable("InterviewScore");
@@ -232,6 +260,15 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("InternalNote");
             e.HasKey(x => x.NoteId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<EmailTemplate>(e =>
+        {
+            e.ToTable("EmailTemplate");
+            e.HasKey(x => x.TemplateId);
+            // name / is_active: thêm ở migration V007.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

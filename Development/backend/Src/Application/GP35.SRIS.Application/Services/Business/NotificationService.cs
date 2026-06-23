@@ -18,6 +18,7 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     private const int InterviewDurationMinutes = 60; // schema chưa lưu end_time -> dùng độ dài mặc định
 
     private readonly IApplicationRepo _appRepo;
+    private readonly IEmailTemplateRepo _templateRepo;
     private readonly IEmailService _email;
     private readonly DefaultConfig _config;
     private readonly ILogger _logger;
@@ -25,6 +26,7 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     public NotificationService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
+        _templateRepo = serviceProvider.GetRequiredService<IEmailTemplateRepo>();
         _email = serviceProvider.GetRequiredService<IEmailService>();
         _config = serviceProvider.GetRequiredService<DefaultConfig>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<NotificationService>();
@@ -44,13 +46,30 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             }
 
             var link = BuildLink(purpose, rawToken);
-            var (subject, intro, button) = MagicLinkContent(purpose, info.JobTitle);
-            var body = HtmlEmail(
-                info.CandidateName,
-                intro,
-                button,
-                link,
-                $"Liên kết có hiệu lực đến {expiresAt:dd/MM/yyyy HH:mm} UTC.");
+            var expiresText = $"{expiresAt:dd/MM/yyyy HH:mm} UTC";
+
+            // Template động (M4): ưu tiên template active theo loại; không có thì dùng nội dung mặc định.
+            var placeholders = new Dictionary<string, string>
+            {
+                ["candidateName"] = info.CandidateName ?? "",
+                ["jobTitle"] = info.JobTitle ?? "",
+                ["link"] = link,
+                ["expiresAt"] = expiresText
+            };
+
+            string subject, body;
+            var rendered = await TryRenderTemplateAsync(companyId, purpose, placeholders);
+            if (rendered is not null)
+            {
+                (subject, body) = rendered.Value;
+            }
+            else
+            {
+                var (defSubject, intro, button) = MagicLinkContent(purpose, info.JobTitle);
+                subject = defSubject;
+                body = HtmlEmail(info.CandidateName, intro, button, link,
+                    $"Liên kết có hiệu lực đến {expiresText}.");
+            }
 
             await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
             _logger.Information("Notify: gửi email {Purpose} cho {Email} (app={AppId}).",
@@ -80,21 +99,36 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                 return;
             }
 
-            string subject, intro;
-            if (isHired)
+            var placeholders = new Dictionary<string, string>
             {
-                subject = $"Chúc mừng! Kết quả tuyển dụng vị trí {info.JobTitle}";
-                intro = $"Chúc mừng bạn đã trúng tuyển vị trí <b>{info.JobTitle}</b>. " +
-                        "Bộ phận tuyển dụng sẽ liên hệ với bạn về các bước tiếp theo.";
+                ["candidateName"] = info.CandidateName ?? "",
+                ["jobTitle"] = info.JobTitle ?? ""
+            };
+
+            string subject, body;
+            var rendered = await TryRenderTemplateAsync(companyId, toState, placeholders);
+            if (rendered is not null)
+            {
+                (subject, body) = rendered.Value;
             }
             else
             {
-                subject = $"Kết quả ứng tuyển vị trí {info.JobTitle}";
-                intro = $"Cảm ơn bạn đã quan tâm vị trí <b>{info.JobTitle}</b>. Rất tiếc lần này hồ sơ " +
-                        "của bạn chưa phù hợp. Chúng tôi sẽ lưu hồ sơ và liên hệ khi có cơ hội phù hợp hơn.";
+                string intro;
+                if (isHired)
+                {
+                    subject = $"Chúc mừng! Kết quả tuyển dụng vị trí {info.JobTitle}";
+                    intro = $"Chúc mừng bạn đã trúng tuyển vị trí <b>{info.JobTitle}</b>. " +
+                            "Bộ phận tuyển dụng sẽ liên hệ với bạn về các bước tiếp theo.";
+                }
+                else
+                {
+                    subject = $"Kết quả ứng tuyển vị trí {info.JobTitle}";
+                    intro = $"Cảm ơn bạn đã quan tâm vị trí <b>{info.JobTitle}</b>. Rất tiếc lần này hồ sơ " +
+                            "của bạn chưa phù hợp. Chúng tôi sẽ lưu hồ sơ và liên hệ khi có cơ hội phù hợp hơn.";
+                }
+                body = HtmlEmail(info.CandidateName, intro, null, null, null);
             }
 
-            var body = HtmlEmail(info.CandidateName, intro, null, null, null);
             await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
             _logger.Information("Notify: gửi email kết quả {State} cho {Email} (app={AppId}).",
                 toState, info.CandidateEmail, applicationId);
@@ -126,10 +160,29 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var ics = CalendarInviteBuilder.BuildIcs(summary, description, startUtc, endUtc);
             var gcalUrl = CalendarInviteBuilder.BuildGoogleCalendarUrl(summary, description, startUtc, endUtc);
 
-            var intro = $"Lịch phỏng vấn vị trí <b>{info.JobTitle}</b> đã được xác nhận vào lúc " +
-                        $"<b>{startUtc:HH:mm dd/MM/yyyy} (UTC)</b>. File lịch (.ics) đính kèm — mở để thêm vào " +
-                        "ứng dụng lịch của bạn, hoặc dùng nút bên dưới để thêm vào Google Calendar.";
-            var body = HtmlEmail(info.CandidateName, intro, "Thêm vào Google Calendar", gcalUrl, null);
+            var startText = $"{startUtc:HH:mm dd/MM/yyyy} (UTC)";
+            var placeholders = new Dictionary<string, string>
+            {
+                ["candidateName"] = info.CandidateName ?? "",
+                ["jobTitle"] = info.JobTitle ?? "",
+                ["startTime"] = startText,
+                ["link"] = gcalUrl
+            };
+
+            string body;
+            var rendered = await TryRenderTemplateAsync(
+                companyId, EmailTemplateType.InterviewConfirmed, placeholders);
+            if (rendered is not null)
+            {
+                body = rendered.Value.Body; // subject của loại này cố định bên dưới (kèm .ics)
+            }
+            else
+            {
+                var intro = $"Lịch phỏng vấn vị trí <b>{info.JobTitle}</b> đã được xác nhận vào lúc " +
+                            $"<b>{startText}</b>. File lịch (.ics) đính kèm — mở để thêm vào " +
+                            "ứng dụng lịch của bạn, hoặc dùng nút bên dưới để thêm vào Google Calendar.";
+                body = HtmlEmail(info.CandidateName, intro, "Thêm vào Google Calendar", gcalUrl, null);
+            }
 
             var attachment = new GP35.SRIS.Lib.Models.EmailAttachment
             {
@@ -155,7 +208,94 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         }
     }
 
+    public async Task SendInterviewCancelledAsync(
+        long companyId, long applicationId, DateTime? startTimeUtc, string? reason)
+    {
+        try
+        {
+            var info = await _appRepo.GetContactInfoAsync(companyId, applicationId);
+            if (info is null || string.IsNullOrWhiteSpace(info.CandidateEmail))
+            {
+                _logger.Warning("Notify: bỏ qua email hủy lịch — hồ sơ {AppId} không có email ứng viên.",
+                    applicationId);
+                return;
+            }
+
+            var startText = startTimeUtc is DateTime t
+                ? $"{DateTime.SpecifyKind(t, DateTimeKind.Utc):HH:mm dd/MM/yyyy} (UTC)"
+                : "";
+            var reasonText = string.IsNullOrWhiteSpace(reason) ? "" : reason.Trim();
+
+            var placeholders = new Dictionary<string, string>
+            {
+                ["candidateName"] = info.CandidateName ?? "",
+                ["jobTitle"] = info.JobTitle ?? "",
+                ["startTime"] = startText,
+                ["reason"] = reasonText
+            };
+
+            string subject, body;
+            var rendered = await TryRenderTemplateAsync(
+                companyId, EmailTemplateType.InterviewCancelled, placeholders);
+            if (rendered is not null)
+            {
+                (subject, body) = rendered.Value;
+            }
+            else
+            {
+                subject = $"Lịch phỏng vấn đã bị hủy — vị trí {info.JobTitle}";
+                var when = string.IsNullOrEmpty(startText) ? "" : $" (dự kiến lúc <b>{startText}</b>)";
+                var because = string.IsNullOrEmpty(reasonText) ? "" : $" Lý do: {reasonText}.";
+                var intro = $"Lịch phỏng vấn vị trí <b>{info.JobTitle}</b>{when} đã bị hủy.{because} " +
+                            "Bộ phận tuyển dụng sẽ liên hệ lại nếu cần sắp xếp buổi mới.";
+                body = HtmlEmail(info.CandidateName, intro, null, null, null);
+            }
+
+            await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
+            _logger.Information("Notify: gửi email hủy lịch cho {Email} (app={AppId}).",
+                info.CandidateEmail, applicationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Notify: lỗi gửi email hủy lịch (app={AppId}) — bỏ qua (best-effort).",
+                applicationId);
+        }
+    }
+
     // ============================================================
+
+    /// <summary>
+    /// Tra template active theo loại + render placeholder. Trả null nếu công ty chưa cấu hình template
+    /// loại đó (caller dùng nội dung mặc định). Lỗi tra template không làm hỏng gửi mail — coi như không có.
+    /// </summary>
+    private async Task<(string Subject, string Body)?> TryRenderTemplateAsync(
+        long companyId, string type, IReadOnlyDictionary<string, string> placeholders)
+    {
+        try
+        {
+            var template = await _templateRepo.GetActiveByTypeAsync(companyId, type.ToUpperInvariant());
+            if (template is null) return null;
+            return (Render(template.Subject, placeholders), Render(template.Body, placeholders));
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Notify: lỗi tra template '{Type}' — dùng nội dung mặc định.", type);
+            return null;
+        }
+    }
+
+    /// <summary>Thay placeholder {{key}} (cho phép khoảng trắng: {{ key }}) bằng giá trị. Không phân biệt hoa thường.</summary>
+    private static string Render(string template, IReadOnlyDictionary<string, string> values)
+    {
+        foreach (var kv in values)
+        {
+            var pattern = "{{\\s*" + System.Text.RegularExpressions.Regex.Escape(kv.Key) + "\\s*}}";
+            template = System.Text.RegularExpressions.Regex.Replace(
+                template, pattern, kv.Value.Replace("$", "$$"),
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        return template;
+    }
 
     private string BuildLink(string purpose, string rawToken)
     {

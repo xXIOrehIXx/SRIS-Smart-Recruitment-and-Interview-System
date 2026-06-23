@@ -45,6 +45,18 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// <summary>Đổi trạng thái lịch (vd NO_SLOT_FITS / CANCELLED).</summary>
     Task SetScheduleStatusAsync(long companyId, long scheduleId, string status);
 
+    /// <summary>
+    /// Dời lịch (15.x): thay toàn bộ khung của 1 lịch bằng bộ khung mới + đưa lịch về PENDING +
+    /// xóa confirmed_slot_id — trong 1 transaction. Dùng khi Recruiter mở lại khung cho ứng viên chọn.
+    /// </summary>
+    Task ReplaceSlotsAndReopenAsync(long companyId, long scheduleId, IEnumerable<InterviewSlot> newSlots);
+
+    /// <summary>
+    /// Hủy lịch: set lịch CANCELLED + khóa mọi khung chưa khóa (OPEN/BOOKED -> LOCKED) trong 1 transaction.
+    /// Giữ confirmed_slot_id để truy vết. Trả false nếu lịch đã CANCELLED từ trước (không làm gì).
+    /// </summary>
+    Task<bool> CancelScheduleAsync(long companyId, long scheduleId);
+
     /// <summary>Người này có được gán phỏng vấn buổi đó không (là interviewer của 1 khung bất kỳ)?</summary>
     Task<bool> IsInterviewerOnScheduleAsync(long companyId, long scheduleId, long interviewerId);
 

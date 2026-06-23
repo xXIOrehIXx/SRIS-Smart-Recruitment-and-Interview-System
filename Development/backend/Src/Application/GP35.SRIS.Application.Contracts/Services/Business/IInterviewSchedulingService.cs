@@ -14,4 +14,14 @@ public interface IInterviewSchedulingService : IBaseService
 
     /// <summary>Mọi lịch của hồ sơ (Recruiter xem trên Kanban).</summary>
     Task<IReadOnlyList<InterviewScheduleDto>> GetByApplicationAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// Dời lịch: thay bộ khung của 1 lịch + mở lại cho ứng viên chọn + phát lại magic link SCHEDULE.
+    /// CHỈ cho dời 1 lần / lịch (reschedule_count). Không áp dụng cho lịch đã CANCELLED.
+    /// </summary>
+    Task<CreateInterviewRequestResultDto> RescheduleAsync(
+        long companyId, long userId, long applicationId, long scheduleId, RescheduleRequestDto dto);
+
+    /// <summary>Hủy lịch: set CANCELLED + khóa mọi khung. Ghi nhật ký + email báo ứng viên (best-effort).</summary>
+    Task CancelAsync(long companyId, long userId, long applicationId, long scheduleId, CancelScheduleDto dto);
 }
