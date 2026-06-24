@@ -1,0 +1,190 @@
+/* Candidate Detail Page */
+.candidate-detail-page {
+  animation: fadeIn 0.3s ease;
+}
+
+.back-btn {
+  margin-bottom: 16px;
+}
+
+.profile-card,
+.content-card {
+  border-radius: 12px;
+  border: 1px solid #e7e7e6;
+}
+
+.profile-card {
+  position: sticky;
+  top: 88px;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.profile-name {
+  margin: 16px 0 4px 0 !important;
+}
+
+.profile-tags {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.profile-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #4b4b4b;
+}
+
+.contact-item .anticon {
+  color: #5D8C3E;
+}
+
+.schedule-btn {
+  background-color: #5D8C3E !important;
+  border-color: #5D8C3E !important;
+}
+
+/* Profile Tab */
+.info-card {
+  border-radius: 12px;
+  border: 1px solid #e7e7e6;
+}
+
+.experience-item,
+.education-item {
+  margin-bottom: 20px;
+}
+
+.experience-item h4,
+.education-item h4 {
+  margin: 0 0 4px 0;
+  color: #1a1a1a;
+}
+
+.experience-item p {
+  margin: 8px 0 0 0;
+  color: #6b6b6b;
+}
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Resume Tab */
+.resume-card {
+  border-radius: 12px;
+  border: 1px solid #e7e7e6;
+}
+
+.resume-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.resume-preview h4 {
+  margin: 16px 0;
+}
+
+/* Interviews Tab */
+.interviews-card {
+  border-radius: 12px;
+  border: 1px solid #e7e7e6;
+}
+
+.timeline-item {
+  padding-bottom: 8px;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.interview-type {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.interview-date {
+  font-size: 13px;
+}
+
+.interview-score {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.interview-score span {
+  font-size: 13px;
+  color: #6b6b6b;
+  min-width: 50px;
+}
+
+/* Notes Tab */
+.notes-card {
+  border-radius: 12px;
+  border: 1px solid #e7e7e6;
+}
+
+.note-item {
+  padding: 16px;
+  background-color: #f9faf9;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.note-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.note-author {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.note-date {
+  font-size: 12px;
+  color: #8c8c8b;
+}
+
+.note-content {
+  margin: 0;
+  color: #4b4b4b;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .profile-card {
+    position: static;
+  }
+}

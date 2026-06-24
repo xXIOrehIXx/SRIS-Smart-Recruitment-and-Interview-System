@@ -1,0 +1,264 @@
+.main-layout {
+  min-height: 100vh;
+}
+
+.main-sider {
+  background: #ffffff !important;
+  border-right: 1px solid #e7e7e6;
+  height: 100vh;
+  position: fixed !important;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-sider .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sider-header {
+  padding: 20px;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-text {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.sider-search {
+  padding: 16px 16px 8px;
+}
+
+.sidebar-search-input {
+  background-color: #f5f5f4;
+  border: none;
+  border-radius: 8px;
+}
+
+.sidebar-search-input:hover,
+.sidebar-search-input:focus {
+  background-color: #e7e7e6;
+  border: none;
+}
+
+.sidebar-search-input input {
+  background: transparent;
+}
+
+.sider-menu {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.main-menu {
+  border-right: none !important;
+}
+
+.main-menu .ant-menu-item {
+  margin: 4px 12px;
+  border-radius: 8px;
+  height: 44px;
+  line-height: 44px;
+  font-weight: 500;
+}
+
+.main-menu .ant-menu-item-selected {
+  background-color: rgba(93, 140, 62, 0.1) !important;
+  color: #5D8C3E;
+}
+
+.main-menu .ant-menu-item-selected::after {
+  display: none;
+}
+
+.main-menu .ant-menu-item:hover:not(.ant-menu-item-selected) {
+  background-color: #f5f5f4;
+}
+
+.main-menu .ant-menu-item .anticon {
+  font-size: 18px;
+}
+
+.sider-bottom {
+  border-top: 1px solid #f5f5f4;
+  padding: 8px 0;
+}
+
+.bottom-menu .ant-menu-item {
+  margin: 2px 12px;
+  border-radius: 8px;
+  height: 40px;
+  line-height: 40px;
+}
+
+.bottom-menu .ant-menu-item:hover {
+  background-color: #f5f5f4;
+}
+
+/* Main Header */
+.main-layout > .ant-layout {
+  margin-left: 260px;
+  transition: margin-left 0.2s;
+  background: #f5f5f4;
+}
+
+.main-sider-collapsed + .ant-layout > .main-header {
+  margin-left: 80px;
+}
+
+.main-header {
+  background: #ffffff !important;
+  padding: 0 24px !important;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e7e7e6;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.collapse-btn {
+  font-size: 18px;
+  color: #6b6b6b;
+}
+
+.collapse-btn:hover {
+  color: #5D8C3E;
+  background-color: #f4f8f2;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.breadcrumb-item {
+  color: #8c8c8b;
+}
+
+.breadcrumb-item.active {
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.breadcrumb-separator {
+  color: #d6d6d5;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon-btn {
+  font-size: 20px;
+  color: #6b6b6b;
+  width: 40px;
+  height: 40px;
+}
+
+.header-icon-btn:hover {
+  color: #5D8C3E;
+  background-color: #f4f8f2;
+}
+
+.user-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.user-dropdown:hover {
+  background-color: #f5f5f4;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #8c8c8b;
+}
+
+/* Main Content */
+.main-content {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background: #f5f5f4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-sider {
+    display: none;
+  }
+
+  .main-layout > .ant-layout {
+    margin-left: 0;
+  }
+
+  .user-details {
+    display: none;
+  }
+}
+
+/* Collapsed State */
+.ant-layout-sider-collapsed .logo-text {
+  display: none;
+}
+
+.ant-layout-sider-collapsed .sider-search {
+  display: none;
+}
+
+.ant-layout-sider-collapsed .main-menu .ant-menu-item {
+  margin: 4px 8px;
+  padding: 0 !important;
+  display: flex;
+  justify-content: center;
+}
+
+.ant-layout-sider-collapsed .bottom-menu .ant-menu-item {
+  margin: 2px 8px;
+  padding: 0 !important;
+  display: flex;
+  justify-content: center;
+}

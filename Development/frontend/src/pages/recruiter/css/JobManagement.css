@@ -1,0 +1,160 @@
+/* Job Management Page */
+.job-management-page {
+  animation: fadeIn 0.3s ease;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  margin: 0 0 4px 0 !important;
+  font-weight: 600;
+}
+
+.create-btn {
+  background-color: #5D8C3E !important;
+  border-color: #5D8C3E !important;
+}
+
+.main-card {
+  border-radius: 12px;
+  border: 1px solid #e7e7e6;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-input {
+  width: 280px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.status-filter {
+  width: 140px;
+}
+
+.jobs-table .ant-table-thead > tr > th {
+  background-color: #f9faf9;
+  font-weight: 600;
+  font-size: 13px;
+  color: #6b6b6b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e7e7e6;
+}
+
+.jobs-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f5f5f4;
+  padding: 16px;
+}
+
+.jobs-table .ant-table-tbody > tr:hover > td {
+  background-color: #fafafa;
+}
+
+.job-info-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.job-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.job-title {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 15px;
+}
+
+.job-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dept-tag {
+  margin: 0;
+  font-size: 12px;
+  background-color: #f4f8f2;
+  color: #5D8C3E;
+  border: none;
+}
+
+.location-text {
+  font-size: 13px;
+}
+
+.applications-badge {
+  font-size: 11px;
+}
+
+.salary-text {
+  font-weight: 500;
+  color: #4b4b4b;
+}
+
+.action-btn {
+  color: #8c8c8b;
+}
+
+.action-btn:hover {
+  color: #5D8C3E;
+  background-color: #f4f8f2;
+}
+
+.selected-count {
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .create-btn {
+    width: 100%;
+  }
+
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+}
