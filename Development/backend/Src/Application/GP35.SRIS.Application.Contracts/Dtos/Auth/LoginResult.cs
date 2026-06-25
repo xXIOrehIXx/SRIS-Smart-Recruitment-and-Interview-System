@@ -1,9 +1,16 @@
+using System.Text.Json.Serialization;
+
 namespace GP35.SRIS.Application.Contracts.Dtos
 {
   public class LoginResult
   {
-        public string AccessToken { get; set; }
-        public string RefreshToken { get; set; }
-        public string CompanyId { get; set; }
-    }
+    [JsonPropertyName("accessToken")]
+    public string AccessToken { get; set; }
+
+    [JsonPropertyName("refreshToken")]
+    public string RefreshToken { get; set; }
+
+    [JsonPropertyName("companyId")]
+    public string CompanyId { get; set; }
+  }
 }

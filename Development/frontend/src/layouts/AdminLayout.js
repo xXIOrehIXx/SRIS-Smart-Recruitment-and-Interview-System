@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Avatar, Dropdown, Badge, Input, Button, message } from 'antd';
 import {
   DashboardOutlined,
-  UserOutlined,
   TeamOutlined,
   FileTextOutlined,
   CalendarOutlined,
@@ -22,91 +21,63 @@ import './css/MainLayout.css';
 
 const { Header, Sider, Content } = Layout;
 
-// Icon mapping
-const iconMap = {
-  DashboardOutlined,
-  TeamOutlined,
-  FileTextOutlined,
-  CalendarOutlined,
-  CheckSquareOutlined,
-  BellOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined,
-  UserAddOutlined,
+// Map icon name to component
+const getIcon = (iconName) => {
+  const icons = {
+    DashboardOutlined,
+    TeamOutlined,
+    FileTextOutlined,
+    CalendarOutlined,
+    CheckSquareOutlined,
+    BellOutlined,
+    SettingOutlined,
+    QuestionCircleOutlined,
+    UserAddOutlined,
+  };
+  const Icon = icons[iconName];
+  return Icon ? <Icon /> : <FileTextOutlined />;
 };
 
-const MainLayout = () => {
+const AdminLayout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, getMenuItems } = useAuth();
 
-  const menuItems = getMenuItems().map(item => ({
-    key: item.key,
-    icon: iconMap[item.icon] || <FileTextOutlined />,
-    label: item.label,
-  }));
+  // Build menu items - each item is a plain object
+  const menuItems = useMemo(() => {
+    const items = getMenuItems();
+    return items.map(item => ({
+      key: item.key,
+      label: item.label,
+    }));
+  }, [user?.role, getMenuItems]);
 
-  const bottomMenuItems = [
-    {
-      key: '/notifications',
-      icon: <BellOutlined />,
-      label: (
-        <span>
-          Thông báo
-          <Badge count={3} size="small" offset={[8, -4]} />
-        </span>
-      ),
-    },
-    {
-      key: '/settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-    },
-  ];
+  // Separate bottom menu
+  const bottomMenuItems = useMemo(() => [
+    { key: '/notifications', label: 'Thông báo' },
+    { key: '/settings', label: 'Cài đặt' },
+  ], []);
 
   const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Hồ sơ cá nhân',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: 'Đăng xuất',
-      danger: true,
-    },
+    { key: 'profile', label: 'Hồ sơ cá nhân' },
+    { key: 'settings', label: 'Cài đặt' },
+    { type: 'divider' },
+    { key: 'logout', label: 'Đăng xuất', danger: true },
   ];
 
   const handleMenuClick = ({ key }) => {
     if (key === 'logout') {
-      handleLogout();
+      logout();
+      message.success('Đã đăng xuất');
+      navigate('/login');
     } else if (key.startsWith('/')) {
       navigate(key);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    message.success('Đã đăng xuất');
-    navigate('/login');
-  };
-
   const getSelectedKey = () => {
-    const path = location.pathname;
-    for (const item of menuItems) {
-      if (item.key === path) return item.key;
-    }
-    return path;
+    return location.pathname;
   };
 
   const getRoleLabel = (role) => {
@@ -186,8 +157,7 @@ const MainLayout = () => {
               <span className="breadcrumb-item">Home</span>
               <span className="breadcrumb-separator">/</span>
               <span className="breadcrumb-item active">
-                {location.pathname.split('/').pop().charAt(0).toUpperCase() +
-                 location.pathname.split('/').pop().slice(1)}
+                {location.pathname.split('/').pop() || 'Dashboard'}
               </span>
             </div>
           </div>
@@ -210,7 +180,7 @@ const MainLayout = () => {
                 <div className="user-dropdown">
                   <Avatar
                     size={36}
-                    icon={<UserOutlined />}
+                    icon={<TeamOutlined />}
                     style={{ backgroundColor: '#5D8C3E' }}
                   />
                   <div className="user-details">
@@ -224,11 +194,11 @@ const MainLayout = () => {
         </Header>
 
         <Content className="main-content">
-          <Outlet />
+          {children}
         </Content>
       </Layout>
     </Layout>
   );
 };
 
-export default MainLayout;
+export default AdminLayout;

@@ -26,16 +26,7 @@ builder.Host.UseSerilog();
 var services = builder.Services;
 var configuration = builder.Configuration;
 
-services.AddCors(options =>
-{
-  options.AddPolicy("AllowFrontend", policy =>
-  {
-    policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
-          .AllowAnyHeader()
-          .AllowAnyMethod()
-          .AllowCredentials();
-  });
-});
+
 
 services.AddAuthentication(options =>
 {
@@ -90,12 +81,13 @@ services.AddAuthentication(options =>
       {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         context.Response.ContentType = MediaTypeNames.Application.Json;
-        await context.Response.WriteAsync(new ErrorObjectCommon()
-        {
-          ErrorCode = AuthErrorCode.UserNotLoggedIn,
-          DevMsg = AuthErrorMessage.UserNotLoggedIn,
-          UserMsg = AuthErrorMessage.UserNotLoggedIn
-        }.ToString(), Encoding.UTF8);
+        // await context.Response.WriteAsync(new ErrorObjectCommon()
+        // {
+        //   ErrorCode = AuthErrorCode.UserNotLoggedIn,
+        //   DevMsg = AuthErrorMessage.UserNotLoggedIn,
+        //   UserMsg = AuthErrorMessage.UserNotLoggedIn
+        // }.ToString(), Encoding.UTF8);
+        // return;
       }
     },
 
@@ -111,12 +103,13 @@ services.AddAuthentication(options =>
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         context.Response.ContentType = MediaTypeNames.Application.Json;
 
-        await context.Response.WriteAsync(new ErrorObjectCommon()
-        {
-          ErrorCode = AuthErrorCode.UserNotLoggedIn,
-          DevMsg = AuthErrorMessage.UserNotLoggedIn,
-          UserMsg = AuthErrorMessage.UserNotLoggedIn
-        }.ToString(), Encoding.UTF8);
+        // await context.Response.WriteAsync(new ErrorObjectCommon()
+        // {
+        //   ErrorCode = AuthErrorCode.UserNotLoggedIn,
+        //   DevMsg = AuthErrorMessage.UserNotLoggedIn,
+        //   UserMsg = AuthErrorMessage.UserNotLoggedIn
+        // }.ToString(), Encoding.UTF8);
+        // return;
       }
     },
 
@@ -127,12 +120,13 @@ services.AddAuthentication(options =>
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         context.Response.ContentType = MediaTypeNames.Application.Json;
 
-        await context.Response.WriteAsync(new ErrorObjectCommon()
-        {
-          ErrorCode = AuthErrorCode.UserNotLoggedIn,
-          DevMsg = AuthErrorMessage.UserNotLoggedIn,
-          UserMsg = AuthErrorMessage.UserNotLoggedIn
-        }.ToString(), Encoding.UTF8);
+        // await context.Response.WriteAsync(new ErrorObjectCommon()
+        // {
+        //   ErrorCode = AuthErrorCode.UserNotLoggedIn,
+        //   DevMsg = AuthErrorMessage.UserNotLoggedIn,
+        //   UserMsg = AuthErrorMessage.UserNotLoggedIn
+        // }.ToString(), Encoding.UTF8);
+        // return;
       }
     }
   };
@@ -193,13 +187,56 @@ if (!app.Environment.IsDevelopment())
   // app.UseHsts();
 }
 
+// Global exception handler - phải đứng TRƯỚC ConfigureExceptionHandler
+app.Use(async (context, next) =>
+{
+  try
+  {
+    await next();
+  }
+  catch (AuthException ex)
+  {
+    if (!context.Response.HasStarted)
+    {
+      context.Response.StatusCode = ex.HttpStatus;
+      context.Response.ContentType = MediaTypeNames.Application.Json;
+      // await context.Response.WriteAsync(new ErrorObjectCommon()
+      // {
+      //   ErrorCode = ex.ErrorCode,
+      //   DevMsg = ex.ErrorMessage,
+      //   UserMsg = ex.ErrorMessage
+      // }.ToString(), Encoding.UTF8);
+      // return;
+    }
+  }
+  catch (Exception ex)
+  {
+    if (!context.Response.HasStarted)
+    {
+      context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+      context.Response.ContentType = MediaTypeNames.Application.Json;
+      // await context.Response.WriteAsync(new ErrorObjectCommon()
+      // {
+      //   ErrorCode = "INTERNAL_ERROR",
+      //   DevMsg = ex.Message,
+      //   UserMsg = "Đã xảy ra lỗi không mong muốn"
+      // }.ToString(), Encoding.UTF8);
+      // return;
+    }
+  }
+});
+
 app.ConfigureExceptionHandler(app.Services.GetRequiredService<Serilog.ILogger>());
-app.UseHttpsRedirection();
+
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseCors("AllowFrontend");
+app.UseCors(o =>
+{
+    o.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+});
 
 // Swagger phải đứng TRƯỚC AuthMiddleware: AuthMiddleware trả 404 cho mọi request
 // không khớp endpoint controller, sẽ chặn cả /swagger nếu đặt sau.
@@ -212,13 +249,15 @@ app.UseSwaggerUI((c) =>
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<AuthMiddleware>();
+
 
 // Cổng ứng viên (magic link): giải tenant từ tiền tố token TRƯỚC khi controller/DbContext tạo.
-app.UseMiddleware<CandidateTenantMiddleware>();
+// app.UseMiddleware<CandidateTenantMiddleware>();
 
 // Career Site công khai (/api/public/{slug}): giải tenant từ slug TRƯỚC khi controller/DbContext tạo.
-app.UseMiddleware<CareerSiteTenantMiddleware>();
+// app.UseMiddleware<CareerSiteTenantMiddleware>();
+
+app.UseMiddleware<AuthMiddleware>();
 
 app.MapControllers();
 

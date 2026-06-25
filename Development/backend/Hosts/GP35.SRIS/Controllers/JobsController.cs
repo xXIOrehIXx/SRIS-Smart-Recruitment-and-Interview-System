@@ -11,10 +11,10 @@ namespace GP35.SRIS.Controllers
     /// <summary>
     /// Quản lý Job. Tạo Job chỉ dành cho Recruiter (docs 2, 5.14 — Recruiter vận hành pipeline).
     /// </summary>
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    [WithRole(RoleConstants.Recruiter)]
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+[WithRole(RoleConstants.Recruiter, RoleConstants.Admin)]
     public class JobsController : ControllerBase
     {
         private readonly IContextData _contextData;

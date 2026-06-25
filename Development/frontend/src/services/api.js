@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Cấu hình base URL - đổi thành URL thật khi deploy
-const BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7048/api';
+const BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 // Tạo axios instance
 const api = axios.create({
@@ -43,8 +43,10 @@ api.interceptors.response.use(
 // ==================== AUTH ====================
 
 export const authAPI = {
-  login: (email, password) =>
-    api.post('/account/login', { email, password }),
+  login: (email, password) => {
+    console.log('authAPI.login:', { email, password }); // DEBUG
+    return api.post('/account/login', { email, password });
+  },
 
   register: (data) =>
     api.post('/account/register', data),
@@ -66,19 +68,19 @@ export const authAPI = {
 
 export const jobsAPI = {
   getAll: (includeInactive = false) =>
-    api.get(`/api2/jobs${includeInactive ? '?includeInactive=true' : ''}`),
+    api.get(`/jobs${includeInactive ? '?includeInactive=true' : ''}`),
 
   getById: (id) =>
-    api.get(`/api2/jobs/${id}`),
+    api.get(`/jobs/${id}`),
 
   create: (data) =>
-    api.post('/api2/jobs', data),
+    api.post('/jobs', data),
 
   update: (id, data) =>
-    api.put(`/api2/jobs/${id}`, data),
+    api.put(`/jobs/${id}`, data),
 
   delete: (id) =>
-    api.delete(`/api2/jobs/${id}`),
+    api.delete(`/jobs/${id}`),
 
   // Public career site
   getPublicJobs: (slug) =>

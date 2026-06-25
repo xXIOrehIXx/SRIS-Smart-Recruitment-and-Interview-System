@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
+using GP35.SRIS.Lib.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace GP35.SRIS
@@ -23,5 +24,19 @@ namespace GP35.SRIS
       var result = await _authService.LoginAsync(request.Email, request.Password);
       return Ok(result);
     }
+
+    [AllowAnonymous]
+    [HttpPost("ComputeHash")]
+    public IActionResult ComputeHash([FromBody] HashRequest request)
+    {
+      var encodeService = HttpContext.RequestServices.GetRequiredService<IEncodeService>();
+      var hash = encodeService.SHA256WithSalt(request.Password, "salt");
+      return Ok(new { hash });
+    }
+  }
+
+  public class HashRequest
+  {
+    public string Password { get; set; }
   }
 }

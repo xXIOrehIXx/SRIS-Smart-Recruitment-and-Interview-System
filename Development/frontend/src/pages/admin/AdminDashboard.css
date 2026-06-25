@@ -1,0 +1,341 @@
+/* Admin Dashboard Styles - Matcha Theme */
+.admin-dashboard {
+  animation: fadeIn 0.3s ease;
+  padding: 24px;
+  background-color: #fafafa;
+  min-height: 100vh;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Page Header */
+.admin-dashboard .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.admin-dashboard .page-title {
+  margin: 0 0 4px 0 !important;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.admin-dashboard .header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-dashboard .header-actions .ant-btn-primary {
+  background-color: #5D8C3E !important;
+  border-color: #5D8C3E !important;
+}
+
+.admin-dashboard .header-actions .ant-btn-primary:hover {
+  background-color: #4a7332 !important;
+  border-color: #4a7332 !important;
+}
+
+/* Stats Row */
+.admin-dashboard .stats-row {
+  margin-bottom: 20px;
+}
+
+/* Stat Cards */
+.admin-dashboard .stat-card {
+  border-radius: 12px !important;
+  border: 1px solid #e7e7e6;
+  transition: all 0.3s ease;
+}
+
+.admin-dashboard .stat-card:hover {
+  border-color: #5D8C3E;
+  box-shadow: 0 8px 20px rgba(93, 140, 62, 0.12) !important;
+  transform: translateY(-2px);
+}
+
+.admin-dashboard .stat-card .ant-card-body {
+  padding: 20px;
+}
+
+.admin-dashboard .stat-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.admin-dashboard .stat-info {
+  flex: 1;
+}
+
+.admin-dashboard .stat-title {
+  font-size: 14px;
+  color: #8c8c8b;
+}
+
+.admin-dashboard .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.admin-dashboard .stat-value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.admin-dashboard .stat-trend {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.admin-dashboard .stat-trend.trend-up {
+  color: #52c41a;
+  background-color: rgba(82, 196, 26, 0.1);
+}
+
+.admin-dashboard .stat-trend.trend-down {
+  color: #ff4d4f;
+  background-color: rgba(255, 77, 79, 0.1);
+}
+
+.admin-dashboard .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-dashboard .stat-icon .anticon {
+  font-size: 22px;
+}
+
+/* Dashboard Cards */
+.admin-dashboard .dashboard-card {
+  border-radius: 12px !important;
+  border: 1px solid #e7e7e6;
+}
+
+.admin-dashboard .dashboard-card .ant-card-body {
+  padding: 20px;
+}
+
+.admin-dashboard .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-dashboard .card-header h5 {
+  margin: 0 !important;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.admin-dashboard .card-header .ant-btn-link {
+  color: #5D8C3E;
+  padding: 0;
+  font-size: 14px;
+}
+
+.admin-dashboard .card-header .ant-btn-link:hover {
+  color: #4a7332;
+}
+
+/* Pipeline Chart */
+.admin-dashboard .pipeline-card {
+  height: 100%;
+}
+
+.admin-dashboard .pipeline-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-dashboard .pipeline-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-dashboard .pipeline-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.admin-dashboard .pipeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.admin-dashboard .pipeline-count {
+  margin-left: auto;
+  font-weight: 600;
+  color: #5D8C3E;
+}
+
+/* Quick Stats */
+.admin-dashboard .quick-stats-row {
+  margin-top: 20px;
+}
+
+.admin-dashboard .quick-stat-card {
+  height: 100%;
+}
+
+.admin-dashboard .quick-stat-card .ant-card-body {
+  padding: 20px;
+}
+
+.admin-dashboard .quick-stat-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-dashboard .quick-stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-dashboard .quick-stat-info {
+  flex: 1;
+}
+
+.admin-dashboard .quick-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.admin-dashboard .quick-stat-progress {
+  margin-top: 8px;
+}
+
+/* Offer Stats */
+.admin-dashboard .offer-stat-item {
+  text-align: center;
+  padding: 16px;
+  background-color: #f9faf9;
+  border-radius: 12px;
+}
+
+.admin-dashboard .offer-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 8px;
+}
+
+/* Table Styles */
+.admin-dashboard .applications-table .ant-table-thead > tr > th {
+  background-color: #f4f8f2;
+  font-weight: 600;
+  font-size: 13px;
+  color: #6b6b6b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-dashboard .applications-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.admin-dashboard .applications-table .ant-table-tbody > tr:hover > td {
+  background-color: #f4f8f2;
+}
+
+/* Candidate Cell */
+.admin-dashboard .candidate-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-dashboard .candidate-name {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Select Dropdown */
+.admin-dashboard .ant-select-selector {
+  border-radius: 8px !important;
+}
+
+.admin-dashboard .ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: #5D8C3E !important;
+}
+
+.admin-dashboard .ant-select-focused:not(.ant-select-disabled) .ant-select-selector {
+  border-color: #5D8C3E !important;
+  box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.1) !important;
+}
+
+/* Progress Bars */
+.admin-dashboard .ant-progress-bg {
+  background-color: #5D8C3E !important;
+}
+
+.admin-dashboard .ant-progress-inner {
+  background-color: #f0f0f0 !important;
+}
+
+/* Tags */
+.admin-dashboard .ant-tag {
+  border-radius: 6px;
+  padding: 2px 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-dashboard .page-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .admin-dashboard .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-dashboard .header-actions .ant-select {
+    width: 100% !important;
+  }
+
+  .admin-dashboard .stat-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .admin-dashboard .stat-value {
+    font-size: 24px;
+  }
+}

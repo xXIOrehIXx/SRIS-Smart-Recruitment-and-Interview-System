@@ -30,8 +30,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     const dashboardRoutes = {
       'Admin': '/admin/dashboard',
-      'HRManager': '/recruiter/dashboard',
-      'HiringManager': '/recruiter/dashboard',
+      'Recruiter': '/recruiter/dashboard',
       'Interviewer': '/interviewer/dashboard',
     };
     return <Navigate to={dashboardRoutes[user.role] || '/'} replace />;
