@@ -70,7 +70,8 @@ def main() -> int:
     for i, jd in enumerate(jds, 1):
         t0 = time.time()
         print(f"   [{i}/{len(jds)}] {jd['id']} ...", flush=True)
-        res = pipeline(jd["jd_text"], args.num)
+        res = pipeline(jd["jd_text"], args.num,
+                       title=jd.get("title", ""), level=jd.get("level", ""))
         res.jd_id = jd["id"]
         dt = time.time() - t0
         print(f"        -> {len(res.questions)} câu, json_ok={res.json_ok}, {dt:.1f}s")
