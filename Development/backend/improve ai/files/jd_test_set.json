@@ -1,0 +1,106 @@
+{
+  "_meta": {
+    "muc_dich": "Bộ JD test cố định để chạy MỌI version pipeline gen quiz (Section 16). Mọi version chạy trên CÙNG bộ này để pass-rate so sánh được. KHÔNG sửa bộ này giữa các version.",
+    "cach_dung": "Code Python lặp qua mảng 'jds', lấy jd_text làm input cho pipeline. Mỗi JD sinh ra ~10-15 câu, chấm bằng quiz_eval_rubric.xlsx.",
+    "so_luong": 12,
+    "ghi_chu_edge": "2 JD cuối (id bắt đầu 'edge_') là JD XẤU có chủ đích — JD rác / thiếu chi tiết kỹ thuật. Dùng để test pipeline xử lý input kém thế nào (nên ra ít câu hoặc báo JD không đủ skill, KHÔNG bịa câu lung tung)."
+  },
+  "jds": [
+    {
+      "id": "dev_dotnet_junior",
+      "title": "Lập trình viên .NET (Junior)",
+      "industry": "IT",
+      "level": "Junior",
+      "is_edge_case": false,
+      "jd_text": "Tham gia phát triển và bảo trì các ứng dụng web bằng C# và ASP.NET Core dưới sự hướng dẫn của senior. Viết API RESTful cơ bản, làm việc với Entity Framework Core để truy vấn dữ liệu SQL Server. Sửa lỗi theo ticket, viết unit test cho các hàm được giao. Sử dụng Git để quản lý mã nguồn. Yêu cầu: nắm vững C# cơ bản (OOP, LINQ), hiểu HTTP/REST, biết SQL truy vấn cơ bản (SELECT, JOIN). Ưu tiên ứng viên đã làm đồ án hoặc thực tập có sản phẩm thực tế."
+    },
+    {
+      "id": "dev_dotnet_senior",
+      "title": "Lập trình viên .NET (Senior)",
+      "industry": "IT",
+      "level": "Senior",
+      "is_edge_case": false,
+      "jd_text": "Thiết kế kiến trúc cho hệ thống microservices bằng .NET, đảm bảo hiệu năng và khả năng mở rộng. Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query). Thiết kế và review API, áp dụng các pattern như CQRS, Repository, Dependency Injection. Xử lý vấn đề concurrency, caching (Redis), message queue. Mentor junior, review code, đặt chuẩn coding. Yêu cầu: 4+ năm C#/.NET, hiểu sâu async/await, quản lý bộ nhớ, connection pooling, transaction isolation level. Kinh nghiệm thiết kế hệ thống chịu tải cao."
+    },
+    {
+      "id": "frontend_react_mid",
+      "title": "Lập trình viên Frontend React (Middle)",
+      "industry": "IT",
+      "level": "Middle",
+      "is_edge_case": false,
+      "jd_text": "Phát triển giao diện web bằng React và TypeScript. Xây dựng component tái sử dụng, quản lý state bằng Redux hoặc Context API, tối ưu render (memoization, lazy loading). Tích hợp REST API, xử lý loading/error state. Đảm bảo responsive và cross-browser. Viết test bằng Jest/React Testing Library. Yêu cầu: 2-3 năm React, thành thạo hooks (useState, useEffect, useMemo), hiểu virtual DOM, biết tối ưu hiệu năng frontend, nắm CSS/Flexbox/Grid."
+    },
+    {
+      "id": "data_engineer_senior",
+      "title": "Kỹ sư Dữ liệu (Senior)",
+      "industry": "IT",
+      "level": "Senior",
+      "is_edge_case": false,
+      "jd_text": "Xây dựng và vận hành data pipeline (ETL/ELT) xử lý dữ liệu lớn. Thiết kế data warehouse, mô hình hóa dữ liệu (star schema, dimensional modeling). Viết job xử lý batch và streaming bằng Python/Spark. Tối ưu truy vấn trên kho dữ liệu, quản lý chất lượng dữ liệu. Yêu cầu: 4+ năm, thành thạo SQL nâng cao (window function, CTE), Python, hiểu kiến trúc phân tán, partitioning, các định dạng cột (Parquet). Kinh nghiệm với Airflow hoặc công cụ orchestration tương đương."
+    },
+    {
+      "id": "ketoan_tonghop_mid",
+      "title": "Kế toán Tổng hợp",
+      "industry": "Tài chính - Kế toán",
+      "level": "Middle",
+      "is_edge_case": false,
+      "jd_text": "Thực hiện hạch toán các nghiệp vụ kế toán phát sinh, lập báo cáo tài chính theo Thông tư 200. Theo dõi công nợ phải thu/phải trả, đối chiếu số liệu. Lập tờ khai thuế GTGT, thuế TNDN, quyết toán thuế cuối năm. Kiểm soát chứng từ, quản lý sổ sách. Yêu cầu: tốt nghiệp chuyên ngành kế toán, nắm vững nguyên lý kế toán kép, hiểu các tài khoản kế toán, biết hạch toán doanh thu - chi phí - giá vốn, thành thạo Excel và phần mềm kế toán (MISA/Fast). Hiểu quy định thuế hiện hành."
+    },
+    {
+      "id": "sales_b2b_junior",
+      "title": "Nhân viên Kinh doanh B2B",
+      "industry": "Kinh doanh - Bán hàng",
+      "level": "Junior",
+      "is_edge_case": false,
+      "jd_text": "Tìm kiếm và phát triển khách hàng doanh nghiệp, giới thiệu giải pháp/sản phẩm của công ty. Xây dựng quan hệ với khách hàng, tư vấn nhu cầu, đàm phán và chốt hợp đồng. Quản lý pipeline bán hàng trên CRM, báo cáo doanh số. Chăm sóc khách hàng sau bán. Yêu cầu: kỹ năng giao tiếp và thuyết phục tốt, hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt), biết xử lý từ chối, chịu được áp lực doanh số. Ưu tiên có kinh nghiệm bán hàng."
+    },
+    {
+      "id": "digital_marketing_mid",
+      "title": "Chuyên viên Digital Marketing",
+      "industry": "Marketing",
+      "level": "Middle",
+      "is_edge_case": false,
+      "jd_text": "Lập kế hoạch và triển khai chiến dịch marketing đa kênh (Facebook Ads, Google Ads, SEO, email). Quản lý ngân sách quảng cáo, tối ưu chỉ số (CTR, CPC, CPA, ROAS). Phân tích dữ liệu chiến dịch bằng Google Analytics, lập báo cáo hiệu quả. Phối hợp content và design. Yêu cầu: 2-3 năm digital marketing, hiểu phễu marketing, thành thạo chạy quảng cáo trả phí, biết đọc và tối ưu chỉ số chuyển đổi, nắm cơ bản SEO on-page. Tư duy dữ liệu."
+    },
+    {
+      "id": "hr_tuyendung_junior",
+      "title": "Chuyên viên Tuyển dụng",
+      "industry": "Nhân sự",
+      "level": "Junior",
+      "is_edge_case": false,
+      "jd_text": "Đăng tin tuyển dụng, sàng lọc hồ sơ, sắp xếp và tham gia phỏng vấn ứng viên. Xây dựng nguồn ứng viên qua các kênh (job board, mạng xã hội, referral). Liên hệ và chăm sóc ứng viên xuyên suốt quy trình. Hỗ trợ onboarding nhân viên mới. Báo cáo các chỉ số tuyển dụng. Yêu cầu: kỹ năng giao tiếp tốt, biết đọc JD và đối chiếu với hồ sơ ứng viên, hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer), cẩn thận, chủ động. Ưu tiên có kinh nghiệm tuyển dụng."
+    },
+    {
+      "id": "cskh_junior",
+      "title": "Nhân viên Chăm sóc Khách hàng",
+      "industry": "Dịch vụ khách hàng",
+      "level": "Junior",
+      "is_edge_case": false,
+      "jd_text": "Tiếp nhận và xử lý yêu cầu, khiếu nại của khách hàng qua điện thoại, email, chat. Giải đáp thắc mắc về sản phẩm/dịch vụ, hướng dẫn sử dụng. Ghi nhận phản hồi, phối hợp các bộ phận để giải quyết vấn đề. Đảm bảo trải nghiệm khách hàng tốt. Yêu cầu: kỹ năng giao tiếp và lắng nghe, biết xử lý tình huống khách hàng khó tính, kiên nhẫn, thái độ tích cực. Biết dùng phần mềm quản lý ticket là lợi thế."
+    },
+    {
+      "id": "project_manager_senior",
+      "title": "Quản lý Dự án (Senior)",
+      "industry": "Quản lý dự án",
+      "level": "Senior",
+      "is_edge_case": false,
+      "jd_text": "Lập kế hoạch, điều phối và giám sát tiến độ dự án từ khởi tạo đến bàn giao. Quản lý phạm vi, thời gian, chi phí và rủi ro. Điều phối nguồn lực, làm việc với stakeholder, báo cáo tiến độ. Áp dụng Agile/Scrum hoặc Waterfall tùy dự án. Yêu cầu: 5+ năm quản lý dự án, hiểu sâu các ràng buộc dự án (scope-time-cost), biết quản lý rủi ro và thay đổi, kỹ năng lãnh đạo và giao tiếp với nhiều bên. Hiểu Agile/Scrum (sprint, backlog, retrospective). Chứng chỉ PMP/Scrum là lợi thế."
+    },
+    {
+      "id": "edge_jd_rac",
+      "title": "Nhân viên (JD rác - test edge case)",
+      "industry": "Không rõ",
+      "level": "Không rõ",
+      "is_edge_case": true,
+      "jd_text": "Cần tuyển nhân viên năng động, nhiệt huyết, có tinh thần trách nhiệm cao. Chịu được áp lực công việc, ham học hỏi, có thái độ tích cực. Làm việc nhóm tốt và có khả năng làm việc độc lập. Lương thỏa thuận, môi trường trẻ trung. Ưu tiên ứng viên gắn bó lâu dài."
+    },
+    {
+      "id": "edge_jd_thieu_kythuat",
+      "title": "Chuyên viên Văn phòng (JD thiếu chi tiết kỹ thuật - test edge case)",
+      "industry": "Hành chính",
+      "level": "Không rõ",
+      "is_edge_case": true,
+      "jd_text": "Hỗ trợ các công việc hành chính văn phòng chung. Sắp xếp lịch họp, quản lý văn bản giấy tờ, hỗ trợ các phòng ban khi cần. Yêu cầu: giao tiếp tốt, cẩn thận, biết dùng máy tính văn phòng cơ bản, có tinh thần hợp tác. Trung thực, chăm chỉ."
+    }
+  ]
+}
