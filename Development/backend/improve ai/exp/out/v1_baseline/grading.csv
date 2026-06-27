@@ -1,0 +1,601 @@
+﻿STT,Version,JD_id,Skill,Câu hỏi (đầy đủ),Correctness,Relevance,Distractor,Tình huống,Rõ ràng,Điểm TB,Đạt,Ghi chú
+1,v1_baseline,dev_dotnet_junior,,"Ngôn ngữ lập trình chính được sử dụng trong vị trí này là gì?
+A. Python
+B. Java
+C. C#  ✓
+D. JavaScript",,,,,,,,
+2,v1_baseline,dev_dotnet_junior,,"Một yêu cầu kỹ thuật quan trọng để ứng tuyển vào vị trí này là gì?
+A. Nắm vững SQL Server
+B. Hiểu về HTTP/REST  ✓
+C. Có kinh nghiệm với Vue.js
+D. Biết Node.js",,,,,,,,
+3,v1_baseline,dev_dotnet_junior,,"Ứng viên cần nắm vững kiến thức nào trong C# để ứng tuyển?
+A. LINQ  ✓
+B. HTML
+C. CSS
+D. JavaScript",,,,,,,,
+4,v1_baseline,dev_dotnet_junior,,"Đối với vị trí này, ứng viên đã làm gì sẽ được ưu tiên?
+A. Thực tập tại công ty khác
+B. Làm đồ án hoặc thực tập có sản phẩm thực tế  ✓
+C. Học lập trình tự do
+D. Xây dựng website cá nhân",,,,,,,,
+5,v1_baseline,dev_dotnet_junior,,"Ứng viên cần viết unit test cho các hàm được giao, công cụ nào thường được sử dụng trong vị trí này?
+A. Selenium
+B. NUnit  ✓
+C. React
+D. Angular",,,,,,,,
+6,v1_baseline,dev_dotnet_junior,,"Một ứng viên có thể viết API RESTful cơ bản cho vị trí này, HTTP/REST là gì?
+A. Một loại ngôn ngữ lập trình
+B. Phương thức truyền dữ liệu qua mạng internet
+C. Mô hình thiết kế web  ✓
+D. Công cụ quản lý dự án",,,,,,,,
+7,v1_baseline,dev_dotnet_junior,,"Ứng viên cần sử dụng công cụ nào để quản lý mã nguồn?
+A. Git  ✓
+B. SVN
+C. TFS
+D. Bitbucket",,,,,,,,
+8,v1_baseline,dev_dotnet_junior,,"Một yêu cầu kỹ thuật quan trọng khác đối với vị trí này là gì?
+A. Nắm vững JavaScript
+B. Hiểu về Entity Framework Core  ✓
+C. Có kinh nghiệm với Angular
+D. Biết Node.js",,,,,,,,
+9,v1_baseline,dev_dotnet_junior,,"Ứng viên cần viết API RESTful cơ bản, trong đó HTTP/REST là gì?
+A. Một loại ngôn ngữ lập trình
+B. Phương thức truyền dữ liệu qua mạng internet  ✓
+C. Mô hình thiết kế web
+D. Công cụ quản lý dự án",,,,,,,,
+10,v1_baseline,dev_dotnet_junior,,"Ứng viên cần viết unit test cho các hàm được giao, công cụ nào thường được sử dụng trong vị trí này?
+A. Selenium
+B. NUnit  ✓
+C. React
+D. Angular",,,,,,,,
+11,v1_baseline,dev_dotnet_senior,,"Ứng viên cần có bao nhiêu năm kinh nghiệm với C#/.NET để đáp ứng yêu cầu của vị trí?
+A. 1 năm
+B. 2 năm
+C. 4+ năm
+D. 6 năm  ✓",,,,,,,,
+12,v1_baseline,dev_dotnet_senior,,"Trong Entity Framework Core, phương pháp nào được sử dụng để tối ưu truy vấn và tránh N+1 query?
+A. Include()  ✓
+B. AsNoTracking()
+C. Load()
+D. ThenInclude()",,,,,,,,
+13,v1_baseline,dev_dotnet_senior,,"Pattern nào sau đây không phải là một trong những pattern mà ứng viên cần áp dụng khi thiết kế API?
+A. CQRS
+B. Repository
+C. Singleton  ✓
+D. Dependency Injection",,,,,,,,
+14,v1_baseline,dev_dotnet_senior,,"Ứng viên cần có hiểu biết sâu về khái niệm nào dưới đây để xử lý concurrency hiệu quả?
+A. Synchronous programming
+B. Thread safety
+C. Asynchronous programming
+D. Deadlocks  ✓",,,,,,,,
+15,v1_baseline,dev_dotnet_senior,,"Trong quản lý bộ nhớ, phương pháp nào sau đây không được đề cập trong JD?
+A. Garbage collection
+B. Memory leak detection
+C. Heap allocation  ✓
+D. Stack overflow prevention",,,,,,,,
+16,v1_baseline,dev_dotnet_senior,,"Ứng viên cần có kinh nghiệm với công nghệ nào để tối ưu truy vấn Entity Framework Core và SQL Server?
+A. Redis
+B. SQL Server indexing  ✓
+C. Message queue
+D. Caching",,,,,,,,
+17,v1_baseline,dev_dotnet_senior,,"Pattern nào sau đây không được đề cập trong JD khi thiết kế API?
+A. CQRS
+B. Repository
+C. Dependency Injection
+D. Observer pattern  ✓",,,,,,,,
+18,v1_baseline,dev_dotnet_senior,,"Ứng viên cần có hiểu biết về quản lý bộ nhớ nào để tối ưu hiệu năng hệ thống microservices?
+A. Memory leak detection
+B. Garbage collection tuning  ✓
+C. Heap allocation optimization
+D. Stack size adjustment",,,,,,,,
+19,v1_baseline,dev_dotnet_senior,,"Trong JD, ứng viên cần có kinh nghiệm với pattern nào để xử lý vấn đề concurrency?
+A. CQRS
+B. Repository
+C. Dependency Injection
+D. Thread safety  ✓",,,,,,,,
+20,v1_baseline,dev_dotnet_senior,,"Ứng viên cần có hiểu biết về transaction isolation level nào để đảm bảo tính nhất quán của hệ thống?
+A. Read uncommitted
+B. Read committed
+C. Repeatable read  ✓
+D. Serializable",,,,,,,,
+21,v1_baseline,frontend_react_mid,,"Component nào trong React không cần quản lý state?
+A. Function Component
+B. Class Component
+C. Stateless Functional Component  ✓
+D. Hook",,,,,,,,
+22,v1_baseline,frontend_react_mid,,"Redux và Context API đều được sử dụng để quản lý gì trong React?
+A. State  ✓
+B. Props
+C. Events
+D. CSS",,,,,,,,
+23,v1_baseline,frontend_react_mid,,"Một phương pháp tối ưu render trong React là gì?
+A. setState()
+B. useEffect()
+C. useMemo()  ✓
+D. useState()",,,,,,,,
+24,v1_baseline,frontend_react_mid,,"React Testing Library và Jest đều được sử dụng để làm gì?
+A. Xử lý state
+B. Tích hợp API
+C. Viết test  ✓
+D. Quản lý component",,,,,,,,
+25,v1_baseline,frontend_react_mid,,"Virtual DOM là gì trong React?
+A. Một loại state
+B. Một phương thức render
+C. Một kỹ thuật tối ưu hóa  ✓
+D. Một hook",,,,,,,,
+26,v1_baseline,frontend_react_mid,,"Hooks useState và useEffect đều được sử dụng để làm gì?
+A. Xử lý state  ✓
+B. Tích hợp API
+C. Viết test
+D. Quản lý component",,,,,,,,
+27,v1_baseline,frontend_react_mid,,"Responsive design trong web phát triển có nghĩa là gì?
+A. Thiết kế cho một kích thước màn hình cụ thể
+B. Thiết kế cho nhiều kích thước màn hình khác nhau  ✓
+C. Chỉ thiết kế cho desktop
+D. Không cần quan tâm đến kích thước màn hình",,,,,,,,
+28,v1_baseline,frontend_react_mid,,"Cross-browser là gì?
+A. Kiểm tra tính năng của trình duyệt
+B. Thiết kế cho nhiều trình duyệt khác nhau  ✓
+C. Tích hợp API giữa các trình duyệt
+D. Xử lý state giữa các trình duyệt",,,,,,,,
+29,v1_baseline,frontend_react_mid,,"Một phương pháp tối ưu hóa hiệu năng frontend không bao gồm?
+A. Memoization
+B. Lazy loading
+C. Virtual DOM
+D. CSS Grid  ✓",,,,,,,,
+30,v1_baseline,frontend_react_mid,,"CSS Flexbox và Grid đều được sử dụng để làm gì?
+A. Xử lý state
+B. Tích hợp API
+C. Thiết kế layout  ✓
+D. Viết test",,,,,,,,
+31,v1_baseline,data_engineer_senior,,"Trong mô tả công việc, ứng viên cần có bao nhiêu năm kinh nghiệm?
+A. 1
+B. 2
+C. 3
+D. 4+  ✓",,,,,,,,
+32,v1_baseline,data_engineer_senior,,"Ứng viên cần thành thạo ngôn ngữ lập trình nào để viết job xử lý batch và streaming?
+A. Java
+B. C++
+C. Python  ✓
+D. JavaScript",,,,,,,,
+33,v1_baseline,data_engineer_senior,,"Mô hình dữ liệu nào được đề cập trong mô tả công việc?
+A. Entity-Relationship Diagram (ERD)
+B. Star Schema  ✓
+C. E-R Model
+D. Relational Model",,,,,,,,
+34,v1_baseline,data_engineer_senior,,"Ứng viên cần có kinh nghiệm với công cụ orchestrator nào?
+A. Kubernetes
+B. Docker
+C. Airflow  ✓
+D. Jenkins",,,,,,,,
+35,v1_baseline,data_engineer_senior,,"Trong SQL nâng cao, ứng viên cần nắm vững các tính năng nào?
+A. Window function
+B. CTE
+C. Joins
+D. All of the above  ✓",,,,,,,,
+36,v1_baseline,data_engineer_senior,,"Ứng viên cần hiểu về kiến trúc phân tán và kỹ thuật gì liên quan?
+A. Load balancing
+B. Caching
+C. Partitioning  ✓
+D. Replication",,,,,,,,
+37,v1_baseline,data_engineer_senior,,"Kỹ thuật nào được đề cập để tối ưu truy vấn trên kho dữ liệu?
+A. Indexing  ✓
+B. Normalization
+C. Denormalization
+D. Sharding",,,,,,,,
+38,v1_baseline,data_engineer_senior,,"Ứng viên cần có kinh nghiệm với định dạng cột nào?
+A. JSON
+B. XML
+C. Parquet  ✓
+D. CSV",,,,,,,,
+39,v1_baseline,data_engineer_senior,,"Trong mô tả công việc, ứng viên cần thiết kế và vận hành gì?
+A. Data pipeline (ETL/ELT)  ✓
+B. Web application
+C. Mobile application
+D. Database schema",,,,,,,,
+40,v1_baseline,data_engineer_senior,,"Ứng viên có trách nhiệm quản lý chất lượng dữ liệu như thế nào?
+A. Through data validation and cleaning processes  ✓
+B. By implementing user interfaces
+C. By developing marketing strategies
+D. By creating financial reports",,,,,,,,
+41,v1_baseline,ketoan_tonghop_mid,,"Nguyên lý nào sau đây là nguyên lý cơ bản của kế toán kép?
+A. Nguyên lý kế toán
+B. Nguyên lý kế toán kép  ✓
+C. Nguyên lý tài chính
+D. Nguyên lý quản trị",,,,,,,,
+42,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần nắm vững về các tài khoản kế toán để thực hiện công việc, trong số các tài khoản sau đây, tài khoản nào không thuộc nhóm tài khoản doanh thu?
+A. Tài khoản Doanh thu từ bán hàng
+B. Tài khoản Chi phí bán hàng  ✓
+C. Tài khoản Thu nhập khác
+D. Tài khoản Doanh thu từ cung cấp dịch vụ",,,,,,,,
+43,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần thành thạo phần mềm kế toán để thực hiện công việc, trong số các phần mềm sau đây, phần mềm nào không thuộc nhóm phần mềm kế toán?
+A. MISA
+B. Fast
+C. Excel  ✓
+D. FPT Accounting",,,,,,,,
+44,v1_baseline,ketoan_tonghop_mid,,"Theo Thông tư 200, báo cáo tài chính bao gồm những thông tin gì?
+A. Bảng cân đối kế toán và Bảng lưu chuyển tiền tệ
+B. Bảng cân đối kế toán, Báo cáo kết quả hoạt động kinh doanh và Báo cáo lưu chuyển tiền tệ
+C. Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ và Báo cáo lưu chuyển ngoại tệ
+D. Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ, Báo cáo lưu chuyển ngoại tệ và Báo cáo tài chính khác  ✓",,,,,,,,
+45,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần hiểu quy định thuế hiện hành để thực hiện công việc, trong số các loại thuế sau đây, loại thuế nào không thuộc nhóm thuế doanh nghiệp?
+A. Thuế thu nhập doanh nghiệp
+B. Thuế giá trị gia tăng
+C. Thuế tiêu thụ đặc biệt
+D. Thuế môn bài  ✓",,,,,,,,
+46,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần hạch toán doanh thu - chi phí - giá vốn, trong số các phương pháp sau đây, phương pháp nào không thuộc nhóm phương pháp hạch toán?
+A. Phương pháp ghi chép
+B. Phương pháp phân bổ
+C. Phương pháp kiểm kê  ✓
+D. Phương pháp tính giá",,,,,,,,
+47,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần lập tờ khai thuế GTGT, trong số các thông tin sau đây, thông tin nào không thuộc nhóm thông tin cần thiết để lập tờ khai?
+A. Thông tin về doanh thu
+B. Thông tin về chi phí  ✓
+C. Thông tin về giá trị gia tăng
+D. Thông tin về đối tượng chịu thuế",,,,,,,,
+48,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần theo dõi công nợ phải thu/phải trả, trong số các phương pháp sau đây, phương pháp nào không thuộc nhóm phương pháp theo dõi?
+A. Phương pháp đối chiếu
+B. Phương pháp phân tích
+C. Phương pháp kiểm kê  ✓
+D. Phương pháp ghi chép",,,,,,,,
+49,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần quản lý sổ sách, trong số các loại sổ sau đây, loại sổ nào không thuộc nhóm sổ kế toán?
+A. Sổ nhật ký
+B. Sổ chi tiết
+C. Sổ tài khoản
+D. Sổ lưu trữ  ✓",,,,,,,,
+50,v1_baseline,ketoan_tonghop_mid,,"Ứng viên cần hiểu về nghiệp vụ hạch toán phát sinh, trong số các nghiệp vụ sau đây, nghiệp vụ nào không thuộc nhóm nghiệp vụ kế toán?
+A. Nghiệp vụ mua hàng
+B. Nghiệp vụ bán hàng
+C. Nghiệp vụ thanh toán
+D. Nghiệp vụ quản lý nhân sự  ✓",,,,,,,,
+51,v1_baseline,sales_b2b_junior,,"Mục tiêu chính của vị trí này là gì?
+A. Tìm kiếm và phát triển khách hàng cá nhân
+B. Xây dựng quan hệ với khách hàng doanh nghiệp  ✓
+C. Chăm sóc khách hàng sau bán hàng
+D. Quản lý dự án sản phẩm mới",,,,,,,,
+52,v1_baseline,sales_b2b_junior,,"Ngoài việc giới thiệu giải pháp/sản phẩm, công việc này còn bao gồm gì?
+A. Xây dựng quan hệ với khách hàng
+B. Tư vấn nhu cầu của khách hàng
+C. Đàm phán và chốt hợp đồng
+D. Cả B và C  ✓",,,,,,,,
+53,v1_baseline,sales_b2b_junior,,"CRM trong mô tả công việc có ý nghĩa gì?
+A. Chăm sóc khách hàng sau bán
+B. Quản lý quan hệ với khách hàng  ✓
+C. Tư vấn nhu cầu của khách hàng
+D. Đàm phán và chốt hợp đồng",,,,,,,,
+54,v1_baseline,sales_b2b_junior,,"Ứng viên cần có kỹ năng nào để thành công trong vị trí này?
+A. Kỹ năng giao tiếp và thuyết phục tốt
+B. Hiểu quy trình bán hàng B2B
+C. Biết xử lý từ chối
+D. Cả A, B và C  ✓",,,,,,,,
+55,v1_baseline,sales_b2b_junior,,"Ứng viên có kinh nghiệm bán hàng sẽ được ưu tiên như thế nào?
+A. Không cần
+B. Được đánh giá thấp hơn
+C. Được đánh giá cao hơn  ✓
+D. Không ảnh hưởng",,,,,,,,
+56,v1_baseline,sales_b2b_junior,,"Trong quá trình làm việc, ứng viên sẽ quản lý gì?
+A. Doanh số
+B. Quan hệ với khách hàng
+C. Pipeline bán hàng
+D. Giải pháp/sản phẩm  ✓",,,,,,,,
+57,v1_baseline,sales_b2b_junior,,"Ngoài việc chốt hợp đồng, công việc này còn bao gồm gì?
+A. Xây dựng quan hệ với khách hàng
+B. Tư vấn nhu cầu của khách hàng
+C. Đàm phán và chốt hợp đồng
+D. Cả A, B và C  ✓",,,,,,,,
+58,v1_baseline,sales_b2b_junior,,"Ứng viên cần có hiểu biết về quy trình bán hàng nào?
+A. B2B (tiếp cận - tư vấn - đàm phán - chốt)  ✓
+B. B2C
+C. B2G
+D. C2B",,,,,,,,
+59,v1_baseline,sales_b2b_junior,,"Ứng viên cần có khả năng xử lý tình huống nào?
+A. Xử lý từ chối  ✓
+B. Xây dựng quan hệ với khách hàng
+C. Tư vấn nhu cầu của khách hàng
+D. Đàm phán và chốt hợp đồng",,,,,,,,
+60,v1_baseline,sales_b2b_junior,,"Ứng viên cần chịu được áp lực như thế nào?
+A. Áp lực doanh số
+B. Áp lực từ công việc
+C. Áp lực quản lý
+D. Cả A và B  ✓",,,,,,,,
+61,v1_baseline,digital_marketing_mid,,"Chiến dịch marketing đa kênh bao gồm các nền tảng nào theo mô tả công việc?
+A. Facebook Ads  ✓
+B. Google Ads
+C. SEO
+D. Email",,,,,,,,
+62,v1_baseline,digital_marketing_mid,,"Một trong những chỉ số quan trọng mà ứng viên cần tối ưu là gì?
+A. CTR (Click-Through Rate)
+B. CPC (Cost Per Click)
+C. CPA (Cost Per Acquisition)
+D. ROAS (Return On Ad Spend)  ✓",,,,,,,,
+63,v1_baseline,digital_marketing_mid,,"Ứng viên cần có bao nhiêu năm kinh nghiệm trong lĩnh vực digital marketing?
+A. 1-2 năm
+B. 2-3 năm  ✓
+C. 3-4 năm
+D. 4-5 năm",,,,,,,,
+64,v1_baseline,digital_marketing_mid,,"Ngoài chạy quảng cáo, ứng viên còn cần làm gì khác trong công việc này?
+A. Phân tích dữ liệu chiến dịch
+B. Lập báo cáo hiệu quả
+C. Phối hợp content và design
+D. Tất cả các phương án trên  ✓",,,,,,,,
+65,v1_baseline,digital_marketing_mid,,"Ứng viên cần nắm vững kiến thức về SEO on-page?
+A. Có  ✓
+B. Không
+C. Tham khảo
+D. Không chắc",,,,,,,,
+66,v1_baseline,digital_marketing_mid,,"Ứng viên cần có kỹ năng tư duy dữ liệu như thế nào?
+A. Kỹ năng phân tích  ✓
+B. Kỹ năng lập trình
+C. Kỹ năng thiết kế
+D. Kỹ năng viết nội dung",,,,,,,,
+67,v1_baseline,digital_marketing_mid,,"Ứng viên cần quản lý ngân sách quảng cáo như thế nào?
+A. Tăng cường
+B. Giảm bớt
+C. Tối ưu hóa  ✓
+D. Không quan tâm",,,,,,,,
+68,v1_baseline,digital_marketing_mid,,"Phương án nào dưới đây không phải là công việc của ứng viên?
+A. Triển khai chiến dịch marketing
+B. Quản lý ngân sách quảng cáo
+C. Thiết kế nội dung  ✓
+D. Phân tích dữ liệu",,,,,,,,
+69,v1_baseline,digital_marketing_mid,,"Ứng viên cần hiểu về phễu marketing để làm tốt công việc này?
+A. Có  ✓
+B. Không
+C. Tham khảo
+D. Không chắc",,,,,,,,
+70,v1_baseline,digital_marketing_mid,,"Ứng viên cần biết đọc và tối ưu chỉ số chuyển đổi như thế nào?
+A. Rất tốt  ✓
+B. Trung bình
+C. Kém
+D. Không quan tâm",,,,,,,,
+71,v1_baseline,hr_tuyendung_junior,,"Một trong những nhiệm vụ chính của vị trí này là gì?
+A. Lập trình ứng dụng
+B. Đăng tin tuyển dụng và sàng lọc hồ sơ  ✓
+C. Thiết kế giao diện người dùng
+D. Quản lý dự án",,,,,,,,
+72,v1_baseline,hr_tuyendung_junior,,"Ứng viên cần có kỹ năng nào để thực hiện công việc?
+A. Kỹ năng lập trình
+B. Kỹ năng giao tiếp tốt  ✓
+C. Kỹ năng thiết kế đồ họa
+D. Kỹ năng phân tích dữ liệu",,,,,,,,
+73,v1_baseline,hr_tuyendung_junior,,"Ngoài việc sàng lọc hồ sơ, vị trí này còn cần làm gì?
+A. Xây dựng website
+B. Tham gia phỏng vấn ứng viên  ✓
+C. Quản lý dự án IT
+D. Tư vấn khách hàng",,,,,,,,
+74,v1_baseline,hr_tuyendung_junior,,"Ứng viên cần hiểu rõ về quy trình tuyển dụng như thế nào?
+A. Chỉ cần biết sơ lược
+B. Hãy nắm bắt các bước chính từ sàng lọc đến offer  ✓
+C. Phải là chuyên gia trong lĩnh vực này
+D. Không cần thiết phải hiểu",,,,,,,,
+75,v1_baseline,hr_tuyendung_junior,,"Ngoài việc tuyển dụng, vị trí này còn có trách nhiệm gì khác?
+A. Hỗ trợ bán hàng
+B. Chăm sóc ứng viên xuyên suốt quy trình  ✓
+C. Thiết kế sản phẩm
+D. Quản lý kho",,,,,,,,
+76,v1_baseline,hr_tuyendung_junior,,"Ứng viên cần có kinh nghiệm trong lĩnh vực nào?
+A. Kinh doanh
+B. Tuyển dụng  ✓
+C. Marketing
+D. Nhân sự tổng hợp",,,,,,,,
+77,v1_baseline,hr_tuyendung_junior,,"Việc liên hệ và chăm sóc ứng viên diễn ra trong giai đoạn nào?
+A. Trước khi đăng tin tuyển dụng
+B. Từ lúc sàng lọc đến sau offer  ✓
+C. Chỉ trước phỏng vấn
+D. Sau khi nhận offer",,,,,,,,
+78,v1_baseline,hr_tuyendung_junior,,"Ngoài việc tuyển dụng, vị trí này còn có trách nhiệm gì khác?
+A. Hỗ trợ kỹ thuật
+B. Báo cáo các chỉ số tuyển dụng  ✓
+C. Quản lý tài chính
+D. Thiết kế nội dung",,,,,,,,
+79,v1_baseline,hr_tuyendung_junior,,"Ứng viên cần cẩn thận trong công việc để đảm bảo gì?
+A. Tăng doanh thu
+B. Giữ thông tin ứng viên an toàn và chính xác  ✓
+C. Nâng cao chất lượng sản phẩm
+D. Tối ưu hóa quy trình sản xuất",,,,,,,,
+80,v1_baseline,hr_tuyendung_junior,,"Việc hỗ trợ onboarding nhân viên mới là trách nhiệm của vị trí này?
+A. Không
+B. Có  ✓
+C. Chỉ trong một số trường hợp
+D. Được giao cho bộ phận khác",,,,,,,,
+81,v1_baseline,cskh_junior,,"Kỹ năng nào sau đây không phải là yêu cầu bắt buộc của vị trí này?
+A. kỹ năng giao tiếp
+B. biết xử lý tình huống khách hàng khó tính
+C. thái độ tích cực
+D. biết sử dụng phần mềm quản lý ticket  ✓",,,,,,,,
+82,v1_baseline,cskh_junior,,"Việc nào dưới đây không phải là trách nhiệm của nhân viên trong vị trí này?
+A. giải đáp thắc mắc về sản phẩm/dịch vụ
+B. hướng dẫn sử dụng sản phẩm/dịch vụ
+C. phối hợp các bộ phận để giải quyết vấn đề
+D. thiết kế giao diện website  ✓",,,,,,,,
+83,v1_baseline,cskh_junior,,"Phương án nào dưới đây không phải là lợi thế?
+A. biết sử dụng phần mềm quản lý ticket
+B. có kinh nghiệm trong lĩnh vực bán hàng trực tuyến  ✓
+C. thái độ tích cực
+D. kỹ năng giao tiếp",,,,,,,,
+84,v1_baseline,cskh_junior,,"Trong quá trình xử lý yêu cầu của khách hàng, nhân viên cần phải làm gì?
+A. chỉ giải đáp thắc mắc mà không cần ghi nhận phản hồi
+B. gửi thông tin cho bộ phận khác mà không cần phối hợp
+C. đảm bảo trải nghiệm khách hàng tốt  ✓
+D. tránh tiếp xúc trực tiếp với khách hàng",,,,,,,,
+85,v1_baseline,cskh_junior,,"Kỹ năng nào dưới đây là yêu cầu bắt buộc của vị trí này?
+A. biết sử dụng phần mềm quản lý ticket
+B. kỹ năng giao tiếp và lắng nghe  ✓
+C. thái độ tích cực
+D. kinh nghiệm trong lĩnh vực IT",,,,,,,,
+86,v1_baseline,cskh_junior,,"Việc nào dưới đây không phải là một phần của quy trình xử lý yêu cầu khách hàng?
+A. ghi nhận phản hồi từ khách hàng
+B. phối hợp với các bộ phận khác để giải quyết vấn đề
+C. đảm bảo trải nghiệm khách hàng tốt
+D. tư vấn về cách thiết kế sản phẩm mới  ✓",,,,,,,,
+87,v1_baseline,cskh_junior,,"Trong trường hợp khách hàng có yêu cầu khó khăn, nhân viên cần làm gì?
+A. tránh tiếp xúc với khách hàng để tránh mâu thuẫn
+B. giải quyết vấn đề một cách kiên nhẫn và chuyên nghiệp  ✓
+C. từ chối giải quyết nếu quá phức tạp
+D. gửi yêu cầu cho bộ phận khác mà không cần xử lý",,,,,,,,
+88,v1_baseline,cskh_junior,,"Việc nào dưới đây là lợi thế của ứng viên?
+A. biết sử dụng phần mềm quản lý ticket  ✓
+B. kỹ năng giao tiếp và lắng nghe
+C. thái độ tích cực
+D. kinh nghiệm trong lĩnh vực IT",,,,,,,,
+89,v1_baseline,cskh_junior,,"Trong quá trình xử lý yêu cầu, nhân viên cần đảm bảo điều gì?
+A. trải nghiệm khách hàng tốt  ✓
+B. tư vấn về cách thiết kế sản phẩm mới
+C. phối hợp với các bộ phận khác để giải quyết vấn đề
+D. giải quyết vấn đề một cách nhanh chóng mà không cần ghi nhận phản hồi",,,,,,,,
+90,v1_baseline,cskh_junior,,"Kỹ năng nào dưới đây là yêu cầu bắt buộc của vị trí này?
+A. kỹ năng giao tiếp và lắng nghe  ✓
+B. biết xử lý tình huống khách hàng khó tính
+C. thái độ tích cực
+D. kinh nghiệm trong lĩnh vực IT",,,,,,,,
+91,v1_baseline,project_manager_senior,,"Dự án quản lý của vị trí này bao gồm các giai đoạn nào?
+A. Khởi tạo, thiết kế, triển khai, bàn giao
+B. Khởi tạo, lập kế hoạch, thực hiện, kiểm tra, bàn giao  ✓
+C. Khởi tạo, phân tích yêu cầu, thiết kế, triển khai, bàn giao
+D. Khởi tạo, quản lý phạm vi, thời gian, chi phí, rủi ro, bàn giao",,,,,,,,
+92,v1_baseline,project_manager_senior,,"Vị trí này yêu cầu ứng viên có bao nhiêu năm kinh nghiệm quản lý dự án?
+A. <5 năm
+B. 5+ năm  ✓
+C. 3-4 năm
+D. 2 năm",,,,,,,,
+93,v1_baseline,project_manager_senior,,"Dự án quản lý của vị trí này áp dụng phương pháp Agile/Scrum hay Waterfall?
+A. Agile/Scrum  ✓
+B. Waterfall
+C. Cả hai đều áp dụng
+D. Không áp dụng",,,,,,,,
+94,v1_baseline,project_manager_senior,,"Dự án quản lý yêu cầu ứng viên hiểu về các ràng buộc dự án nào?
+A. Scope, Time, Cost (SCOPE, TIME, COST)
+B. Time, Cost, Risk
+C. Scope, Cost, Quality
+D. Scope, Time, Risk  ✓",,,,,,,,
+95,v1_baseline,project_manager_senior,,"Ứng viên cần có kỹ năng gì để làm việc với stakeholder?
+A. Lãnh đạo và giao tiếp  ✓
+B. Kỹ thuật lập trình
+C. Phân tích dữ liệu
+D. Thiết kế UI/UX",,,,,,,,
+96,v1_baseline,project_manager_senior,,"Dự án quản lý yêu cầu ứng viên có kỹ năng gì để điều phối nguồn lực?
+A. Lãnh đạo và giao tiếp  ✓
+B. Kỹ thuật lập trình
+C. Phân tích dữ liệu
+D. Thiết kế UI/UX",,,,,,,,
+97,v1_baseline,project_manager_senior,,"Dự án quản lý yêu cầu ứng viên có hiểu biết về phương pháp nào?
+A. Sprint, Backlog, Retrospective (Agile/Scrum)  ✓
+B. Waterfall
+C. PMP
+D. Cả hai đều áp dụng",,,,,,,,
+98,v1_baseline,project_manager_senior,,"Dự án quản lý yêu cầu ứng viên có chứng chỉ gì?
+A. PMP/Scrum  ✓
+B. Agile/Scrum
+C. Waterfall
+D. Không yêu cầu chứng chỉ",,,,,,,,
+99,v1_baseline,project_manager_senior,,"Vị trí này yêu cầu ứng viên quản lý rủi ro và thay đổi như thế nào?
+A. Quản lý rủi ro và thay đổi  ✓
+B. Chỉ quản lý rủi ro
+C. Chỉ quản lý thay đổi
+D. Không cần quản lý",,,,,,,,
+100,v1_baseline,project_manager_senior,,"Dự án quản lý yêu cầu ứng viên làm việc với stakeholder như thế nào?
+A. Báo cáo tiến độ
+B. Lãnh đạo và giao tiếp  ✓
+C. Phân tích dữ liệu
+D. Thiết kế UI/UX",,,,,,,,
+101,v1_baseline,edge_jd_rac,,"Nhân viên được tuyển dụng cần phải có tinh thần như thế nào?
+A. Bất tài
+B. Năng động, nhiệt huyết  ✓
+C. Lười biếng
+D. Thái độ tiêu cực",,,,,,,,
+102,v1_baseline,edge_jd_rac,,"Ứng viên nào sẽ được ưu tiên trong quá trình tuyển dụng?
+A. Ứng viên mới vào nghề
+B. Ứng viên có kinh nghiệm lâu dài  ✓
+C. Ứng viên không có kinh nghiệm
+D. Ứng viên làm việc ngắn hạn",,,,,,,,
+103,v1_baseline,edge_jd_rac,,"Nhân viên cần phải chịu được áp lực công việc như thế nào?
+A. Không cần
+B. Rất ít
+C. Có  ✓
+D. Hết sức không",,,,,,,,
+104,v1_baseline,edge_jd_rac,,"Môi trường làm việc của công ty như thế nào?
+A. Nghiêm túc, cổ hủ
+B. Trẻ trung, năng động  ✓
+C. Boring
+D. Thiếu thốn",,,,,,,,
+105,v1_baseline,edge_jd_rac,,"Lương cho vị trí này sẽ được xác định như thế nào?
+A. Theo kinh nghiệm
+B. Thỏa thuận
+C. Theo thời gian làm việc  ✓
+D. Theo số lượng công việc hoàn thành",,,,,,,,
+106,v1_baseline,edge_jd_rac,,"Ứng viên cần có khả năng làm việc như thế nào?
+A. Độc lập, không nhóm
+B. Nhóm, không độc lập
+C. Cả nhóm và độc lập
+D. Chỉ nhóm  ✓",,,,,,,,
+107,v1_baseline,edge_jd_rac,,"Ngoài tinh thần trách nhiệm cao, ứng viên còn cần có thái độ gì?
+A. Tích cực
+B. Tiêu cực  ✓
+C. Bất định
+D. Không quan trọng",,,,,,,,
+108,v1_baseline,edge_jd_rac,,"Ứng viên nào sẽ không được ưu tiên trong quá trình tuyển dụng?
+A. Ứng viên có kinh nghiệm lâu dài
+B. Ứng viên mới vào nghề  ✓
+C. Ứng viên năng động, nhiệt huyết
+D. Ứng viên ham học hỏi",,,,,,,,
+109,v1_baseline,edge_jd_rac,,"Nhân viên cần phải ham học hỏi như thế nào?
+A. Không cần
+B. Rất ít
+C. Có  ✓
+D. Hết sức không",,,,,,,,
+110,v1_baseline,edge_jd_rac,,"Ứng viên nào sẽ phù hợp với vị trí này?
+A. Người lười biếng, ham chơi
+B. Người năng động, nhiệt huyết  ✓
+C. Người ít học hỏi, ngại áp lực
+D. Người làm việc không nhóm",,,,,,,,
+111,v1_baseline,edge_jd_thieu_kythuat,,"Một trong những nhiệm vụ chính của vị trí này là gì?
+A. Lập trình phần mềm
+B. Sắp xếp lịch họp  ✓
+C. Thiết kế đồ họa
+D. Quản lý dự án",,,,,,,,
+112,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có kỹ năng gì để quản lý văn bản giấy tờ?
+A. Kỹ năng lái xe
+B. Kỹ năng giao tiếp
+C. Kỹ năng sử dụng máy tính văn phòng  ✓
+D. Kỹ năng bán hàng",,,,,,,,
+113,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có tinh thần như thế nào để phù hợp với vị trí này?
+A. Tự lập
+B. Hợp tác  ✓
+C. Khám phá
+D. Nghiên cứu",,,,,,,,
+114,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần biết sử dụng các công cụ nào để hỗ trợ công việc?
+A. Công cụ thiết kế web
+B. Công cụ quản lý dự án
+C. Công cụ máy tính văn phòng cơ bản  ✓
+D. Công cụ phân tích dữ liệu",,,,,,,,
+115,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có kỹ năng nào để sắp xếp lịch họp?
+A. Kỹ năng lái xe
+B. Kỹ năng giao tiếp
+C. Kỹ năng sử dụng máy tính văn phòng  ✓
+D. Kỹ năng bán hàng",,,,,,,,
+116,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có phẩm chất nào để quản lý văn bản giấy tờ?
+A. Tự lập
+B. Hợp tác
+C. Trung thực  ✓
+D. Khám phá",,,,,,,,
+117,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có kỹ năng nào để hỗ trợ các phòng ban khi cần?
+A. Kỹ năng lái xe
+B. Kỹ năng giao tiếp
+C. Kỹ năng sử dụng máy tính văn phòng  ✓
+D. Kỹ năng bán hàng",,,,,,,,
+118,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có tinh thần như thế nào để quản lý văn bản giấy tờ?
+A. Tự lập
+B. Hợp tác
+C. Trung thực
+D. Khám phá  ✓",,,,,,,,
+119,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có phẩm chất nào để sắp xếp lịch họp?
+A. Tự lập
+B. Hợp tác
+C. Trung thực  ✓
+D. Khám phá",,,,,,,,
+120,v1_baseline,edge_jd_thieu_kythuat,,"Ứng viên cần có kỹ năng gì để hỗ trợ các phòng ban khi cần?
+A. Kỹ năng lái xe
+B. Kỹ năng giao tiếp
+C. Kỹ năng sử dụng máy tính văn phòng  ✓
+D. Kỹ năng bán hàng",,,,,,,,

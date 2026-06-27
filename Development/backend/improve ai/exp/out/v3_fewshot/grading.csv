@@ -1,0 +1,557 @@
+﻿STT,Version,JD_id,Skill,Câu hỏi (đầy đủ),Correctness,Relevance,Distractor,Tình huống,Rõ ràng,Điểm TB,Đạt,Ghi chú
+1,v3_fewshot,dev_dotnet_junior,C# OOP,"Trong C#, khi sử dụng lớp基线代码需要翻译成中文，以下是修改后的版本：````json
+{
+A. public class Program { public void Main() { Console.WriteLine(""Hello World""); } }
+B. class Program { static void Main(string[] args) { Console.WriteLine(""Hello World""); } }
+C. class Program { public void Main() { Console.WriteLine(""Hello World""); } }
+D. public class Program { static void Main(string[] args) { Console.WriteLine(""Hello World""); } }  ✓",,,,,,,,
+2,v3_fewshot,dev_dotnet_junior,C# OOP,"Trong C#, phương thức nào sau đây không thuộc lớp Object?
+A. ToString()
+B. Equals()
+C. GetHashCode()
+D. Add()  ✓",,,,,,,,
+3,v3_fewshot,dev_dotnet_junior,LINQ,"Để lọc ra tất cả các sản phẩm có giá bán trên 100.000 từ bảng Products sử dụng LINQ, câu lệnh nào sau đây là chính xác?
+A. var result = from p in Products where p.Price < 100000 select p;
+B. var result = from p in Products where p.Price > 100000 select p;  ✓
+C. var result = Products.Where(p => p.Price <= 100000);
+D. var result = Products.FindAll(p => p.Price >= 100000);",,,,,,,,
+4,v3_fewshot,dev_dotnet_junior,HTTP/REST,"Trong HTTP/REST, phương thức nào được sử dụng để tạo một tài nguyên mới trên server?
+A. GET
+B. POST  ✓
+C. PUT
+D. DELETE",,,,,,,,
+5,v3_fewshot,dev_dotnet_junior,"SQL SELECT, JOIN","Trong truy vấn SQL, nếu bạn muốn lấy tất cả các sản phẩm từ bảng Products mà chỉ hiển thị những sản phẩm có giá trên 1000, câu lệnh SELECT nào sau đây là đúng?
+A. SELECT * FROM Products WHERE Price < 1000
+B. SELECT * FROM Products WHERE Price > 1000  ✓
+C. SELECT ProductName FROM Products WHERE Price = 1000
+D. SELECT * FROM Products WHERE Price >= 1000",,,,,,,,
+6,v3_fewshot,dev_dotnet_junior,"SQL SELECT, JOIN","Để lấy ra danh sách các sản phẩm từ bảng Products và danh sách các đơn hàng từ bảng Orders, đồng thời kết hợp (JOIN) dựa trên ID Sản phẩm, câu lệnh SQL nào sau đây là đúng?
+A. SELECT * FROM Products JOIN Orders ON ProductID
+B. SELECT * FROM Products INNER JOIN Orders ON Products.ProductID = Orders.ProductID  ✓
+C. SELECT * FROM Products LEFT JOIN Orders ON ProductID
+D. SELECT * FROM Products RIGHT JOIN Orders ON ProductID",,,,,,,,
+7,v3_fewshot,dev_dotnet_junior,Entity Framework Core,"Trong Entity Framework Core, để thực hiện một truy vấn LINQ trả về danh sách các đối tượng Customer có tên bắt đầu với 'A', bạn sẽ sử dụng phương thức nào sau đây?
+A. Customer.Where(c => c.Name.StartsWith('A')).ToList()  ✓
+B. Customer.FindAll(c => c.Name == 'A*').ToList()
+C. Customer.FirstOrDefault(c => c.Name.StartsWith('A'))
+D. Customer.Include(c => c.Name).Where('A*').ToList()",,,,,,,,
+8,v3_fewshot,dev_dotnet_junior,API RESTful,"API RESTful nào dưới đây không tuân theo nguyên tắc của HTTP GET method?
+A. GET /users
+B. GET /users/123
+C. POST /login  ✓
+D. DELETE /users/123",,,,,,,,
+9,v3_fewshot,dev_dotnet_junior,Git,"Trong Git, lệnh nào sau đây dùng để ghi nhận các thay đổi trong code và lưu chúng vào repository?
+A. git commit  ✓
+B. git push
+C. git pull
+D. git merge",,,,,,,,
+10,v3_fewshot,dev_dotnet_junior,Unit Testing,"Để kiểm tra tính chính xác của hàm TínhThueGiamDoc() trong lớp Thuế, bạn nên sử dụng phương pháp nào sau đây?
+A. Kiểm thử chấp nhận
+B. Kiểm thử tích hợp
+C. Kiểm thử đơn vị  ✓
+D. Kiểm thử hệ thống",,,,,,,,
+11,v3_fewshot,dev_dotnet_senior,Thiết kế kiến trúc microservices,"Trong kiến trúc microservices, khi một dịch vụ cần truy cập dữ liệu từ một dịch vụ khác, cách tiếp cận tốt nhất là gì?
+A. Tạo API REST giữa hai dịch vụ  ✓
+B. Chia sẻ cơ sở dữ liệu trực tiếp giữa các dịch vụ
+C. Gửi yêu cầu qua giao thức RPC
+D. Bảo lưu tất cả dữ liệu vào một bảng duy nhất",,,,,,,,
+12,v3_fewshot,dev_dotnet_senior,Thiết kế kiến trúc microservices,"Trong microservices, cách nào sau đây giúp giảm bớt sự phụ thuộc lẫn nhau giữa các dịch vụ?
+A. Tăng số lượng dịch vụ
+B. Chia nhỏ chức năng thành nhiều dịch vụ nhỏ hơn  ✓
+C. Sử dụng chung một cơ sở dữ liệu cho tất cả các dịch vụ
+D. Tạo API REST phức tạp",,,,,,,,
+13,v3_fewshot,dev_dotnet_senior,.NET Framework,"Trong .NET Framework, lớp nào được sử dụng để thực hiện các tác vụ I/O như đọc và viết tệp?
+A. System.IO.Stream  ✓
+B. System.Collections.Generic.List
+C. System.Linq.Enumerable
+D. System.Net.Http",,,,,,,,
+14,v3_fewshot,dev_dotnet_senior,"Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)","Trong Entity Framework Core, bạn đang thực hiện truy vấn lấy tất cả các đơn hàng của một khách hàng cụ thể. Để tối ưu hóa hiệu suất và tránh N+1 query, bạn nên làm gì?
+A. Tạo một phương thức Include để tải danh sách chi tiết sản phẩm cùng lúc  ✓
+B. Thêm chỉ mục trên cột CustomerId trong bảng Orders
+C. Sử dụng .AsNoTracking() khi lấy dữ liệu
+D. Đổi Entity Framework Core sang ADO.NET",,,,,,,,
+15,v3_fewshot,dev_dotnet_senior,"Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)","Khi thực hiện truy vấn SQL Server, bạn nhận thấy execution plan đang sử dụng phương pháp table scan thay vì index seek. Điều này có thể dẫn đến hiệu suất kém. Cách nào sau đây sẽ giúp cải thiện tình hình?
+A. Tăng kích thước bộ nhớ cache của SQL Server
+B. Thêm chỉ mục hợp lý trên các cột được sử dụng trong điều kiện WHERE  ✓
+C. Thay đổi cấu trúc dữ liệu lưu trữ từ In-Memory sang Disk-based
+D. Đổi Entity Framework Core thành LINQ to Objects",,,,,,,,
+16,v3_fewshot,dev_dotnet_senior,"Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)","Bạn đang viết một truy vấn SQL Server để lấy tổng số tiền của tất cả các đơn hàng. Để tối ưu hóa execution plan, bạn nên làm gì?
+A. Sử dụng CTE (Common Table Expression) để phân chia truy vấn thành nhiều phần
+B. Thêm chỉ mục trên cột OrderAmount trong bảng Orders  ✓
+C. Thay đổi kiểu dữ liệu của cột OrderAmount từ int sang decimal
+D. Tăng kích thước bộ nhớ cache của SQL Server",,,,,,,,
+17,v3_fewshot,dev_dotnet_senior,API Design and Review,"Khi thiết kế API cho một dịch vụ quản lý dự án, bạn cần đảm bảo tính nhất quán của dữ liệu. Cách tốt nhất để thực hiện điều này là gì?
+A. Sử dụng transaction trong quá trình cập nhật  ✓
+B. Kiểm tra ràng buộc trước khi gửi yêu cầu
+C. Thiết lập cache trên các kết quả API
+D. Tăng số lượng máy chủ backend",,,,,,,,
+18,v3_fewshot,dev_dotnet_senior,API Design and Review,"Trong quá trình review API, bạn phát hiện một endpoint đang xử lý cả GET và POST nhưng không phân biệt. Điều này có thể dẫn đến vấn đề gì?
+A. Vi phạm nguyên tắc DRY
+B. Lỗi về tính nhất quán của dữ liệu
+C. Rủi ro bảo mật
+D. Không tuân thủ RESTful  ✓",,,,,,,,
+19,v3_fewshot,dev_dotnet_senior,"Pattern CQRS, Repository, Dependency Injection","Trong kiến trúc CQRS, Repository và Dependency Injection được sử dụng như thế nào để đảm bảo tính linh hoạt và tách biệt giữa các lớp?
+A. Repository quản lý giao tiếp với cơ sở dữ liệu, Dependency Injection cung cấp đối tượng cần thiết cho class  ✓
+B. Dependency Injection tạo ra instance của Repository, Repository thực hiện truy vấn cơ sở dữ liệu
+C. Repository lưu trữ logic kinh doanh, Dependency Injection quản lý lifecycle của object
+D. Repository và Dependency Injection đều không liên quan đến CQRS",,,,,,,,
+20,v3_fewshot,dev_dotnet_senior,Xử lý vấn đề concurrency,"Khi thực hiện giao dịch ngân hàng trong ứng dụng .NET, bạn cần đảm bảo tính nhất quán và tránh xung đột giữa các giao dịch. Cách nào sau đây không phải là giải pháp hiệu quả để xử lý vấn đề này?
+A. Sử dụng TransactionScope
+B. Thực hiện locking trên đối tượng chung  ✓
+C. Sử dụng Entity Framework's SaveChangesWithOriginalValues
+D. Sử dụng乐观锁（Optimistic Locking）",,,,,,,,
+21,v3_fewshot,frontend_react_mid,Tối ưu render React,"Khi sử dụng React.memo() trong component, điều gì sẽ xảy ra nếu props của component thay đổi?
+A. Component sẽ được render lại  ✓
+B. Component sẽ không được render lại
+C. Component sẽ bị xóa khỏi bộ nhớ
+D. Component sẽ tự động cập nhật state",,,,,,,,
+22,v3_fewshot,frontend_react_mid,Tối ưu render React,"Trong React, phương thức nào sau đây giúp tối ưu hóa hiệu suất khi sử dụng hooks?
+A. useState()
+B. useEffect()
+C. useMemo()  ✓
+D. useCallback()",,,,,,,,
+23,v3_fewshot,frontend_react_mid,Viết test bằng Jest/React Testing Library,"Khi sử dụng Jest và React Testing Library để viết test cho một component React đơn giản hiển thị tên người dùng, bạn cần kiểm tra gì để đảm bảo component hoạt động như mong đợi?
+A. Kiểm tra xem component có được render không
+B. Kiểm tra xem component có hiển thị tên người dùng đúng không  ✓
+C. Kiểm tra xem component có thay đổi màu sắc khi kích thước màn hình thay đổi
+D. Kiểm tra xem component có gửi request API không",,,,,,,,
+24,v3_fewshot,frontend_react_mid,Xây dựng component tái sử dụng,"Khi xây dựng component tái sử dụng trong React, bạn nên sử dụng tính năng nào để đảm bảo component có thể được sử dụng ở nhiều nơi khác nhau trong ứng dụng?
+A. State
+B. Props  ✓
+C. Lifecycle methods
+D. Context API",,,,,,,,
+25,v3_fewshot,frontend_react_mid,Quản lý state bằng Redux hoặc Context API,"Khi sử dụng Redux để quản lý state trong ứng dụng React, component nào có thể dispatch action để thay đổi state?
+A. Component con
+B. Component cha  ✓
+C. Context.Provider
+D. React.useReducer",,,,,,,,
+26,v3_fewshot,frontend_react_mid,Quản lý state bằng Redux hoặc Context API,"Trong Context API, phương thức nào được sử dụng để cung cấp giá trị cho các component con?
+A. useContext()
+B. Provider  ✓
+C. Consumer
+D. useReducer()",,,,,,,,
+27,v3_fewshot,frontend_react_mid,Tích hợp REST API,"Khi tích hợp REST API vào ứng dụng React, component nào thường được sử dụng để thực hiện các thao tác như GET, POST, PUT và DELETE?
+A. useState
+B. useEffect
+C. axios  ✓
+D. useContext",,,,,,,,
+28,v3_fewshot,frontend_react_mid,Hiểu virtual DOM,"Virtual DOM trong React là gì và mục đích chính của nó là gì?
+A. Virtual DOM là một bản sao kỹ thuật số của DOM thực tế, giúp tăng tốc độ giao diện người dùng bằng cách giảm thiểu thao tác trực tiếp lên DOM.  ✓
+B. Virtual DOM là một công cụ để tạo ra các hiệu ứng chuyển đổi mượt mà trên trang web.
+C. Virtual DOM là một thư viện JavaScript độc lập không liên quan đến React.
+D. Virtual DOM là một phương pháp tối ưu hóa việc quản lý state trong ứng dụng React.",,,,,,,,
+29,v3_fewshot,frontend_react_mid,Biết tối ưu hiệu năng frontend,"Khi sử dụng React, bạn cần tối ưu hiệu năng để tránh việc render không cần thiết. Phương pháp nào sau đây giúp ngăn chặn việc render lại các component con khi state của component cha không thay đổi?
+A. useState
+B. useEffect
+C. React.memo  ✓
+D. useReducer",,,,,,,,
+30,v3_fewshot,frontend_react_mid,Biết tối ưu hiệu năng frontend,"Để tối ưu hóa hiệu năng trang web, bạn nên sử dụng phương pháp nào sau đây khi tải các tài nguyên như hình ảnh?
+A. Tải tất cả cùng một lúc
+B. Sử dụng lazy loading  ✓
+C. Không sử dụng bất kỳ công nghệ nén nào
+D. Tăng kích thước của hình ảnh",,,,,,,,
+31,v3_fewshot,data_engineer_senior,SQL nâng cao,"Trong một cơ sở dữ liệu lớn với nhiều bảng liên kết, bạn cần truy vấn tổng số lượng sản phẩm đã bán trong năm 2021. Cách viết câu lệnh SQL hiệu quả nhất là gì?
+A. SELECT SUM(Soluong) FROM DonHang WHERE Nam = '2021'
+B. SELECT SUM(Soluong) AS TongSoluong FROM (SELECT Soluong FROM ChiTietDonHang INNER JOIN DonHang ON ChiTietDonHang.MaDonHang = DonHang.MaDonHang WHERE Nam = '2021') AS SubQuery  ✓
+C. SELECT SUM(TongSoluong) FROM (SELECT Soluong * GiaBan AS TongSoluong FROM ChiTietDonHang INNER JOIN DonHang ON ChiTietDonHang.MaDonHang = DonHang.MaDonHang WHERE Nam = '2021') AS SubQuery
+D. SELECT SUM(Soluong) FROM ChiTietDonHang WHERE Nam = '2021'",,,,,,,,
+32,v3_fewshot,data_engineer_senior,SQL nâng cao,"Bạn cần tìm ra các sản phẩm có số lượng tồn kho dưới mức cảnh báo. Cách viết câu lệnh SQL đúng là gì?
+A. SELECT MaSanPham FROM SanPham WHERE TonKho < MucCanhBao  ✓
+B. SELECT MaSanPham, TonKho FROM SanPham WHERE TonKho < (SELECT MucCanhBao FROM CacMucCanhBao)
+C. SELECT MaSanPham, TonKho FROM SanPham INNER JOIN CacMucCanhBao ON SanPham.MucCanhBaoID = CacMucCanhBao.ID WHERE TonKho < MucCanhBao
+D. SELECT MaSanPham, TonKho FROM SanPham WHERE TonKho < (SELECT MIN(MucCanhBao) FROM CacMucCanhBao)",,,,,,,,
+33,v3_fewshot,data_engineer_senior,SQL nâng cao,"Bạn cần thống kê số lượng đơn hàng mỗi ngày trong tháng 12 năm 2021. Cách viết câu lệnh SQL đúng là gì?
+A. SELECT COUNT(*) FROM DonHang WHERE Nam = '2021' AND Thang = '12'
+B. SELECT DATE_FORMAT(NgayDat, '%Y-%m-%d') AS Ngay, COUNT(*) AS SoLuongDon FROM DonHang WHERE Nam = '2021' AND Thang = '12' GROUP BY Ngay
+C. SELECT DAYOFMONTH(NgayDat) AS Ngay, COUNT(*) AS SoLuongDon FROM DonHang WHERE Nam = '2021' AND Thang = '12' GROUP BY Ngay  ✓
+D. SELECT DATE_FORMAT(NgayDat, '%Y-%m') AS Thang, COUNT(*) AS SoLuongDon FROM DonHang WHERE Nam = '2021' AND Thang = '12' GROUP BY Thang",,,,,,,,
+34,v3_fewshot,data_engineer_senior,Window function trong SQL,"Trong SQL, Window function giúp xử lý dữ liệu theo một khung cửa sổ động. Để tính tổng giá trị của mỗi nhóm khách hàng trong bảng Orders mà không sử dụng GROUP BY, bạn sẽ sử dụng hàm nào?
+A. SUM()
+B. AVG()
+C. ROW_NUMBER()
+D. SUM() OVER (PARTITION BY CustomerId)  ✓",,,,,,,,
+35,v3_fewshot,data_engineer_senior,Window function trong SQL,"Nếu muốn lấy ra top 5 khách hàng có tổng số đơn hàng lớn nhất trong bảng Orders, bạn sẽ sử dụng hàm nào kết hợp với ROW_NUMBER()?
+A. ORDER BY
+B. LIMIT
+C. TOP
+D. ROW_NUMBER() OVER (PARTITION BY CustomerId ORDER BY COUNT(OrderId) DESC)  ✓",,,,,,,,
+36,v3_fewshot,data_engineer_senior,CTE (Common Table Expressions) trong SQL,"CTE trong SQL giúp cải thiện hiệu suất như thế nào khi sử dụng?
+A. Giúp tối ưu hóa truy vấn bằng cách tách thành nhiều bước  ✓
+B. Tăng tốc độ truy vấn bằng cách tạo chỉ mục tự động
+C. Giảm dung lượng lưu trữ của dữ liệu
+D. Không có tác động đến hiệu suất",,,,,,,,
+37,v3_fewshot,data_engineer_senior,Python,"Khi sử dụng thư viện Pandas trong Python để xử lý dữ liệu lớn, bạn nên lưu ý điều gì để tối ưu hóa hiệu suất?
+A. Sử dụng DataFrame thay vì Series
+B. Tăng kích thước bộ nhớ cache của máy chủ
+C. Chỉ định kiểu dữ liệu cụ thể cho các cột  ✓
+D. Loại bỏ tất cả các dòng trống",,,,,,,,
+38,v3_fewshot,data_engineer_senior,Python,"Trong Python, bạn muốn tạo một hàm có thể nhận vào bất kỳ số lượng tham số nào và trả về tổng của chúng. Cách viết hàm này đúng là gì?
+A. def sum(*args): return sum(args)  ✓
+B. def sum(**kwargs): return sum(kwargs.values())
+C. def sum(*args): return args[0] + args[1]
+D. def sum(x, y=0): return x + y",,,,,,,,
+39,v3_fewshot,data_engineer_senior,Python,"Khi sử dụng thư viện NumPy trong Python để thực hiện các phép toán ma trận, bạn nên lưu ý điều gì để tối ưu hóa hiệu suất?
+A. Chỉ định kiểu dữ liệu cụ thể cho mảng  ✓
+B. Tăng kích thước bộ nhớ cache của máy chủ
+C. Sử dụng vòng lặp for để duyệt qua từng phần tử
+D. Loại bỏ tất cả các dòng trống",,,,,,,,
+40,v3_fewshot,data_engineer_senior,Spark,"Trong Spark, khi sử dụng action để tính toán DataFrame, nếu không áp dụng phép lọc (filter) trước, kết quả có thể bị chậm. Cách nào sau đây sẽ giúp cải thiện hiệu suất?
+A. Sử dụng broadcast join cho các DataFrame lớn
+B. Tăng bộ nhớ cache toàn bộ DataFrame
+C. Áp dụng filter trước khi sử dụng action  ✓
+D. Thay đổi kiểu dữ liệu trong DataFrame",,,,,,,,
+41,v3_fewshot,ketoan_tonghop_mid,Nắm vững nguyên lý kế toán kép,"Khi một doanh nghiệp bán hàng với giá trị 50 triệu đồng và nhận tiền mặt ngay lập tức, bút toán ghi chép vào sổ kế toán như thế nào?
+A. Nợ Hàng hóa / Có Tiền mặt
+B. Nợ Doanh thu / Có Tiền mặt  ✓
+C. Nợ Chi phí / Có Tiền mặt
+D. Nợ Hàng tồn kho / Có Tiền mặt",,,,,,,,
+42,v3_fewshot,ketoan_tonghop_mid,Nắm vững nguyên lý kế toán kép,"Khi một doanh nghiệp mua hàng với giá trị 30 triệu đồng nhưng thanh toán sau này, bút toán ghi chép vào sổ kế toán như thế nào?
+A. Nợ Hàng hóa / Có Phải trả người mua
+B. Nợ Phải trả người bán / Có Hàng hóa  ✓
+C. Nợ Hàng hóa / Có Tiền mặt
+D. Nợ Phải trả người bán / Có Tiền mặt",,,,,,,,
+43,v3_fewshot,ketoan_tonghop_mid,Hiểu các tài khoản kế toán,"Khi doanh nghiệp bán hàng với giá trị 50 triệu đồng và khách hàng thanh toán sau 30 ngày, bút toán ghi nhận vào sổ kế toán sẽ là gì?
+A. Nợ Hàng tồn kho / Có Doanh thu
+B. Nợ Tiền mặt / Có Doanh thu
+C. Nợ Đơn vị bán hàng / Có Doanh thu
+D. Nợ));// Nợ Tạm ứng khách hàng / Có Doanh thu  ✓",,,,,,,,
+44,v3_fewshot,ketoan_tonghop_mid,Hạch toán doanh thu - chi phí - giá vốn,"Khi bán hàng với giá 5.000.000 đồng và chi phí sản xuất là 3.000.000 đồng, doanh nghiệp nên ghi nhận vào tài khoản nào để phản ánh phần lợi nhuận?
+A. Tài khoản Doanh thu
+B. Tài khoản Chi phí sản xuất
+C. Tài khoản Lợi nhuận từ hoạt động chính  ✓
+D. Tài khoản Giá vốn hàng bán",,,,,,,,
+45,v3_fewshot,ketoan_tonghop_mid,Hạch toán doanh thu - chi phí - giá vốn,"Nếu một doanh nghiệp mua hàng hóa với giá 1.500.000 đồng và sau đó bán với giá 2.000.000 đồng, phần chênh lệch giữa giá bán và giá mua sẽ được ghi nhận vào tài khoản nào?
+A. Tài khoản Doanh thu từ hoạt động chính  ✓
+B. Tài khoản Chi phí hàng bán
+C. Tài khoản Lợi nhuận từ hoạt động kinh doanh
+D. Tài khoản Giá vốn hàng bán",,,,,,,,
+46,v3_fewshot,ketoan_tonghop_mid,Hạch toán doanh thu - chi phí - giá vốn,"Trong trường hợp một công ty mua hàng hóa với giá 2.500.000 đồng và sau đó trả lại cho nhà cung cấp, bút toán ghi nhận đúng là gì?
+A. Nợ Hàng hóa / Có Tiền mặt
+B. Nợ Phải trả người bán / Có Hàng hóa
+C. Nợ Chi phí hàng bán / Có Tiền mặt
+D. Nợ Hàng hóa / Có Phải trả người bán  ✓",,,,,,,,
+47,v3_fewshot,ketoan_tonghop_mid,Thành thạo Excel,"Trong Excel, công thức nào sau đây sẽ tính tổng số lượng hàng bán trong tháng 5 từ cột D (D代表列) 哪个月份的销售额最高？假设数据从第2行开始，月份在A列，销售额在B列。
+A. =SUMIFS(B:B,A:A,"">=5/1/2023"",A:A,""<=5/31/2023"")
+B. =SUMIF(A:A,"">=5/1/2023"",B:B) + SUMIF(A:A,""<=5/31/2023"",B:B)
+C. =SUMIFS(B:B,A:A,"">=5/1/2023"",A:A,""<=5/31/2023"")
+D. =SUMPRODUCT((MONTH($A$2:$A$100)=5)*($B$2:$B$100))  ✓",,,,,,,,
+48,v3_fewshot,ketoan_tonghop_mid,Thành thạo Excel,"Khi sử dụng Excel để phân tích báo cáo tài chính, công thức nào sau đây sẽ tính trung bình cộng của các giá trị trong cột E từ hàng thứ 5 đến hàng thứ 20?
+A. =AVERAGE(E5:E20)
+B. =SUM(E5:E20)/16
+C. =AVERAGEIF(E5:E20,"">0"")
+D. =SUM(E5:E20)/COUNT(E5:E20)  ✓",,,,,,,,
+49,v3_fewshot,ketoan_tonghop_mid,"Kiểm soát chứng từ, quản lý sổ sách","Khi phát hiện chứng từ kế toán không hợp lệ, kế toán viên nên thực hiện bước đầu tiên nào sau đây?
+A. Gửi lại cho bộ phận mua hàng để kiểm tra
+B. Lập bút toán điều chỉnh ngay lập tức
+C. Từ chối nhận và ghi chú lý do  ✓
+D. Xác minh với người bán hàng",,,,,,,,
+50,v3_fewshot,ketoan_tonghop_mid,Lập báo cáo tài chính theo Thông tư 200,"Theo Thông tư 200, khi lập báo cáo tài chính, các khoản chi phí phải được phân bổ vào các kỳ sử dụng. Khoản chi phí nào dưới đây không cần được phân bổ theo thời gian sử dụng?
+A. Chi phí sửa chữa và bảo dưỡng
+B. Chi phí mua sắm máy móc
+C. Chi phí thuê nhà  ✓
+D. Chi phí điện, nước",,,,,,,,
+51,v3_fewshot,sales_b2b_junior,Kỹ năng giao tiếp và thuyết phục,"Khi thuyết phục khách hàng mua sản phẩm mới của công ty, bạn nên tập trung vào điểm nào để tăng hiệu quả?
+A. Giá cả so với đối thủ
+B. Chất lượng sản phẩm cũ
+C. Lợi ích cụ thể mà sản phẩm mang lại cho khách hàng  ✓
+D. Số lượng tồn kho hiện tại",,,,,,,,
+52,v3_fewshot,sales_b2b_junior,Kỹ năng giao tiếp và thuyết phục,"Trong một cuộc họp kinh doanh, bạn phát hiện ra rằng một đồng nghiệp của mình đang đưa ra thông tin không chính xác. Bạn nên làm gì?
+A. Từ chối tham gia cuộc họp
+B. Thay đổi chủ đề cuộc họp
+C. Đưa ra bằng chứng và giải thích  ✓
+D. Tránh vấn đề để duy trì mối quan hệ",,,,,,,,
+53,v3_fewshot,sales_b2b_junior,Kỹ năng giao tiếp và thuyết phục,"Khi gặp khách hàng mới, bạn nên bắt đầu bằng cách nào để tạo thiện cảm?
+A. Hỏi về lịch trình công việc của họ
+B. Giới thiệu sản phẩm ngay lập tức
+C. Chia sẻ thông tin cá nhân
+D. Đưa ra lời chào và giới thiệu bản thân  ✓",,,,,,,,
+54,v3_fewshot,sales_b2b_junior,Kỹ năng giao tiếp và thuyết phục,"Nếu khách hàng từ chối một đề xuất, bạn nên làm gì tiếp theo?
+A. Tỏ thái độ không hài lòng
+B. Thay đổi đề xuất ngay lập tức
+C. Xác định nguyên nhân và tìm cách cải thiện  ✓
+D. Tránh tiếp tục cuộc trò chuyện",,,,,,,,
+55,v3_fewshot,sales_b2b_junior,Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt),"Trong quy trình bán hàng B2B, bước nào sau đây không phải là một trong bốn bước chính (tiếp cận - tư vấn - đàm phán - chốt)?
+A. Tiếp cận khách hàng
+B. Tư vấn sản phẩm
+C. Đàm phán giá cả
+D. Giao hàng sản phẩm  ✓",,,,,,,,
+56,v3_fewshot,sales_b2b_junior,Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt),"Khi tiếp cận khách hàng B2B, nhân viên kinh doanh cần chuẩn bị những thông tin nào để tăng hiệu quả tiếp cận?
+A. Sản phẩm mới nhất của công ty
+B. Danh sách khách hàng hiện tại
+C. Thương hiệu sản phẩm
+D. Thông tin về nhu cầu và tình hình kinh doanh của khách hàng  ✓",,,,,,,,
+57,v3_fewshot,sales_b2b_junior,Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt),"Trong quá trình đàm phán, nhân viên kinh doanh B2B nên tập trung vào mục tiêu nào để đạt được thỏa thuận tốt nhất?
+A. Giảm giá mạnh mẽ
+B. Tăng lợi nhuận của công ty
+C. Tạo mối quan hệ lâu dài với khách hàng  ✓
+D. Chốt đơn hàng nhanh chóng",,,,,,,,
+58,v3_fewshot,sales_b2b_junior,Xử lý từ chối trong quá trình bán hàng,"Khi khách hàng từ chối mua sản phẩm do giá cao, cách xử lý phù hợp nhất là gì?
+A. Tranh cãi với khách hàng về giá
+B. Giảm giá mạnh mẽ ngay lập tức
+C. Tư vấn thêm về lợi ích và giá trị của sản phẩm  ✓
+D. Bỏ qua phản hồi của khách hàng",,,,,,,,
+59,v3_fewshot,sales_b2b_junior,Xử lý từ chối trong quá trình bán hàng,"Nếu khách hàng từ chối mua do lo ngại về chất lượng, bạn nên làm gì?
+A. Hỏi lại khách hàng về lý do cụ thể để hiểu rõ  ✓
+B. Giảm giá sản phẩm mạnh mẽ
+C. Bảo đảm bằng lời rằng chất lượng tốt
+D. Tránh thảo luận về vấn đề và chuyển sang chủ đề khác",,,,,,,,
+60,v3_fewshot,digital_marketing_mid,Chạy quảng cáo Facebook Ads,"Khi chạy quảng cáo Facebook Ads, nếu bạn muốn mục tiêu là tăng nhận diện thương hiệu thay vì chuyển đổi cụ thể, bạn nên chọn loại đối tượng nào?
+A. Đối tượng có tương tác với trang fanpage  ✓
+B. Đối tượng đã mua sản phẩm của công ty
+C. Đối tượng không quan tâm đến ngành hàng của công ty
+D. Đối tượng đã xem quảng cáo của đối thủ",,,,,,,,
+61,v3_fewshot,digital_marketing_mid,Chạy quảng cáo Facebook Ads,"Trong Facebook Ads, nếu bạn muốn tối ưu hóa quảng cáo để tăng tỷ lệ nhấp (CTR), bạn nên tập trung vào yếu tố nào?
+A. Nội dung và hình ảnh hấp dẫn  ✓
+B. Giá cả của sản phẩm
+C. Thời gian hiển thị quảng cáo
+D. Độ dài tiêu đề quảng cáo",,,,,,,,
+62,v3_fewshot,digital_marketing_mid,Chạy quảng cáo Google Ads,"Trong Google Ads, nếu bạn muốn tối ưu hóa chi phí cho một chiến dịch cụ thể, bạn nên sử dụng tính năng nào sau đây?
+A. Tối ưu hóa từ khóa
+B. Tối ưu hóa quảng cáo
+C. Tối ưu hóa giá cpc
+D. Tối ưu hóa mục tiêu chuyển đổi  ✓",,,,,,,,
+63,v3_fewshot,digital_marketing_mid,Chạy quảng cáo Google Ads,"Khi sử dụng Google Ads, bạn muốn theo dõi hiệu suất của chiến dịch trên các thiết bị di động. Bạn nên chọn loại báo cáo nào?
+A. Báo cáo tổng quan
+B. Báo cáo vị trí địa lý
+C. Báo cáo thiết bị  ✓
+D. Báo cáo từ khóa",,,,,,,,
+64,v3_fewshot,digital_marketing_mid,"Tối ưu chỉ số CTR, CPC, CPA, ROAS","Để tối ưu hóa chỉ số CTR (Click-Through Rate), bạn nên tập trung vào việc cải thiện điều gì?
+A. Tăng giá CPC
+B. Giảm thời gian tải trang
+C. Tối ưu hóa tiêu đề và mô tả quảng cáo  ✓
+D. Tăng ngân sách quảng cáo",,,,,,,,
+65,v3_fewshot,digital_marketing_mid,"Tối ưu chỉ số CTR, CPC, CPA, ROAS","Nếu mục tiêu là tối ưu hóa ROAS (Return on Advertising Spend), bạn nên tập trung vào việc cải thiện chỉ số nào?
+A. Giảm CTR
+B. Tăng CPC
+C. Tăng CPA
+D. Tăng doanh thu từ quảng cáo  ✓",,,,,,,,
+66,v3_fewshot,digital_marketing_mid,Phân tích dữ liệu chiến dịch bằng Google Analytics,"Trong Google Analytics, bạn muốn xem số lượng người dùng mới truy cập vào website trong tháng vừa qua. Bạn nên sử dụng báo cáo nào?
+A. Báo cáo Traffic Sources
+B. Báo cáo Audience Overview
+C. Báo cáo Acquisition - All Traffic  ✓
+D. Báo cáo Behavior - Events",,,,,,,,
+67,v3_fewshot,digital_marketing_mid,Phân tích dữ liệu chiến dịch bằng Google Analytics,"Bạn muốn phân tích hiệu suất của các chiến dịch quảng cáo trên Google Ads. Trong Google Analytics, bạn nên sử dụng tính năng nào để liên kết dữ liệu từ Google Ads?
+A. Tính năng Universal Analytics
+B. Tính năng Admin & Settings
+C. Tính năng Data Import
+D. Tính năng Campaigns  ✓",,,,,,,,
+68,v3_fewshot,digital_marketing_mid,Lập báo cáo hiệu quả chiến dịch marketing,"Khi lập báo cáo hiệu quả chiến dịch marketing, bạn cần bao gồm những thông tin nào để đánh giá hiệu suất của chiến dịch?
+A. Tên chiến dịch
+B. Ngày bắt đầu và kết thúc
+C. Chi phí đầu tư
+D. Tổng số lượt truy cập (UV) và tỷ lệ chuyển đổi (%)  ✓",,,,,,,,
+69,v3_fewshot,digital_marketing_mid,Hiểu về phễu marketing,"Trong phễu marketing, giai đoạn nào có mục tiêu chính là tạo ra sự nhận biết thương hiệu và thu hút khách hàng tiềm năng?
+A. Giai đoạn Nguồn cung
+B. Giai đoạn Nhận thức  ✓
+C. Giai đoạn Xem xét
+D. Giai đoạn Mua",,,,,,,,
+70,v3_fewshot,hr_tuyendung_junior,Kỹ năng giao tiếp,"Khi phỏng vấn ứng viên, bạn nhận thấy họ không thể giải thích rõ ràng về quá trình làm việc trước đó. Cách phản hồi phù hợp nhất là?
+A. Hỏi thêm chi tiết để hiểu rõ hơn  ✓
+B. Tạo một tình huống giả định và yêu cầu ứng viên mô tả
+C. Tránh đề cập đến vấn đề này vì sợ gây ấn tượng không tốt
+D. Yêu cầu ứng viên xem lại hồ sơ của mình",,,,,,,,
+71,v3_fewshot,hr_tuyendung_junior,Kỹ năng giao tiếp,"Bạn nhận được email từ một ứng viên có ngữ cảnh và ngữ pháp không chính xác. Cách phản hồi hiệu quả nhất là?
+A. Trả lời email với ngữ cảnh và ngữ pháp tương tự
+B. Yêu cầu ứng viên gửi lại email sau khi chỉnh sửa  ✓
+C. Trả lời email nhưng chỉ ra lỗi về ngữ cảnh và ngữ pháp
+D. Không trả lời email để tránh gây ấn tượng không tốt",,,,,,,,
+72,v3_fewshot,hr_tuyendung_junior,Kỹ năng giao tiếp,"Khi gặp phải sự cố trong quá trình giao tiếp với đồng nghiệp, bạn nên?
+A. Tránh vấn đề bằng cách im lặng
+B. Gọi điện thoại trực tiếp và nói chuyện thẳng thắn  ✓
+C. Đưa ra lời khuyên từ xa mà không trao đổi trực tiếp
+D. Yêu cầu quản lý can thiệp",,,,,,,,
+73,v3_fewshot,hr_tuyendung_junior,Kỹ năng giao tiếp,"Trong một cuộc họp, bạn nhận thấy có sự hiểu lầm giữa các thành viên. Cách giải quyết tốt nhất là?
+A. Từ chối tham gia vào cuộc tranh luận
+B. Để mọi người tự giải quyết
+C. Gợi ý cho mọi người thảo luận rõ ràng về vấn đề  ✓
+D. Yêu cầu quản lý họp lại sau khi hiểu rõ vấn đề",,,,,,,,
+74,v3_fewshot,hr_tuyendung_junior,Đọc và đối chiếu JD với hồ sơ ứng viên,"Ứng viên A nộp hồ sơ cho vị trí Chuyên viên Tuyển dụng với kinh nghiệm làm việc trong lĩnh vực nhân sự 2 năm. Trong mô tả công việc (JD), yêu cầu ứng viên phải có ít nhất 3 năm kinh nghiệm. Cách xử lý hợp lý là gì?
+A. Từ chối hồ sơ vì không đáp ứng được yêu cầu
+B. Yêu cầu ứng viên A cung cấp thêm thông tin về kinh nghiệm làm việc  ✓
+C. Nhận hồ sơ và cho rằng kinh nghiệm của A tương đương với 3 năm
+D. Gửi email cho A để xác nhận lại thông tin",,,,,,,,
+75,v3_fewshot,hr_tuyendung_junior,Đọc và đối chiếu JD với hồ sơ ứng viên,"Ứng viên B có kỹ năng viết bài xã hội học nhưng không có kinh nghiệm trong ngành nhân sự. Trong JD, yêu cầu ứng viên phải có ít nhất một năm kinh nghiệm viết về nhân sự. Cách xử lý hợp lý là gì?
+A. Từ chối hồ sơ vì không đáp ứng được yêu cầu  ✓
+B. Yêu cầu B cung cấp thêm thông tin về kỹ năng viết bài xã hội học
+C. Nhận hồ sơ và cho rằng kỹ năng viết của B có thể chuyển giao sang ngành nhân sự
+D. Gửi email cho B để xác nhận lại thông tin",,,,,,,,
+76,v3_fewshot,hr_tuyendung_junior,Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer),"Trong quy trình tuyển dụng, bước nào sau đây không phải là một phần của quá trình sàng lọc ứng viên?
+A. Lập danh sách ứng viên
+B. Thực hiện phỏng vấn sơ bộ
+C. Đánh giá hồ sơ ứng viên
+D. Gửi offer làm việc  ✓",,,,,,,,
+77,v3_fewshot,hr_tuyendung_junior,Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer),"Khi lập kế hoạch tuyển dụng, yếu tố nào dưới đây không phải là một tiêu chí cần thiết?
+A. Ngân sách tuyển dụng
+B. Thời gian thực hiện
+C. Số lượng ứng viên dự kiến
+D. Màu sắc của logo công ty  ✓",,,,,,,,
+78,v3_fewshot,hr_tuyendung_junior,Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer),"Trong quy trình phỏng vấn, mục đích chính của việc hỏi về kinh nghiệm làm việc trước đây là gì?
+A. Kiểm tra kỹ năng chuyên môn  ✓
+B. Xác minh thông tin hồ sơ
+C. Đánh giá khả năng giao tiếp
+D. Xem xét mức lương mong muốn",,,,,,,,
+79,v3_fewshot,hr_tuyendung_junior,"Cẩn thận, chủ động","Khi nhận thông tin về một vị trí tuyển dụng mới, bạn nên làm gì đầu tiên để thể hiện tinh thần cẩn thận và chủ động?
+A. Chỉ lưu lại thông tin mà không hành động
+B. Tư vấn cho đồng nghiệp trước khi bắt đầu công việc
+C. Kiểm tra kỹ thông tin và lập kế hoạch triển khai ngay  ✓
+D. Gửi email cho quản lý nhưng chưa thực hiện gì",,,,,,,,
+80,v3_fewshot,cskh_junior,Kỹ năng giao tiếp,"Khi khách hàng gọi điện với thắc mắc, nhân viên Chăm sóc Khách hàng nên làm gì đầu tiên?
+A. Trả lời ngay lập tức mà không cần hiểu rõ vấn đề
+B. Hỏi lại khách hàng để đảm bảo đã hiểu đúng vấn đề  ✓
+C. Ghi chú lại và trả lời sau khi tìm hiểu kỹ
+D. Chờ khách hàng tự giải quyết nếu có thể",,,,,,,,
+81,v3_fewshot,cskh_junior,Kỹ năng giao tiếp,"Trong trường hợp khách hàng không hài lòng với dịch vụ, nhân viên Chăm sóc Khách hàng nên làm gì?
+A. Tỏ ra bất bình và tranh cãi
+B. Xin lỗi và đề xuất giải pháp để cải thiện  ✓
+C. Bảo rằng công ty sẽ không chịu trách nhiệm
+D. Tránh tiếp xúc trực tiếp với khách hàng",,,,,,,,
+82,v3_fewshot,cskh_junior,Kỹ năng giao tiếp,"Khi giao tiếp qua email, nhân viên Chăm sóc Khách hàng nên làm gì để đảm bảo thông điệp được truyền đạt chính xác?
+A. Gửi email nhanh chóng nhưng không kiểm tra kỹ  ✓
+B. Viết rõ ràng và sử dụng ngôn ngữ chuyên môn
+C. Sử dụng nhiều emoticon để thể hiện cảm xúc
+D. Chỉ viết ngắn gọn vì khách hàng bận rộn",,,,,,,,
+83,v3_fewshot,cskh_junior,Kỹ năng giao tiếp,"Nhân viên Chăm sóc Khách hàng nên làm gì khi gặp phải tình huống không thể giải quyết?
+A. Tự ý đưa ra quyết định
+B. Tránh nói với khách hàng và giữ im lặng
+C. Giao cho cấp trên hoặc bộ phận liên quan để xử lý  ✓
+D. Hứa sẽ tự tìm cách giải quyết mà không thông báo",,,,,,,,
+84,v3_fewshot,cskh_junior,Kỹ năng lắng nghe,"Khi khách hàng gọi điện và nói họ không hài lòng với sản phẩm đã mua, nhân viên nên làm gì đầu tiên?
+A. Tranh cãi với khách hàng về chất lượng sản phẩm
+B. Hỏi rõ nguyên nhân và cảm thông cho khách hàng  ✓
+C. Yêu cầu khách hàng gửi lại sản phẩm để kiểm tra
+D. Gợi ý khách hàng nên mua sản phẩm khác",,,,,,,,
+85,v3_fewshot,cskh_junior,Kỹ năng lắng nghe,"Nếu một khách hàng gọi điện với nhiều câu hỏi phức tạp, nhân viên nên làm gì?
+A. Tránh trả lời và chuyển sang nhân viên khác
+B. Hãy kiên nhẫn lắng nghe và giải đáp từng câu hỏi  ✓
+C. Gợi ý khách hàng tìm thông tin trên website
+D. Yêu cầu khách hàng gửi email để có thể trả lời chi tiết hơn",,,,,,,,
+86,v3_fewshot,cskh_junior,Kỹ năng lắng nghe,"Khi khách hàng gọi điện với một vấn đề phức tạp, nhân viên nên làm gì để đảm bảo họ hiểu rõ vấn đề?
+A. Trả lời nhanh chóng để kết thúc cuộc gọi
+B. Hỏi lại khách hàng về thông tin chi tiết và ghi chú  ✓
+C. Gợi ý khách hàng đến trung tâm dịch vụ khách hàng
+D. Yêu cầu khách hàng đợi một chút vì nhân viên cần tìm hiểu thêm",,,,,,,,
+87,v3_fewshot,cskh_junior,Xử lý tình huống khách hàng khó tính,"Khách hàng gọi điện phản ánh rằng họ đã thanh toán hóa đơn nhưng vẫn nhận được thông báo thiếu tiền. Làm gì là bước đầu tiên bạn nên thực hiện?
+A. Gọi lại khách hàng để xác nhận thông tin
+B. Kiểm tra lại hệ thống và tìm kiếm giao dịch của khách hàng  ✓
+C. Hứa với khách hàng sẽ giải quyết ngay lập tức
+D. Tư vấn khách hàng sử dụng phương thức thanh toán khác",,,,,,,,
+88,v3_fewshot,cskh_junior,Xử lý tình huống khách hàng khó tính,"Khách hàng đến cửa hàng phàn nàn về chất lượng sản phẩm và yêu cầu hoàn tiền. Bạn nên làm gì đầu tiên?
+A. Hỏi rõ nguyên nhân và lý do của khách hàng  ✓
+B. Tư vấn khách hàng sử dụng sản phẩm theo hướng dẫn
+C. Yêu cầu khách hàng mang lại sản phẩm để kiểm tra
+D. Trả lời khách hàng rằng không thể hoàn tiền",,,,,,,,
+89,v3_fewshot,cskh_junior,Kiên nhẫn,"Khi một khách hàng gọi điện với nhiều thắc mắc phức tạp, bạn cần dành bao lâu để giải quyết vấn đề của họ mà không bị gián đoạn?
+A. 10 phút
+B. 30 phút
+C. 1 giờ
+D. Không giới hạn thời gian  ✓",,,,,,,,
+90,v3_fewshot,project_manager_senior,Quản lý phạm vi dự án,"Khi một dự án lớn bị chia thành nhiều giai đoạn nhỏ hơn để quản lý, quy trình này gọi là gì?
+A. Phân tích phạm vi
+B. Chia nhỏ phạm vi
+C. Phân giải phạm vi  ✓
+D. Phân tách phạm vi",,,,,,,,
+91,v3_fewshot,project_manager_senior,Quản lý phạm vi dự án,"Trong quản lý dự án, công cụ nào được sử dụng để xác định và kiểm soát các thay đổi trong phạm vi dự án?
+A. Plan-Do-Check-Act (PDCA)
+B. Phân tích SWOT
+C. Quản lý rủi ro
+D. Quản lý thay đổi  ✓",,,,,,,,
+92,v3_fewshot,project_manager_senior,Quản lý thời gian dự án,"Khi quản lý một dự án với nhiều công việc song hành, bạn phát hiện rằng có một số công việc phụ thuộc vào nhau. Công cụ nào sau đây sẽ giúp bạn tổ chức và theo dõi các mối quan hệ này hiệu quả nhất?
+A. Gantt Chart  ✓
+B. Trello
+C. MS Word
+D. Excel",,,,,,,,
+93,v3_fewshot,project_manager_senior,Quản lý thời gian dự án,"Trong quá trình quản lý dự án, bạn nhận thấy rằng một số thành viên trong đội không tuân thủ lịch trình đã được lên kế hoạch. Phương pháp nào sau đây sẽ giúp cải thiện tình hình này?
+A. Tăng cường giám sát
+B. Thay đổi lịch trình
+C. Giao thêm công việc cho họ
+D. Đào tạo kỹ năng quản lý thời gian  ✓",,,,,,,,
+94,v3_fewshot,project_manager_senior,Quản lý chi phí dự án,"Trong quản lý chi phí dự án, nếu phát hiện một khoản chi phí không hợp lệ nhưng đã được thanh toán, biện pháp nào sau đây là phù hợp nhất để xử lý?
+A. Từ chối thanh toán và yêu cầu hoàn tiền
+B. Ghi nhận vào tài khoản riêng chờ quyết định
+C. Thực hiện giao dịch đảo ngược và điều chỉnh  ✓
+D. Để qua không xử lý",,,,,,,,
+95,v3_fewshot,project_manager_senior,Quản lý rủi ro và thay đổi trong dự án,"Trong một dự án xây dựng, nếu phát hiện ra rằng việc sử dụng vật liệu không đạt chuẩn có thể gây nguy hiểm cho công trình, quản lý dự án nên thực hiện bước nào đầu tiên?
+A. Tiếp tục giám sát và hy vọng vấn đề sẽ tự giải quyết
+B. Tổ chức cuộc họp khẩn cấp với đội ngũ kỹ thuật để thảo luận về các biện pháp khắc phục  ✓
+C. Gửi thông báo cho khách hàng rằng chất lượng công trình có thể bị ảnh hưởng
+D. Thay đổi kế hoạch dự án để loại bỏ hạng mục sử dụng vật liệu không đạt chuẩn",,,,,,,,
+96,v3_fewshot,project_manager_senior,Quản lý rủi ro và thay đổi trong dự án,"Khi một thay đổi lớn trong dự án được đề xuất, quản lý dự án cần thực hiện bước nào đầu tiên?
+A. Thực hiện ngay thay đổi để đảm bảo tiến độ
+B. Thông báo cho khách hàng về việc thay đổi này
+C. Đánh giá tác động của thay đổi và xác định kế hoạch hành động  ✓
+D. Tư vấn cho đội ngũ kỹ thuật thực hiện thay đổi",,,,,,,,
+97,v3_fewshot,project_manager_senior,Lãnh đạo và giao tiếp với stakeholder,"Khi giao tiếp với các stakeholder, quản lý dự án nên sử dụng phương pháp nào để đảm bảo thông tin được truyền đạt một cách rõ ràng và chính xác?
+A. Gửi email nội bộ không có tiêu đề
+B. Sử dụng ngôn ngữ chuyên môn phức tạp
+C. Tạo ra báo cáo dài dòng với nhiều chi tiết
+D. Lập kế hoạch giao tiếp và sử dụng các phương tiện phù hợp  ✓",,,,,,,,
+98,v3_fewshot,project_manager_senior,Lãnh đạo và giao tiếp với stakeholder,"Trong một dự án, stakeholder yêu cầu thay đổi thiết kế. Quản lý dự án nên làm gì đầu tiên?
+A. Từ chối thay đổi vì nó không nằm trong phạm vi ban đầu
+B. Thực hiện thay đổi ngay lập tức để đáp ứng yêu cầu
+C. Ghi nhận yêu cầu và đánh giá tác động của nó lên dự án  ✓
+D. Trả lời stakeholder rằng bạn sẽ xem xét sau",,,,,,,,
+99,v3_fewshot,project_manager_senior,Lãnh đạo và giao tiếp với stakeholder,"Kỹ năng nào dưới đây không phải là một phần quan trọng trong việc lãnh đạo và giao tiếp với các stakeholder?
+A. Năng lực kỹ thuật chuyên môn  ✓
+B. Kỹ năng lắng nghe
+C. Kỹ năng giải quyết xung đột
+D. Kỹ năng xây dựng mối quan hệ",,,,,,,,
+100,v3_fewshot,edge_jd_rac,SQL JOIN,"Trong truy vấn SQL, nếu bạn muốn kết hợp dữ liệu từ hai bảng Customers và Orders dựa trên cột CustomerId mà vẫn giữ được hiệu suất cao, phương án nào sau đây là tốt nhất?
+A. JOIN không sử dụng chỉ mục
+B. INNER JOIN với chỉ mục trên cột CustomerId  ✓
+C. FULL OUTER JOIN
+D. LEFT JOIN",,,,,,,,
+101,v3_fewshot,edge_jd_rac,SQL JOIN,"Nếu bạn cần lấy tất cả các khách hàng từ bảng Customers và chỉ những đơn đặt hàng có trạng thái 'Đã thanh toán' từ bảng Orders, phương án nào sau đây là đúng?
+A. LEFT JOIN
+B. RIGHT JOIN
+C. INNER JOIN
+D. LEFT OUTER JOIN  ✓",,,,,,,,
+102,v3_fewshot,edge_jd_rac,Hạch toán thuế GTGT,"Doanh nghiệp bán hàng hóa trị giá 30 triệu cho khách hàng nhưng chưa nhận tiền. Bút toán ghi nhận đúng là gì?
+A. Nợ Hàng hóa / Có Tiền mặt
+B. Nợ Doanh thu / Có Hàng hóa  ✓
+C. Nợ Hàng hóa / Có Doanh thu
+D. Nợ Tiền mặt / Có Hàng hóa",,,,,,,,
+103,v3_fewshot,edge_jd_thieu_kythuat,Giao tiếp tiếng Việt,"Khi giao tiếp với khách hàng, bạn nhận thấy họ không hiểu rõ thông tin doanh nghiệp cung cấp. Cách tốt nhất để cải thiện là gì?
+A. Yêu cầu khách hàng xác nhận lại yêu cầu
+B. Giảm tốc độ nói và giải thích kỹ hơn  ✓
+C. Sử dụng nhiều từ chuyên ngành để thể hiện kiến thức
+D. Gửi email thay vì gọi điện thoại",,,,,,,,
+104,v3_fewshot,edge_jd_thieu_kythuat,Giao tiếp tiếng Việt,"Trong một cuộc họp, bạn phát hiện có sự hiểu lầm giữa các thành viên về mục tiêu dự án. Cách xử lý hiệu quả nhất là gì?
+A. Từ chối thảo luận thêm để tránh mất thời gian
+B. Yêu cầu mỗi người viết lại mục tiêu của mình
+C. Ghi rõ mục tiêu vào văn bản và gửi cho mọi người  ✓
+D. Để mọi người tự giải quyết",,,,,,,,
+105,v3_fewshot,edge_jd_thieu_kythuat,Giao tiếp tiếng Việt,"Khi gặp phải một vấn đề không thường gặp trong công việc hàng ngày, bạn nên làm gì để đảm bảo thông tin được truyền đạt chính xác?
+A. Giải quyết vấn đề nhanh chóng và sau đó giải thích
+B. Gửi email cho tất cả mọi người về vấn đề này
+C. Tìm hiểu kỹ lưỡng trước khi thảo luận với đồng nghiệp  ✓
+D. Tránh nói về vấn đề để không làm phiền mọi người",,,,,,,,
+106,v3_fewshot,edge_jd_thieu_kythuat,Giao tiếp tiếng Việt,"Bạn nhận được phản hồi từ khách hàng rằng họ không hài lòng với dịch vụ. Cách tiếp cận tốt nhất là gì?
+A. Phản hồi lại rằng bạn đã cố gắng hết sức
+B. Tránh thảo luận về vấn đề để tránh căng thẳng
+C. Xác định nguyên nhân và đưa ra giải pháp cụ thể  ✓
+D. Hỏi khách hàng rằng họ không muốn sử dụng dịch vụ nữa",,,,,,,,
+107,v3_fewshot,edge_jd_thieu_kythuat,"Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)","Khi tạo một bảng trong Excel để theo dõi doanh thu hàng ngày, bạn muốn tự động tính tổng doanh thu cuối cùng của bảng. Cách nào sau đây sẽ giúp bạn thực hiện điều này?
+A. Chèn công thức SUM ở dưới cùng của bảng
+B. Sử dụng công cụ Tổng hợp dữ liệu
+C. Tạo một biểu đồ từ dữ liệu
+D. Thêm một cột mới và sử dụng công thức SUM  ✓",,,,,,,,
+108,v3_fewshot,edge_jd_thieu_kythuat,"Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)","Trong Word, bạn cần chèn một hình ảnh vào trang và điều chỉnh kích thước sao cho nó vừa khít với một phần cụ thể của văn bản. Cách nào sau đây sẽ giúp bạn thực hiện?
+A. Chọn hình ảnh rồi kéo góc để thay đổi kích thước
+B. Đặt hình ảnh lên trang, chọn 'Kích thước phù hợp'
+C. Sử dụng công cụ 'Thiết kế trang'
+D. Nhấn chuột phải vào hình ảnh và chọn 'Cài đặt hình ảnh'  ✓",,,,,,,,
+109,v3_fewshot,edge_jd_thieu_kythuat,"Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)","Bạn đang sử dụng PowerPoint để trình bày một dự án. Bạn muốn thêm một biểu đồ từ dữ liệu đã có trong Excel vào trang trình bày. Cách nào sau đây sẽ giúp bạn thực hiện?
+A. Chèn hình ảnh từ Excel
+B. Sử dụng công cụ 'Thiết kế trang'
+C. Nhấn chuột phải vào trang và chọn 'Chèn đồ họa từ Excel'  ✓
+D. Tạo biểu đồ mới trong PowerPoint",,,,,,,,
+110,v3_fewshot,edge_jd_thieu_kythuat,Quản lý lịch hẹn và lịch trình,"Khi một khách hàng đặt lịch hẹn vào giờ cao điểm, bạn cần làm gì để đảm bảo lịch trình không bị xung đột?
+A. Tự động chuyển lịch hẹn sang thời gian trống  ✓
+B. Gửi email nhắc nhở khách hàng về lịch hẹn
+C. Yêu cầu khách hàng chọn lại thời gian
+D. Tạo một lịch dự phòng cho khách hàng",,,,,,,,
+111,v3_fewshot,edge_jd_thieu_kythuat,Quản lý lịch hẹn và lịch trình,"Trong trường hợp khách hàng không thể tham gia vào lịch hẹn đã đặt, bạn nên xử lý như thế nào?
+A. Hủy lịch hẹn và không thông báo lại
+B. Gửi email cho khách hàng về việc hủy lịch hẹn
+C. Tự động chuyển lịch hẹn sang người khác
+D. Yêu cầu khách hàng chọn lại thời gian  ✓",,,,,,,,

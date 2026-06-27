@@ -1,0 +1,1307 @@
+[
+  {
+    "jd_id": "dev_dotnet_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "C# OOP",
+        "question": "Trong C#, lớp nào sau đây là lớp gốc nhất và từ đó tất cả các lớp khác kế thừa?",
+        "options": [
+          "System.Object",
+          "System.Class",
+          "BaseClass",
+          "RootClass"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "C# OOP",
+        "question": "Trong lập trình hướng đối tượng, phương thức nào sau đây được sử dụng để khởi tạo trạng thái ban đầu của một đối tượng?",
+        "options": [
+          "Initialize",
+          "Constructor",
+          "Setup",
+          "Start"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "LINQ",
+        "question": "Trong LINQ, phương thức nào sau đây được sử dụng để lọc các phần tử trong một sequence dựa trên điều kiện?",
+        "options": [
+          "Where",
+          "Select",
+          "OrderBy",
+          "GroupBy"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "HTTP/REST",
+        "question": "Trong HTTP/REST, phương thức nào được sử dụng để tạo một tài nguyên mới?",
+        "options": [
+          "GET",
+          "POST",
+          "PUT",
+          "DELETE"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "SQL SELECT, JOIN",
+        "question": "Trong SQL, để lấy tất cả các cột từ bảng 'Customers' và 'Orders', bạn sẽ sử dụng câu lệnh nào?",
+        "options": [
+          "'SELECT * FROM Customers JOIN Orders'",
+          "'SELECT * FROM Customers INNER JOIN Orders'",
+          "'SELECT * FROM Customers AND Orders'",
+          "'SELECT * FROM Customers LEFT JOIN Orders'"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "SQL SELECT, JOIN",
+        "question": "Nếu bạn muốn lấy tất cả các khách hàng từ bảng 'Customers' và chỉ những đơn đặt hàng có cùng ID khách hàng, câu lệnh SQL nào sẽ phù hợp?",
+        "options": [
+          "'SELECT * FROM Customers JOIN Orders'",
+          "'SELECT * FROM Customers INNER JOIN Orders ON Customers.CustomerID = Orders.CustomerID'",
+          "'SELECT * FROM Customers LEFT JOIN Orders'",
+          "'SELECT * FROM Customers RIGHT JOIN Orders'"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Entity Framework Core",
+        "question": "Trong Entity Framework Core, phương thức nào sau đây được sử dụng để thực hiện lệnh INSERT vào cơ sở dữ liệu?",
+        "options": [
+          "SaveChanges()",
+          "Add()",
+          "Insert()",
+          "Create()"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "API RESTful",
+        "question": "API RESTful tuân theo nguyên tắc nào sau đây?",
+        "options": [
+          "API phải hỗ trợ cả GET, POST, PUT và DELETE",
+          "API chỉ nên sử dụng HTTP status code 200 OK",
+          "API không cần tuân theo bất kỳ nguyên tắc nào",
+          "API phải tuân thủ các nguyên tắc của kiến trúc REST như stateless, cacheable, client-server"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Git",
+        "question": "Trong Git, lệnh nào sau đây được sử dụng để ghi nhận các thay đổi trong repository?",
+        "options": [
+          "git commit",
+          "git push",
+          "git pull",
+          "git clone"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Unit Testing",
+        "question": "Trong Unit Testing, phương pháp nào sau đây không phải là một trong những công cụ phổ biến để thực hiện các bài kiểm thử đơn vị cho mã .NET?",
+        "options": [
+          "NUnit",
+          "MSTest",
+          "Junit",
+          "xUnit"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "dev_dotnet_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Thiết kế kiến trúc microservices",
+        "question": "Trong kiến trúc microservices, component nào dưới đây thường đóng vai trò là trung tâm điều phối giữa các dịch vụ nhỏ?",
+        "options": [
+          "Database",
+          "API Gateway",
+          "Load Balancer",
+          "Service Discovery"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Thiết kế kiến trúc microservices",
+        "question": "Khi thiết kế microservices, nguyên tắc nào dưới đây không phù hợp để đảm bảo tính linh hoạt và khả năng mở rộng?",
+        "options": [
+          "Mỗi dịch vụ chỉ xử lý một chức năng cụ thể",
+          "Sử dụng cùng một cơ sở dữ liệu cho tất cả các dịch vụ",
+          "Tối ưu hóa việc tái sử dụng mã giữa các dịch vụ",
+          "Cung cấp giao diện API rõ ràng và độc lập"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": ".NET Framework",
+        "question": ".NET Framework sử dụng ngôn ngữ lập trình nào làm nền tảng chính để phát triển ứng dụng?",
+        "options": [
+          "C++",
+          "Java",
+          "C#",
+          "Python"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)",
+        "question": "Để tối ưu hóa truy vấn Entity Framework Core khi sử dụng SQL Server, bạn nên chọn phương án nào dưới đây?",
+        "options": [
+          "Sử dụng Include để tải tất cả các thực thể con",
+          "Tạo chỉ mục trên cột thường được dùng trong điều kiện WHERE",
+          "Không bao giờ sử dụng Include vì nó gây ra N+1 query",
+          "Đặt câu truy vấn SQL phức tạp vào RawSQL"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)",
+        "question": "Trong Entity Framework Core, cách nào sau đây giúp tránh N+1 query hiệu quả?",
+        "options": [
+          "Sử dụng Include để tải tất cả các thực thể con",
+          "Tạo chỉ mục trên cột thường được dùng trong điều kiện WHERE",
+          "Sử dụng AsNoTracking() khi lấy dữ liệu không cần thay đổi",
+          "Đặt câu truy vấn SQL phức tạp vào RawSQL"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)",
+        "question": "Khi xem Execution Plan của một truy vấn Entity Framework Core, bạn phát hiện thấy có nhiều scans table. Điều này cho thấy gì?",
+        "options": [
+          "Truy vấn đã được tối ưu hóa tốt",
+          "Có thể thiếu chỉ mục hoặc cấu trúc dữ liệu không phù hợp",
+          "Execution Plan là chính xác và không cần cải thiện",
+          "Entity Framework Core đang tự động tối ưu truy vấn"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "API Design and Review",
+        "question": "Khi thiết kế API cho ứng dụng .NET, bạn nên ưu tiên sử dụng kiểu dữ liệu nào để đảm bảo tính tương thích và dễ dàng sử dụng?",
+        "options": [
+          "Nullable types",
+          "Primitive types",
+          "Complex types with nested objects",
+          "Generic types"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "API Design and Review",
+        "question": "Trong quá trình review API, bạn phát hiện một phương thức có thể bị tấn công bằng cách gửi dữ liệu không hợp lệ. Phương pháp nào sau đây là tốt nhất để ngăn chặn vấn đề này?",
+        "options": [
+          "Thêm validation trong code",
+          "Sử dụng try-catch block",
+          "Tăng cường bảo mật ở lớpPresentation",
+          "Áp dụng input validation tại điểm tiếp cận API"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Pattern CQRS, Repository, Dependency Injection",
+        "question": "Trong kiến trúc CQRS (Command Query Responsibility Segregation), Repository và Dependency Injection có vai trò như thế nào?",
+        "options": [
+          "Repository chịu trách nhiệm quản lý giao tiếp với cơ sở dữ liệu, trong khi Dependency Injection giúp quản lý các phụ thuộc giữa các component.",
+          "Dependency Injection chỉ định cách thức thực thi của các phương thức trong Repository.",
+          "Cả hai đều không liên quan đến CQRS và hoạt động độc lập.",
+          "Repository là một phần của Dependency Injection."
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Xử lý vấn đề concurrency",
+        "question": "Trong lập trình .NET, để đảm bảo tính nhất quán của dữ liệu trong một ứng dụng đa luồng, bạn nên sử dụng phương thức nào sau đây?",
+        "options": [
+          "Parallel.Invoke",
+          "Task.Run",
+          "Interlocked.Increment",
+          "BackgroundWorker"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "frontend_react_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Tối ưu render React",
+        "question": "Khi tối ưu hóa render React, phương pháp nào sau đây không giúp cải thiện hiệu suất?",
+        "options": [
+          "Sử dụng memoization với React.memo",
+          "Tối ưu props truyền vào component con",
+          "Sắp xếp state và props theo thứ tự tăng dần",
+          "Sử dụng shouldComponentUpdate trong class components"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Tối ưu render React",
+        "question": "Để tối ưu hóa render React, bạn nên sử dụng hook nào để tránh tính toán không cần thiết?",
+        "options": [
+          "useState",
+          "useEffect",
+          "useCallback",
+          "useContext"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Viết test bằng Jest/React Testing Library",
+        "question": "Khi sử dụng Jest và React Testing Library để viết test cho một component React đơn giản với state, bạn nên sử dụng phương thức nào sau đây để render component?",
+        "options": [
+          "render(<Component />)",
+          "mount(<Component />)",
+          "shallow(<Component />)",
+          "test(<Component />)"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Xây dựng component tái sử dụng",
+        "question": "Khi xây dựng component tái sử dụng trong React, bạn nên sử dụng tính năng nào để truyền dữ liệu từ cha đến con?",
+        "options": [
+          "PropTypes",
+          "State",
+          "Props",
+          "Context"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Quản lý state bằng Redux hoặc Context API",
+        "question": "Khi sử dụng Redux trong React, phương thức nào sau đây được sử dụng để dispatch một action?",
+        "options": [
+          "store.dispatch()",
+          "this.props.dispatch()",
+          "connect()",
+          "useState()"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Quản lý state bằng Redux hoặc Context API",
+        "question": "Trong Context API của React, phương thức nào được sử dụng để cung cấp giá trị cho Provider?",
+        "options": [
+          "useContext()",
+          "useReducer()",
+          "createContext()",
+          "useState()"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Tích hợp REST API",
+        "question": "Khi tích hợp REST API vào ứng dụng React, phương thức nào sau đây thường được sử dụng để gửi yêu cầu GET đến server?",
+        "options": [
+          "fetch()",
+          "axios.get()",
+          "$.ajax()",
+          "react.request()"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Hiểu virtual DOM",
+        "question": "Virtual DOM trong React là gì?",
+        "options": [
+          "Một phiên bản thực tế của DOM để tăng hiệu suất giao diện người dùng",
+          "Một công cụ để tối ưu hóa việc tải trang web",
+          "Một thư viện JavaScript độc lập với React để tạo giao diện người dùng",
+          "Một cơ chế quản lý state trong ứng dụng React"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Biết tối ưu hiệu năng frontend",
+        "question": "Khi tối ưu hóa hiệu năng frontend, phương pháp nào sau đây không phù hợp?",
+        "options": [
+          "Sử dụng lazy loading cho các component không cần thiết",
+          "Tối ưu hóa CSS và JavaScript bằng cách minify mã nguồn",
+          "Sử dụng CDN để tải nhanh tài nguyên từ xa",
+          "Bỏ qua việc sử dụng cache vì nó không ảnh hưởng đến hiệu năng"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Biết tối ưu hiệu năng frontend",
+        "question": "Để tối ưu hóa hiệu suất rendering của React, bạn nên làm gì với các component thường xuyên thay đổi?",
+        "options": [
+          "Đặt chúng vào <React.Fragment> để tránh tạo ra thêm DOM nodes",
+          "Sử dụng shouldComponentUpdate() hoặc React.memo() để kiểm soát khi nào component được re-render",
+          "Tăng số lần render mỗi giây để đảm bảo cập nhật liên tục",
+          "Loại bỏ tất cả state và props không cần thiết"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "data_engineer_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "SQL nâng cao",
+        "question": "Trong SQL, cú pháp nào được sử dụng để thực hiện việc trích xuất dữ liệu từ một bảng dựa trên điều kiện cụ thể?",
+        "options": [
+          "SELECT",
+          "INSERT",
+          "UPDATE",
+          "DELETE"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "SQL nâng cao",
+        "question": "Khi sử dụng JOIN trong SQL, loại JOIN nào được sử dụng để trả về tất cả các hàng từ cả hai bảng, ngay cả khi không có khớp?",
+        "options": [
+          "INNER JOIN",
+          "LEFT JOIN",
+          "RIGHT JOIN",
+          "FULL OUTER JOIN"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "SQL nâng cao",
+        "question": "Trong SQL, phương thức nào được sử dụng để sắp xếp kết quả theo một cột?",
+        "options": [
+          "ORDER BY",
+          "GROUP BY",
+          "HAVING",
+          "LIMIT"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Window function trong SQL",
+        "question": "Window function trong SQL được sử dụng để làm gì?",
+        "options": [
+          "Để thực hiện các thao tác trên tập dữ liệu không liên quan",
+          "Để thực hiện các thao tác trên tập dữ liệu có liên quan, tạo ra khung dữ liệu (window) và áp dụng hàm lên đó",
+          "Để sắp xếp dữ liệu theo thứ tự nhất định",
+          "Để cập nhật dữ liệu trong bảng"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Window function trong SQL",
+        "question": "Trong câu lệnh SQL, phương thức nào sau đây không phải là một window function?",
+        "options": [
+          "ROW_NUMBER()",
+          "SUM()",
+          "RANK()",
+          "LEAD()"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "CTE (Common Table Expressions) trong SQL",
+        "question": "Trong SQL, CTE (Common Table Expressions) giúp gì?",
+        "options": [
+          "CTE cho phép truy vấn dữ liệu từ nhiều bảng khác nhau mà không cần sử dụng JOIN.",
+          "CTE giúp tối ưu hóa hiệu suất của các câu truy vấn phức tạp bằng cách lưu kết quả trung gian vào một bảng tạm thời.",
+          "CTE cho phép tái sử dụng cùng một tập kết quả trong một truy vấn SQL nhiều lần mà không cần viết lại mã.",
+          "CTE được sử dụng để tạo ra các ràng buộc khóa ngoại giữa các bảng."
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Python",
+        "question": "Trong Python, hàm nào được sử dụng để đọc dữ liệu từ một file CSV?",
+        "options": [
+          "read_csv()",
+          "load_csv()",
+          "csv_read()",
+          "read_file()"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Python",
+        "question": "Trong Python, cú pháp nào được sử dụng để tạo một dictionary từ hai list?",
+        "options": [
+          "dict(list1, list2)",
+          "dict(zip(list1, list2))",
+          "combine(list1, list2)",
+          "merge(list1, list2)"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Python",
+        "question": "Trong Python, phương thức nào được sử dụng để in ra thông tin về một object?",
+        "options": [
+          "print()",
+          "info()",
+          "describe()",
+          "inspect()"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Spark",
+        "question": "Trong Apache Spark, hàm nào sau đây được sử dụng để tạo một DataFrame từ dữ liệu?",
+        "options": [
+          "spark.createDataFrame()",
+          "spark.newDataFrame()",
+          "spark.loadDataFrame()",
+          "spark.readDataFrame()"
+        ],
+        "correct_index": 0
+      }
+    ]
+  },
+  {
+    "jd_id": "ketoan_tonghop_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Nắm vững nguyên lý kế toán kép",
+        "question": "Trong nguyên lý kế toán kép, giao dịch mua hàng với giá trị VAT bao gồm cả tiền mặt và tín dụng được thể hiện như thế nào?",
+        "options": [
+          "Tài khoản Hàng tồn kho tăng, Tài khoản Chi phí bán hàng giảm",
+          "Tài khoản Hàng tồn kho tăng, Tài khoản Nợ khác tăng, Tài khoản Tiền mặt giảm",
+          "Tài khoản Hàng tồn kho tăng, Tài khoản Nợ khác tăng, Tài khoản Tiền mặt và Tài khoản Thuế GTGT vào tăng",
+          "Tài khoản Hàng tồn kho tăng, Tài khoản Chi phí bán hàng tăng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Nắm vững nguyên lý kế toán kép",
+        "question": "Khi một công ty bán hàng với giá trị VAT bao gồm cả tiền mặt và tín dụng, giao dịch này sẽ được thể hiện như thế nào?",
+        "options": [
+          "Tài khoản Doanh thu tăng, Tài khoản Nợ khác giảm",
+          "Tài khoản Doanh thu tăng, Tài khoản Tiền mặt tăng, Tài khoản Thuế GTGT vào giảm",
+          "Tài khoản Doanh thu tăng, Tài khoản Tiền mặt và Tài khoản Thuế GTGT vào tăng, Tài khoản Nợ khác giảm",
+          "Tài khoản Doanh thu tăng, Tài khoản Chi phí bán hàng giảm"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Hiểu các tài khoản kế toán",
+        "question": "Trong hệ thống tài khoản kế toán, tài khoản nào sau đây thường được sử dụng để ghi nhận chi phí mua sắm và bảo dưỡng thiết bị?",
+        "options": [
+          "Tài khoản 111 - Chi phí bán hàng",
+          "Tài khoản 222 - Chi phí quản lý doanh nghiệp",
+          "Tài khoản 403 - Mua sắm, sửa chữa và bảo dưỡng tài sản cố định",
+          "Tài khoản 501 - Thu nhập khác"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Hạch toán doanh thu - chi phí - giá vốn",
+        "question": "Trong hạch toán doanh thu, khi một công ty bán hàng với giá 5.000.000 đồng và chi phí bán hàng là 1.200.000 đồng, doanh thu ghi nhận trong báo cáo tài chính sẽ là bao nhiêu?",
+        "options": [
+          "800.000 đồng",
+          "000.000 đồng",
+          "200.000 đồng",
+          "200.000 đồng"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Hạch toán doanh thu - chi phí - giá vốn",
+        "question": "Khi một doanh nghiệp mua hàng với giá vốn là 3.500.000 đồng và bán lại với giá 4.200.000 đồng, chi phí ghi nhận trong báo cáo tài chính sẽ là bao nhiêu?",
+        "options": [
+          "500.000 đồng",
+          "200.000 đồng",
+          "700.000 đồng",
+          "870.000 đồng"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Hạch toán doanh thu - chi phí - giá vốn",
+        "question": "Trong quá trình hạch toán, nếu một công ty nhận được tiền trước khi bán hàng và ghi vào tài khoản tiền mặt, số tiền này sẽ được ghi vào phần nào của báo cáo tài chính?",
+        "options": [
+          "Doanh thu",
+          "Chi phí",
+          "Giá vốn hàng bán",
+          "Tiền mặt"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Thành thạo Excel",
+        "question": "Trong Excel, công thức nào sau đây tính tổng số lượng hàng bán trong cột D từ dòng 2 đến dòng 10?",
+        "options": [
+          "=SUM(D2:D10)",
+          "=AVERAGE(D2:D10)",
+          "=COUNT(D2:D10)",
+          "=MIN(D2:D10)"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Thành thạo Excel",
+        "question": "Để tạo một biểu đồ cột từ dữ liệu trong Excel, bạn cần thực hiện các bước nào sau đây?",
+        "options": [
+          "Chọn dữ liệu -> Chèn -> Biểu đồ",
+          "Chọn dữ liệu -> Thêm -> Biểu đồ",
+          "Chọn dữ liệu -> Trang tổng hợp -> Biểu đồ",
+          "Chọn dữ liệu -> Công cụ -> Biểu đồ"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Kiểm soát chứng từ, quản lý sổ sách",
+        "question": "Trong quy trình kiểm soát chứng từ và quản lý sổ sách của kế toán tổng hợp, bước nào sau đây không phải là một phần quan trọng?",
+        "options": [
+          "Xác minh tính chính xác của thông tin trên chứng từ",
+          "Lập báo cáo tài chính định kỳ",
+          "Sắp xếp và lưu trữ chứng từ theo quy định",
+          "Tạo ra các hóa đơn bán hàng"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Lập báo cáo tài chính theo Thông tư 200",
+        "question": "Theo Thông tư 200, báo cáo tài chính bao gồm các phần nào?",
+        "options": [
+          "Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ và Báo cáo kết quả hoạt động kinh doanh",
+          "Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ, Báo cáo kết quả hoạt động kinh doanh và Báo cáo lưu chuyển tiền mặt",
+          "Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ, Báo cáo kết quả hoạt động kinh doanh, Báo cáo lưu chuyển tiền mặt và Báo cáo biến động vốn chủ sở hữu",
+          "Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ, Báo cáo kết quả hoạt động kinh doanh, Báo cáo lưu chuyển tiền mặt, Báo cáo biến động vốn chủ sở hữu và Báo cáo quản trị"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "sales_b2b_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Khi gặp khách hàng B2B, bạn cần sử dụng kỹ năng giao tiếp nào để hiểu rõ nhu cầu của họ?",
+        "options": [
+          "Gợi ý sản phẩm ngay lập tức",
+          "Nghe và hỏi nhiều câu hỏi mở",
+          "Sử dụng ngôn ngữ chuyên môn cao",
+          "Tránh đưa ra bất kỳ phản hồi nào"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Trong quá trình thuyết phục khách hàng, phương pháp nào sau đây là hiệu quả nhất?",
+        "options": [
+          "Đưa ra nhiều ưu điểm của sản phẩm mà không cần chứng minh",
+          "Sử dụng ngôn ngữ phức tạp để thể hiện chuyên môn",
+          "Chia sẻ kinh nghiệm thành công của khách hàng khác",
+          "Hứa hẹn giảm giá ngay lập tức"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Khi gặp phải phản đối từ khách hàng, bạn nên làm gì để tiếp tục quá trình giao dịch?",
+        "options": [
+          "Tranh cãi với họ về lý do của sự phản đối",
+          "Ngắt lời và chuyển sang đề xuất khác",
+          "Xem xét lại vấn đề và tìm cách giải quyết",
+          "Bỏ qua phản đối và tiếp tục thuyết phục"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Kỹ năng nào sau đây không thuộc về kỹ năng giao tiếp và thuyết phục?",
+        "options": [
+          "Nghe có ý thức",
+          "Biết cách lắng nghe",
+          "Kiểm soát cảm xúc của mình",
+          "Sử dụng ngôn ngữ cơ thể để nhấn mạnh"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt)",
+        "question": "Trong quy trình bán hàng B2B, bước nào diễn ra sau khi đã tiếp cận khách hàng?",
+        "options": [
+          "Đàm phán",
+          "Tư vấn sản phẩm",
+          "Chốt đơn hàng",
+          "Giao hàng"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt)",
+        "question": "Khi tư vấn sản phẩm cho khách hàng B2B, nhân viên kinh doanh cần tập trung vào yếu tố nào?",
+        "options": [
+          "Giá cả thấp nhất",
+          "Thời gian giao hàng nhanh nhất",
+          "Ưu điểm và lợi ích của sản phẩm đối với nhu cầu cụ thể của khách hàng",
+          "Chất lượng sản phẩm tốt nhất"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt)",
+        "question": "Trong quá trình đàm phán, nhân viên kinh doanh B2B cần làm gì để đảm bảo chốt được đơn hàng?",
+        "options": [
+          "Đảm bảo khách hàng nhận ra giá trị của sản phẩm",
+          "Hỗ trợ khách hàng trong việc so sánh các lựa chọn khác",
+          "Thỏa thuận về điều khoản và điều kiện giao dịch",
+          "Tất cả các phương án trên"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Xử lý từ chối trong quá trình bán hàng",
+        "question": "Khi một khách hàng B2B từ chối mua sản phẩm của bạn, nhân viên kinh doanh nên làm gì tiếp theo?",
+        "options": [
+          "Gợi ý rằng khách hàng đang thiếu thông tin về sản phẩm",
+          "Thay đổi chủ đề cuộc trò chuyện sang các vấn đề cá nhân",
+          "Giải thích lại lợi ích của sản phẩm một cách rõ ràng và cụ thể",
+          "Tỏ thái độ không hài lòng và yêu cầu giải thích từ khách hàng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Xử lý từ chối trong quá trình bán hàng",
+        "question": "Trong trường hợp khách hàng B2B từ chối do giá cả, nhân viên kinh doanh nên làm gì?",
+        "options": [
+          "Tăng giá để bù đắp cho sự từ chối",
+          "Thay đổi chủ đề cuộc trò chuyện sang các sản phẩm khác",
+          "Xem xét khả năng giảm giá hoặc tìm hiểu về nhu cầu thực tế của khách hàng",
+          "Tránh thảo luận về giá và chuyển sang bàn bạc về chất lượng sản phẩm"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "digital_marketing_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Chạy quảng cáo Facebook Ads",
+        "question": "Khi chạy quảng cáo Facebook Ads, mục tiêu nào sau đây không phải là một trong những mục tiêu chính?",
+        "options": [
+          "Tăng nhận diện thương hiệu",
+          "Tăng doanh số bán hàng trực tiếp",
+          "Tạo sự chú ý về sản phẩm mới",
+          "Giảm giá thành sản xuất"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Chạy quảng cáo Facebook Ads",
+        "question": "Trong Facebook Ads, đơn vị đo lường nào được sử dụng để đánh giá hiệu suất của quảng cáo?",
+        "options": [
+          "CTR (Click-Through Rate)",
+          "CPM (Cost Per Mille)",
+          "CPC (Cost Per Click)",
+          "ROI (Return On Investment)"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Chạy quảng cáo Google Ads",
+        "question": "Khi tạo chiến dịch Google Ads, bạn cần chọn loại quảng cáo nào để hiển thị trên trang kết quả tìm kiếm của Google?",
+        "options": [
+          "Display",
+          "Video",
+          "Search",
+          "Shopping"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Chạy quảng cáo Google Ads",
+        "question": "Trong Google Ads, chỉ số nào được sử dụng để đo lường hiệu suất của quảng cáo dựa trên mức độ tương tác và chuyển đổi của khách hàng?",
+        "options": [
+          "CTR (Click-Through Rate)",
+          "CPC (Cost Per Click)",
+          "ROAS (Return on Advertising Spend)",
+          "CPM (Cost Per Mille)"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Tối ưu chỉ số CTR, CPC, CPA, ROAS",
+        "question": "Trong Digital Marketing, CTR (Click-Through Rate) là gì?",
+        "options": [
+          "Số lượng người dùng nhấp vào quảng cáo chia cho số lần hiển thị quảng cáo",
+          "Tổng doanh thu từ một đơn hàng chia cho chi phí đầu tư vào quảng cáo",
+          "Chi phí trung bình mỗi lần nhấp chuột",
+          "Tổng số lượt xem trang web chia cho tổng số người dùng"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Tối ưu chỉ số CTR, CPC, CPA, ROAS",
+        "question": "ROAS (Return on Advertising Spend) trong Digital Marketing được tính như thế nào?",
+        "options": [
+          "Doanh thu từ quảng cáo chia cho chi phí đầu tư vào quảng cáo",
+          "Chi phí trung bình mỗi lần nhấp chuột chia cho doanh thu từ quảng cáo",
+          "Số lượng người dùng nhấp vào quảng cáo chia cho số lượt xem",
+          "Tổng số lượt xem trang web chia cho tổng doanh thu"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Phân tích dữ liệu chiến dịch bằng Google Analytics",
+        "question": "Khi phân tích hiệu suất của một chiến dịch email marketing trên Google Analytics, bạn cần theo dõi chỉ số nào để đánh giá hiệu quả chuyển đổi?",
+        "options": [
+          "Bounce Rate",
+          "Conversion Rate",
+          "Page Views",
+          "Time on Site"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Phân tích dữ liệu chiến dịch bằng Google Analytics",
+        "question": "Trong Google Analytics, bạn cần sử dụng báo cáo nào để xem xét hành vi truy cập của khách hàng sau khi họ đã nhấp vào liên kết từ chiến dịch?",
+        "options": [
+          "Báo cáo Traffic Sources",
+          "Báo cáo Acquisition - All Traffic",
+          "Báo cáo Behavior - Site Content",
+          "Báo cáo Conversions"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Lập báo cáo hiệu quả chiến dịch marketing",
+        "question": "Khi lập báo cáo hiệu quả chiến dịch marketing, thông tin nào sau đây là quan trọng nhất để đánh giá sự thành công của chiến dịch?",
+        "options": [
+          "Số lượng trang web được thiết kế",
+          "Tổng số tiền đã chi cho quảng cáo",
+          "Lượt truy cập và chuyển đổi từ chiến dịch",
+          "Thời gian thực hiện chiến dịch"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Hiểu về phễu marketing",
+        "question": "Trong phễu marketing, giai đoạn nào sau cùng mà khách hàng đã quyết định mua sản phẩm?",
+        "options": [
+          "Giai đoạn nhận thức",
+          "Giai đoạn quan tâm",
+          "Giai段落继续由AI填写plenment",
+          "Giai đoạn hành động"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "hr_tuyendung_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Khi phỏng vấn ứng viên, chuyên viên tuyển dụng nên tập trung vào những thông tin nào?",
+        "options": [
+          "Thông tin cá nhân và học vấn của ứng viên",
+          "Kinh nghiệm làm việc và kỹ năng mềm của ứng viên",
+          "Mức lương mong muốn và thời gian làm việc của ứng viên",
+          "Quan hệ xã hội và mạng lưới của ứng viên"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Trong quá trình giao tiếp với các nhà tuyển dụng, chuyên viên tuyển dụng cần phải đảm bảo điều gì?",
+        "options": [
+          "Đảm bảo thông tin được cung cấp là chính xác và cập nhật",
+          "Sử dụng ngôn ngữ chuyên môn để thể hiện sự hiểu biết sâu sắc",
+          "Luôn đồng ý với mọi yêu cầu của nhà tuyển dụng",
+          "Chỉ tập trung vào lợi ích của công ty"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Khi tổ chức một buổi phỏng vấn nhóm, chuyên viên tuyển dụng nên làm gì để đảm bảo quá trình diễn ra hiệu quả?",
+        "options": [
+          "Đặt câu hỏi cá nhân cho từng ứng viên",
+          "Cho phép ứng viên tự do thảo luận mà không cần hướng dẫn",
+          "Xác định rõ mục tiêu và quy tắc của buổi phỏng vấn trước khi bắt đầu",
+          "Chỉ tập trung vào ứng viên có kinh nghiệm làm việc"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Trong quá trình giao tiếp qua email với ứng viên, chuyên viên tuyển dụng nên lưu ý điều gì?",
+        "options": [
+          "Sử dụng ngôn ngữ phức tạp để thể hiện sự chuyên nghiệp",
+          "Đảm bảo thông tin chính xác và rõ ràng trong mỗi email",
+          "Gửi nhiều email cùng một lúc để đảm bảo ứng viên nhận được thông tin",
+          "Không cần trả lời ngay lập tức, đợi ứng viên liên hệ lại"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Đọc và đối chiếu JD với hồ sơ ứng viên",
+        "question": "Khi đối chiếu thông tin trong Job Description (JD) với hồ sơ ứng viên, bạn nhận thấy rằng ứng viên có kinh nghiệm làm việc trong lĩnh vực A nhưng JD chỉ yêu cầu kinh nghiệm trong lĩnh vực B. Bạn sẽ đánh giá ứng viên như thế nào?",
+        "options": [
+          "Ứng viên không phù hợp vì không đáp ứng được yêu cầu của JD.",
+          "Ứng viên phù hợp vì họ có thể học hỏi và thích nghi nhanh chóng với lĩnh vực mới.",
+          "Ứng viên không phù hợp vì kinh nghiệm trong lĩnh vực A không liên quan đến công việc.",
+          "Ứng viên phù hợp nếu họ đã làm việc trong cả lĩnh vực A và B."
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Đọc và đối chiếu JD với hồ sơ ứng viên",
+        "question": "Trong quá trình đối chiếu, bạn phát hiện ứng viên có kỹ năng X nhưng JD chỉ yêu cầu kỹ năng Y. Bạn sẽ đánh giá như thế nào?",
+        "options": [
+          "Ứng viên không phù hợp vì họ thiếu kỹ năng Y.",
+          "Ứng viên phù hợp vì họ có kỹ năng X mà công việc không yêu cầu.",
+          "Ứng viên phù hợp nếu kỹ năng X là một phần quan trọng của vị trí và có thể bổ sung cho kỹ năng Y.",
+          "Ứng viên không phù hợp vì chỉ cần đáp ứng đúng yêu cầu của JD."
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer)",
+        "question": "Trong quy trình tuyển dụng, bước nào diễn ra trước khi tổ chức phỏng vấn?",
+        "options": [
+          "Gửi thư mời",
+          "Sàng lọc hồ sơ ứng viên",
+          "Chuẩn bị câu hỏi phỏng vấn",
+          "Cung cấp thông tin về công ty"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer)",
+        "question": "Trong quá trình sàng lọc hồ sơ, nhân viên tuyển dụng thường đánh giá các yếu tố nào?",
+        "options": [
+          "Mức lương mong muốn của ứng viên",
+          "Kinh nghiệm làm việc liên quan",
+          "Thời gian làm việc sẵn có",
+          "Ảnh chụp chứng minh thư"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer)",
+        "question": "Sau khi phỏng vấn, bước tiếp theo trong quy trình tuyển dụng là gì?",
+        "options": [
+          "Liên hệ với ứng viên để thông báo về kết quả",
+          "Chuẩn bị hợp đồng làm việc",
+          "Đánh giá lại hồ sơ ứng viên",
+          "Tổ chức buổi phỏng vấn thứ hai"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Cẩn thận, chủ động",
+        "question": "Khi nhận thấy một ứng viên tiềm năng nhưng hồ sơ chưa đầy đủ, chuyên viên tuyển dụng cấp Junior nên làm gì?",
+        "options": [
+          "Từ chối ứng viên vì hồ sơ không đầy đủ",
+          "Gửi email cho ứng viên để yêu cầu bổ sung thông tin và tiếp tục đánh giá",
+          "Thư từ ứng viên và kết thúc quá trình phỏng vấn",
+          "Bỏ qua thông tin thiếu hụt và tiếp tục với các ứng viên khác"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "cskh_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Khi khách hàng gọi điện với thắc mắc, nhân viên Chăm sóc Khách hàng nên làm gì đầu tiên?",
+        "options": [
+          "Gợi ý giải pháp nhanh nhất cho vấn đề của khách hàng",
+          "Nhấn mạnh ưu điểm sản phẩm/dịch vụ của công ty",
+          "Xác nhận thông tin và hiểu rõ vấn đề của khách hàng",
+          "Hỏi về lịch sử giao dịch của khách hàng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Trong trường hợp không thể giải quyết ngay thắc mắc của khách hàng, nhân viên Chăm sóc Khách hàng nên làm gì?",
+        "options": [
+          "Hứa hẹn sẽ gọi lại sau",
+          "Trả lời rằng công ty không thể giúp đỡ",
+          "Ghi chú vấn đề và chuyển cho bộ phận liên quan xử lý",
+          "Để khách hàng tự tìm cách giải quyết"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Kỹ năng nào sau đây là quan trọng nhất để nhân viên Chăm sóc Khách hàng cần có?",
+        "options": [
+          "Kỹ năng lập trình",
+          "Kỹ năng giao tiếp",
+          "Kỹ năng thiết kế đồ họa",
+          "Kỹ năng quản lý dự án"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Nếu khách hàng không hài lòng với dịch vụ, nhân viên Chăm sóc Khách hàng nên làm gì?",
+        "options": [
+          "Tránh tiếp xúc trực tiếp với khách hàng",
+          "Xác nhận cảm giác của khách hàng và xin lỗi",
+          "Hỏi khách hàng về mức giá thấp hơn",
+          "Đề xuất giảm bớt số lượng dịch vụ mà khách hàng đang sử dụng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kỹ năng lắng nghe",
+        "question": "Khi khách hàng gọi điện với nhiều vấn đề phức tạp, nhân viên Chăm sóc Khách hàng nên làm gì để thể hiện kỹ năng lắng nghe hiệu quả?",
+        "options": [
+          "Trả lời nhanh chóng và ngắn gọn để không làm mất thời gian của khách hàng",
+          "Gợi ý giải pháp ngay lập tức để khách hàng không phải chờ đợi",
+          "Ngắt lời khách hàng khi họ nói quá lâu để đưa ra câu hỏi chính xác",
+          "Xác nhận hiểu đúng thông tin bằng cách tóm tắt vấn đề và hỏi lại"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Kỹ năng lắng nghe",
+        "question": "Nếu một khách hàng không hài lòng với sản phẩm, nhân viên Chăm sóc Khách hàng nên làm gì để lắng nghe kỹ hơn?",
+        "options": [
+          "Trả lời rằng công ty đang luôn cải tiến và sẽ cố gắng hơn",
+          "Hỏi khách hàng cụ thể về vấn đề họ gặp phải và cảm nhận của họ",
+          "Giải thích lý do tại sao sản phẩm không phù hợp với khách hàng",
+          "Dẫn dắt cuộc trò chuyện sang các ưu điểm khác của sản phẩm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng lắng nghe",
+        "question": "Khi khách hàng gọi điện và nói rất nhanh, nhân viên Chăm sóc Khách hàng nên làm gì để đảm bảo họ hiểu đúng thông tin?",
+        "options": [
+          "Gợi ý với khách hàng rằng họ cần nói chậm lại",
+          "Ngắt lời khách hàng để hỏi lại vấn đề một cách rõ ràng",
+          "Xác nhận bằng cách lặp lại những gì mình đã nghe và hỏi lại nếu có điều gì không chắc chắn",
+          "Tránh làm phiền khách hàng bằng cách chờ họ tự giải thích lại"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Xử lý tình huống khách hàng khó tính",
+        "question": "Khi một khách hàng gọi điện với thái độ khó chịu vì sản phẩm bị lỗi, nhân viên Chăm sóc Khách hàng nên làm gì đầu tiên?",
+        "options": [
+          "Trả lời ngắn gọn và yêu cầu khách hàng đợi xử lý sau",
+          "Xác nhận thông tin của khách hàng và xin lỗi về sự không hài lòng",
+          "Giải thích rằng sản phẩm đang được bảo hành miễn phí",
+          "Yêu cầu khách hàng gửi lại sản phẩm để kiểm tra"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Xử lý tình huống khách hàng khó tính",
+        "question": "Nếu một khách hàng phản ánh về dịch vụ không tốt và yêu cầu hoàn tiền, nhân viên Chăm sóc Khách hàng nên xử lý như thế nào?",
+        "options": [
+          "Hứa hẹn sẽ giải quyết ngay lập tức mà không cần kiểm tra",
+          "Xác nhận lại vấn đề với khách hàng và hướng dẫn quy trình hoàn trả",
+          "Từ chối yêu cầu của khách hàng vì chính sách công ty không cho phép",
+          "Ghi chú lại và để khách hàng chờ đợi câu trả lời sau"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kiên nhẫn",
+        "question": "Khi một khách hàng gọi điện với nhiều thắc mắc phức tạp, bạn sẽ làm gì?",
+        "options": [
+          "Gợi ý khách hàng liên hệ bộ phận kỹ thuật để giải quyết vấn đề.",
+          "Hãy kiên nhẫn lắng nghe và giải đáp từng thắc mắc của khách hàng một cách cẩn thận.",
+          "Trả lời nhanh chóng nhưng không cần quá chi tiết để kết thúc cuộc gọi sớm.",
+          "Yêu cầu khách hàng gửi email để có thể trả lời sau khi nghiên cứu kỹ vấn đề."
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "project_manager_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Quản lý phạm vi dự án",
+        "question": "Trong quản lý phạm vi dự án, công cụ nào thường được sử dụng để xác định và kiểm soát các thay đổi trong phạm vi?",
+        "options": [
+          "Gantt Chart",
+          "Phân tích SWOT",
+          "Quản lý thay đổi (Change Management)",
+          "Đồ thị Ishikawa"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Quản lý phạm vi dự án",
+        "question": "Khi một dự án gặp phải rủi ro liên quan đến phạm vi, quản lý dự án nên thực hiện bước nào đầu tiên?",
+        "options": [
+          "Tạo ra các giải pháp thay thế",
+          "Xác định mức độ ảnh hưởng của rủi ro",
+          "Đánh giá lại kế hoạch dự án",
+          "Thông báo cho khách hàng"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Quản lý thời gian dự án",
+        "question": "Trong quản lý dự án, phương pháp nào sau đây thường được sử dụng để xác định và ưu tiên các nhiệm vụ theo mức độ quan trọng?",
+        "options": [
+          "Gantt Chart",
+          "Pareto Chart",
+          "Prioritization Matrix",
+          "Risk Register"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Quản lý thời gian dự án",
+        "question": "Khi quản lý thời gian dự án, phương pháp nào dưới đây được sử dụng để phân tích các rủi ro có thể ảnh hưởng đến tiến độ?",
+        "options": [
+          "Critical Path Method (CPM)",
+          "Earned Value Management (EVM)",
+          "Resource Leveling",
+          "Risk Analysis"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Quản lý chi phí dự án",
+        "question": "Trong quản lý chi phí dự án, phương pháp nào sau đây thường được sử dụng để xác định và kiểm soát chi phí hiệu quả?",
+        "options": [
+          "Phân tích SWOT",
+          "Quản lý rủi ro",
+          "Dự toán chi tiết (Detailed Budgeting)",
+          "Phân tích cạnh tranh thị trường"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Quản lý rủi ro và thay đổi trong dự án",
+        "question": "Trong quản lý dự án, quy trình nào sau đây là bước đầu tiên trong quá trình quản lý rủi ro?",
+        "options": [
+          "Xác định và đánh giá rủi ro",
+          "Tạo ra kế hoạch quản lý rủi ro",
+          "Phân tích tác động của rủi ro",
+          "Thực hiện các biện pháp phòng ngừa"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Quản lý rủi ro và thay đổi trong dự án",
+        "question": "Trong quá trình quản lý thay đổi dự án, bước nào sau đây không phải là một phần của quy trình?",
+        "options": [
+          "Xác định yêu cầu thay đổi",
+          "Đánh giá tác động của thay đổi",
+          "Thực hiện và kiểm tra thay đổi",
+          "Tạo ra kế hoạch quản lý rủi ro"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Lãnh đạo và giao tiếp với stakeholder",
+        "question": "Khi giao tiếp với các stakeholder, quản lý dự án cần lưu ý điều gì để đảm bảo thông tin truyền đạt một cách hiệu quả?",
+        "options": [
+          "Chỉ tập trung vào những vấn đề kỹ thuật",
+          "Đảm bảo thông tin được cung cấp đầy đủ và chính xác",
+          "Sử dụng ngôn ngữ chuyên môn phức tạp",
+          "Tránh trả lời các câu hỏi không liên quan"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Lãnh đạo và giao tiếp với stakeholder",
+        "question": "Trong quá trình lãnh đạo dự án, quản lý dự án cần sử dụng kỹ năng nào để giải quyết xung đột giữa các stakeholder?",
+        "options": [
+          "Kỹ năng lập kế hoạch",
+          "Kỹ năng giao tiếp và thương lượng",
+          "Kỹ năng phân tích số liệu",
+          "Kỹ năng thiết kế công nghệ"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Lãnh đạo và giao tiếp với stakeholder",
+        "question": "Quản lý dự án cần làm gì để đảm bảo stakeholder nhận thức được tầm quan trọng của việc tuân thủ các quy định pháp luật trong quá trình thực hiện dự án?",
+        "options": [
+          "Tránh thảo luận về vấn đề này",
+          "Chỉ thông báo cho một số stakeholder",
+          "Đảm bảo thông tin được truyền đạt đầy đủ và thường xuyên",
+          "Gửi email đơn giản không cần giải thích"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "edge_jd_rac",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "SQL JOIN",
+        "question": "Khi sử dụng JOIN trong SQL để kết hợp dữ liệu từ hai bảng có một trường chung, nhưng muốn lấy tất cả các bản ghi từ bảng thứ nhất và chỉ những bản ghi có trường chung với bảng thứ hai, nên sử dụng loại JOIN nào?",
+        "options": [
+          "INNER JOIN",
+          "LEFT JOIN",
+          "RIGHT JOIN",
+          "FULL OUTER JOIN"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "SQL JOIN",
+        "question": "Trong SQL, khi thực hiện JOIN giữa bảng A và B, nếu muốn kết hợp tất cả bản ghi từ bảng A với các bản ghi trong bảng B mà có trường chung, nên sử dụng loại JOIN nào?",
+        "options": [
+          "INNER JOIN",
+          "LEFT JOIN",
+          "RIGHT JOIN",
+          "FULL OUTER JOIN"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Hạch toán thuế GTGT",
+        "question": "Trong trường hợp bán hàng trả góp, doanh nghiệp cần xử lý như thế nào trong hạch toán thuế GTGT?",
+        "options": [
+          "Hạch toán thuế GTGT ngay khi giao hàng cho khách",
+          "Chỉ hạch toán thuế GTGT khi khách thanh toán đầy đủ",
+          "Tạm không hạch toán thuế GTGT, chờ đến khi khách trả hết nợ mới hạch toán",
+          "Phân bổ thuế GTGT theo tiến độ của việc khách trả góp"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "edge_jd_thieu_kythuat",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Khi giao tiếp với khách hàng, bạn cần sử dụng ngôn ngữ như thế nào để đảm bảo sự chuyên nghiệp và hiệu quả?",
+        "options": [
+          "Ngôn ngữ thô lỗ",
+          "Ngôn ngữ ngắn gọn",
+          "Ngôn ngữ lịch sự và rõ ràng",
+          "Ngôn ngữ phức tạp"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Trong trường hợp khách hàng có yêu cầu không rõ ràng, bạn sẽ làm gì để đảm bảo hiểu đúng yêu cầu của họ?",
+        "options": [
+          "Tự quyết định cách thực hiện",
+          "Yêu cầu khách hàng cung cấp thêm thông tin",
+          "Giao cho đồng nghiệp giải quyết",
+          "Tránh trả lời"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Khi gặp phải tình huống ngoại lệ trong công việc, bạn sẽ xử lý như thế nào?",
+        "options": [
+          "Tùy tiện giải quyết",
+          "Trao đổi với đồng nghiệp để tìm cách giải quyết",
+          "Để cho cấp trên giải quyết",
+          "Không hành động"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Nếu khách hàng có phản hồi tiêu cực về dịch vụ, bạn sẽ xử lý như thế nào?",
+        "options": [
+          "Tranh cãi với khách hàng",
+          "Xem nhẹ phản hồi của khách hàng",
+          "Tư duy tích cực và tìm cách cải thiện",
+          "Không xin lỗi"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)",
+        "question": "Khi sử dụng Microsoft Word để tạo một tài liệu, bạn muốn thêm một hình ảnh vào trang và điều chỉnh vị trí của nó sao cho hình ảnh này không bị di chuyển khi thay đổi kích thước trang. Bạn nên chọn tính năng nào trong các lựa chọn sau?",
+        "options": [
+          "Thêm hình ảnh thông thường",
+          "Thêm hình ảnh làm nền",
+          "Đặt hình ảnh vào một khung cố định",
+          "Điều chỉnh kích thước của hình ảnh"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)",
+        "question": "Trong Microsoft Excel, bạn cần tạo một bảng tính để theo dõi doanh thu hàng tháng. Bạn muốn sử dụng công thức để tự động tính tổng doanh thu cho từng tháng và tổng cộng năm. Công thức nào sau đây là cách đúng nhất để thực hiện?",
+        "options": [
+          "=SUM(A1:A30)",
+          "=TOTAL(A1:A30)",
+          "=ADDUP(A1:A30)",
+          "=SUMMARIZE(A1:A30)"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)",
+        "question": "Khi sử dụng Microsoft PowerPoint để trình bày, bạn muốn thêm một hiệu ứng chuyển đổi từ trang này sang trang khác. Hiệu ứng nào sau đây không phải là một trong các lựa chọn chuyển đổi sẵn có?",
+        "options": [
+          "Chuyển đổi từ trái sang phải",
+          "Chuyển đổi từ trên xuống dưới",
+          "Chuyển đổi từ giữa ra ngoài",
+          "Chuyển đổi từ dưới lên trên"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Quản lý lịch hẹn và lịch trình",
+        "question": "Khi quản lý lịch hẹn cho một hội nghị trực tuyến với nhiều người tham gia từ các múi giờ khác nhau, chuyên viên Văn phòng cần lưu ý điều gì?",
+        "options": [
+          "Chỉ cần xác định thời gian bắt đầu của hội nghị",
+          "Chọn một múi giờ cố định cho toàn bộ hội nghị",
+          "Đảm bảo lịch hẹn phù hợp với múi giờ của tất cả các tham gia",
+          "Không cần xem xét múi giờ khi tổ chức hội nghị trực tuyến"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Quản lý lịch hẹn và lịch trình",
+        "question": "Trong trường hợp một nhân viên có lịch trình bận rộn và nhiều cuộc hẹn, chuyên viên Văn phòng nên sử dụng công cụ nào để tối ưu hóa quản lý thời gian?",
+        "options": [
+          "Một cuốn sổ tay giấy",
+          "Một ứng dụng quản lý lịch hẹn di động",
+          "Một bảng lịch giấy",
+          "Email cá nhân"
+        ],
+        "correct_index": 1
+      }
+    ]
+  }
+]
