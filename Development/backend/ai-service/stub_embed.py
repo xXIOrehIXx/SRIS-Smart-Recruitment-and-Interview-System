@@ -6,15 +6,15 @@ Thay tạm cho main.py (sentence-transformers) khi máy chưa cài được
 torch/transformers (vd Python 3.14 chưa có wheel). Dùng stdlib thuần,
 chạy ngay, không cần pip install.
 
-Cách hoạt động: "hashing bag-of-words" -> vector 384 chiều, chuẩn hóa L2.
-- Mỗi token (từ) được hash về 1 chiều trong [0,384).
+Cách hoạt động: "hashing bag-of-words" -> vector 1024 chiều, chuẩn hóa L2.
+- Mỗi token (từ) được hash về 1 chiều trong [0,1024).
 - CV trùng nhiều từ khóa với JD -> cosine gần hơn -> điểm cao hơn.
 => Điểm KHÔNG mang ngữ nghĩa như model thật, nhưng ĐỦ để kiểm tra
    luồng tạo job -> nộp CV -> chấm điểm -> xếp hạng chạy đúng.
 
 Contract khớp EmbeddingClient.cs:
-  POST /embed  {"text": "..."}  -> {"vector": [384 floats], "dim": 384}
-  GET  /health                  -> {"status":"ok","dim":384}
+  POST /embed  {"text": "..."}  -> {"vector": [1024 floats], "dim": 1024}
+  GET  /health                  -> {"status":"ok","dim":1024}
 
 Chạy:  python stub_embed.py   (mặc định port 8000)
 ============================================================
@@ -25,7 +25,7 @@ import math
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-DIM = 384
+DIM = 1024
 _token_re = re.compile(r"\w+", re.UNICODE)
 
 

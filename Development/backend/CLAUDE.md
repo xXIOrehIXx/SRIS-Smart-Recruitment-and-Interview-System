@@ -19,9 +19,9 @@ ASP.NET Core 10 Web API — hệ thống tuyển dụng và phỏng vấn thông
 - AutoMapper
 - Swashbuckle (Swagger)
 
-> **Vector handling:** dùng SQL Server 2025 `VECTOR(384)`. EF Core 10 hỗ trợ native kiểu
+> **Vector handling:** dùng SQL Server 2025 `VECTOR(1024)`. EF Core 10 hỗ trợ native kiểu
 > vector (`SqlVector<float>` + `EF.Functions.VectorDistance("cosine", ...)`), không cần extension.
-> Hiện code vẫn xử lý vector bằng raw SQL (`CAST(... AS VECTOR(384))` + `Ignore(Embedding)` trong
+> Hiện code vẫn xử lý vector bằng raw SQL (`CAST(... AS VECTOR(1024))` + `Ignore(Embedding)` trong
 > `SrisDbContext`); chuyển sang map native là việc tối ưu riêng, cần spike verify trên SQL Server 2025 thật trước.
 
 ## Solution Structure
@@ -125,7 +125,7 @@ Forward-only. Reject từ bất kỳ state nào → REJECTED (bắt buộc `reje
 ### AI Service (Python FastAPI — port riêng)
 - .NET **không gọi AI trực tiếp** — chỉ gọi qua HTTP nội bộ đến Python service
 - Python stateless, không đụng DB, không biết tenant
-- Embedding: `paraphrase-multilingual-MiniLM-L12-v2` → `VECTOR(384)`
+- Embedding: `BAAI/bge-m3` → `VECTOR(1024)` (đổi từ `paraphrase-multilingual-MiniLM-L12-v2`/384: 1024 chiều + đọc tới 8192 token để embed trọn CV dài / CV tiếng Việt, không cắt cụt)
 
 ### Magic link purposes (chỉ của Candidate)
 `QUIZ` · `SCHEDULE` · `STATUS` · `OFFER_RESPONSE`  

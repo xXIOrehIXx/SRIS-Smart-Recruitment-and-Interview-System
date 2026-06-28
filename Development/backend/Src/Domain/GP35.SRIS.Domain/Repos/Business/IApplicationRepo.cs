@@ -10,6 +10,9 @@ public record ApplicationRankingRow(
     decimal? AiMatchScore,
     string CurrentState);
 
+/// <summary>1 hồ sơ chưa có điểm cần chấm nền (Cách A) — kèm company_id để worker set đúng tenant.</summary>
+public record UnscoredApplication(long CompanyId, long ApplicationId);
+
 /// <summary>Thông tin liên hệ ứng viên + vị trí của 1 hồ sơ — để dựng email gửi ứng viên (5.13).</summary>
 public record ApplicationContactInfo(
     long ApplicationId,
@@ -51,4 +54,10 @@ public interface IApplicationRepo : IBaseRepo<long, Application>
 
     /// <summary>Email + tên ứng viên + tên vị trí của 1 hồ sơ (join Candidate, Job). Null nếu không thấy.</summary>
     Task<ApplicationContactInfo?> GetContactInfoAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// (Cách A — sweep lúc khởi động) MỌI hồ sơ chưa có điểm mà CV đọc được (parse OK), XUYÊN tenant.
+    /// Để worker nền vớt chấm lại các hồ sơ còn sót khi server từng restart giữa chừng.
+    /// </summary>
+    Task<IReadOnlyList<UnscoredApplication>> GetAllUnscoredAsync();
 }

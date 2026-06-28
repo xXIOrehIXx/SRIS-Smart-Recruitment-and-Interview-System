@@ -12,7 +12,7 @@
    .\run_ai.ps1 -Force     # neu port dang ban -> tu kill tien trinh cu
    .\run_ai.ps1 -Reinstall # cai lai thu vien (khi loi/hong venv)
 
- Lan dau chay se tai torch (~200-300MB) + model (~120MB) -> doi vai phut.
+ Lan dau chay se tai torch (~200-300MB) + model BAAI/bge-m3 (~2.2GB) -> doi vai phut.
 =====================================================================
 #>
 [CmdletBinding()]
@@ -123,5 +123,5 @@ if ($busy) {
 # 4) Chay AI service (chiem cua so nay - Ctrl+C de dung)
 # ---------------------------------------------------------------
 Ok "Khoi dong AI service THAT tai http://127.0.0.1:$Port  (Ctrl+C de dung)"
-Info "Lan dau se tai model ~120MB; doi den khi thay 'Model san sang. So chieu vector = 384'."
+Info "Lan dau se tai model BAAI/bge-m3 ~2.2GB; doi den khi thay 'Model san sang. So chieu vector = 1024'."
 & $VenvPython -m uvicorn main:app --port $Port

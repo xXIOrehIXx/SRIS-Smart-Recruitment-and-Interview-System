@@ -1,5 +1,5 @@
 fastapi
 uvicorn[standard]
-sentence-transformers
+sentence-transformers>=2.7.0
 ollama
 pydantic

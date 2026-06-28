@@ -11,7 +11,7 @@
    - Các trường enum ràng buộc bằng CHECK constraint (mã hóa luôn quyết định thiết kế).
    - FK để NO ACTION (không cascade) để tránh lỗi multiple cascade paths;
      xóa dữ liệu xử lý ở tầng ứng dụng (hoặc dùng soft-delete).
-   - Vector: cột VECTOR(384) — KHÔNG được DEFAULT/CHECK/UNIQUE/PK/FK (giới hạn của type).
+   - Vector: cột VECTOR(1024) — KHÔNG được DEFAULT/CHECK/UNIQUE/PK/FK (giới hạn của type).
 
    Ghi chú khác biệt nhỏ so với ERD (đã chủ đích):
    - InterviewScore thêm cột `note` (NVARCHAR) vì 5.7 yêu cầu note từng tiêu chí.
@@ -83,7 +83,7 @@ CREATE TABLE dbo.Job (
     company_id            BIGINT               NOT NULL,
     title                 NVARCHAR(300)        NOT NULL,
     jd_text               NVARCHAR(MAX)        NULL,
-    embedding             VECTOR(384)          NULL,     -- JD đã vector hóa (so với CV)
+    embedding             VECTOR(1024)         NULL,     -- JD đã vector hóa (so với CV) — model BAAI/bge-m3
     department_manager_id BIGINT               NULL,     -- người quyết tuyển (Department Manager); NULL = Recruiter quyết
     created_by            BIGINT               NULL,     -- Recruiter mở job (người tạo)
     status                VARCHAR(20)          NOT NULL CONSTRAINT DF_Job_status DEFAULT 'Draft',
@@ -117,7 +117,7 @@ CREATE TABLE dbo.CvDocument (
     company_id      BIGINT               NOT NULL,
     candidate_id    BIGINT               NOT NULL,
     extracted_text  NVARCHAR(MAX)        NULL,
-    embedding       VECTOR(384)          NULL,     -- CV đã vector hóa
+    embedding       VECTOR(1024)         NULL,     -- CV đã vector hóa — model BAAI/bge-m3
     parse_status    VARCHAR(20)          NOT NULL CONSTRAINT DF_Cv_parse DEFAULT 'OK',
     created_at      DATETIME2(3)         NOT NULL CONSTRAINT DF_Cv_created DEFAULT SYSUTCDATETIME(),
     updated_at      DATETIME2(3)         NULL,

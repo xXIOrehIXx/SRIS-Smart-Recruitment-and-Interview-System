@@ -1,5 +1,6 @@
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.SqlServer.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,6 +95,31 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             select new ApplicationContactInfo(
                 a.ApplicationId, c.Email, c.FullName, j.Title, a.CurrentState))
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<IReadOnlyList<UnscoredApplication>> GetAllUnscoredAsync()
+    {
+        // Sweep KHỞI ĐỘNG (Cách A): tìm MỌI hồ sơ chưa có điểm + CV đọc được (parse OK), XUYÊN tenant.
+        // Chạy ngoài request -> SESSION_CONTEXT('CompanyId') chưa set nên RLS chặn hết: tạm TẮT policy
+        // (giống UserRepo.GetByEmail; ALTER là trạng thái toàn DB) + IgnoreQueryFilters bỏ Global Query Filter.
+        // An toàn vì chỉ chạy 1 lần lúc khởi động (chưa có request đồng thời). Worker chấm từng hồ sơ vẫn
+        // set đúng tenant nên cô lập dữ liệu không bị phá.
+        await _db.Database.ExecuteSqlRawAsync(
+            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);");
+        try
+        {
+            return await (
+                from a in _db.Applications.AsNoTracking().IgnoreQueryFilters()
+                join c in _db.CvDocuments.AsNoTracking().IgnoreQueryFilters() on a.CvId equals c.CvId
+                where a.AiMatchScore == null && c.ParseStatus == CvParseStatus.Ok
+                select new UnscoredApplication(a.CompanyId, a.ApplicationId))
+                .ToListAsync();
+        }
+        finally
+        {
+            await _db.Database.ExecuteSqlRawAsync(
+                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);");
+        }
     }
 
     public async Task<IEnumerable<ApplicationRankingRow>> GetRankingByJobAsync(long companyId, long jobId)
