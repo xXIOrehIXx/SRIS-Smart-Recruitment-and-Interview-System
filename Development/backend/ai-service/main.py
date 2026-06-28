@@ -11,7 +11,7 @@ Toàn bộ điều phối, ghi DB, lọc tenant do .NET API (GP35.SRIS) lo.
 
 Service này phục vụ 2 mảng AI:
   - /embed         : sinh vector embedding cho CV/JD
-                     (model paraphrase-multilingual-MiniLM-L12-v2 -> VECTOR(384))
+                     (model BAAI/bge-m3 -> VECTOR(1024), đọc tới 8192 token)
   - /generate-quiz : sinh quiz trắc nghiệm MCQ từ JD qua Local LLM (Ollama)
 ============================================================
 """
@@ -24,11 +24,17 @@ from quiz_gen import generate_quiz   # sinh quiz MCQ qua Ollama
 
 app = FastAPI(title="SRIS AI Service")
 
-# Tải model 1 lần lúc service khởi động (lần đầu sẽ tự tải model về máy).
+# Tải model 1 lần lúc service khởi động (lần đầu sẽ tự tải model ~2.2GB về máy).
 # normalize_embeddings=True -> vector đã chuẩn hóa, đo cosine ổn định.
-print(">> Dang tai model paraphrase-multilingual-MiniLM-L12-v2 ...")
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-DIM = model.get_sentence_embedding_dimension()
+# DIM lấy động từ model (bge-m3 -> 1024), không hard-code.
+print(">> Dang tai model BAAI/bge-m3 ...")
+model = SentenceTransformer("BAAI/bge-m3")
+# Tên mới `get_embedding_dimension` (ST >=3.x); fallback tên cũ cho bản thấp hơn.
+DIM = (
+    model.get_embedding_dimension()
+    if hasattr(model, "get_embedding_dimension")
+    else model.get_sentence_embedding_dimension()
+)
 print(f">> Model san sang. So chieu vector = {DIM}")
 
 
@@ -51,8 +57,8 @@ def health():
 def embed(req: EmbedRequest):
     """
     Nhận 1 đoạn text (CV hoặc JD) -> trả về vector embedding.
-    Lưu ý: model có giới hạn độ dài đầu vào (~256 word-pieces),
-    text dài hơn sẽ bị cắt bớt (chunking là hướng mở rộng sau).
+    bge-m3 đọc tới 8192 token -> embed trọn cả CV 2 trang / CV tiếng Việt
+    mà không bị cắt cụt; text vượt 8192 token mới bị cắt bớt.
     """
     vec = model.encode(req.text or "", normalize_embeddings=True)
     return EmbedResponse(vector=vec.tolist(), dim=len(vec))

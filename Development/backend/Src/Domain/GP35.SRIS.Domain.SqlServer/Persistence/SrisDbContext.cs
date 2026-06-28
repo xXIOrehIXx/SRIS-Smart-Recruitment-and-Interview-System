@@ -12,7 +12,7 @@ namespace GP35.SRIS.Domain.SqlServer.Persistence;
 ///  - Lớp 1 (tầng DB): RLS đọc <c>SESSION_CONTEXT('CompanyId')</c> — được set qua
 ///    <see cref="TenantSessionConnectionInterceptor"/> mỗi khi EF mở connection (bẫy pooling).
 ///
-/// Cột VECTOR(384) <c>embedding</c> hiện KHÔNG map ở đây — mọi thao tác vector dùng raw SQL
+/// Cột VECTOR(1024) <c>embedding</c> hiện KHÔNG map ở đây — mọi thao tác vector dùng raw SQL
 /// (cửa thoát <c>FromSqlRaw</c>/<c>ExecuteSqlRaw</c> — 5.11). EF Core 10 đã hỗ trợ native kiểu
 /// vector (<c>SqlVector&lt;float&gt;</c>); chuyển sang map native là việc tối ưu riêng.
 /// </summary>
@@ -72,7 +72,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("Job");
             e.HasKey(x => x.JobId);
-            e.Ignore(x => x.Embedding); // VECTOR(384) -> xử lý bằng raw SQL
+            e.Ignore(x => x.Embedding); // VECTOR(1024) -> xử lý bằng raw SQL
             e.Ignore(x => x.Department);
             e.Ignore(x => x.Location);
             e.Ignore(x => x.EmploymentType);
@@ -87,7 +87,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("CvDocument");
             e.HasKey(x => x.CvId);
-            e.Ignore(x => x.Embedding); // VECTOR(384) -> xử lý bằng raw SQL
+            e.Ignore(x => x.Embedding); // VECTOR(1024) -> xử lý bằng raw SQL
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

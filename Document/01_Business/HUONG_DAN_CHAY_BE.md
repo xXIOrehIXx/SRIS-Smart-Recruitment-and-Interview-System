@@ -9,7 +9,7 @@ Backend gọi AI qua HTTP, nên **không chỉ chạy C# là xong**. Bật dịc
 cd "D:\final_project\SRIS-Smart-Recruitment-and-Interview-System\Development\backend\ai-service"
 .\run_ai.ps1
 ```
-Lần đầu tải model (~120MB), đợi đến khi thấy `Model san sang. So chieu vector = 384`. Để nguyên cửa sổ.
+Lần đầu tải model BAAI/bge-m3 (~2.2GB), đợi đến khi thấy `Model san sang. So chieu vector = 1024`. Để nguyên cửa sổ.
 
 Cờ hay dùng: `-Force` (port 8000 bận → kill cái cũ) · `-Setup` (chỉ cài) · `-Reinstall` (dựng lại venv) · `-Port 8001`.
 

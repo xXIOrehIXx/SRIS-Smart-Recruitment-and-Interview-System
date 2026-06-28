@@ -119,6 +119,8 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvScoringService, CvScoringService>();
+            // Hàng đợi chấm CV chạy nền (Cách A) — singleton: request ghi vào, worker nền (CvScoringWorker) đọc ra.
+            services.AddSingleton<ICvScoreQueue, CvScoreQueue>();
             services.AddScoped<ITalentPoolService, TalentPoolService>();
             services.AddScoped<IQuizService, QuizService>();
             services.AddScoped<IQuestionBankService, QuestionBankService>();

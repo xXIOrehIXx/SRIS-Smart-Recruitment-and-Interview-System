@@ -19,7 +19,7 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
     public async Task<long> InsertAsync(CvDocument cv, float[]? embedding)
     {
         // Cột embedding (VECTOR) không map trong EF -> insert phần còn lại bằng EF,
-        // rồi cập nhật riêng vector bằng raw SQL nếu có (CAST JSON -> VECTOR(384)).
+        // rồi cập nhật riêng vector bằng raw SQL nếu có (CAST JSON -> VECTOR(1024)).
         _db.CvDocuments.Add(cv);
         await _db.SaveChangesAsync();
 
@@ -27,7 +27,7 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
         {
             var vectorJson = JsonSerializer.Serialize(embedding);
             await _db.Database.ExecuteSqlRawAsync(
-                "UPDATE CvDocument SET embedding = CAST({0} AS VECTOR(384)) " +
+                "UPDATE CvDocument SET embedding = CAST({0} AS VECTOR(1024)) " +
                 "WHERE cv_id = {1} AND company_id = {2}",
                 vectorJson, cv.CvId, cv.CompanyId);
         }
@@ -44,6 +44,25 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
             where c.CvId == cvId
             select new CvFileInfo(c.FileUrl, c.FileName, c.MimeType, cand.FullName))
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<string?> GetExtractedTextAsync(long companyId, long cvId)
+    {
+        // Global Query Filter tự kèm company_id.
+        return await _db.CvDocuments.AsNoTracking()
+            .Where(c => c.CvId == cvId)
+            .Select(c => c.ExtractedText)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task UpdateEmbeddingAsync(long companyId, long cvId, float[] embedding)
+    {
+        // CAST chuỗi JSON -> VECTOR(1024) ở phía SQL Server (cửa thoát raw SQL — 5.11).
+        var vectorJson = JsonSerializer.Serialize(embedding);
+        await _db.Database.ExecuteSqlRawAsync(
+            "UPDATE CvDocument SET embedding = CAST({0} AS VECTOR(1024)), updated_at = SYSUTCDATETIME() " +
+            "WHERE cv_id = {1} AND company_id = {2}",
+            vectorJson, cvId, companyId);
     }
 
     public async Task<IReadOnlyList<TalentPoolRow>> GetTalentPoolByJobAsync(

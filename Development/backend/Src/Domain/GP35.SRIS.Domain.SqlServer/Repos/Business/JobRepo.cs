@@ -64,10 +64,10 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
 
     public async Task UpdateEmbeddingAsync(long companyId, long jobId, float[] embedding)
     {
-        // CAST chuỗi JSON -> VECTOR(384) ở phía SQL Server (cửa thoát raw SQL — 5.11).
+        // CAST chuỗi JSON -> VECTOR(1024) ở phía SQL Server (cửa thoát raw SQL — 5.11).
         var vectorJson = JsonSerializer.Serialize(embedding);
         await _db.Database.ExecuteSqlRawAsync(
-            "UPDATE Job SET embedding = CAST({0} AS VECTOR(384)), updated_at = SYSUTCDATETIME() " +
+            "UPDATE Job SET embedding = CAST({0} AS VECTOR(1024)), updated_at = SYSUTCDATETIME() " +
             "WHERE company_id = {1} AND job_id = {2}",
             vectorJson, companyId, jobId);
     }

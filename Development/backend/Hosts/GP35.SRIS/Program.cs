@@ -134,6 +134,8 @@ services.ConfigureCommonServices();
 services.AddBusinessServices();
 services.AddBusinessRepos(configuration);
 services.AddAutoMapper();
+// Worker chấm điểm CV chạy nền (Cách A) — rút hàng đợi + vớt hồ sơ chưa chấm lúc khởi động.
+services.AddHostedService<GP35.SRIS.Workers.CvScoringWorker>();
 services
   .AddControllers()
   .AddJsonOptions(options =>
