@@ -1,0 +1,61 @@
+/* Sub Account Management Styles */
+.sub-account-page {
+  animation: fadeIn 0.3s ease;
+}
+
+.sub-account-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.sub-account-page .page-header h2 {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.sub-account-page .page-header p {
+  color: #8c8c8b;
+  margin: 0;
+}
+
+.sub-account-page .main-card {
+  border-radius: 12px;
+  border: 1px solid #e7e7e6;
+}
+
+.sub-account-page .toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.sub-account-page .search-input {
+  width: 280px;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-cell .user-name {
+  font-weight: 600;
+  display: block;
+}
+
+.user-cell .user-email {
+  font-size: 12px;
+  color: #8c8c8b;
+  display: block;
+}
+
+.accounts-table .ant-table-thead > tr > th {
+  background-color: #f9faf9;
+}
+
+.create-account-page {
+  animation: fadeIn 0.3s ease;
+}

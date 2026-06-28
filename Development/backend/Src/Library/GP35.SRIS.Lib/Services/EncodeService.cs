@@ -4,8 +4,8 @@ public class EncodeService : IEncodeService
 {
   public string SHA256WithSalt(string value, string salt)
   {
-    byte[] valueBytes = System.Text.Encoding.UTF8.GetBytes(value + salt);
-    byte[] saltBytes = Convert.FromBase64String(salt);
+    byte[] saltBytes = System.Text.Encoding.UTF8.GetBytes(salt);
+    byte[] valueBytes = System.Text.Encoding.UTF8.GetBytes(value);
 
     var valueWithSaltBytes = new byte[valueBytes.Length + saltBytes.Length];
 

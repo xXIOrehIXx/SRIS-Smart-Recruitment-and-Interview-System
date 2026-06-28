@@ -1,20 +1,202 @@
-/* Reset lại box-sizing để các thẻ tính toán kích thước chuẩn xác hơn */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Matcha Color Palette */
+  --matcha-100: #f4f8f2;
+  --matcha-200: #e3eddd;
+  --matcha-300: #c8d9bc;
+  --matcha-400: #a8c392;
+  --matcha-500: #7BA55C;
+  --matcha-600: #5D8C3E;
+  --matcha-700: #4a7230;
+  --matcha-800: #3d5f28;
+  --matcha-900: #2d4620;
+
+  /* Neutral Colors */
+  --white: #ffffff;
+  --gray-50: #fafaf9;
+  --gray-100: #f5f5f4;
+  --gray-200: #e7e7e6;
+  --gray-300: #d6d6d5;
+  --gray-400: #a3a3a2;
+  --gray-500: #8c8c8b;
+  --gray-600: #6b6b6b;
+  --gray-700: #4b4b4b;
+  --gray-800: #2b2b2b;
+  --gray-900: #1a1a1a;
+
+  /* Semantic Colors */
+  --success: #52c41a;
+  --warning: #faad14;
+  --error: #ff4d4f;
+  --info: #1890ff;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Thêm màu nền xám nhẹ giúp các component màu trắng (như Form, Card) nổi bật hơn */
-  background-color: #f0f2f5; 
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  font-family: 'Inter', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--gray-100);
+  color: var(--gray-800);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--matcha-600);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--matcha-700);
+}
+
+/* Utility Classes */
+.text-matcha { color: var(--matcha-600); }
+.text-matcha-light { color: var(--matcha-400); }
+.text-matcha-dark { color: var(--matcha-800); }
+
+.bg-matcha { background-color: var(--matcha-600); }
+.bg-matcha-light { background-color: var(--matcha-100); }
+.bg-matcha-gradient {
+  background: linear-gradient(135deg, var(--matcha-600) 0%, var(--matcha-500) 100%);
+}
+
+.bg-white { background-color: var(--white); }
+
+/* Ant Design Overrides */
+.ant-layout {
+  background-color: var(--gray-100) !important;
+}
+
+.ant-layout-sider {
+  background-color: var(--white) !important;
+}
+
+.ant-menu {
+  background-color: transparent !important;
+}
+
+.ant-menu-item-selected {
+  background-color: rgba(93, 140, 62, 0.1) !important;
+}
+
+.ant-card {
+  border-radius: 12px !important;
+  box-shadow: var(--shadow) !important;
+  border: 1px solid var(--gray-200) !important;
+}
+
+.ant-card:hover {
+  box-shadow: var(--shadow-md) !important;
+}
+
+.ant-btn-primary {
+  background-color: var(--matcha-600) !important;
+  border-color: var(--matcha-600) !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--matcha-700) !important;
+  border-color: var(--matcha-700) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: var(--matcha-500) !important;
+  box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.2) !important;
+}
+
+/* Page Transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.page-exit {
+  opacity: 1;
+}
+
+.page-exit-active {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
 }

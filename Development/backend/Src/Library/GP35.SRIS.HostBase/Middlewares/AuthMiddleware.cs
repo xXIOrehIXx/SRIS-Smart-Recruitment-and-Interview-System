@@ -37,7 +37,10 @@ namespace GP35.SRIS.HostBase.Middlewares
             var endpoint = context.GetEndpoint();
             if (endpoint == null)
             {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                }
                 return;
             }
             // Trường hợp không cần kiểm tra token
@@ -68,6 +71,11 @@ namespace GP35.SRIS.HostBase.Middlewares
         /// </summary>
         private async Task<bool> AuthorizeRole(HttpContext context, Endpoint endpoint)
         {
+            if (context.Response.HasStarted)
+            {
+                return false;
+            }
+
             var withRole = endpoint.Metadata.GetMetadata<WithRoleAttribute>();
             if (withRole is null || withRole.Roles.Length == 0)
             {
@@ -100,6 +108,10 @@ namespace GP35.SRIS.HostBase.Middlewares
 
         private async Task<bool> ProcessSession(HttpContext context)
         {
+            if (context.Response.HasStarted)
+            {
+                return false;
+            }
             var contextData = context.RequestServices.GetRequiredService<IContextData>();
             var httpContextAccessor = context.RequestServices.GetRequiredService<IHttpContextAccessor>();
             var user = httpContextAccessor.HttpContext?.User;
