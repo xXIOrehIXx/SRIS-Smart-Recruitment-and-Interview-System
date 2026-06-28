@@ -1,0 +1,559 @@
+/* Auth Page Base Styles */
+.auth-page {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-header h2 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.auth-header p {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 400;
+}
+
+.auth-header .auth-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(93, 140, 62, 0.25);
+}
+
+.auth-header .auth-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.auth-alert {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: #fef2f2;
+}
+
+.auth-alert.ant-alert-error {
+  background: #fef2f2;
+}
+
+.auth-alert.ant-alert-success {
+  background: #f0fdf4;
+}
+
+.auth-input {
+  height: 52px;
+  border-radius: 12px;
+  font-size: 15px;
+  border: 1.5px solid #e5e7eb;
+  background: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.auth-input:hover {
+  border-color: #d1d5db;
+  background: #fff;
+}
+
+.auth-input:focus,
+.auth-input-focused {
+  border-color: #5D8C3E !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(93, 140, 62, 0.1) !important;
+}
+
+.auth-input .ant-input {
+  font-size: 15px;
+}
+
+.auth-input .ant-input-prefix {
+  margin-right: 12px;
+}
+
+.auth-select {
+  height: 52px;
+}
+
+.auth-select .ant-select-selector {
+  height: 52px !important;
+  border-radius: 12px !important;
+  font-size: 15px;
+  border: 1.5px solid #e5e7eb !important;
+  background: #fafafa !important;
+}
+
+.auth-select:hover .ant-select-selector {
+  border-color: #d1d5db !important;
+}
+
+.auth-select.ant-select-focused .ant-select-selector {
+  border-color: #5D8C3E !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(93, 140, 62, 0.1) !important;
+}
+
+.auth-select .ant-select-selection-placeholder {
+  line-height: 50px !important;
+}
+
+.auth-select .ant-select-selection-item {
+  line-height: 50px !important;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.form-options .ant-checkbox-wrapper {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.form-options .ant-checkbox-wrapper:hover {
+  color: #5D8C3E;
+}
+
+.forgot-link {
+  font-size: 14px;
+  color: #5D8C3E;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.forgot-link:hover {
+  color: #4a7230;
+  text-decoration: none;
+}
+
+.auth-submit-btn {
+  height: 52px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(93, 140, 62, 0.35);
+  transition: all 0.3s ease;
+  letter-spacing: 0.3px;
+}
+
+.auth-submit-btn:hover {
+  background: linear-gradient(135deg, #4a7230 0%, #5D8C3E 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(93, 140, 62, 0.45);
+}
+
+.auth-submit-btn:active {
+  transform: translateY(0);
+}
+
+.auth-divider {
+  margin: 28px 0;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  border-color: #e5e7eb !important;
+}
+
+.social-login {
+  display: flex;
+  gap: 12px;
+}
+
+.social-btn {
+  flex: 1;
+  height: 50px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1.5px solid #e5e7eb !important;
+  color: #374151 !important;
+  background: #fff;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.social-btn:hover {
+  border-color: #5D8C3E !important;
+  color: #5D8C3E !important;
+  background: #f0fdf4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.social-btn .anticon {
+  font-size: 18px;
+}
+
+.auth-footer-text {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.auth-footer-text a {
+  color: #5D8C3E;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.auth-footer-text a:hover {
+  color: #4a7230;
+}
+
+/* Resend Button */
+.resend-btn {
+  color: #5D8C3E !important;
+  padding: 0;
+  height: auto;
+  font-weight: 500;
+}
+
+.resend-btn:hover {
+  color: #4a7230 !important;
+}
+
+/* Password strength indicator */
+.password-strength {
+  margin-top: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.password-strength-item {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #e5e7eb;
+  transition: all 0.3s;
+}
+
+.password-strength-item.active {
+  background: #5D8C3E;
+}
+
+.password-strength-item.active.weak {
+  background: #ef4444;
+}
+
+.password-strength-item.active.medium {
+  background: #f59e0b;
+}
+
+.password-strength-item.active.strong {
+  background: #22c55e;
+}
+
+/* Checkbox styling */
+.auth-page .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #5D8C3E;
+  border-color: #5D8C3E;
+}
+
+.auth-page .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.auth-page .ant-checkbox:hover .ant-checkbox-inner {
+  border-color: #5D8C3E;
+}
+
+/* Result Page Adjustments */
+.forgot-password-page .ant-result {
+  padding: 0;
+}
+
+.forgot-password-page .ant-result-title {
+  color: #1a1a1a;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.forgot-password-page .ant-result-description {
+  color: #6b7280;
+  font-size: 15px;
+}
+
+.forgot-password-page .ant-result-extra {
+  margin-top: 24px;
+}
+
+/* Animation */
+.auth-page {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success state animation */
+.auth-page .ant-alert-success {
+  animation: successPulse 0.5s ease;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Terms links in checkbox */
+.auth-page .auth-terms-link {
+  color: #5D8C3E;
+  font-weight: 500;
+}
+
+.auth-page .auth-terms-link:hover {
+  color: #4a7230;
+  text-decoration: underline;
+}
+
+/* ============================
+   DARK THEME LOGIN (SaaS Style)
+   ============================ */
+.dark-auth {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.dark-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dark-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 24px 0;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+.dark-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.dark-input {
+  height: 48px;
+  border-radius: 10px;
+  font-size: 15px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  padding: 0 16px;
+}
+
+.dark-input:hover {
+  border-color: #d1d5db;
+}
+
+.dark-input:focus,
+.dark-input.ant-input-affix-wrapper-focused {
+  border-color: #5D8C3E !important;
+  box-shadow: 0 0 0 3px rgba(93, 140, 62, 0.1) !important;
+}
+
+.dark-input .ant-input {
+  font-size: 15px;
+  background: transparent;
+}
+
+.dark-input .ant-input-password-icon {
+  color: #9ca3af;
+  font-size: 16px;
+}
+
+.dark-input .ant-input-password-icon:hover {
+  color: #5D8C3E;
+}
+
+/* Email display row */
+.email-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.email-display-label {
+  font-size: 15px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.edit-email-btn {
+  background: none;
+  border: none;
+  color: #5D8C3E;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.edit-email-btn:hover {
+  background: rgba(93, 140, 62, 0.1);
+}
+
+/* Dark button */
+.dark-btn {
+  height: 48px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(93, 140, 62, 0.3);
+  transition: all 0.2s ease;
+  color: #ffffff;
+}
+
+.dark-btn:hover {
+  background: linear-gradient(135deg, #4a7230 0%, #5D8C3E 100%) !important;
+  box-shadow: 0 4px 12px rgba(93, 140, 62, 0.4);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+.dark-btn:active {
+  transform: translateY(0);
+}
+
+.dark-btn.loading {
+  opacity: 0.8;
+}
+
+/* Forgot password row */
+.forgot-row {
+  text-align: right;
+  margin-bottom: 20px;
+}
+
+.forgot-link-light {
+  font-size: 14px;
+  color: #5D8C3E;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-link-light:hover {
+  color: #4a7230;
+  text-decoration: underline;
+}
+
+/* Dark footer */
+.dark-footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.dark-footer-text {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.dark-link-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(93, 140, 62, 0.3);
+}
+
+.dark-link-btn:hover {
+  background: linear-gradient(135deg, #4a7230 0%, #5D8C3E 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(93, 140, 62, 0.4);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* Form Item spacing */
+.dark-card .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.dark-card .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Animation for step transition */
+.dark-card {
+  animation: cardFadeIn 0.3s ease;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
