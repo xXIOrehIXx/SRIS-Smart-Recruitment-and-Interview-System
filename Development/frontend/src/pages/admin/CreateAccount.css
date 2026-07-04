@@ -1,0 +1,67 @@
+/* Create Account Page Styles */
+.create-account-page .back-btn {
+  margin-bottom: 16px;
+  color: #5D8C3E;
+}
+
+.create-account-page .back-btn:hover {
+  color: #4a7032;
+  border-color: #5D8C3E;
+}
+
+.create-account-page .page-title {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  color: #262626;
+}
+
+.create-account-page .page-subtitle {
+  color: #8c8c8b;
+  margin: 0;
+}
+
+.create-account-page .ant-divider {
+  margin: 16px 0 24px 0;
+}
+
+.create-account-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: #404040;
+}
+
+.create-account-form .ant-input,
+.create-account-form .ant-select-selector {
+  border-radius: 8px !important;
+  border-color: #d9d9d9 !important;
+}
+
+.create-account-form .ant-input:hover,
+.create-account-form .ant-select-selector:hover {
+  border-color: #5D8C3E !important;
+}
+
+.create-account-form .ant-input:focus,
+.create-account-form .ant-select-focused .ant-select-selector {
+  border-color: #5D8C3E !important;
+  box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.2) !important;
+}
+
+.create-account-form .ant-btn-primary {
+  background-color: #5D8C3E;
+  border-color: #5D8C3E;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 24px;
+  font-weight: 500;
+}
+
+.create-account-form .ant-btn-primary:hover {
+  background-color: #4a7032;
+  border-color: #4a7032;
+}
+
+.create-account-form .ant-btn:not(.ant-btn-primary) {
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 24px;
+}

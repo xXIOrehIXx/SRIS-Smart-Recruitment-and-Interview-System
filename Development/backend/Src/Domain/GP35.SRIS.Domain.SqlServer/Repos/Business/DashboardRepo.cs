@@ -76,4 +76,44 @@ public class DashboardRepo : IDashboardRepo
             .Where(d => d >= 0)
             .ToList();
     }
+
+    public async Task<IReadOnlyList<KanbanCard>> GetKanbanCardsAsync(long companyId, long? jobId)
+    {
+        // Bước 1: lấy dữ liệu thô về memory (EF Core không translate được orderby với ??).
+        var raw = await (
+            from a in _db.Applications.AsNoTracking()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
+            where jobId == null || a.JobId == jobId.Value
+            select new
+            {
+                a.ApplicationId,
+                c.CandidateId,
+                c.FullName,
+                c.Email,
+                j.Title,
+                a.JobId,
+                a.CurrentState,
+                a.AiMatchScore,
+                a.CreatedAt,
+                a.StageUpdatedAt
+            })
+            .ToListAsync();
+
+        // Bước 2: map + sort ở memory (không qua SQL).
+        return raw
+            .Select(x => new KanbanCard(
+                x.ApplicationId,
+                x.CandidateId,
+                x.FullName,
+                x.Email,
+                x.Title,
+                x.JobId,
+                x.CurrentState,
+                x.AiMatchScore,
+                x.CreatedAt ?? DateTime.MinValue,
+                x.StageUpdatedAt))
+            .OrderByDescending(c => c.StageUpdatedAt ?? c.AppliedAt)
+            .ToList();
+    }
 }

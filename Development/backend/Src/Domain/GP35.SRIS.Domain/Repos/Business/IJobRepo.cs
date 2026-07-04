@@ -21,4 +21,10 @@ public interface IJobRepo : IBaseRepo<long, Job>
 
     /// <summary>Sinh & lưu embedding cho JD (lazy embedding, chỉ chạy 1 lần/job).</summary>
     Task UpdateEmbeddingAsync(long companyId, long jobId, float[] embedding);
+
+    /// <summary>API CÔNG KHAI: Lấy tất cả job đang tuyển (Status = 'Open').</summary>
+    Task<IEnumerable<Job>> GetPublicOpenJobsAsync();
+
+    /// <summary>API CÔNG KHAI: Lấy 1 job đang tuyển theo id.</summary>
+    Task<Job?> GetPublicOpenJobAsync(long jobId);
 }

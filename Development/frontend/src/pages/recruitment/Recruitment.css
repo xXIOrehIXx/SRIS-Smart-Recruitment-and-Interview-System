@@ -1,0 +1,585 @@
+/* ===== RECRUITMENT PAGE STYLES ===== */
+
+.recruitment-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+}
+
+.recruitment-content {
+  padding: 32px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ===== HEADER SECTION ===== */
+.recruitment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.recruitment-header .page-title {
+  margin-bottom: 8px !important;
+  color: #1f1f1f !important;
+  font-weight: 700 !important;
+}
+
+.recruitment-header .page-subtitle {
+  color: #595959;
+  font-size: 16px;
+  margin-bottom: 0 !important;
+}
+
+.header-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.header-stats .stat-card {
+  background: linear-gradient(135deg, #5D8C3E 0%, #4a7330 100%);
+  border-radius: 12px;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(93, 140, 62, 0.3);
+}
+
+.header-stats .ant-statistic-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 13px;
+}
+
+.header-stats .ant-statistic-content {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.header-stats .ant-statistic-content-suffix {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ===== FILTERS SECTION ===== */
+.filters-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== JOB CARDS ===== */
+.job-card {
+  border-radius: 16px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.3s ease !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.job-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(93, 140, 62, 0.2) !important;
+}
+
+.job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.job-title-section {
+  flex: 1;
+}
+
+.job-title {
+  margin-bottom: 8px !important;
+  color: #1f1f1f !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.job-salary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.salary-icon {
+  color: #5D8C3E;
+  font-size: 16px;
+}
+
+.salary-text {
+  color: #5D8C3E !important;
+  font-size: 15px;
+}
+
+.job-card-body {
+  flex: 1;
+}
+
+.job-description {
+  color: #595959;
+  line-height: 1.6;
+  margin-bottom: 12px !important;
+}
+
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: #8c8c8b;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.job-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.job-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skill-tag {
+  border-radius: 6px;
+  font-size: 12px;
+  background: #f6f6f6;
+  border-color: #d9d9d9;
+  color: #595959;
+}
+
+.job-card-footer {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  margin-top: auto;
+}
+
+.apply-btn {
+  background: linear-gradient(135deg, #5D8C3E 0%, #4a7330 100%);
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 20px;
+}
+
+.apply-btn:hover {
+  background: linear-gradient(135deg, #4a7330 0%, #3d5f28 100%);
+  transform: translateY(-1px);
+}
+
+.applied-btn {
+  background: #f0f0f0;
+  border: none;
+  border-radius: 8px;
+  color: #8c8c8b;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 20px;
+  cursor: not-allowed;
+}
+
+/* ===== NO RESULTS ===== */
+.no-results {
+  border-radius: 16px;
+  text-align: center;
+  padding: 60px 20px;
+}
+
+/* ===== JOB DETAIL MODAL ===== */
+.job-detail-modal .ant-modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.job-detail-modal .ant-modal-body {
+  padding: 0;
+}
+
+.modal-content {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.job-detail {
+  padding: 32px;
+}
+
+.job-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.job-detail-title {
+  flex: 1;
+}
+
+.job-detail-title .ant-typography {
+  margin-bottom: 12px !important;
+}
+
+.job-detail-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.apply-btn-large {
+  background: linear-gradient(135deg, #5D8C3E 0%, #4a7330 100%);
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  height: 44px;
+  padding: 0 28px;
+  font-size: 16px;
+}
+
+.apply-btn-large:hover {
+  background: linear-gradient(135deg, #4a7330 0%, #3d5f28 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(93, 140, 62, 0.4);
+}
+
+.bookmark-btn {
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid #5D8C3E;
+  color: #5D8C3E;
+  background: transparent;
+}
+
+.bookmark-btn:hover {
+  background: #5D8C3E;
+  color: white;
+}
+
+/* ===== JOB DETAIL META ===== */
+.job-detail-meta {
+  margin-bottom: 24px;
+}
+
+.meta-card {
+  border-radius: 10px;
+  text-align: center;
+  height: 100%;
+}
+
+.meta-icon {
+  font-size: 20px;
+  color: #5D8C3E;
+  background: #f6fef2;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.meta-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-top: 4px;
+}
+
+/* ===== DETAIL CARDS ===== */
+.detail-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.detail-card .ant-card-head {
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.detail-card .ant-card-head-title {
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.requirement-item,
+.benefit-item {
+  align-items: flex-start !important;
+}
+
+.check-icon {
+  color: #52c41a;
+  font-size: 16px;
+  margin-right: 12px;
+  margin-top: 2px;
+}
+
+.star-icon {
+  color: #faad14;
+  font-size: 16px;
+  margin-right: 12px;
+  margin-top: 2px;
+}
+
+.skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag-large {
+  border-radius: 8px;
+  font-size: 14px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%);
+  border-color: #91d5ff;
+  color: #1890ff;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+  .recruitment-content {
+    padding: 24px 20px;
+  }
+
+  .recruitment-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-stats {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .job-detail-header {
+    flex-direction: column;
+  }
+
+  .job-detail-actions {
+    width: 100%;
+  }
+
+  .apply-btn-large {
+    flex: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .recruitment-content {
+    padding: 16px 12px;
+  }
+
+  .job-card-header {
+    flex-direction: column;
+  }
+
+  .job-salary {
+    margin-top: 8px;
+  }
+
+  .job-detail {
+    padding: 20px 16px;
+  }
+
+  .modal-content {
+    max-height: 85vh;
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.job-card {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.job-card:nth-child(1) { animation-delay: 0.05s; }
+.job-card:nth-child(2) { animation-delay: 0.1s; }
+.job-card:nth-child(3) { animation-delay: 0.15s; }
+.job-card:nth-child(4) { animation-delay: 0.2s; }
+.job-card:nth-child(5) { animation-delay: 0.25s; }
+.job-card:nth-child(6) { animation-delay: 0.3s; }
+.job-card:nth-child(7) { animation-delay: 0.35s; }
+.job-card:nth-child(8) { animation-delay: 0.4s; }
+
+/* ===== SCROLLBAR STYLING ===== */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* ===== RECRUITMENT PAGE HEADER ===== */
+.recruitment-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  height: 72px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.04);
+}
+
+.recruitment-page-header .header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recruitment-page-header .header-logo span {
+  margin: 0;
+  font-weight: 800;
+  font-size: 22px;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.recruitment-page-header .nav-links {
+  display: flex;
+  gap: 28px;
+}
+
+.recruitment-page-header .nav-links a {
+  text-decoration: none;
+  color: #4b4b4b;
+  font-weight: 500;
+  font-size: 15px;
+  transition: color 0.2s;
+}
+
+.recruitment-page-header .nav-links a:hover {
+  color: #5D8C3E;
+}
+
+.recruitment-page-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.recruitment-page-header .login-btn {
+  font-weight: 600;
+  color: #4b4b4b;
+}
+
+.recruitment-page-header .login-btn:hover {
+  color: #5D8C3E;
+}
+
+.recruitment-page-header .demo-btn {
+  background-color: #5D8C3E;
+  border-color: #5D8C3E;
+}
+
+.recruitment-page-header .demo-btn:hover {
+  background-color: #4a7230 !important;
+  border-color: #4a7230 !important;
+}
+
+.recruitment-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 40px;
+}
+
+/* ===== RECRUITMENT PAGE FOOTER ===== */
+.recruitment-page-footer {
+  background-color: #1a1a1a;
+  padding: 24px 5%;
+}
+
+.recruitment-page-footer .footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recruitment-page-footer .footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recruitment-page-footer .footer-brand span {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.recruitment-page-footer .ant-typography {
+  color: #8c8c8b;
+}
+
+@media (max-width: 768px) {
+  .recruitment-page-header {
+    padding: 0 20px;
+    height: 64px;
+  }
+
+  .recruitment-page-header .nav-links {
+    display: none;
+  }
+
+  .recruitment-inner {
+    padding: 20px 16px 32px;
+  }
+}

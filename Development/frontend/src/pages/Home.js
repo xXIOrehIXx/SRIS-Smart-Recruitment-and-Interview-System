@@ -61,8 +61,19 @@ const Home = () => {
               <Button type="primary" size="large" shape="round" className="primary-btn" icon={<RightOutlined />} iconPosition="end">
                 Book a demo
               </Button>
-              <Button size="large" shape="round" className="secondary-btn" onClick={() => window.location.href = '/register'}>
-                Try it for free
+              <Button 
+                size="large" 
+                shape="round" 
+                className="secondary-btn"
+                onClick={() => window.location.href = '/recruitment'}
+                style={{
+                  background: 'linear-gradient(135deg, #5D8C3E 0%, #4a7330 100%)',
+                  borderColor: '#5D8C3E',
+                  color: 'white',
+                  fontWeight: 500
+                }}
+              >
+                Khám phá việc làm
               </Button>
             </Space>
             <div className="hero-stats">

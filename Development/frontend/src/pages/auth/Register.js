@@ -22,7 +22,7 @@ const Register = () => {
         password: values.password,
         fullName: values.fullName,
         companyName: values.companyName,
-        role: values.role || 'HRManager',
+        role: values.role || 'Recruiter',
       };
 
       await register(registerData);
@@ -133,15 +133,14 @@ const Register = () => {
           rules={[
             { required: true, message: 'Vui lòng chọn vai trò!' }
           ]}
-          initialValue="HRManager"
+          initialValue="Recruiter"
         >
           <Select
             placeholder="Chọn vai trò của bạn"
             size="large"
             className="auth-select"
           >
-            <Select.Option value="HRManager">HR Manager</Select.Option>
-            <Select.Option value="HiringManager">Hiring Manager</Select.Option>
+            <Select.Option value="Recruiter">Recruiter</Select.Option>
           </Select>
         </Form.Item>
 

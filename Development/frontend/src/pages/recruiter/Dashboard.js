@@ -1,5 +1,5 @@
-import React from 'react';
-import { Row, Col, Card, Table, Tag, Avatar, Button, Progress, Typography, List } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Row, Col, Card, Tag, Avatar, Button, Typography, Spin, message, Select, Tooltip, Progress } from 'antd';
 import { 
   FileTextOutlined, 
   TeamOutlined, 
@@ -8,127 +8,237 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
   PlusOutlined,
-  RightOutlined,
   ClockCircleOutlined,
-  RiseOutlined
+  UserOutlined,
+  MailOutlined,
+  TrophyOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useNavigate } from 'react-router-dom';
+import { dashboardAPI } from '../../services/api';
 import './css/Dashboard.css';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
+
+const MATCHA_GREEN = '#5D8C3E';
+const MATCHA_LIGHT = 'rgba(93, 140, 62, 0.1)';
+
+const STATE_COLORS = {
+  'NEW': '#1890ff',
+  'INTERVIEW': '#faad14',
+  'QUIZ': '#722ed1',
+  'OFFER': '#52c41a'
+};
+
+const STATE_LABELS = {
+  'NEW': 'Applied',
+  'INTERVIEW': 'Interview',
+  'QUIZ': 'Làm Quiz',
+  'OFFER': 'Offer'
+};
+
+const KANBAN_STATES = ['NEW', 'INTERVIEW', 'QUIZ', 'OFFER'];
 
 const RecruiterDashboard = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [kanbanLoading, setKanbanLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [kanbanData, setKanbanData] = useState({ columns: [] });
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [jobs, setJobs] = useState([]);
 
+  useEffect(() => {
+    fetchDashboardOverview();
+    fetchJobs();
+    fetchKanbanData();
+  }, []);
+
+  const fetchDashboardOverview = async () => {
+    try {
+      setLoading(true);
+      const response = await dashboardAPI.getOverview();
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard overview:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const response = await dashboardAPI.getOverview();
+      if (response.data?.summary?.totalApplications > 0) {
+        setJobs([]);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    }
+  };
+
+  const fetchKanbanData = async () => {
+    try {
+      setKanbanLoading(true);
+      const response = await dashboardAPI.getKanban(selectedJob);
+      setKanbanData(response.data || { columns: [] });
+    } catch (error) {
+      console.error('Error fetching kanban data:', error);
+      message.error('Không thể tải dữ liệu Kanban');
+    } finally {
+      setKanbanLoading(false);
+    }
+  };
+
+  const handleJobFilter = (jobId) => {
+    setSelectedJob(jobId || null);
+    fetchKanbanData();
+  };
+
+  const handleDragEnd = (result) => {
+    const { destination, source, draggableId } = result;
+    
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    message.info('Kéo thả chỉ để hiển thị. Để chuyển trạng thái, hãy sử dụng nút hành động trên card.');
+  };
+
+  // Stats cards data
   const stats = [
     { 
-      title: 'Total Jobs', 
-      value: 24, 
-      suffix: '+', 
+      title: 'Tổng Hồ Sơ', 
+      value: dashboardData?.summary?.totalApplications || 0, 
       trend: '+12%',
       trendUp: true,
       icon: <FileTextOutlined />,
-      color: '#5D8C3E'
+      color: MATCHA_GREEN
     },
     { 
-      title: 'Active Candidates', 
-      value: 156, 
+      title: 'Đang Xử Lý', 
+      value: dashboardData?.summary?.inPipeline || 0, 
       trend: '+8%',
       trendUp: true,
       icon: <TeamOutlined />,
       color: '#1890ff'
     },
     { 
-      title: 'Interviews This Week', 
-      value: 18, 
-      trend: '-5%',
-      trendUp: false,
-      icon: <CalendarOutlined />,
-      color: '#faad14'
-    },
-    { 
-      title: 'Offers Sent', 
-      value: 8, 
+      title: 'Đã Tuyển', 
+      value: dashboardData?.summary?.hired || 0, 
       trend: '+3',
       trendUp: true,
       icon: <CheckCircleOutlined />,
       color: '#52c41a'
     },
-  ];
-
-  const recentJobs = [
-    { id: 1, title: 'Senior Frontend Developer', department: 'Engineering', applications: 45, status: 'active' },
-    { id: 2, title: 'Product Manager', department: 'Product', applications: 32, status: 'active' },
-    { id: 3, title: 'UX Designer', department: 'Design', applications: 28, status: 'paused' },
-    { id: 4, title: 'Backend Engineer', department: 'Engineering', applications: 38, status: 'active' },
-  ];
-
-  const upcomingInterviews = [
-    { id: 1, candidate: 'Alex Morgan', position: 'Frontend Developer', time: 'Today, 2:00 PM', status: 'upcoming' },
-    { id: 2, candidate: 'Jane Doe', position: 'Product Manager', time: 'Tomorrow, 10:00 AM', status: 'upcoming' },
-    { id: 3, candidate: 'John Smith', position: 'UX Designer', time: 'Tomorrow, 3:00 PM', status: 'pending' },
-  ];
-
-  const pipelineData = [
-    { stage: 'Applied', count: 45, color: '#1890ff' },
-    { stage: 'Screening', count: 28, color: '#722ed1' },
-    { stage: 'Interview', count: 15, color: '#faad14' },
-    { stage: 'Offer', count: 4, color: '#52c41a' },
-  ];
-
-  const columns = [
-    {
-      title: 'Job Title',
-      dataIndex: 'title',
-      key: 'title',
-      render: (text, record) => (
-        <div className="job-title-cell">
-          <span className="job-title">{text}</span>
-          <Text type="secondary" className="job-department">{record.department}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Applications',
-      dataIndex: 'applications',
-      key: 'applications',
-      render: (val) => <span className="applications-count">{val}</span>,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'active' ? 'success' : 'default'}>
-          {status === 'active' ? 'Active' : 'Paused'}
-        </Tag>
-      ),
-    },
-    {
-      title: '',
-      key: 'action',
-      render: (_, record) => (
-        <Button 
-          type="link" 
-          className="view-btn"
-          onClick={() => navigate(`/recruiter/jobs/${record.id}/candidates`)}
-        >
-          View <RightOutlined />
-        </Button>
-      ),
+    { 
+      title: 'Bị Từ Chối', 
+      value: dashboardData?.summary?.rejected || 0, 
+      trend: '-5%',
+      trendUp: false,
+      icon: <CloseOutlined />,
+      color: '#f5222d'
     },
   ];
+
+  // Kanban columns (exclude REJECTED from main view)
+  const kanbanColumns = kanbanData.columns?.filter(col => KANBAN_STATES.includes(col.state)) || [];
+
+  const getScoreColor = (score) => {
+    if (score === null || score === undefined) return '#d9d9d9';
+    if (score >= 80) return '#52c41a';
+    if (score >= 60) return '#faad14';
+    return '#f5222d';
+  };
+
+  const renderCandidateCard = (card, index) => {
+    const scoreColor = getScoreColor(card.aiMatchScore);
+    
+    return (
+      <Draggable key={card.applicationId} draggableId={String(card.applicationId)} index={index}>
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            className={`kanban-card ${snapshot.isDragging ? 'dragging' : ''}`}
+            onClick={() => navigate(`/recruiter/candidates/${card.applicationId}`)}
+          >
+            <div className="card-header">
+              <Avatar size={32} style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
+              <div className="card-info">
+                <Text strong className="candidate-name">{card.candidateName}</Text>
+                <Text type="secondary" className="candidate-email">
+                  <MailOutlined /> {card.candidateEmail}
+                </Text>
+              </div>
+            </div>
+            
+            <div className="card-job">
+              <Tag color="blue" icon={<FileTextOutlined />}>{card.jobTitle}</Tag>
+            </div>
+
+            <div className="card-footer">
+              <div className="card-meta">
+                <Tooltip title="Điểm AI">
+                  <div className="score-badge" style={{ backgroundColor: `${scoreColor}20`, color: scoreColor }}>
+                    <TrophyOutlined /> {card.aiMatchScore ? `${card.aiMatchScore}%` : 'N/A'}
+                  </div>
+                </Tooltip>
+                <Tooltip title="Ngày nộp">
+                  <div className="date-badge">
+                    <ClockCircleOutlined /> {new Date(card.appliedAt).toLocaleDateString('vi-VN')}
+                  </div>
+                </Tooltip>
+              </div>
+            </div>
+
+            <div className="card-actions">
+              <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); navigate(`/recruiter/candidates/${card.applicationId}`); }}>
+                Chi tiết
+              </Button>
+              <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); message.info('Chuyển trạng thái'); }}>
+                Chuyển
+              </Button>
+            </div>
+          </div>
+        )}
+      </Draggable>
+    );
+  };
+
+  if (loading && !dashboardData) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-page recruiter-dashboard">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Dashboard</Title>
-          <Text type="secondary">Welcome back! Here's what's happening today.</Text>
+          <Title level={3} className="page-title">Dashboard Tuyển Dụng</Title>
+          <Text type="secondary">Quản lý pipeline ứng viên với giao diện Kanban</Text>
         </div>
         <div className="header-actions">
+          <Select
+            placeholder="Lọc theo vị trí"
+            allowClear
+            style={{ width: 200, marginRight: 12 }}
+            onChange={handleJobFilter}
+            value={selectedJob}
+          >
+            {jobs.map(job => (
+              <Option key={job.jobId || job.id} value={job.jobId || job.id}>
+                {job.title}
+              </Option>
+            ))}
+          </Select>
           <Button icon={<PlusOutlined />} type="primary" onClick={() => navigate('/recruiter/jobs/create')}>
-            Post New Job
+            Đăng Tin Mới
           </Button>
         </div>
       </div>
@@ -142,7 +252,7 @@ const RecruiterDashboard = () => {
                 <div className="stat-info">
                   <Text type="secondary" className="stat-title">{stat.title}</Text>
                   <div className="stat-value-row">
-                    <span className="stat-value">{stat.value}{stat.suffix}</span>
+                    <span className="stat-value">{stat.value}</span>
                     <span className={`stat-trend ${stat.trendUp ? 'trend-up' : 'trend-down'}`}>
                       {stat.trendUp ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                       {stat.trend}
@@ -158,92 +268,95 @@ const RecruiterDashboard = () => {
         ))}
       </Row>
 
-      <Row gutter={[20, 20]}>
-        {/* Pipeline Overview */}
-        <Col xs={24} lg={8}>
-          <Card className="dashboard-card pipeline-card" bordered={false}>
-            <div className="card-header">
-              <Title level={5}>Pipeline Overview</Title>
-              <Tag color="processing">This Week</Tag>
-            </div>
-            <div className="pipeline-chart">
-              {pipelineData.map((item, index) => (
-                <div key={index} className="pipeline-item">
-                  <div className="pipeline-label">
-                    <span className="pipeline-dot" style={{ backgroundColor: item.color }}></span>
-                    <span>{item.stage}</span>
-                    <span className="pipeline-count">{item.count}</span>
+      {/* Pipeline Overview */}
+      {dashboardData?.funnel && dashboardData.funnel.length > 0 && (
+        <Card className="dashboard-card pipeline-card" bordered={false} style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <Title level={5}>Phễu Tuyển Dụng</Title>
+          </div>
+          <Row gutter={16}>
+            {dashboardData.funnel
+              .filter(item => KANBAN_STATES.includes(item.state))
+              .map((item, index) => (
+                <Col xs={24} sm={12} md={6} key={index}>
+                  <div className="funnel-item">
+                    <div className="funnel-value" style={{ color: STATE_COLORS[item.state] || MATCHA_GREEN }}>
+                      {item.count}
+                    </div>
+                    <div className="funnel-label">{STATE_LABELS[item.state] || item.state}</div>
+                    <Progress 
+                      percent={dashboardData.summary.totalApplications > 0 
+                        ? (item.count / dashboardData.summary.totalApplications) * 100 
+                        : 0} 
+                      showInfo={false}
+                      strokeColor={STATE_COLORS[item.state] || MATCHA_GREEN}
+                      trailColor="#f0f0f0"
+                      size="small"
+                    />
                   </div>
-                  <Progress 
-                    percent={(item.count / 50) * 100} 
-                    showInfo={false}
-                    strokeColor={item.color}
-                    trailColor="#f0f0f0"
-                    size="small"
-                  />
+                </Col>
+              ))}
+          </Row>
+        </Card>
+      )}
+
+      {/* Kanban Board */}
+      <Card className="dashboard-card kanban-card" bordered={false}>
+        <div className="card-header">
+          <Title level={5}>Pipeline Ứng Viên</Title>
+          <Button type="link" icon={<PlusOutlined />} onClick={() => fetchKanbanData()}>
+            Làm mới
+          </Button>
+        </div>
+
+        {kanbanLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 60 }}>
+            <Spin size="large" />
+          </div>
+        ) : (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="kanban-board">
+              {kanbanColumns.map((column) => (
+                <div key={column.state} className="kanban-column">
+                  <div className="column-header" style={{ borderTopColor: STATE_COLORS[column.state] || MATCHA_GREEN }}>
+                    <div className="column-title">
+                      <span className="column-dot" style={{ backgroundColor: STATE_COLORS[column.state] || MATCHA_GREEN }}></span>
+                      <Text strong>{column.stateLabel || STATE_LABELS[column.state] || column.state}</Text>
+                      <Tag color={STATE_COLORS[column.state] || MATCHA_GREEN}>{column.count}</Tag>
+                    </div>
+                  </div>
+                  
+                  <Droppable droppableId={column.state}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`column-cards ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
+                      >
+                        {column.cards && column.cards.length > 0 ? (
+                          column.cards.map((card, index) => renderCandidateCard(card, index))
+                        ) : (
+                          <div className="empty-column">
+                            <Text type="secondary">Chưa có ứng viên</Text>
+                          </div>
+                        )}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
               ))}
             </div>
-          </Card>
-        </Col>
+          </DragDropContext>
+        )}
 
-        {/* Upcoming Interviews */}
-        <Col xs={24} lg={16}>
-          <Card className="dashboard-card" bordered={false}>
-            <div className="card-header">
-              <Title level={5}>Upcoming Interviews</Title>
-              <Button type="link" onClick={() => navigate('/interviewer/incoming')}>
-                View All <RightOutlined />
-              </Button>
-            </div>
-            <List
-              itemLayout="horizontal"
-              dataSource={upcomingInterviews}
-              renderItem={(item) => (
-                <List.Item className="interview-item">
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar 
-                        size={44} 
-                        style={{ backgroundColor: '#5D8C3E' }}
-                        icon={<TeamOutlined />}
-                      />
-                    }
-                    title={<span className="candidate-name">{item.candidate}</span>}
-                    description={
-                      <div className="interview-meta">
-                        <span>{item.position}</span>
-                        <span className="separator">•</span>
-                        <ClockCircleOutlined />
-                        <span>{item.time}</span>
-                      </div>
-                    }
-                  />
-                  <Tag color={item.status === 'upcoming' ? 'processing' : 'warning'}>
-                    {item.status === 'upcoming' ? 'Confirmed' : 'Pending'}
-                  </Tag>
-                </List.Item>
-              )}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Recent Jobs Table */}
-      <Card className="dashboard-card recent-jobs-card" bordered={false}>
-        <div className="card-header">
-          <Title level={5}>Recent Job Posts</Title>
-          <Button type="link" onClick={() => navigate('/recruiter/jobs')}>
-            View All Jobs <RightOutlined />
-          </Button>
-        </div>
-        <Table 
-          columns={columns} 
-          dataSource={recentJobs} 
-          rowKey="id"
-          pagination={false}
-          className="jobs-table"
-        />
+        {(!kanbanData.columns || kanbanData.columns.length === 0) && !kanbanLoading && (
+          <div className="empty-board">
+            <FileTextOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
+            <Title level={5} type="secondary">Chưa có dữ liệu ứng viên</Title>
+            <Text type="secondary">Hãy thêm ứng viên hoặc chọn vị trí tuyển dụng để xem pipeline</Text>
+          </div>
+        )}
       </Card>
 
       {/* Quick Actions */}
@@ -251,15 +364,15 @@ const RecruiterDashboard = () => {
         <Col xs={24}>
           <Card className="dashboard-card quick-actions-card" bordered={false}>
             <div className="card-header">
-              <Title level={5}>Quick Actions</Title>
+              <Title level={5}>Thao Tác Nhanh</Title>
             </div>
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12} md={6}>
                 <div className="quick-action-item" onClick={() => navigate('/recruiter/jobs/create')}>
-                  <div className="action-icon" style={{ backgroundColor: 'rgba(93, 140, 62, 0.1)' }}>
-                    <FileTextOutlined style={{ color: '#5D8C3E' }} />
+                  <div className="action-icon" style={{ backgroundColor: MATCHA_LIGHT }}>
+                    <FileTextOutlined style={{ color: MATCHA_GREEN }} />
                   </div>
-                  <span>Post New Job</span>
+                  <span>Đăng Tin Mới</span>
                 </div>
               </Col>
               <Col xs={24} sm={12} md={6}>
@@ -267,7 +380,7 @@ const RecruiterDashboard = () => {
                   <div className="action-icon" style={{ backgroundColor: 'rgba(24, 144, 255, 0.1)' }}>
                     <TeamOutlined style={{ color: '#1890ff' }} />
                   </div>
-                  <span>View Candidates</span>
+                  <span>Xem Ứng Viên</span>
                 </div>
               </Col>
               <Col xs={24} sm={12} md={6}>
@@ -275,15 +388,15 @@ const RecruiterDashboard = () => {
                   <div className="action-icon" style={{ backgroundColor: 'rgba(250, 173, 20, 0.1)' }}>
                     <CalendarOutlined style={{ color: '#faad14' }} />
                   </div>
-                  <span>Schedule Interview</span>
+                  <span>Lên Lịch Phỏng Vấn</span>
                 </div>
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <div className="quick-action-item" onClick={() => navigate('/quiz/create')}>
                   <div className="action-icon" style={{ backgroundColor: 'rgba(82, 196, 26, 0.1)' }}>
-                    <RiseOutlined style={{ color: '#52c41a' }} />
+                    <CheckCircleOutlined style={{ color: '#52c41a' }} />
                   </div>
-                  <span>Create Quiz</span>
+                  <span>Tạo Quiz</span>
                 </div>
               </Col>
             </Row>

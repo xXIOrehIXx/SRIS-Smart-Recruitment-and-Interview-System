@@ -173,7 +173,20 @@ const AdminLayout = ({ children }) => {
             </Badge>
             <div className="user-info">
               <Dropdown
-                menu={{ items: userMenuItems }}
+                menu={{ 
+                  items: userMenuItems,
+                  onClick: ({ key }) => {
+                    if (key === 'logout') {
+                      logout();
+                      message.success('Đã đăng xuất');
+                      navigate('/login');
+                    } else if (key === 'profile') {
+                      message.info('Hồ sơ cá nhân');
+                    } else if (key === 'settings') {
+                      navigate('/settings');
+                    }
+                  }
+                }}
                 placement="bottomRight"
                 trigger={['click']}
               >

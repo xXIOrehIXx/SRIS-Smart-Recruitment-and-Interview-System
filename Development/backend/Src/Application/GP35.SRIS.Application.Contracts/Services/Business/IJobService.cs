@@ -9,4 +9,10 @@ public interface IJobService : IBaseService
 
     /// <summary>Danh sách Job của công ty (mới nhất trước).</summary>
     Task<IEnumerable<JobGetDto>> GetListAsync(long companyId);
+
+    /// <summary>API CÔNG KHAI: Danh sách job đang tuyển (không cần login).</summary>
+    Task<IEnumerable<JobGetDto>> GetPublicJobsAsync();
+
+    /// <summary>API CÔNG KHAI: Chi tiết 1 job đang tuyển (không cần login).</summary>
+    Task<JobGetDto?> GetPublicJobAsync(long jobId);
 }

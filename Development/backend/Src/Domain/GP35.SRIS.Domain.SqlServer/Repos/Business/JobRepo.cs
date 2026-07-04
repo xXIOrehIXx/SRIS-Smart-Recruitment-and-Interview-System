@@ -71,4 +71,24 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
             "WHERE company_id = {1} AND job_id = {2}",
             vectorJson, companyId, jobId);
     }
+
+    public async Task<IEnumerable<Job>> GetPublicOpenJobsAsync()
+    {
+        // Public endpoint: bỏ qua global query filter company_id
+        return await _db.Jobs
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .OrderByDescending(j => j.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<Job?> GetPublicOpenJobAsync(long jobId)
+    {
+        // Public endpoint: bỏ qua global query filter company_id
+        return await _db.Jobs
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(j => j.JobId == jobId && j.Status == "Open")
+            .FirstOrDefaultAsync();
+    }
 }

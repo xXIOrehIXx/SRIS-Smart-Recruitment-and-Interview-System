@@ -38,6 +38,20 @@ public class JobService : BaseService<JobService>, IJobService
         return jobs.Select(ToDto);
     }
 
+    public async Task<IEnumerable<JobGetDto>> GetPublicJobsAsync()
+    {
+        var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
+        var jobs = await jobRepo.GetPublicOpenJobsAsync();
+        return jobs.Select(ToPublicDto);
+    }
+
+    public async Task<JobGetDto?> GetPublicJobAsync(long jobId)
+    {
+        var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
+        var job = await jobRepo.GetPublicOpenJobAsync(jobId);
+        return job != null ? ToPublicDto(job) : null;
+    }
+
     private static JobGetDto ToDto(Job j) => new()
     {
         JobId = j.JobId,
@@ -49,5 +63,26 @@ public class JobService : BaseService<JobService>, IJobService
         Status = j.Status,
         CreatedAt = j.CreatedAt,
         UpdatedAt = j.UpdatedAt
+    };
+
+    private static JobGetDto ToPublicDto(Job j) => new()
+    {
+        JobId = j.JobId,
+        CompanyId = j.CompanyId,
+        Title = j.Title,
+        JdText = j.JdText,
+        DepartmentManagerId = j.DepartmentManagerId,
+        CreatedBy = j.CreatedBy,
+        Status = j.Status,
+        CreatedAt = j.CreatedAt,
+        UpdatedAt = j.UpdatedAt,
+        Department = j.Department,
+        Location = j.Location,
+        EmploymentType = j.EmploymentType,
+        Quantity = j.Quantity,
+        // Các trường bổ sung mặc định
+        Skills = new List<string>(),
+        Benefits = new List<string>(),
+        Requirements = new List<string>()
     };
 }
