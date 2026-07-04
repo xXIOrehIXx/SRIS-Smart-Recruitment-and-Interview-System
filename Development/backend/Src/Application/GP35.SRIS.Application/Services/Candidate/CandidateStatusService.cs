@@ -58,7 +58,6 @@ public class CandidateStatusService : BaseService<CandidateStatusService>, ICand
     {
         ApplicationState.New => "Hồ sơ đã tiếp nhận",
         ApplicationState.Screening => "Đang sàng lọc hồ sơ",
-        ApplicationState.Quiz => "Vòng kiểm tra trực tuyến",
         ApplicationState.Interview => "Vòng phỏng vấn",
         ApplicationState.Offer => "Đề nghị tuyển dụng",
         ApplicationState.Hired => "Trúng tuyển",
@@ -72,8 +71,6 @@ public class CandidateStatusService : BaseService<CandidateStatusService>, ICand
             "Chúng tôi đã nhận hồ sơ của bạn và sẽ xem xét trong thời gian sớm nhất.",
         ApplicationState.Screening =>
             "Hồ sơ của bạn đang được bộ phận tuyển dụng sàng lọc.",
-        ApplicationState.Quiz =>
-            "Bạn đang ở vòng làm bài kiểm tra trực tuyến. Vui lòng kiểm tra email để biết hướng dẫn.",
         ApplicationState.Interview =>
             "Bạn đang ở vòng phỏng vấn. Vui lòng kiểm tra email để chọn/xác nhận lịch.",
         ApplicationState.Offer =>

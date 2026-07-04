@@ -54,7 +54,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IHttpService, HttpService>();
             services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
             services.AddScoped<IEmbeddingClient, EmbeddingClient>();
-            services.AddScoped<IQuizGenClient, QuizGenClient>();
+            services.AddScoped<ICriteriaExtractionClient, CriteriaExtractionClient>();
 
             // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
             // Đổi sang EmailService nếu muốn gửi qua NotificationCenter (HTTP).
@@ -74,12 +74,9 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IJobRepo, JobRepo>();
             services.AddScoped<ICvDocumentRepo, CvDocumentRepo>();
             services.AddScoped<IApplicationRepo, ApplicationRepo>();
-            services.AddScoped<IQuizRepo, QuizRepo>();
-            services.AddScoped<IQuestionBankRepo, QuestionBankRepo>();
 
-            // Magic link + ứng viên làm quiz
+            // Magic link ứng viên
             services.AddScoped<IMagicLinkTokenRepo, MagicLinkTokenRepo>();
-            services.AddScoped<IQuizAttemptRepo, QuizAttemptRepo>();
 
             // State machine pipeline
             services.AddScoped<IActivityLogRepo, ActivityLogRepo>();
@@ -91,6 +88,10 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
             services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
+
+            // Chấm CV theo tiêu chí (5.18): chunk CV + kết quả khớp/thiếu per-criterion
+            services.AddScoped<ICvChunkRepo, CvChunkRepo>();
+            services.AddScoped<IApplicationCriterionMatchRepo, ApplicationCriterionMatchRepo>();
 
             // Offer
             services.AddScoped<IOfferRepo, OfferRepo>();
@@ -119,15 +120,13 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvScoringService, CvScoringService>();
+            services.AddScoped<ICriteriaScoringService, CriteriaScoringService>();
             // Hàng đợi chấm CV chạy nền (Cách A) — singleton: request ghi vào, worker nền (CvScoringWorker) đọc ra.
             services.AddSingleton<ICvScoreQueue, CvScoreQueue>();
             services.AddScoped<ITalentPoolService, TalentPoolService>();
-            services.AddScoped<IQuizService, QuizService>();
-            services.AddScoped<IQuestionBankService, QuestionBankService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();
-            services.AddScoped<ICandidateQuizService, CandidateQuizService>();
             services.AddScoped<ICareerSiteService, CareerSiteService>();
             services.AddScoped<IApplicationStateService, ApplicationStateService>();
             services.AddScoped<IInterviewSchedulingService, InterviewSchedulingService>();

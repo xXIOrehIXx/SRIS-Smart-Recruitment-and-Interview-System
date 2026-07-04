@@ -32,17 +32,13 @@ public class SrisDbContext : DbContext
     public DbSet<Application> Applications => Set<Application>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Company> Companies => Set<Company>();
-    public DbSet<Quiz> Quizzes => Set<Quiz>();
-    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
-    public DbSet<QuestionBankItem> QuestionBankItems => Set<QuestionBankItem>();
     public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
-    public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
-    public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
-    public DbSet<AntiCheatEvent> AntiCheatEvents => Set<AntiCheatEvent>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
+    public DbSet<CvChunk> CvChunks => Set<CvChunk>();
+    public DbSet<ApplicationCriterionMatch> ApplicationCriterionMatches => Set<ApplicationCriterionMatch>();
     public DbSet<CriteriaTemplate> CriteriaTemplates => Set<CriteriaTemplate>();
     public DbSet<CriteriaTemplateItem> CriteriaTemplateItems => Set<CriteriaTemplateItem>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
@@ -114,72 +110,11 @@ public class SrisDbContext : DbContext
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
-        b.Entity<Quiz>(e =>
-        {
-            e.ToTable("Quiz");
-            e.HasKey(x => x.QuizId);
-            // Cột chỉ có ở entity (đầy đủ), schema local (rút gọn) chưa có -> bỏ map.
-            e.Ignore(x => x.Title);
-            e.Ignore(x => x.Stage);
-            e.Ignore(x => x.TotalQuestions);
-            e.Ignore(x => x.PassScore);
-            e.Ignore(x => x.ShuffleQuestions);
-            e.Ignore(x => x.TabSwitchLimit);
-            // duration_min CÓ trong schema -> giữ map (để null khi AI gen).
-            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
-            e.HasQueryFilter(x => x.CompanyId == _companyId);
-        });
-
-        b.Entity<QuizQuestion>(e =>
-        {
-            e.ToTable("QuizQuestion");
-            e.HasKey(x => x.QuestionId);
-            e.Ignore(x => x.Explanation);
-            e.Ignore(x => x.Topic);
-            e.Ignore(x => x.Difficulty);
-            e.Ignore(x => x.DisplayOrder);
-            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
-            e.HasQueryFilter(x => x.CompanyId == _companyId);
-        });
-
-        b.Entity<QuestionBankItem>(e =>
-        {
-            e.ToTable("QuestionBankItem");
-            e.HasKey(x => x.BankItemId);
-            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
-            e.HasQueryFilter(x => x.CompanyId == _companyId);
-        });
-
         b.Entity<MagicLinkToken>(e =>
         {
             e.ToTable("MagicLinkToken");
             e.HasKey(x => x.TokenId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
-            e.HasQueryFilter(x => x.CompanyId == _companyId);
-        });
-
-        b.Entity<QuizAttempt>(e =>
-        {
-            e.ToTable("QuizAttempt");
-            e.HasKey(x => x.AttemptId);
-            e.Ignore(x => x.MonitorCount); // không có ở schema local
-            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
-            e.HasQueryFilter(x => x.CompanyId == _companyId);
-        });
-
-        b.Entity<QuizAnswer>(e =>
-        {
-            e.ToTable("QuizAnswer");
-            e.HasKey(x => x.AnswerId);
-            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
-            e.HasQueryFilter(x => x.CompanyId == _companyId);
-        });
-
-        b.Entity<AntiCheatEvent>(e =>
-        {
-            e.ToTable("AntiCheatEvent");
-            e.HasKey(x => x.EventId);
-            // Bảng này dùng occurred_at (không có created_at) — set tường minh trong repo.
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
@@ -218,7 +153,25 @@ public class SrisDbContext : DbContext
             e.HasKey(x => x.CriteriaId);
             e.Ignore(x => x.Description);   // chưa có ở schema local
             e.Ignore(x => x.DisplayOrder);
+            // Cột embedding VECTOR(1024) (V013) không có trên entity — xử lý bằng raw SQL (5.11).
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<CvChunk>(e =>
+        {
+            e.ToTable("CvChunk");
+            e.HasKey(x => x.ChunkId);
+            e.Ignore(x => x.Embedding); // VECTOR(1024) -> xử lý bằng raw SQL
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<ApplicationCriterionMatch>(e =>
+        {
+            e.ToTable("ApplicationCriterionMatch");
+            e.HasKey(x => x.MatchId);
+            // evaluated_at có DEFAULT ở DB nhưng service luôn set tường minh khi ghi.
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 

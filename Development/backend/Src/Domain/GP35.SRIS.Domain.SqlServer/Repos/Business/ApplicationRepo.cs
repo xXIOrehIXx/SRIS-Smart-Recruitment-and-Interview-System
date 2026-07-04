@@ -54,6 +54,15 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
                 .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
     }
 
+    public async Task UpdateCriteriaScoreAsync(long companyId, long applicationId, decimal score)
+    {
+        await _db.Applications
+            .Where(a => a.ApplicationId == applicationId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.CriteriaScore, score)
+                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
+    }
+
     public async Task<int> TransitionStateAsync(
         long companyId, long applicationId, string toState, string? rejectReason,
         DateTime stageUpdatedAt, DateTime? rejectedAt, DateTime? hiredAt)

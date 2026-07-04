@@ -38,6 +38,9 @@ public interface IApplicationRepo : IBaseRepo<long, Application>
     /// <summary>Lưu điểm AI (0-100) vào hồ sơ.</summary>
     Task UpdateScoreAsync(long companyId, long applicationId, decimal score);
 
+    /// <summary>Lưu điểm chấm theo TỪNG tiêu chí (0-100 — 5.18) vào hồ sơ.</summary>
+    Task UpdateCriteriaScoreAsync(long companyId, long applicationId, decimal score);
+
     /// <summary>Bảng xếp hạng ứng viên của 1 job theo điểm giảm dần.</summary>
     Task<IEnumerable<ApplicationRankingRow>> GetRankingByJobAsync(long companyId, long jobId);
 

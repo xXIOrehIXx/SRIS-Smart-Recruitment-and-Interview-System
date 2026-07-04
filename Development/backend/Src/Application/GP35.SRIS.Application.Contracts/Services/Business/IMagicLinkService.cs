@@ -7,7 +7,7 @@ public record MagicLinkIssued(long TokenId, string RawToken, string Purpose, Dat
 public record MagicLinkValidation(long CompanyId, long TokenId, long ApplicationId, string Purpose);
 
 /// <summary>
-/// Phát/xác thực magic link của ứng viên (docs 5.13). 4 purpose: QUIZ/SCHEDULE/STATUS/OFFER_RESPONSE.
+/// Phát/xác thực magic link của ứng viên (docs 5.13). 3 purpose: SCHEDULE/STATUS/OFFER_RESPONSE.
 /// Lưu HASH, one-time = đốt khi CHỐT (gọi <see cref="MarkUsedAsync"/>), TTL theo purpose.
 /// </summary>
 public interface IMagicLinkService : IBaseService
