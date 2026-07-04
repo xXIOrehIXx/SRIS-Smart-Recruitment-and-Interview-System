@@ -21,4 +21,11 @@ public interface IJobRepo : IBaseRepo<long, Job>
 
     /// <summary>Sinh & lưu embedding cho JD (lazy embedding, chỉ chạy 1 lần/job).</summary>
     Task UpdateEmbeddingAsync(long companyId, long jobId, float[] embedding);
+
+    /// <summary>
+    /// Cập nhật Job. jdChanged=true -> NULL embedding cũ (JD đổi thì vector cũ vô nghĩa —
+    /// quy tắc re-embedding; lần chấm sau tự embed lại). Trả số dòng (0 = không thấy).
+    /// </summary>
+    Task<int> UpdateAsync(long companyId, long jobId, string title, string? jdText,
+        long? departmentManagerId, string status, bool jdChanged);
 }

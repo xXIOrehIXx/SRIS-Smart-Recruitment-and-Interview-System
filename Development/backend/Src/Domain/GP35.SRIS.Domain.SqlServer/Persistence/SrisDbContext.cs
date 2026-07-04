@@ -101,10 +101,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("User"); // EF tự bọc [User] (từ khóa SQL)
             e.HasKey(x => x.UserId);
-            // Cột chỉ có ở remote/entity, schema local chưa có -> bỏ map.
-            e.Ignore(x => x.FullName);
-            e.Ignore(x => x.Phone);
-            e.Ignore(x => x.LastLoginAt);
+            // full_name / phone / last_login_at: đã thêm ở migration V014.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             // Truy vấn User thường lọc theo company; login (GetByEmail) dùng IgnoreQueryFilters.
             e.HasQueryFilter(x => x.CompanyId == _companyId);

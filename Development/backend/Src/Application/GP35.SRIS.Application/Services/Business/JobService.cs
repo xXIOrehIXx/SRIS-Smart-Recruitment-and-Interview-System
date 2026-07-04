@@ -1,7 +1,9 @@
+using System.Net;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GP35.SRIS.Application.Services;
@@ -37,6 +39,42 @@ public class JobService : BaseService<JobService>, IJobService
         var jobs = await jobRepo.GetListByCompanyAsync(companyId);
         return jobs.Select(ToDto);
     }
+
+    public async Task<JobGetDto> GetByIdAsync(long companyId, long jobId)
+    {
+        var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
+        var job = await jobRepo.GetByIdAsync(companyId, jobId)
+            ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
+        return ToDto(job);
+    }
+
+    public async Task<JobGetDto> UpdateAsync(long companyId, long jobId, JobUpdateDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            throw Bad("Tiêu đề Job không được để trống.");
+        var status = string.IsNullOrWhiteSpace(dto.Status) ? "Open" : dto.Status.Trim();
+
+        var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
+        var existing = await jobRepo.GetByIdAsync(companyId, jobId)
+            ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
+
+        var jdChanged = !string.Equals(existing.JdText ?? "", dto.JdText ?? "", StringComparison.Ordinal);
+        await jobRepo.UpdateAsync(companyId, jobId, dto.Title.Trim(), dto.JdText,
+            dto.DepartmentManagerId, status, jdChanged);
+
+        var updated = await jobRepo.GetByIdAsync(companyId, jobId);
+        return ToDto(updated!);
+    }
+
+    private static BaseException Bad(string msg) => new(msg)
+    {
+        ErrorCode = "BAD_REQUEST", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.BadRequest
+    };
+
+    private static BaseException NotFound(string msg) => new(msg)
+    {
+        ErrorCode = "NOT_FOUND", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.NotFound
+    };
 
     private static JobGetDto ToDto(Job j) => new()
     {
