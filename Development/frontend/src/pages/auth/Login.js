@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, message } from 'antd';
-import { MailOutlined, LockOutlined } from '@ant-design/icons';
+import { MailOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import './css/Auth.css';
 
@@ -11,7 +11,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, getDashboardRoute } = useAuth();
 
   // Bước 1: Validate email
   const handleNext = async () => {
@@ -40,14 +40,11 @@ const Login = () => {
       const userData = await login(values.email, values.password);
       message.success('Đăng nhập thành công!');
 
-      const dashboardRoutes = {
-        'Admin': '/admin/dashboard',
-        'HRManager': '/recruiter/dashboard',
-        'HiringManager': '/recruiter/dashboard',
-        'Interviewer': '/interviewer/dashboard',
-      };
-      const redirectPath = dashboardRoutes[userData.role] || '/';
-      navigate(redirectPath);
+      // Sử dụng getDashboardRoute từ context thay vì hardcode
+      const redirectPath = getDashboardRoute();
+      
+      console.log('Login success, user role:', userData.role, 'redirect to:', redirectPath);
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
       if (err.response?.data?.message) {

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Card, Table, Tag, Button, Input, Select, Space, Dropdown, Modal, Typography, Avatar, Badge } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Table, Tag, Button, Input, Select, Space, Dropdown, Modal, Typography, Avatar, Badge, message, Popconfirm } from 'antd';
 import { 
   PlusOutlined, 
   SearchOutlined, 
@@ -10,9 +10,11 @@ import {
   EyeOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
-  ExportOutlined
+  ExportOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { jobsAPI } from '../../services/api';
 import './css/JobManagement.css';
 
 const { Title, Text } = Typography;
@@ -22,173 +24,157 @@ const JobManagement = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const [jobs, setJobs] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
 
-  const jobsData = [
-    { 
-      id: 1, 
-      title: 'Senior Frontend Developer', 
-      department: 'Engineering',
-      location: 'Hanoi, Vietnam',
-      type: 'Full-time',
-      applications: 45,
-      postedDate: '2026-06-15',
-      status: 'active',
-      salary: '$2,000 - $3,500'
-    },
-    { 
-      id: 2, 
-      title: 'Product Manager', 
-      department: 'Product',
-      location: 'Ho Chi Minh City',
-      type: 'Full-time',
-      applications: 32,
-      postedDate: '2026-06-12',
-      status: 'active',
-      salary: '$2,500 - $4,000'
-    },
-    { 
-      id: 3, 
-      title: 'UX Designer', 
-      department: 'Design',
-      location: 'Remote',
-      type: 'Contract',
-      applications: 28,
-      postedDate: '2026-06-10',
-      status: 'paused',
-      salary: '$1,500 - $2,500'
-    },
-    { 
-      id: 4, 
-      title: 'Backend Engineer', 
-      department: 'Engineering',
-      location: 'Hanoi, Vietnam',
-      type: 'Full-time',
-      applications: 38,
-      postedDate: '2026-06-08',
-      status: 'active',
-      salary: '$2,000 - $3,500'
-    },
-    { 
-      id: 5, 
-      title: 'Marketing Manager', 
-      department: 'Marketing',
-      location: 'Hanoi, Vietnam',
-      type: 'Full-time',
-      applications: 22,
-      postedDate: '2026-06-05',
-      status: 'closed',
-      salary: '$1,800 - $3,000'
-    },
-    { 
-      id: 6, 
-      title: 'Data Analyst', 
-      department: 'Data',
-      location: 'Remote',
-      type: 'Full-time',
-      applications: 15,
-      postedDate: '2026-06-01',
-      status: 'active',
-      salary: '$1,200 - $2,000'
-    },
-  ];
+  useEffect(() => {
+    fetchJobs();
+  }, [pagination.current, pagination.pageSize]);
+
+  const fetchJobs = async (params = {}) => {
+    try {
+      setLoading(true);
+      const response = await jobsAPI.getAll(true);
+      const jobList = response.data || [];
+      setJobs(jobList);
+      setPagination(prev => ({
+        ...prev,
+        total: jobList.length
+      }));
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      message.error('Không thể tải danh sách tin tuyển dụng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTableChange = (newPagination, filters, sorter) => {
+    setPagination({
+      ...pagination,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize
+    });
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    try {
+      await jobsAPI.delete(jobId);
+      message.success('Xóa tin tuyển dụng thành công');
+      fetchJobs();
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      message.error('Không thể xóa tin tuyển dụng');
+    }
+  };
 
   const getMenuItems = (record) => [
     {
       key: 'view',
       icon: <EyeOutlined />,
-      label: 'View Details',
+      label: 'Xem Chi Tiết',
       onClick: () => navigate(`/recruiter/jobs/${record.id}`),
     },
     {
       key: 'edit',
       icon: <EditOutlined />,
-      label: 'Edit Job',
+      label: 'Chỉnh Sửa',
       onClick: () => navigate(`/recruiter/jobs/create?edit=${record.id}`),
     },
     {
       key: 'candidates',
       icon: <EyeOutlined />,
-      label: 'View Candidates',
+      label: 'Xem Ứng Viên',
       onClick: () => navigate(`/recruiter/jobs/${record.id}/candidates`),
     },
     {
       type: 'divider',
     },
     {
-      key: record.status === 'active' ? 'pause' : 'resume',
-      icon: record.status === 'active' ? <PauseCircleOutlined /> : <PlayCircleOutlined />,
-      label: record.status === 'active' ? 'Pause Job' : 'Resume Job',
+      key: record.status === 'Active' || record.status === 'active' ? 'pause' : 'resume',
+      icon: record.status === 'Active' || record.status === 'active' ? <PauseCircleOutlined /> : <PlayCircleOutlined />,
+      label: record.status === 'Active' || record.status === 'active' ? 'Tạm Dừng' : 'Kích Hoạt Lại',
     },
     {
       key: 'delete',
       icon: <DeleteOutlined />,
-      label: 'Delete',
+      label: 'Xóa',
       danger: true,
     },
   ];
 
   const columns = [
     {
-      title: 'Job Title',
+      title: 'Vị Trí',
       dataIndex: 'title',
       key: 'title',
-      sorter: (a, b) => a.title.localeCompare(b.title),
+      sorter: (a, b) => (a.title || '').localeCompare(b.title || ''),
       render: (text, record) => (
         <div className="job-info-cell">
           <div className="job-title-row">
             <span className="job-title">{text}</span>
             <Badge 
-              count={record.applications} 
+              count={record.applicationCount || record.application?.length || 0} 
               style={{ backgroundColor: '#5D8C3E' }}
               className="applications-badge"
             />
           </div>
           <div className="job-meta-row">
-            <Tag className="dept-tag">{record.department}</Tag>
-            <Text type="secondary" className="location-text">{record.location}</Text>
+            <Tag className="dept-tag">{record.department || record.departmentName || 'N/A'}</Tag>
+            <Text type="secondary" className="location-text">{record.location || record.workLocation || 'N/A'}</Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Type',
-      dataIndex: 'type',
-      key: 'type',
+      title: 'Loại Công Việc',
+      dataIndex: 'jobType',
+      key: 'jobType',
       filters: [
         { text: 'Full-time', value: 'Full-time' },
         { text: 'Part-time', value: 'Part-time' },
         { text: 'Contract', value: 'Contract' },
-        { text: 'Remote', value: 'Remote' },
+        { text: 'Internship', value: 'Internship' },
       ],
-      onFilter: (value, record) => record.type.includes(value),
-      render: (type) => <Tag color="blue">{type}</Tag>,
+      onFilter: (value, record) => (record.jobType || '').includes(value),
+      render: (type) => <Tag color="blue">{type || 'N/A'}</Tag>,
     },
     {
-      title: 'Salary',
+      title: 'Lương',
       dataIndex: 'salary',
       key: 'salary',
-      render: (salary) => <span className="salary-text">{salary}</span>,
+      render: (salary, record) => {
+        const salaryText = record.salary || (record.salaryMin && record.salaryMax 
+          ? `${formatCurrency(record.salaryMin)} - ${formatCurrency(record.salaryMax)}` 
+          : 'Thỏa thuận');
+        return <span className="salary-text">{salaryText}</span>;
+      },
     },
     {
-      title: 'Posted Date',
-      dataIndex: 'postedDate',
-      key: 'postedDate',
-      sorter: (a, b) => new Date(a.postedDate) - new Date(b.postedDate),
-      render: (date) => <Text type="secondary">{date}</Text>,
+      title: 'Ngày Đăng',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      sorter: (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0),
+      render: (date) => <Text type="secondary">{date ? formatDate(date) : 'N/A'}</Text>,
     },
     {
-      title: 'Status',
+      title: 'Trạng Thái',
       dataIndex: 'status',
       key: 'status',
       filters: [
-        { text: 'Active', value: 'active' },
-        { text: 'Paused', value: 'paused' },
-        { text: 'Closed', value: 'closed' },
+        { text: 'Active', value: 'Active' },
+        { text: 'Paused', value: 'Paused' },
+        { text: 'Closed', value: 'Closed' },
       ],
       onFilter: (value, record) => record.status === value,
       render: (status) => (
-        <Tag color={status === 'active' ? 'success' : status === 'paused' ? 'warning' : 'default'}>
-          {status === 'active' ? 'Active' : status === 'paused' ? 'Paused' : 'Closed'}
+        <Tag color={status === 'Active' ? 'success' : status === 'Paused' ? 'warning' : 'default'}>
+          {status === 'Active' ? 'Đang tuyển' : status === 'Paused' ? 'Tạm dừng' : 'Đã đóng'}
         </Tag>
       ),
     },
@@ -204,14 +190,25 @@ const JobManagement = () => {
     },
   ];
 
+  const formatCurrency = (value) => {
+    if (!value) return '';
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+  };
+
   const rowSelection = {
     selectedRowKeys,
     onChange: setSelectedRowKeys,
   };
 
-  const filteredData = jobsData.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchText.toLowerCase()) ||
-                         job.department.toLowerCase().includes(searchText.toLowerCase());
+  const filteredData = jobs.filter(job => {
+    const matchesSearch = (job.title || '').toLowerCase().includes(searchText.toLowerCase()) ||
+                         (job.department || '').toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -220,8 +217,8 @@ const JobManagement = () => {
     <div className="job-management-page">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Job Posts</Title>
-          <Text type="secondary">Manage your job postings and track applications</Text>
+          <Title level={3} className="page-title">Tin Tuyển Dụng</Title>
+          <Text type="secondary">Quản lý tin tuyển dụng và theo dõi ứng viên</Text>
         </div>
         <Button 
           type="primary" 
@@ -229,7 +226,7 @@ const JobManagement = () => {
           onClick={() => navigate('/recruiter/jobs/create')}
           className="create-btn"
         >
-          Post New Job
+          Đăng Tin Mới
         </Button>
       </div>
 
@@ -237,7 +234,7 @@ const JobManagement = () => {
         <div className="table-toolbar">
           <div className="toolbar-left">
             <Input
-              placeholder="Search jobs..."
+              placeholder="Tìm kiếm tin tuyển dụng..."
               prefix={<SearchOutlined style={{ color: '#8c8c8b' }} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -249,21 +246,26 @@ const JobManagement = () => {
               onChange={setStatusFilter}
               className="status-filter"
               options={[
-                { value: 'all', label: 'All Status' },
-                { value: 'active', label: 'Active' },
-                { value: 'paused', label: 'Paused' },
-                { value: 'closed', label: 'Closed' },
+                { value: 'all', label: 'Tất Cả' },
+                { value: 'Active', label: 'Đang tuyển' },
+                { value: 'Paused', label: 'Tạm dừng' },
+                { value: 'Closed', label: 'Đã đóng' },
               ]}
             />
           </div>
           <div className="toolbar-right">
             {selectedRowKeys.length > 0 && (
               <Text type="secondary" className="selected-count">
-                {selectedRowKeys.length} selected
+                Đã chọn {selectedRowKeys.length} tin
               </Text>
             )}
-            <Button icon={<ExportOutlined />}>Export</Button>
-            <Button icon={<FilterOutlined />}>Filter</Button>
+            <Button 
+              icon={<ReloadOutlined />} 
+              onClick={() => fetchJobs()}
+              loading={loading}
+            >
+              Làm Mới
+            </Button>
           </div>
         </div>
 
@@ -273,10 +275,14 @@ const JobManagement = () => {
           dataSource={filteredData}
           rowKey="id"
           className="jobs-table"
+          loading={loading}
           pagination={{
-            pageSize: 10,
+            ...pagination,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} jobs`,
+            showTotal: (total) => `Tổng ${total} tin tuyển dụng`,
+            onChange: (page, pageSize) => {
+              setPagination({ ...pagination, current: page, pageSize });
+            }
           }}
         />
       </Card>

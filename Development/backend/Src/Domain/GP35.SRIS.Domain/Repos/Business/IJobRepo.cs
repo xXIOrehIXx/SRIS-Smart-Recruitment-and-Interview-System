@@ -28,4 +28,10 @@ public interface IJobRepo : IBaseRepo<long, Job>
     /// </summary>
     Task<int> UpdateAsync(long companyId, long jobId, string title, string? jdText,
         long? departmentManagerId, string status, bool jdChanged);
+
+    /// <summary>API CÔNG KHAI: Lấy tất cả job đang tuyển (Status = 'Open').</summary>
+    Task<IEnumerable<Job>> GetPublicOpenJobsAsync();
+
+    /// <summary>API CÔNG KHAI: Lấy 1 job đang tuyển theo id.</summary>
+    Task<Job?> GetPublicOpenJobAsync(long jobId);
 }

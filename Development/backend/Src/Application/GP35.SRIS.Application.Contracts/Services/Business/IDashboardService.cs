@@ -10,4 +10,6 @@ public interface IDashboardService : IBaseService
 {
     /// <summary>Tổng quan KPI cho dashboard. jobId null = toàn công ty; có giá trị = 1 job.</summary>
     Task<DashboardOverviewDto> GetOverviewAsync(long companyId, long? jobId);
+
+    Task<KanbanBoardDto> GetKanbanBoardAsync(long companyId, long? jobId);
 }

@@ -18,4 +18,10 @@ public interface IJobService : IBaseService
 
     /// <summary>Đóng Job (soft — Status "Closed", không xóa cứng để giữ hồ sơ/analytics).</summary>
     Task CloseAsync(long companyId, long jobId);
+
+    /// <summary>API CÔNG KHAI: Danh sách job đang tuyển (không cần login).</summary>
+    Task<IEnumerable<JobGetDto>> GetPublicJobsAsync();
+
+    /// <summary>API CÔNG KHAI: Chi tiết 1 job đang tuyển (không cần login).</summary>
+    Task<JobGetDto?> GetPublicJobAsync(long jobId);
 }

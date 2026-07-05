@@ -1,5 +1,6 @@
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
+using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.HostBase.Authorization;
@@ -13,8 +14,6 @@ namespace GP35.SRIS.Controllers
     /// </summary>
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
-[WithRole(RoleConstants.Recruiter, RoleConstants.Admin)]
     public class JobsController : ControllerBase
     {
         private readonly IContextData _contextData;
@@ -29,17 +28,19 @@ namespace GP35.SRIS.Controllers
         /// <summary>Tạo Job mới — CHỈ Recruiter (role check qua JWT). Để trống Status = "Open".</summary>
         [HttpPost]
         [Authorize(Roles = "Recruiter")]
+        [WithRole(RoleConstants.Recruiter, RoleConstants.Admin)]
         public async Task<IActionResult> Create([FromBody] JobCreateDto dto)
         {
             var job = await _jobService.CreateAsync(_contextData.CompanyId, _contextData.UserId, dto);
             return Ok(job);
         }
 
-        /// <summary>Danh sách Job của công ty hiện tại (mọi user đã đăng nhập).</summary>
+        /// <summary>Danh sách Job đang tuyển (public, không cần login).</summary>
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> List()
         {
-            var jobs = await _jobService.GetListAsync(_contextData.CompanyId);
+            var jobs = await _jobService.GetPublicJobsAsync();
             return Ok(jobs);
         }
 

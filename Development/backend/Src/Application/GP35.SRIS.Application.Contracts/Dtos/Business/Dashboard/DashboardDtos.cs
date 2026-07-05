@@ -41,3 +41,33 @@ public class DashboardOverviewDto
     public List<BreakdownItemDto> RejectReasons { get; set; } = new();
     public List<BreakdownItemDto> Sources { get; set; } = new();
 }
+
+/// <summary>1 item trong Kanban board (1 ứng viên).</summary>
+public class KanbanCardDto
+{
+    public long ApplicationId { get; set; }
+    public long CandidateId { get; set; }
+    public string CandidateName { get; set; } = null!;
+    public string CandidateEmail { get; set; } = null!;
+    public string JobTitle { get; set; } = null!;
+    public long JobId { get; set; }
+    public string CurrentState { get; set; } = null!;
+    public decimal? AiMatchScore { get; set; }
+    public DateTime AppliedAt { get; set; }
+    public DateTime? StageUpdatedAt { get; set; }
+}
+
+/// <summary>1 cột trong Kanban board (theo state).</summary>
+public class KanbanColumnDto
+{
+    public string State { get; set; } = null!;
+    public string StateLabel { get; set; } = null!;
+    public int Count { get; set; }
+    public List<KanbanCardDto> Cards { get; set; } = new();
+}
+
+/// <summary>Toàn bộ Kanban board.</summary>
+public class KanbanBoardDto
+{
+    public List<KanbanColumnDto> Columns { get; set; } = new();
+}

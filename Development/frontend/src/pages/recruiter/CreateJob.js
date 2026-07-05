@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Row, Col, Card, Form, Input, Select, DatePicker, 
   InputNumber, Button, Typography, Divider, Space, 
-  message, Checkbox 
+  message, Checkbox, Spin
 } from 'antd';
 import { 
   SaveOutlined, 
   SendOutlined, 
   PlusOutlined, 
-  DeleteOutlined
+  DeleteOutlined,
+  ArrowLeftOutlined
 } from '@ant-design/icons';
+import { jobsAPI } from '../../services/api';
 import './css/CreateJob.css';
 
 const { Title, Text } = Typography;
@@ -18,10 +20,60 @@ const { TextArea } = Input;
 
 const CreateJob = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
   const [requirements, setRequirements] = useState(['']);
   const [benefits, setBenefits] = useState(['']);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingJobId, setEditingJobId] = useState(null);
+
+  const editJobId = searchParams.get('edit');
+
+  useEffect(() => {
+    if (editJobId) {
+      setIsEditMode(true);
+      fetchJobDetails(editJobId);
+    }
+  }, [editJobId]);
+
+  const fetchJobDetails = async (jobId) => {
+    try {
+      setInitialLoading(true);
+      const response = await jobsAPI.getById(jobId);
+      const job = response.data;
+      
+      if (job) {
+        setEditingJobId(jobId);
+        form.setFieldsValue({
+          title: job.title,
+          department: job.department,
+          type: job.jobType,
+          location: job.location || job.workLocation,
+          workMode: job.workMode,
+          description: job.description,
+          salaryMin: job.salaryMin,
+          salaryMax: job.salaryMax,
+          currency: job.currency || 'VND',
+          expiresAt: job.expiresAt,
+        });
+        
+        // Set requirements and benefits if available
+        if (job.requirements && job.requirements.length > 0) {
+          setRequirements(job.requirements);
+        }
+        if (job.benefits && job.benefits.length > 0) {
+          setBenefits(job.benefits);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+      message.error('Không thể tải thông tin tin tuyển dụng');
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const handleAddRequirement = () => {
     setRequirements([...requirements, '']);
@@ -51,15 +103,42 @@ const CreateJob = () => {
     setBenefits(newBenefits);
   };
 
+  const getFormData = (values) => {
+    return {
+      title: values.title,
+      department: values.department,
+      jobType: values.type,
+      location: values.location,
+      workMode: values.workMode,
+      description: values.description,
+      salaryMin: values.salaryMin,
+      salaryMax: values.salaryMax,
+      currency: values.currency || 'VND',
+      expiresAt: values.expiresAt,
+      requirements: requirements.filter(r => r.trim() !== ''),
+      benefits: benefits.filter(b => b.trim() !== ''),
+      isPublished: false,
+    };
+  };
+
   const handleSaveDraft = async () => {
     try {
       await form.validateFields();
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      message.success('Job saved as draft');
+      const values = form.getFieldsValue();
+      const data = getFormData(values);
+      
+      if (isEditMode && editingJobId) {
+        await jobsAPI.update(editingJobId, data);
+        message.success('Cập nhật tin tuyển dụng thành công');
+      } else {
+        await jobsAPI.create(data);
+        message.success('Lưu nháp thành công');
+      }
       navigate('/recruiter/jobs');
     } catch (error) {
-      message.error('Please fill in all required fields');
+      console.error('Error saving job:', error);
+      message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
     } finally {
       setLoading(false);
     }
@@ -69,23 +148,51 @@ const CreateJob = () => {
     try {
       await form.validateFields();
       setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      message.success('Job posted successfully!');
+      const values = form.getFieldsValue();
+      const data = getFormData(values);
+      data.isPublished = true;
+      
+      if (isEditMode && editingJobId) {
+        await jobsAPI.update(editingJobId, data);
+        message.success('Cập nhật và đăng tin thành công!');
+      } else {
+        await jobsAPI.create(data);
+        message.success('Tin tuyển dụng đã được đăng thành công!');
+      }
       navigate('/recruiter/jobs');
     } catch (error) {
-      message.error('Please fill in all required fields');
+      console.error('Error publishing job:', error);
+      message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
     } finally {
       setLoading(false);
     }
   };
 
+  if (initialLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
     <div className="create-job-page">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Post New Job</Title>
-          <Text type="secondary">Fill in the details to create a new job posting</Text>
+          <Title level={3} className="page-title">
+            {isEditMode ? 'Chỉnh Sửa Tin Tuyển Dụng' : 'Đăng Tin Tuyển Dụng Mới'}
+          </Title>
+          <Text type="secondary">
+            {isEditMode ? 'Cập nhật thông tin tin tuyển dụng' : 'Điền thông tin để tạo tin tuyển dụng mới'}
+          </Text>
         </div>
+        <Button 
+          icon={<ArrowLeftOutlined />} 
+          onClick={() => navigate('/recruiter/jobs')}
+        >
+          Quay Lại
+        </Button>
       </div>
 
       <Form form={form} layout="vertical" className="job-form">
@@ -93,44 +200,45 @@ const CreateJob = () => {
           {/* Left Column */}
           <Col xs={24} lg={16}>
             <Card className="form-card" bordered={false}>
-              <Title level={5} className="section-title">Basic Information</Title>
+              <Title level={5} className="section-title">Thông Tin Cơ Bản</Title>
               
               <Form.Item
                 name="title"
-                label="Job Title"
-                rules={[{ required: true, message: 'Please enter job title' }]}
+                label="Tên Vị Trí"
+                rules={[{ required: true, message: 'Vui lòng nhập tên vị trí' }]}
               >
-                <Input placeholder="e.g. Senior Frontend Developer" size="large" />
+                <Input placeholder="VD: Senior Frontend Developer" size="large" />
               </Form.Item>
 
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="department"
-                    label="Department"
-                    rules={[{ required: true, message: 'Please select department' }]}
+                    label="Phòng Ban"
+                    rules={[{ required: true, message: 'Vui lòng chọn phòng ban' }]}
                   >
-                    <Select placeholder="Select department" size="large">
-                      <Select.Option value="engineering">Engineering</Select.Option>
-                      <Select.Option value="product">Product</Select.Option>
-                      <Select.Option value="design">Design</Select.Option>
-                      <Select.Option value="marketing">Marketing</Select.Option>
-                      <Select.Option value="sales">Sales</Select.Option>
-                      <Select.Option value="hr">Human Resources</Select.Option>
+                    <Select placeholder="Chọn phòng ban" size="large">
+                      <Select.Option value="Engineering">Kỹ thuật</Select.Option>
+                      <Select.Option value="Product">Sản phẩm</Select.Option>
+                      <Select.Option value="Design">Thiết kế</Select.Option>
+                      <Select.Option value="Marketing">Marketing</Select.Option>
+                      <Select.Option value="Sales">Kinh doanh</Select.Option>
+                      <Select.Option value="HR">Nhân sự</Select.Option>
+                      <Select.Option value="Finance">Tài chính</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="type"
-                    label="Employment Type"
-                    rules={[{ required: true, message: 'Please select type' }]}
+                    label="Loại Công Việc"
+                    rules={[{ required: true, message: 'Vui lòng chọn loại công việc' }]}
                   >
-                    <Select placeholder="Select type" size="large">
-                      <Select.Option value="full-time">Full-time</Select.Option>
-                      <Select.Option value="part-time">Part-time</Select.Option>
-                      <Select.Option value="contract">Contract</Select.Option>
-                      <Select.Option value="internship">Internship</Select.Option>
+                    <Select placeholder="Chọn loại" size="large">
+                      <Select.Option value="Full-time">Toàn thời gian</Select.Option>
+                      <Select.Option value="Part-time">Bán thời gian</Select.Option>
+                      <Select.Option value="Contract">Hợp đồng</Select.Option>
+                      <Select.Option value="Internship">Thực tập</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -140,22 +248,22 @@ const CreateJob = () => {
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="location"
-                    label="Location"
-                    rules={[{ required: true, message: 'Please enter location' }]}
+                    label="Địa Điểm"
+                    rules={[{ required: true, message: 'Vui lòng nhập địa điểm' }]}
                   >
-                    <Input placeholder="e.g. Hanoi, Vietnam" size="large" />
+                    <Input placeholder="VD: Hà Nội, Việt Nam" size="large" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="workMode"
-                    label="Work Mode"
-                    rules={[{ required: true, message: 'Please select work mode' }]}
+                    label="Hình Thức Làm Việc"
+                    rules={[{ required: true, message: 'Vui lòng chọn hình thức' }]}
                   >
-                    <Select placeholder="Select mode" size="large">
-                      <Select.Option value="onsite">On-site</Select.Option>
-                      <Select.Option value="remote">Remote</Select.Option>
-                      <Select.Option value="hybrid">Hybrid</Select.Option>
+                    <Select placeholder="Chọn hình thức" size="large">
+                      <Select.Option value="Onsite">Tại văn phòng</Select.Option>
+                      <Select.Option value="Remote">Từ xa</Select.Option>
+                      <Select.Option value="Hybrid">Kết hợp</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -163,12 +271,12 @@ const CreateJob = () => {
 
               <Form.Item
                 name="description"
-                label="Job Description"
-                rules={[{ required: true, message: 'Please enter job description' }]}
+                label="Mô Tả Công Việc"
+                rules={[{ required: true, message: 'Vui lòng nhập mô tả công việc' }]}
               >
                 <TextArea 
                   rows={6} 
-                  placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
+                  placeholder="Mô tả về vai trò, trách nhiệm và cơ hội của vị trí này..."
                   maxLength={2000}
                   showCount
                 />
@@ -176,14 +284,14 @@ const CreateJob = () => {
             </Card>
 
             <Card className="form-card" bordered={false}>
-              <Title level={5} className="section-title">Requirements & Benefits</Title>
+              <Title level={5} className="section-title">Yêu Cầu & Phúc Lợi</Title>
               
               <div className="dynamic-list">
-                <label>Requirements</label>
+                <label>Yêu Cầu</label>
                 {requirements.map((req, index) => (
                   <div key={index} className="list-item">
                     <Input
-                      placeholder={`Requirement ${index + 1}`}
+                      placeholder={`Yêu cầu ${index + 1}`}
                       value={req}
                       onChange={(e) => handleRequirementChange(index, e.target.value)}
                       prefix={<span className="list-number">{index + 1}</span>}
@@ -204,18 +312,18 @@ const CreateJob = () => {
                   icon={<PlusOutlined />}
                   className="add-btn"
                 >
-                  Add Requirement
+                  Thêm Yêu Cầu
                 </Button>
               </div>
 
               <Divider />
 
               <div className="dynamic-list">
-                <label>Benefits</label>
+                <label>Phúc Lợi</label>
                 {benefits.map((benefit, index) => (
                   <div key={index} className="list-item">
                     <Input
-                      placeholder={`Benefit ${index + 1}`}
+                      placeholder={`Phúc lợi ${index + 1}`}
                       value={benefit}
                       onChange={(e) => handleBenefitChange(index, e.target.value)}
                       prefix={<span className="list-number">{index + 1}</span>}
@@ -236,7 +344,7 @@ const CreateJob = () => {
                   icon={<PlusOutlined />}
                   className="add-btn"
                 >
-                  Add Benefit
+                  Thêm Phúc Lợi
                 </Button>
               </div>
             </Card>
@@ -245,36 +353,36 @@ const CreateJob = () => {
           {/* Right Column */}
           <Col xs={24} lg={8}>
             <Card className="form-card" bordered={false}>
-              <Title level={5} className="section-title">Salary & Duration</Title>
+              <Title level={5} className="section-title">Lương & Thời Hạn</Title>
               
               <Row gutter={8}>
                 <Col span={12}>
                   <Form.Item
                     name="salaryMin"
-                    label="Min Salary"
-                    rules={[{ required: true, message: 'Required' }]}
+                    label="Lương Tối Thiểu"
+                    rules={[{ required: true, message: 'Bắt buộc' }]}
                   >
                     <InputNumber 
                       size="large"
                       style={{ width: '100%' }}
-                      formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                       parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                      placeholder="Min"
+                      placeholder="Tối thiểu"
                     />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     name="salaryMax"
-                    label="Max Salary"
-                    rules={[{ required: true, message: 'Required' }]}
+                    label="Lương Tối Đa"
+                    rules={[{ required: true, message: 'Bắt buộc' }]}
                   >
                     <InputNumber 
                       size="large"
                       style={{ width: '100%' }}
-                      formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                       parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                      placeholder="Max"
+                      placeholder="Tối đa"
                     />
                   </Form.Item>
                 </Col>
@@ -282,46 +390,34 @@ const CreateJob = () => {
 
               <Form.Item
                 name="currency"
-                label="Currency"
-                initialValue="USD"
+                label="Đơn Vị Tiền Tệ"
+                initialValue="VND"
               >
                 <Select size="large">
+                  <Select.Option value="VND">VND - Việt Nam Đồng</Select.Option>
                   <Select.Option value="USD">USD - US Dollar</Select.Option>
-                  <Select.Option value="VND">VND - Vietnamese Dong</Select.Option>
-                  <Select.Option value="EUR">EUR - Euro</Select.Option>
                 </Select>
               </Form.Item>
 
               <Form.Item
                 name="expiresAt"
-                label="Application Deadline"
+                label="Hạn Nộp Đơn"
               >
                 <DatePicker 
                   style={{ width: '100%' }} 
                   size="large"
-                  placeholder="Select deadline"
+                  placeholder="Chọn hạn nộp"
+                  format="DD/MM/YYYY"
                 />
               </Form.Item>
             </Card>
 
             <Card className="form-card" bordered={false}>
-              <Title level={5} className="section-title">Job Settings</Title>
+              <Title level={5} className="section-title">Cài Đặt Tin Tuyển Dụng</Title>
               
-              <Form.Item name="publishImmediately">
-                <Checkbox checked>
-                  Publish immediately after saving
-                </Checkbox>
-              </Form.Item>
-
-              <Form.Item name="featured">
+              <Form.Item name="publishImmediately" valuePropName="checked" initialValue={!isEditMode}>
                 <Checkbox>
-                  Mark as featured job
-                </Checkbox>
-              </Form.Item>
-
-              <Form.Item name="questions">
-                <Checkbox>
-                  Include application questions
+                  Đăng tin ngay sau khi lưu
                 </Checkbox>
               </Form.Item>
 
@@ -335,7 +431,7 @@ const CreateJob = () => {
                   onClick={handleSaveDraft}
                   loading={loading}
                 >
-                  Save as Draft
+                  Lưu Nháp
                 </Button>
                 <Button 
                   type="primary" 
@@ -346,7 +442,7 @@ const CreateJob = () => {
                   loading={loading}
                   className="publish-btn"
                 >
-                  Publish Job
+                  {isEditMode ? 'Cập Nhật & Đăng Tin' : 'Đăng Tin Ngay'}
                 </Button>
               </Space>
             </Card>

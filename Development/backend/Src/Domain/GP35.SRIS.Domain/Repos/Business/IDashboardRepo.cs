@@ -6,6 +6,19 @@ public record StateCount(string State, int Count);
 /// <summary>Số hồ sơ theo 1 nhãn (lý do loại / nguồn ứng viên / trạng thái offer).</summary>
 public record LabelCount(string? Label, int Count);
 
+/// <summary>1 card ứng viên trong Kanban board (tầng Domain).</summary>
+public record KanbanCard(
+    long ApplicationId,
+    long CandidateId,
+    string CandidateName,
+    string CandidateEmail,
+    string JobTitle,
+    long JobId,
+    string CurrentState,
+    decimal? AiMatchScore,
+    DateTime AppliedAt,
+    DateTime? StageUpdatedAt);
+
 /// <summary>
 /// Truy vấn tổng hợp cho Dashboard/Analytics (docs 4, M7). Mọi truy vấn tự kèm company_id
 /// (Global Query Filter) — cô lập tenant. jobId null = toàn công ty; có giá trị = lọc theo 1 job.
@@ -26,4 +39,7 @@ public interface IDashboardRepo
 
     /// <summary>Số ngày từ lúc nộp (created_at) -> tuyển (hired_at) của mỗi hồ sơ HIRED — tính time-to-hire.</summary>
     Task<IReadOnlyList<double>> GetHireDurationDaysAsync(long companyId, long? jobId);
+
+    /// <summary>Lấy danh sách ứng viên theo state cho Kanban board.</summary>
+    Task<IReadOnlyList<KanbanCard>> GetKanbanCardsAsync(long companyId, long? jobId);
 }
