@@ -29,6 +29,9 @@ public interface IEvaluationCriteriaRepo : IBaseRepo<long, EvaluationCriteria>
     /// <summary>Xóa tiêu chí DRAFT của job (trước khi AI bóc lại — tránh trùng lặp).</summary>
     Task<int> DeleteDraftsAsync(long companyId, long jobId);
 
+    /// <summary>Vô hiệu 1 tiêu chí (soft — active=0; giữ để không phá kết quả chấm đã lưu). Trả số dòng.</summary>
+    Task<int> DeactivateAsync(long companyId, long criteriaId);
+
     /// <summary>Người duyệt chốt: DRAFT -> APPROVED, ghi ai duyệt lúc nào (audit 5.18).</summary>
     Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId);
 

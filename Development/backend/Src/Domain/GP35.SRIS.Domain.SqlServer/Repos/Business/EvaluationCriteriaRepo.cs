@@ -71,6 +71,15 @@ public class EvaluationCriteriaRepo : BaseRepo<long, EvaluationCriteria>, IEvalu
             .ExecuteDeleteAsync();
     }
 
+    public async Task<int> DeactivateAsync(long companyId, long criteriaId)
+    {
+        return await _db.EvaluationCriterias
+            .Where(c => c.CriteriaId == criteriaId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Active, false)
+                .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
+    }
+
     public async Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId)
     {
         return await _db.EvaluationCriterias

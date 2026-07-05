@@ -53,6 +53,14 @@ public class EvaluationCriteriaController : ControllerBase
         return Ok(await _criteriaService.UpdateAsync(_contextData.CompanyId, criteriaId, dto));
     }
 
+    /// <summary>Gỡ 1 tiêu chí khỏi job (soft — active=0).</summary>
+    [HttpDelete("api/evaluation-criteria/{criteriaId:long}")]
+    public async Task<IActionResult> Delete(long criteriaId)
+    {
+        await _criteriaService.DeactivateAsync(_contextData.CompanyId, criteriaId);
+        return NoContent();
+    }
+
     /// <summary>
     /// AI bóc tiêu chí từ JD của job (Local LLM — 5.18) -> danh sách DRAFT chờ duyệt.
     /// AI/Ollama lỗi -> 502 AI_EXTRACT_FAILED, FE hiện fallback nhập tay.

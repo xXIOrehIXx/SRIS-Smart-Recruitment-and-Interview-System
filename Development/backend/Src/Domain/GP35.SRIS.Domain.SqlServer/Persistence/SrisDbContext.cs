@@ -33,6 +33,7 @@ public class SrisDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
+    public DbSet<UserAuthToken> UserAuthTokens => Set<UserAuthToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
@@ -221,6 +222,15 @@ public class SrisDbContext : DbContext
             // name / is_active: thêm ở migration V007.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<UserAuthToken>(e =>
+        {
+            e.ToTable("UserAuthToken");
+            e.HasKey(x => x.TokenId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            // KHÔNG Global Query Filter: tra pre-auth theo hash (như Company). Cô lập không cần —
+            // token hash toàn cục unique, tìm ra là biết company_id + user_id.
         });
 
         b.Entity<Company>(e =>

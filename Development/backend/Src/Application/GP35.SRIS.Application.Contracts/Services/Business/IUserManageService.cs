@@ -13,4 +13,7 @@ public interface IUserManageService : IBaseService
     Task<UserListItemDto> CreateAsync(long companyId, UserCreateDto dto);
     Task<UserListItemDto> UpdateAsync(long companyId, long userId, UserUpdateDto dto);
     Task ResetPasswordAsync(long companyId, long userId, string newPassword);
+
+    /// <summary>Vô hiệu tài khoản (soft — Status "Disabled"; không xóa cứng để giữ audit/lịch sử chấm).</summary>
+    Task DisableAsync(long companyId, long userId);
 }

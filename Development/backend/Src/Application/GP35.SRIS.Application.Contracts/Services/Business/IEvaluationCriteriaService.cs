@@ -27,4 +27,7 @@ public interface IEvaluationCriteriaService : IBaseService
 
     /// <summary>Người duyệt chốt: mọi DRAFT của job -> APPROVED (ghi ai duyệt, lúc nào). Trả số tiêu chí được duyệt.</summary>
     Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId);
+
+    /// <summary>Gỡ 1 tiêu chí khỏi job (soft — active=0).</summary>
+    Task DeactivateAsync(long companyId, long criteriaId);
 }

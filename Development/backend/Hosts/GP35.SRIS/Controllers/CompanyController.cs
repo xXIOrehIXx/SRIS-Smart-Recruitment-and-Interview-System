@@ -44,5 +44,14 @@ namespace GP35.SRIS.Controllers
             var company = await _companyService.UpdateBrandAsync(_contextData.CompanyId, dto);
             return Ok(company);
         }
+
+        /// <summary>Cập nhật hồ sơ công ty (name/logo/màu) — CHỈ Admin. Slug (URL công khai) cố định.</summary>
+        [HttpPut]
+        [WithRole(RoleConstants.Admin)]
+        public async Task<IActionResult> Update([FromBody] UpdateBrandDto dto)
+        {
+            var company = await _companyService.UpdateBrandAsync(_contextData.CompanyId, dto);
+            return Ok(company);
+        }
     }
 }

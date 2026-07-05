@@ -15,4 +15,7 @@ public interface IJobService : IBaseService
 
     /// <summary>Sửa Job (title/JD/DM/status — đóng job = Status "Closed"). JD đổi -> embedding tự làm mới.</summary>
     Task<JobGetDto> UpdateAsync(long companyId, long jobId, JobUpdateDto dto);
+
+    /// <summary>Đóng Job (soft — Status "Closed", không xóa cứng để giữ hồ sơ/analytics).</summary>
+    Task CloseAsync(long companyId, long jobId);
 }

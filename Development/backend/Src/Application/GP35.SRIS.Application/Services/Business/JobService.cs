@@ -66,6 +66,16 @@ public class JobService : BaseService<JobService>, IJobService
         return ToDto(updated!);
     }
 
+    public async Task CloseAsync(long companyId, long jobId)
+    {
+        var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
+        var job = await jobRepo.GetByIdAsync(companyId, jobId)
+            ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
+        // Soft close — giữ hồ sơ + analytics; không đổi JD nên không đụng embedding.
+        await jobRepo.UpdateAsync(companyId, jobId, job.Title, job.JdText,
+            job.DepartmentManagerId, "Closed", jdChanged: false);
+    }
+
     private static BaseException Bad(string msg) => new(msg)
     {
         ErrorCode = "BAD_REQUEST", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.BadRequest

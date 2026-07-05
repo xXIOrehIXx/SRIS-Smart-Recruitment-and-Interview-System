@@ -93,6 +93,14 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
         await _userRepo.UpdatePasswordAsync(companyId, userId, _encode.SHA256WithSalt(newPassword, PasswordSalt));
     }
 
+    public async Task DisableAsync(long companyId, long userId)
+    {
+        var user = await _userRepo.GetByIdAsync(companyId, userId)
+            ?? throw NotFound($"Không tìm thấy tài khoản (user_id={userId}).");
+        // Soft disable — giữ user row cho audit + lịch sử chấm phỏng vấn.
+        await _userRepo.UpdateAsync(companyId, userId, user.FullName, user.Phone, user.Role, "Disabled");
+    }
+
     // ============================================================
 
     private static void ValidateRole(string? role)

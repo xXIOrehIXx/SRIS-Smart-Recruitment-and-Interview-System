@@ -57,5 +57,14 @@ namespace GP35.SRIS.Controllers
         {
             return Ok(await _jobService.UpdateAsync(_contextData.CompanyId, jobId, dto));
         }
+
+        /// <summary>Đóng Job (soft close — Status "Closed"). Không xóa cứng để giữ hồ sơ + analytics.</summary>
+        [HttpDelete("{jobId:long}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> Close(long jobId)
+        {
+            await _jobService.CloseAsync(_contextData.CompanyId, jobId);
+            return NoContent();
+        }
     }
 }

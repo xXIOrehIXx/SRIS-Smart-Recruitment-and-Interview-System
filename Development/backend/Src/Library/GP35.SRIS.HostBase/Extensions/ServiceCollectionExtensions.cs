@@ -77,6 +77,8 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Magic link ứng viên
             services.AddScoped<IMagicLinkTokenRepo, MagicLinkTokenRepo>();
+            // Token auth nội bộ (refresh + reset mật khẩu)
+            services.AddScoped<IUserAuthTokenRepo, UserAuthTokenRepo>();
 
             // State machine pipeline
             services.AddScoped<IActivityLogRepo, ActivityLogRepo>();

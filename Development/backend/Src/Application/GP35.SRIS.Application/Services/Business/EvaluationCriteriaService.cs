@@ -141,6 +141,13 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         return approved;
     }
 
+    public async Task DeactivateAsync(long companyId, long criteriaId)
+    {
+        var existing = await _criteriaRepo.GetByIdAsync(companyId, criteriaId)
+            ?? throw NotFound($"Không tìm thấy tiêu chí (criteria_id={criteriaId}).");
+        await _criteriaRepo.DeactivateAsync(companyId, existing.CriteriaId);
+    }
+
     // ============================================================
 
     private static void Validate(string? name, decimal weight, decimal maxScore, string? criteriaType)

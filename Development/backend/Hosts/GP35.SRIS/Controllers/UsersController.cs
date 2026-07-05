@@ -59,4 +59,12 @@ public class UsersController : ControllerBase
         await _userManage.ResetPasswordAsync(_contextData.CompanyId, userId, dto.NewPassword);
         return Ok(new { message = "Đã đặt lại mật khẩu." });
     }
+
+    /// <summary>Vô hiệu tài khoản (soft — Status "Disabled"). Không xóa cứng để giữ audit.</summary>
+    [HttpDelete("{userId:long}")]
+    public async Task<IActionResult> Disable(long userId)
+    {
+        await _userManage.DisableAsync(_contextData.CompanyId, userId);
+        return NoContent();
+    }
 }
