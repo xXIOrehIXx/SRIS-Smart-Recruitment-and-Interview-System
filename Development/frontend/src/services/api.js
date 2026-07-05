@@ -137,7 +137,7 @@ export const cvScoringAPI = {
 
 export const applicationAPI = {
   getAll: (jobId) =>
-    api.get(`/api/jobs/${jobId}/applications`),
+    api.get(jobId ? `/api/jobs/${jobId}/applications` : '/api/applications'),
 
   getById: (id) =>
     api.get(`/api/applications/${id}`),

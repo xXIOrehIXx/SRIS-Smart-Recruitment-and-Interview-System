@@ -391,17 +391,6 @@ const RecruiterDashboard = () => {
                   <span>Lên Lịch Phỏng Vấn</span>
                 </div>
               </Col>
-<<<<<<< Updated upstream
-              <Col xs={24} sm={12} md={6}>
-                <div className="quick-action-item" onClick={() => navigate('/quiz/create')}>
-                  <div className="action-icon" style={{ backgroundColor: 'rgba(82, 196, 26, 0.1)' }}>
-                    <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                  </div>
-                  <span>Tạo Quiz</span>
-                </div>
-              </Col>
-=======
->>>>>>> Stashed changes
             </Row>
           </Card>
         </Col>
