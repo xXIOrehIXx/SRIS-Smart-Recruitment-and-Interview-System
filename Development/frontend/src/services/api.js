@@ -158,38 +158,6 @@ export const applicationAPI = {
     api.post(`/api/applications/${id}/magic-links?purpose=${purpose}&expiresInHours=${expiresIn}`),
 };
 
-// ==================== QUIZ ====================
-
-export const quizAPI = {
-  getByJob: (jobId) =>
-    api.get(`/api/quizzes/jobs/${jobId}`),
-
-  getById: (quizId) =>
-    api.get(`/api/quizzes/${quizId}`),
-
-  generate: (jobId) =>
-    api.post(`/api/quizzes/generate?jobId=${jobId}`),
-
-  approve: (quizId) =>
-    api.post(`/api/quizzes/${quizId}/approve`),
-
-  reject: (quizId) =>
-    api.post(`/api/quizzes/${quizId}/reject`),
-
-  update: (quizId, data) =>
-    api.put(`/api/quizzes/${quizId}`, data),
-
-  delete: (quizId) =>
-    api.delete(`/api/quizzes/${quizId}`),
-
-  // Question Bank
-  getQuestionBank: (topic) =>
-    api.get(`/api/question-bank${topic ? `?topic=${topic}` : ''}`),
-
-  getQuestion: (itemId) =>
-    api.get(`/api/question-bank/${itemId}`),
-};
-
 // ==================== INTERVIEW SCHEDULING ====================
 
 export const interviewAPI = {
@@ -225,20 +193,11 @@ export const candidateAPI = {
   getSchedule: (token) =>
     api.get(`/api/candidate/schedule?token=${token}`),
 
-  getQuiz: (token) =>
-    api.get(`/api/candidate/quiz?token=${token}`),
-
-  submitQuiz: (token, answers) =>
-    api.post('/api/candidate/quiz/submit', { token, answers }),
-
   confirmSchedule: (token, slotId) =>
     api.post('/api/candidate/schedule/confirm', { token, slotId }),
 
   noSlotAvailable: (token) =>
     api.post('/api/candidate/schedule/no-slot', { token }),
-
-  getQuizEvents: (token) =>
-    api.get(`/api/candidate/quiz/events?token=${token}`),
 
   getOffer: (token) =>
     api.get(`/api/candidate/offer?token=${token}`),

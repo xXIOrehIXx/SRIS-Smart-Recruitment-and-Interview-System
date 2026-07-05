@@ -72,7 +72,6 @@ export const hasPermission = (userRole, route) => {
       '/admin',
       '/recruiter',
       '/interviewer',
-      '/quiz',
       '/interviews',
       '/offers',
       '/notifications',
@@ -80,7 +79,6 @@ export const hasPermission = (userRole, route) => {
     ],
     [ROLES.RECRUITER]: [
       '/recruiter',
-      '/quiz',
       '/interviews',
       '/offers',
       '/notifications',

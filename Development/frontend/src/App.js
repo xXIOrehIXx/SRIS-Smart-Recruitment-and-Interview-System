@@ -21,10 +21,6 @@ import CandidateDetail from './pages/recruiter/CandidateDetail';
 import InterviewerDashboard from './pages/interviewer/Dashboard';
 import IncomingInterview from './pages/interviewer/IncomingInterview';
 import Grading from './pages/interviewer/Grading';
-import QuizManagement from './pages/quiz/QuizManagement';
-import QuizDetail from './pages/quiz/QuizDetail';
-import CreateQuiz from './pages/quiz/CreateQuiz';
-import TakeQuiz from './pages/quiz/TakeQuiz';
 import InterviewSchedule from './pages/interview/InterviewSchedule';
 import OfferManagement from './pages/offer/OfferManagement';
 import Notifications from './pages/Notifications';
@@ -79,23 +75,6 @@ const App = () => {
                 <Route path="candidates/:id" element={<CandidateDetail />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="settings" element={<Settings />} />
-              </Routes>
-            </AdminLayout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* ===== QUIZ ROUTES ===== */}
-      <Route
-        path="/quiz/*"
-        element={
-          <ProtectedRoute allowedRoles={[ROLES.RECRUITER, ROLES.INTERVIEWER]}>
-            <AdminLayout>
-              <Routes>
-                <Route path="" element={<QuizManagement />} />
-                <Route path="create" element={<CreateQuiz />} />
-                <Route path=":id" element={<QuizDetail />} />
-                <Route path=":id/take" element={<TakeQuiz />} />
               </Routes>
             </AdminLayout>
           </ProtectedRoute>
