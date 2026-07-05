@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
@@ -62,7 +63,7 @@ services
   .AddControllers()
   .AddJsonOptions(options =>
   {
-    options.JsonSerializerOptions.PropertyNamingPolicy = null;
+      options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
   });
 services.AddSwaggerGen(c =>
 {
