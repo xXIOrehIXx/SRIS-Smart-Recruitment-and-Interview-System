@@ -74,7 +74,7 @@ const Recruitment = () => {
   };
 
   // Helper: lấy id từ job (hỗ trợ cả id và JobId)
-  const getJobId = (job) => job.JobId || job.id;
+  const getJobId = (job) => job.jobId || job.id;
 
   // Lấy danh sách departments duy nhất
   const departments = useMemo(() => {
@@ -203,7 +203,7 @@ const Recruitment = () => {
     >
       <div className="job-card-header">
         <div className="job-title-section">
-          <Title level={5} className="job-title">{job.Title}</Title>
+          <Title level={5} className="job-title">{job.title}</Title>
           <Space size="small">
             {job.department && <Tag color="blue" icon={<BankOutlined />}>{job.department}</Tag>}
             {job.employmentType && <Tag color={getJobTypeColor(job.employmentType)}>{job.employmentType}</Tag>}
@@ -218,7 +218,7 @@ const Recruitment = () => {
 
       <div className="job-card-body">
         <Paragraph ellipsis={{ rows: 2 }} className="job-description">
-          {job.JdText || job.description}
+          {job.jdText || job.description}
         </Paragraph>
 
         <Space size="middle" className="job-meta">
