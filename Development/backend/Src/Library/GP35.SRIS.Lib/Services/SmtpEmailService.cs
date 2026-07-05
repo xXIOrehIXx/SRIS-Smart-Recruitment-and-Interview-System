@@ -1,4 +1,5 @@
 using GP35.SRIS.Domain.Shared.Configs;
+using GP35.SRIS.Domain.Shared.Email;
 using GP35.SRIS.Lib.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -15,11 +16,13 @@ namespace GP35.SRIS.Lib.Services;
 /// </summary>
 public class SmtpEmailService : IEmailService
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly DefaultConfig _config;
     private readonly ILogger _logger;
 
     public SmtpEmailService(IServiceProvider serviceProvider)
     {
+        _serviceProvider = serviceProvider;
         _config = serviceProvider.GetRequiredService<DefaultConfig>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<SmtpEmailService>();
     }
@@ -43,7 +46,19 @@ public class SmtpEmailService : IEmailService
     private async Task<string> SendAsync(
         string subject, string body, List<string>? to, List<string>? cc, List<EmailAttachment>? attachments)
     {
-        var smtp = _config.Smtp;
+        // Per-tenant (Phase 2): công ty có SMTP riêng -> gửi bằng cấu hình đó (email từ tên miền họ);
+        // chưa cấu hình / lỗi tra -> fallback SMTP global (appsettings).
+        SmtpOptions? tenantSmtp = null;
+        try
+        {
+            tenantSmtp = await _serviceProvider.GetRequiredService<ITenantSmtpProvider>()
+                .GetForCurrentTenantAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "SMTP: tra cấu hình tenant lỗi -> dùng SMTP global.");
+        }
+        var smtp = tenantSmtp ?? _config.Smtp;
         if (smtp is null || string.IsNullOrWhiteSpace(smtp.Host))
         {
             _logger.Warning("SMTP: chưa cấu hình Host -> bỏ qua gửi email '{Subject}'.", subject);

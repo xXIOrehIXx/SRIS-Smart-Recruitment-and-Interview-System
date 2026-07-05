@@ -238,13 +238,9 @@ public class SrisDbContext : DbContext
             e.ToTable("Company");
             e.HasKey(x => x.CompanyId);
             e.Ignore(x => x.Industry);
-            e.Ignore(x => x.EmailDomain);
-            e.Ignore(x => x.SmtpHost);
-            e.Ignore(x => x.SmtpPort);
-            e.Ignore(x => x.SmtpUsername);
-            e.Ignore(x => x.SmtpFromEmail);
             e.Ignore(x => x.SubscriptionPlan);
             e.Ignore(x => x.Status);
+            // SMTP per-tenant (V017): các cột email_domain/smtp_* giờ có trong DB -> map bình thường.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             // Company là bảng tenant (không có cột company_id riêng) -> không Global Query Filter;
             // cô lập do RLS (SESSION_CONTEXT) + WHERE company_id tường minh trong repo.
