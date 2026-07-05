@@ -39,6 +39,10 @@ public static class CvChunker
         }
         FlushParagraph(paragraphs, current);
 
+        // (1b) Nhiều PDF extract ra 1 dòng DÀI liền mạch (không có \n) -> mỗi "dòng" đã > MaxChars
+        // nhưng vẫn là 1 đoạn khổng lồ. Bổ tiếp theo RANH GIỚI TỪ để không có chunk nào vượt MaxChars.
+        paragraphs = paragraphs.SelectMany(SplitLongByWords).ToList();
+
         // (2) Gộp đoạn quá ngắn với đoạn kế — tránh embed dòng tiêu đề trơ trọi.
         var merged = new List<string>();
         var buffer = new StringBuilder();
@@ -60,6 +64,30 @@ public static class CvChunker
         }
 
         return merged;
+    }
+
+    /// <summary>Bổ 1 đoạn dài quá MaxChars thành nhiều mẩu theo ranh giới TỪ (giữ nguyên từ, không cắt giữa từ).</summary>
+    private static IEnumerable<string> SplitLongByWords(string paragraph)
+    {
+        if (paragraph.Length <= MaxChars)
+        {
+            yield return paragraph;
+            yield break;
+        }
+
+        var piece = new StringBuilder();
+        foreach (var word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            // +1 cho khoảng trắng nối. Nếu thêm từ này sẽ vượt MaxChars thì cắt mẩu tại đây.
+            if (piece.Length > 0 && piece.Length + 1 + word.Length > MaxChars)
+            {
+                yield return piece.ToString();
+                piece.Clear();
+            }
+            if (piece.Length > 0) piece.Append(' ');
+            piece.Append(word);
+        }
+        if (piece.Length > 0) yield return piece.ToString();
     }
 
     private static void FlushParagraph(List<string> paragraphs, StringBuilder current)
