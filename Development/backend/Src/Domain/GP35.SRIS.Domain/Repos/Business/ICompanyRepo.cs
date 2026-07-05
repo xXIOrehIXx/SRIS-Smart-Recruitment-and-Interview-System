@@ -18,4 +18,7 @@ public interface ICompanyRepo : IBaseRepo<long, Company>
   /// hoặc null nếu không tồn tại. Trường null trong tham số = giữ nguyên giá trị hiện tại.
   /// </summary>
   Task<Company?> UpdateBrandAsync(long companyId, string? name, string? logoUrl, string? primaryColor);
+
+  /// <summary>Tạo công ty mới (đăng ký) — Company không dưới RLS nên insert thẳng. Trả company_id.</summary>
+  Task<long> InsertAsync(Company company);
 }

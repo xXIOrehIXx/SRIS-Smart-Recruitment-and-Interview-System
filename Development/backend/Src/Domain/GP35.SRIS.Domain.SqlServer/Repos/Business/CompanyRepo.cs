@@ -32,6 +32,14 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
             .FirstOrDefaultAsync(c => c.Slug == slug);
     }
 
+    public async Task<long> InsertAsync(Company company)
+    {
+        // Company là bảng tenant gốc (không có company_id, không dưới RLS) -> insert thẳng.
+        _db.Companies.Add(company);
+        await _db.SaveChangesAsync();
+        return company.CompanyId;
+    }
+
     public async Task<Company?> UpdateBrandAsync(long companyId, string? name, string? logoUrl, string? primaryColor)
     {
         // Tracking (không AsNoTracking) để EF phát UPDATE. Cô lập tenant: WHERE company_id tường minh + RLS.

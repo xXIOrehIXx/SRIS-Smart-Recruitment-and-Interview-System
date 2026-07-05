@@ -43,5 +43,29 @@ namespace GP35.SRIS.Controllers
             var jobs = await _jobService.GetPublicJobsAsync();
             return Ok(jobs);
         }
+
+        /// <summary>Chi tiết 1 Job.</summary>
+        [HttpGet("{jobId:long}")]
+        public async Task<IActionResult> GetById(long jobId)
+        {
+            return Ok(await _jobService.GetByIdAsync(_contextData.CompanyId, jobId));
+        }
+
+        /// <summary>Sửa Job (title/JD/DM/status). Đóng job = Status "Closed". JD đổi -> embedding tự làm mới.</summary>
+        [HttpPut("{jobId:long}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> Update(long jobId, [FromBody] JobUpdateDto dto)
+        {
+            return Ok(await _jobService.UpdateAsync(_contextData.CompanyId, jobId, dto));
+        }
+
+        /// <summary>Đóng Job (soft close — Status "Closed"). Không xóa cứng để giữ hồ sơ + analytics.</summary>
+        [HttpDelete("{jobId:long}")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> Close(long jobId)
+        {
+            await _jobService.CloseAsync(_contextData.CompanyId, jobId);
+            return NoContent();
+        }
     }
 }

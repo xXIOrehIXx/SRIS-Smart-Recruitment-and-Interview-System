@@ -12,12 +12,11 @@ namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
 /// Thực thi state machine hồ sơ (docs 5.8). Luật forward-only ở <see cref="ApplicationStateMachine"/>;
-/// service lo guard cần dữ liệu (G1 quiz đã nộp, G2 phiếu chấm SUBMITTED) + audit ActivityLog.
+/// service lo guard cần dữ liệu (G2 phiếu chấm SUBMITTED) + audit ActivityLog.
 /// </summary>
 public class ApplicationStateService : BaseService<ApplicationStateService>, IApplicationStateService
 {
     private readonly IApplicationRepo _appRepo;
-    private readonly IQuizAttemptRepo _attemptRepo;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly INotificationService _notify;
     private readonly ILogger _logger;
@@ -25,7 +24,6 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     public ApplicationStateService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
-        _attemptRepo = serviceProvider.GetRequiredService<IQuizAttemptRepo>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _notify = serviceProvider.GetRequiredService<INotificationService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<ApplicationStateService>();
@@ -108,13 +106,6 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     /// <summary>Kiểm guard cần dữ liệu trước khi tiến.</summary>
     private async Task EnforceGuardsAsync(long companyId, long applicationId, string from, string to)
     {
-        if (ApplicationStateMachine.RequiresGuardG1(from, to))
-        {
-            var hasQuiz = await _attemptRepo.HasSubmittedAttemptAsync(companyId, applicationId);
-            if (!hasQuiz)
-                throw Conflict("Guard G1 chưa đạt: ứng viên chưa nộp bài quiz nào.");
-        }
-
         if (ApplicationStateMachine.RequiresGuardG2(from, to))
         {
             var submitted = await _appRepo.CountSubmittedInterviewScoresAsync(companyId, applicationId);

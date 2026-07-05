@@ -5,14 +5,15 @@ SRIS — PYTHON AI SERVICE
 Vai trò trong kiến trúc: "máy tính toán" thuần.
 - KHÔNG đụng database.
 - KHÔNG biết company_id / tenant / nghiệp vụ là gì.
-- Chỉ nhận text -> trả về kết quả tính toán (vector hoặc quiz). Hết.
+- Chỉ nhận text -> trả về kết quả tính toán (vector). Hết.
 
 Toàn bộ điều phối, ghi DB, lọc tenant do .NET API (GP35.SRIS) lo.
 
-Service này phục vụ 2 mảng AI:
-  - /embed         : sinh vector embedding cho CV/JD
-                     (model BAAI/bge-m3 -> VECTOR(1024), đọc tới 8192 token)
-  - /generate-quiz : sinh quiz trắc nghiệm MCQ từ JD qua Local LLM (Ollama)
+Endpoint hiện có:
+  - /embed            : sinh vector embedding cho CV/JD/tiêu chí
+                        (model BAAI/bge-m3 -> VECTOR(1024), đọc tới 8192 token)
+  - /extract-criteria : bóc tiêu chí từ Yêu cầu tuyển dụng/JD qua Local LLM
+                        (Ollama — docs 5.18, Việc B4; DRAFT cho người duyệt)
 ============================================================
 """
 
@@ -20,7 +21,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 
-from quiz_gen import generate_quiz   # sinh quiz MCQ qua Ollama
+from criteria_extract import CriteriaList, extract_criteria
 
 app = FastAPI(title="SRIS AI Service")
 
@@ -65,52 +66,26 @@ def embed(req: EmbedRequest):
 
 
 # ============================================================
-#  GENERATE-QUIZ — sinh quiz trắc nghiệm MCQ từ JD (Local LLM qua Ollama)
-#  Nhận JD text -> trả danh sách câu hỏi. Vẫn "máy tính toán" thuần:
-#  không đụng DB, không biết tenant. .NET lo việc lưu DRAFT + duyệt.
+#  EXTRACT-CRITERIA — bóc tiêu chí từ JD (Local LLM qua Ollama, docs 5.18)
+#  AI chỉ bóc thành danh sách DRAFT; người duyệt chốt bên .NET.
 # ============================================================
-class GenerateQuizRequest(BaseModel):
+class ExtractCriteriaRequest(BaseModel):
     jd_text: str
-    num_questions: int = 10
-    topic: str | None = None          # nút "Thêm câu theo chủ đề"
-    avoid: list[str] | None = None    # câu đã có -> tránh trùng (gen thêm / gen lại)
 
 
-class QuizQuestionOut(BaseModel):
-    question: str
-    options: list[str]
-    correct_index: int
-
-
-class GenerateQuizResponse(BaseModel):
-    questions: list[QuizQuestionOut]
-
-
-@app.post("/generate-quiz", response_model=GenerateQuizResponse)
-def generate_quiz_endpoint(req: GenerateQuizRequest):
+@app.post("/extract-criteria", response_model=CriteriaList)
+def extract_criteria_endpoint(req: ExtractCriteriaRequest):
     """
-    Nhận JD text -> sinh quiz qua Ollama.
-    Nếu không sinh được quiz hợp lệ (hoặc Ollama lỗi) -> trả HTTP 502
-    kèm lý do; .NET nhận lỗi này để kích hoạt fallback HR nhập tay.
+    Nhận JD/Yêu cầu tuyển dụng -> danh sách tiêu chí có cấu trúc.
+    Lỗi (Ollama chưa chạy / LLM không ra JSON hợp lệ) -> HTTP 502
+    để .NET kích hoạt fallback người nhập tay.
     """
     try:
-        quiz = generate_quiz(
-            req.jd_text, req.num_questions, topic=req.topic, avoid=req.avoid
-        )
+        return extract_criteria(req.jd_text)
     except Exception as e:
-        # Gói mọi lỗi (Ollama chưa chạy, model lỗi, retry hết lượt...) thành 502
-        raise HTTPException(status_code=502, detail=f"Gen quiz that bai: {e}")
-
-    return GenerateQuizResponse(
-        questions=[
-            QuizQuestionOut(
-                question=q.question,
-                options=q.options,
-                correct_index=q.correct_index,
-            )
-            for q in quiz.questions
-        ]
-    )
+        raise HTTPException(status_code=502, detail=f"Boc tieu chi that bai: {e}")
 
 
 # Chạy:   uvicorn main:app --port 8000
+# Bóc tiêu chí cần Ollama chạy riêng (mặc định cổng 11434) + `ollama pull qwen2.5`;
+# /embed hoạt động độc lập, không cần Ollama.

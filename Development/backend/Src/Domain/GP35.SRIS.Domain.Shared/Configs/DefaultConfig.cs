@@ -18,7 +18,7 @@ namespace GP35.SRIS.Domain.Shared.Configs
 
     /// <summary>
     /// Cổng ứng viên (frontend) — gốc URL để dựng magic link gửi qua email (docs 5.13 "Actionable Email").
-    /// Vd BaseUrl "https://apply.sris.vn" -> link "https://apply.sris.vn/quiz?token=...".
+    /// Vd BaseUrl "https://apply.sris.vn" -> link "https://apply.sris.vn/schedule?token=...".
     /// </summary>
     public class CandidatePortalOptions
     {
@@ -47,6 +47,12 @@ namespace GP35.SRIS.Domain.Shared.Configs
     {
         /// <summary>Base URL của Python AI service (vd http://127.0.0.1:8000).</summary>
         public string BaseUrl { get; set; }
+
+        /// <summary>
+        /// Ngưỡng cosine similarity (0-1) để tiêu chí SOFT tính là KHỚP với đoạn CV (docs 5.18).
+        /// Giá trị mặc định là điểm khởi đầu — PoC Việc B4 đo trên bộ CV test rồi mới khóa số.
+        /// </summary>
+        public double CriteriaMatchThreshold { get; set; } = 0.6;
     }
 
     public class AuthOptions

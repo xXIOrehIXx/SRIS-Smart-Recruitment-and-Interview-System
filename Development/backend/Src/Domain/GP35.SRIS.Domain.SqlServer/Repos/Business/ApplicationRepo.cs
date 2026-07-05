@@ -54,6 +54,15 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
                 .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
     }
 
+    public async Task UpdateCriteriaScoreAsync(long companyId, long applicationId, decimal score)
+    {
+        await _db.Applications
+            .Where(a => a.ApplicationId == applicationId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.CriteriaScore, score)
+                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
+    }
+
     public async Task<int> TransitionStateAsync(
         long companyId, long applicationId, string toState, string? rejectReason,
         DateTime stageUpdatedAt, DateTime? rejectedAt, DateTime? hiredAt)
@@ -133,5 +142,37 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             select new ApplicationRankingRow(
                 a.ApplicationId, a.CandidateId, c.FullName, a.AiMatchScore, a.CurrentState))
             .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<ApplicationBoardRow>> GetBoardByJobAsync(long companyId, long jobId)
+    {
+        // Toàn bộ hồ sơ của job cho Kanban; FE tự nhóm theo current_state. Mới nộp trước.
+        return await (
+            from a in _db.Applications.AsNoTracking()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            where a.JobId == jobId
+            orderby a.CreatedAt descending
+            select new ApplicationBoardRow(
+                a.ApplicationId, a.CandidateId, c.FullName, c.Email,
+                a.CurrentState, a.AiMatchScore, a.CriteriaScore,
+                a.CvId, a.CreatedAt))
+            .ToListAsync();
+    }
+
+    public async Task<ApplicationDetailRow?> GetDetailAsync(long companyId, long applicationId)
+    {
+        return await (
+            from a in _db.Applications.AsNoTracking()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
+            join cv in _db.CvDocuments.AsNoTracking() on a.CvId equals cv.CvId
+            where a.ApplicationId == applicationId
+            select new ApplicationDetailRow(
+                a.ApplicationId, a.CurrentState, a.AiMatchScore, a.CriteriaScore,
+                a.RejectReason, a.CreatedAt, a.StageUpdatedAt,
+                c.CandidateId, c.FullName, c.Email, c.Phone, c.Source,
+                j.JobId, j.Title,
+                cv.CvId, cv.FileName, cv.ParseStatus))
+            .FirstOrDefaultAsync();
     }
 }

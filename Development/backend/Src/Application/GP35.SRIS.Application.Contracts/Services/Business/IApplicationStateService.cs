@@ -3,7 +3,7 @@ using GP35.SRIS.Application.Contracts.Dtos.Business.Pipeline;
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
 /// <summary>
-/// State machine hồ sơ (docs 5.8): forward-only, guard G1 (quiz đã nộp) / G2 (≥1 phiếu chấm SUBMITTED),
+/// State machine hồ sơ (docs 5.8): 6 state, forward-only, guard G2 (≥1 phiếu chấm SUBMITTED),
 /// reject bắt buộc reason. Mỗi transition ghi ActivityLog (audit).
 /// </summary>
 public interface IApplicationStateService : IBaseService

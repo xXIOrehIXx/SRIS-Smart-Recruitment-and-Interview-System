@@ -292,6 +292,19 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
 
         _logger.Information("ScoreApplication: app={AppId} job={JobId} cv={CvId} -> score={Score} (dist={Dist}).",
             applicationId, app.JobId, app.CvId, score, Math.Round(distance, 4));
+
+        // Tầng 2 — chấm theo TỪNG tiêu chí (5.18). Best-effort: job chưa có tiêu chí thì service
+        // tự bỏ qua; lỗi tầng này KHÔNG được phá điểm cả-CV vừa lưu.
+        try
+        {
+            var criteriaScoring = _serviceProvider.GetRequiredService<ICriteriaScoringService>();
+            await criteriaScoring.ScoreByCriteriaAsync(companyId, applicationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "ScoreApplication: chấm theo tiêu chí thất bại (app={AppId}) — giữ điểm cả-CV.",
+                applicationId);
+        }
     }
 
     /// <summary>Tìm ứng viên theo email; chưa có thì tạo mới. Trả về candidate_id.</summary>
