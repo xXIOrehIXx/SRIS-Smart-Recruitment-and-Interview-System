@@ -370,7 +370,7 @@ export const usersAPI = {
 export const publicCareerAPI = {
   // Nộp CV cho một job (multipart/form-data)
   apply: (slug, jobId, formData) =>
-    api.post(`/api/public/${slug}/jobs/${jobId}/apply`, formData, {
+    api.post(`/public/${slug}/jobs/${jobId}/apply`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
 };

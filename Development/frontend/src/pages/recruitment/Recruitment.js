@@ -74,7 +74,7 @@ const Recruitment = () => {
   };
 
   // Helper: lấy id từ job (hỗ trợ cả id và JobId)
-  const getJobId = (job) => job.JobId || job.id;
+  const getJobId = (job) => job.jobId || job.id;
 
   // Lấy danh sách departments duy nhất
   const departments = useMemo(() => {
