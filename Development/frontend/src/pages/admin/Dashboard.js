@@ -208,7 +208,7 @@ const AdminDashboard = () => {
             onChange={(value) => {
               setSelectedJob(value);
             }}
-            options={jobs.map(job => ({ value: job.id, label: job.title }))}
+            options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
           />
           <Button icon={<PlusOutlined />} type="primary" onClick={() => navigate('/recruiter/jobs/create')}>
             Đăng Tin Mới

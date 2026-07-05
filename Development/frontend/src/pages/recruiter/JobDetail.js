@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Button, Tag, Typography, Descriptions, Tabs, Table, Avatar, Progress, Space, Modal, Select, DatePicker } from 'antd';
+import { Row, Col, Card, Button, Tag, Typography, Descriptions, Tabs, Table, Avatar, Progress, Space, Modal, Select, DatePicker, Spin, message } from 'antd';
 import { 
   EditOutlined, 
   ShareAltOutlined, 
@@ -9,75 +9,113 @@ import {
   CheckCircleOutlined,
   CalendarOutlined,
   UserAddOutlined,
-  MailOutlined
+  MailOutlined,
+  ArrowLeftOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
+import { jobsAPI, applicationAPI } from '../../services/api';
 import './css/JobDetail.css';
 
 const { Title, Text, Paragraph } = Typography;
 
+const MATCHA_GREEN = '#5D8C3E';
+
 const JobDetail = () => {
-  const { id } = useParams();
+  const { id: jobId } = useParams();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [job, setJob] = useState(null);
+  const [applications, setApplications] = useState([]);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  const job = {
-    id: 1,
-    title: 'Senior Frontend Developer',
-    department: 'Engineering',
-    location: 'Hanoi, Vietnam',
-    type: 'Full-time',
-    salary: '$2,000 - $3,500',
-    postedDate: '2026-06-15',
-    status: 'active',
-    description: 'We are looking for an experienced Frontend Developer to join our team. You will be responsible for building user interfaces, implementing designs, and ensuring a great user experience.',
-    requirements: [
-      '5+ years of experience in frontend development',
-      'Strong proficiency in React, TypeScript, and modern CSS',
-      'Experience with state management (Redux, MobX)',
-      'Good understanding of backend technologies',
-      'Excellent communication skills in English',
-    ],
-    benefits: [
-      'Competitive salary and performance bonus',
-      'Health insurance and social insurance',
-      'Flexible working hours and remote work options',
-      'Professional development and training',
-      'Modern office with great facilities',
-    ],
+  useEffect(() => {
+    if (jobId) {
+      fetchJobDetails();
+      fetchApplications();
+    }
+  }, [jobId]);
+
+  const fetchJobDetails = async () => {
+    try {
+      const response = await jobsAPI.getById(jobId);
+      setJob(response.data);
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+      message.error('Không thể tải thông tin tin tuyển dụng');
+    }
   };
 
-  const candidatesData = [
-    { id: 1, name: 'Alex Morgan', email: 'alex.morgan@email.com', stage: 'Interview', score: 85, appliedDate: '2026-06-16' },
-    { id: 2, name: 'Sam Smith', email: 'sam.smith@email.com', stage: 'Screening', score: 72, appliedDate: '2026-06-17' },
-    { id: 3, name: 'Jane Doe', email: 'jane.doe@email.com', stage: 'Applied', score: null, appliedDate: '2026-06-18' },
-    { id: 4, name: 'John Connor', email: 'john.connor@email.com', stage: 'Offer', score: 92, appliedDate: '2026-06-10' },
-  ];
+  const fetchApplications = async () => {
+    try {
+      setLoading(true);
+      const response = await applicationAPI.getAll(jobId);
+      setApplications(response.data || []);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      message.error('Không thể tải danh sách ứng viên');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const pipelineStats = [
-    { stage: 'Applied', count: 12, color: '#1890ff' },
-    { stage: 'Screening', count: 8, color: '#722ed1' },
-    { stage: 'Interview', count: 5, color: '#faad14' },
-    { stage: 'Offer', count: 2, color: '#52c41a' },
-  ];
+  // Pipeline stats
+  const getPipelineStats = () => {
+    const stats = {
+      Applied: 0,
+      Screening: 0,
+      Interview: 0,
+      Offer: 0,
+    };
+
+    applications.forEach(app => {
+      const stage = app.state || app.status || 'Applied';
+      const stageKey = Object.keys(stats).find(key => 
+        key.toLowerCase() === stage.toLowerCase()
+      );
+      if (stageKey) {
+        stats[stageKey]++;
+      }
+    });
+
+    return [
+      { stage: 'Đã Ứng Tuyển', count: stats.Applied, color: '#1890ff' },
+      { stage: 'Sàng Lọc', count: stats.Screening, color: '#722ed1' },
+      { stage: 'Phỏng Vấn', count: stats.Interview, color: '#faad14' },
+      { stage: 'Offer', count: stats.Offer, color: '#52c41a' },
+    ];
+  };
+
+  const pipelineStats = getPipelineStats();
+
+  const formatCurrency = (value) => {
+    if (!value) return 'Thỏa thuận';
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN');
+  };
 
   const candidatesColumns = [
     {
-      title: 'Candidate',
-      dataIndex: 'name',
+      title: 'Ứng Viên',
+      dataIndex: 'fullName',
       key: 'name',
       render: (name, record) => (
         <div className="candidate-cell">
-          <Avatar style={{ backgroundColor: '#5D8C3E' }}>{name[0]}</Avatar>
+          <Avatar style={{ backgroundColor: MATCHA_GREEN }}>{((name || record.name || 'N')[0]).toUpperCase()}</Avatar>
           <div className="candidate-info">
-            <span className="candidate-name">{name}</span>
-            <span className="candidate-email">{record.email}</span>
+            <span className="candidate-name">{name || record.name || 'N/A'}</span>
+            <span className="candidate-email">{record.email || 'N/A'}</span>
           </div>
         </div>
       ),
     },
     {
-      title: 'Stage',
-      dataIndex: 'stage',
+      title: 'Trạng Thái',
+      dataIndex: 'state',
       key: 'stage',
       render: (stage) => {
         const colors = {
@@ -86,30 +124,36 @@ const JobDetail = () => {
           'Interview': 'orange',
           'Offer': 'green',
         };
-        return <Tag color={colors[stage]}>{stage}</Tag>;
+        const stageText = {
+          'Applied': 'Đã Ứng Tuyển',
+          'Screening': 'Sàng Lọc',
+          'Interview': 'Phỏng Vấn',
+          'Offer': 'Offer',
+        };
+        return <Tag color={colors[stage] || 'default'}>{stageText[stage] || stage || 'N/A'}</Tag>;
       },
     },
     {
-      title: 'Score',
-      dataIndex: 'score',
+      title: 'Điểm CV',
+      dataIndex: 'cvScore',
       key: 'score',
       render: (score) => score ? (
-        <Progress percent={score} size="small" strokeColor="#5D8C3E" />
+        <Progress percent={score} size="small" strokeColor={MATCHA_GREEN} format={(p) => `${p}%`} />
       ) : <Text type="secondary">N/A</Text>,
     },
     {
-      title: 'Applied',
-      dataIndex: 'appliedDate',
+      title: 'Ngày Ứng Tuyển',
+      dataIndex: 'appliedAt',
       key: 'appliedDate',
-      render: (date) => <Text type="secondary">{date}</Text>,
+      render: (date) => <Text type="secondary">{formatDate(date)}</Text>,
     },
     {
       title: '',
       key: 'actions',
-      render: () => (
+      render: (_, record) => (
         <Space>
-          <Button size="small">View</Button>
-          <Button size="small" type="primary">Schedule</Button>
+          <Button size="small" onClick={() => navigate(`/recruiter/candidates/${record.id}`)}>Xem</Button>
+          <Button size="small" type="primary" onClick={() => setIsScheduleModalOpen(true)}>Lịch</Button>
         </Space>
       ),
     },
@@ -118,20 +162,25 @@ const JobDetail = () => {
   const tabItems = [
     {
       key: 'candidates',
-      label: `Candidates (${candidatesData.length})`,
+      label: `Ứng Viên (${applications.length})`,
       children: (
         <Table 
           columns={candidatesColumns} 
-          dataSource={candidatesData} 
+          dataSource={applications} 
           rowKey="id"
-          pagination={false}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} ứng viên`
+          }}
           className="candidates-table"
+          loading={loading}
         />
       ),
     },
     {
       key: 'pipeline',
-      label: 'Pipeline',
+      label: 'Phễu Tuyển Dụng',
       children: (
         <div className="pipeline-stats">
           {pipelineStats.map((item, index) => (
@@ -142,7 +191,7 @@ const JobDetail = () => {
                 <span className="stage-count">{item.count}</span>
               </div>
               <Progress 
-                percent={(item.count / 15) * 100} 
+                percent={applications.length > 0 ? (item.count / applications.length) * 100 : 0} 
                 showInfo={false}
                 strokeColor={item.color}
                 trailColor="#f0f0f0"
@@ -153,22 +202,60 @@ const JobDetail = () => {
       ),
     },
     {
-      key: 'analytics',
-      label: 'Analytics',
+      key: 'info',
+      label: 'Thông Tin Tin',
       children: (
-        <div className="analytics-placeholder">
-          <Text type="secondary">Analytics coming soon...</Text>
+        <div className="job-info-content">
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Mô tả công việc">
+              <Paragraph>{job?.description || 'N/A'}</Paragraph>
+            </Descriptions.Item>
+            <Descriptions.Item label="Yêu cầu">
+              {job?.requirements?.map((req, i) => (
+                <div key={i}>• {req}</div>
+              )) || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phúc lợi">
+              {job?.benefits?.map((ben, i) => (
+                <div key={i}>• {ben}</div>
+              )) || 'N/A'}
+            </Descriptions.Item>
+          </Descriptions>
         </div>
       ),
     },
   ];
 
+  if (loading && !job) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
     <div className="job-detail-page">
       <div className="page-header">
-        <Button onClick={() => navigate('/recruiter/jobs')} className="back-btn">
-          ← Back to Jobs
+        <Button 
+          onClick={() => navigate('/recruiter/jobs')} 
+          className="back-btn"
+          icon={<ArrowLeftOutlined />}
+        >
+          Quay Lại
         </Button>
+        <div className="header-actions">
+          <Button 
+            icon={<ReloadOutlined />} 
+            onClick={() => {
+              fetchJobDetails();
+              fetchApplications();
+            }}
+            loading={loading}
+          >
+            Làm Mới
+          </Button>
+        </div>
       </div>
 
       <Row gutter={[24, 24]}>
@@ -176,16 +263,23 @@ const JobDetail = () => {
           <Card className="main-card" bordered={false}>
             <div className="job-header">
               <div className="job-info">
-                <Title level={3} className="job-title">{job.title}</Title>
+                <Title level={3} className="job-title">{job?.title || 'N/A'}</Title>
                 <div className="job-tags">
-                  <Tag color="blue">{job.type}</Tag>
-                  <Tag color="green">{job.status}</Tag>
-                  <Tag icon={<ClockCircleOutlined />}>Posted {job.postedDate}</Tag>
+                  <Tag color="blue">{job?.jobType || job?.type || 'N/A'}</Tag>
+                  <Tag color={job?.status === 'Active' ? 'success' : 'default'}>
+                    {job?.status === 'Active' ? 'Đang tuyển' : 'Đã đóng'}
+                  </Tag>
+                  <Tag icon={<ClockCircleOutlined />}>Đăng ngày {formatDate(job?.createdAt)}</Tag>
                 </div>
               </div>
               <div className="job-actions">
-                <Button icon={<ShareAltOutlined />}>Share</Button>
-                <Button icon={<EditOutlined />}>Edit</Button>
+                <Button icon={<ShareAltOutlined />}>Chia Sẻ</Button>
+                <Button 
+                  icon={<EditOutlined />}
+                  onClick={() => navigate(`/recruiter/jobs/create?edit=${jobId}`)}
+                >
+                  Chỉnh Sửa
+                </Button>
               </div>
             </div>
 
@@ -193,22 +287,26 @@ const JobDetail = () => {
               <div className="detail-item">
                 <TeamOutlined className="detail-icon" />
                 <div>
-                  <Text type="secondary">Department</Text>
-                  <p>{job.department}</p>
+                  <Text type="secondary">Phòng Ban</Text>
+                  <p>{job?.department || 'N/A'}</p>
                 </div>
               </div>
               <div className="detail-item">
                 <CalendarOutlined className="detail-icon" />
                 <div>
-                  <Text type="secondary">Location</Text>
-                  <p>{job.location}</p>
+                  <Text type="secondary">Địa Điểm</Text>
+                  <p>{job?.location || job?.workLocation || 'N/A'}</p>
                 </div>
               </div>
               <div className="detail-item">
                 <CheckCircleOutlined className="detail-icon" />
                 <div>
-                  <Text type="secondary">Salary Range</Text>
-                  <p>{job.salary}</p>
+                  <Text type="secondary">Lương</Text>
+                  <p>
+                    {job?.salaryMin && job?.salaryMax 
+                      ? `${formatCurrency(job.salaryMin)} - ${formatCurrency(job.salaryMax)} ${job?.currency || 'VND'}`
+                      : job?.salary || 'Thỏa thuận'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -219,7 +317,7 @@ const JobDetail = () => {
 
         <Col xs={24} lg={8}>
           <Card className="sidebar-card" bordered={false}>
-            <Title level={5}>Quick Actions</Title>
+            <Title level={5}>Thao Tác Nhanh</Title>
             <div className="action-buttons">
               <Button 
                 type="primary" 
@@ -228,19 +326,23 @@ const JobDetail = () => {
                 onClick={() => setIsScheduleModalOpen(true)}
                 className="primary-action"
               >
-                Schedule Interview
+                Lên Lịch Phỏng Vấn
               </Button>
               <Button icon={<MailOutlined />} block>
-                Send Email
+                Gửi Email
               </Button>
-              <Button icon={<EditOutlined />} block>
-                Edit Job
+              <Button 
+                icon={<EditOutlined />} 
+                block
+                onClick={() => navigate(`/recruiter/jobs/create?edit=${jobId}`)}
+              >
+                Chỉnh Sửa Tin
               </Button>
             </div>
           </Card>
 
           <Card className="sidebar-card" bordered={false}>
-            <Title level={5}>Pipeline Summary</Title>
+            <Title level={5}>Tổng Quan Phễu</Title>
             <div className="pipeline-summary">
               {pipelineStats.map((item, index) => (
                 <div key={index} className="summary-item">
@@ -254,30 +356,30 @@ const JobDetail = () => {
       </Row>
 
       <Modal
-        title="Schedule Interview"
+        title="Lên Lịch Phỏng Vấn"
         open={isScheduleModalOpen}
         onCancel={() => setIsScheduleModalOpen(false)}
         footer={null}
       >
         <div className="schedule-form">
           <div className="form-group">
-            <label>Select Candidate</label>
-            <Select placeholder="Choose candidate" style={{ width: '100%' }} />
+            <label>Chọn Ứng Viên</label>
+            <Select placeholder="Chọn ứng viên" style={{ width: '100%' }} />
           </div>
           <div className="form-group">
-            <label>Interview Type</label>
-            <Select placeholder="Select type" style={{ width: '100%' }}>
-              <Select.Option value="technical">Technical Interview</Select.Option>
-              <Select.Option value="hr">HR Interview</Select.Option>
-              <Select.Option value="culture">Culture Fit</Select.Option>
+            <label>Loại Phỏng Vấn</label>
+            <Select placeholder="Chọn loại" style={{ width: '100%' }}>
+              <Select.Option value="technical">Kỹ thuật</Select.Option>
+              <Select.Option value="hr">HR</Select.Option>
+              <Select.Option value="culture">Văn hóa</Select.Option>
             </Select>
           </div>
           <div className="form-group">
-            <label>Date & Time</label>
-            <DatePicker showTime style={{ width: '100%' }} />
+            <label>Ngày & Giờ</label>
+            <DatePicker showTime style={{ width: '100%' }} format="DD/MM/YYYY HH:mm" />
           </div>
           <Button type="primary" block className="submit-btn">
-            Schedule
+            Lên Lịch
           </Button>
         </div>
       </Modal>

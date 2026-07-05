@@ -62,13 +62,55 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
         return new JobEmbeddingInfo(job.JobId, job.JdText, hasEmbedding == 1);
     }
 
+    public async Task<int> UpdateAsync(long companyId, long jobId, string title, string? jdText,
+        long? departmentManagerId, string status, bool jdChanged)
+    {
+        var rows = await _db.Jobs
+            .Where(j => j.JobId == jobId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.Title, title)
+                .SetProperty(j => j.JdText, jdText)
+                .SetProperty(j => j.DepartmentManagerId, departmentManagerId)
+                .SetProperty(j => j.Status, status)
+                .SetProperty(j => j.UpdatedAt, DateTime.UtcNow));
+
+        if (rows > 0 && jdChanged)
+        {
+            // JD đổi -> vector cũ vô nghĩa; NULL để lần chấm sau lazy embed lại.
+            await _db.Database.ExecuteSqlRawAsync(
+                "UPDATE Job SET embedding = NULL WHERE job_id = {0} AND company_id = {1}",
+                jobId, companyId);
+        }
+        return rows;
+    }
+
     public async Task UpdateEmbeddingAsync(long companyId, long jobId, float[] embedding)
     {
-        // CAST chuỗi JSON -> VECTOR(384) ở phía SQL Server (cửa thoát raw SQL — 5.11).
+        // CAST chuỗi JSON -> VECTOR(1024) ở phía SQL Server (cửa thoát raw SQL — 5.11).
         var vectorJson = JsonSerializer.Serialize(embedding);
         await _db.Database.ExecuteSqlRawAsync(
-            "UPDATE Job SET embedding = CAST({0} AS VECTOR(384)), updated_at = SYSUTCDATETIME() " +
+            "UPDATE Job SET embedding = CAST({0} AS VECTOR(1024)), updated_at = SYSUTCDATETIME() " +
             "WHERE company_id = {1} AND job_id = {2}",
             vectorJson, companyId, jobId);
+    }
+
+    public async Task<IEnumerable<Job>> GetPublicOpenJobsAsync()
+    {
+        // Public endpoint: bỏ qua global query filter company_id
+        return await _db.Jobs
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .OrderByDescending(j => j.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<Job?> GetPublicOpenJobAsync(long jobId)
+    {
+        // Public endpoint: bỏ qua global query filter company_id
+        return await _db.Jobs
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(j => j.JobId == jobId && j.Status == "Open")
+            .FirstOrDefaultAsync();
     }
 }

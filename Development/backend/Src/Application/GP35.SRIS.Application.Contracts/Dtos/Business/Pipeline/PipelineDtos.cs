@@ -3,7 +3,7 @@ namespace GP35.SRIS.Application.Contracts.Dtos.Business.Pipeline;
 /// <summary>Yêu cầu chuyển hồ sơ sang 1 state (state machine — 5.8). Reason bắt buộc khi REJECTED.</summary>
 public class TransitionRequestDto
 {
-    /// <summary>State đích: SCREENING | QUIZ | INTERVIEW | OFFER | HIRED | REJECTED.</summary>
+    /// <summary>State đích: SCREENING | INTERVIEW | OFFER | HIRED | REJECTED.</summary>
     public string ToState { get; set; } = null!;
 
     /// <summary>Lý do (bắt buộc khi reject; 1-chạm chip preset — 5.7).</summary>

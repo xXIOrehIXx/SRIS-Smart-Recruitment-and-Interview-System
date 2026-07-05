@@ -302,7 +302,6 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         var baseUrl = (_config.CandidatePortal?.BaseUrl ?? DefaultBaseUrl).TrimEnd('/');
         var path = purpose?.ToUpperInvariant() switch
         {
-            "QUIZ" => "quiz",
             "SCHEDULE" => "schedule",
             "OFFER_RESPONSE" => "offer",
             "STATUS" => "status",
@@ -314,9 +313,6 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     private static (string Subject, string Intro, string Button) MagicLinkContent(string purpose, string jobTitle)
         => purpose?.ToUpperInvariant() switch
         {
-            "QUIZ" => ($"Mời làm bài kiểm tra — vị trí {jobTitle}",
-                       $"Bạn được mời làm bài kiểm tra trực tuyến cho vị trí <b>{jobTitle}</b>. " +
-                       "Nhấn nút bên dưới để bắt đầu.", "Làm bài kiểm tra"),
             "SCHEDULE" => ($"Mời chọn lịch phỏng vấn — vị trí {jobTitle}",
                        $"Vui lòng chọn khung giờ phỏng vấn phù hợp cho vị trí <b>{jobTitle}</b>.", "Chọn lịch phỏng vấn"),
             "OFFER_RESPONSE" => ($"Thư mời nhận việc — vị trí {jobTitle}",

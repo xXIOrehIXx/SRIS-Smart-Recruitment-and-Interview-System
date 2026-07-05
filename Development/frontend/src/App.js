@@ -4,10 +4,13 @@ import AuthLayout from './layouts/AuthLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, ROLES } from './contexts/AuthContext';
 import Home from './pages/Home';
+import Recruitment from './pages/recruitment/Recruitment';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import AdminDashboard from './pages/admin/Dashboard';
+import SubAccountManagement from './pages/admin/SubAccountManagement';
+import CreateAccount from './pages/admin/CreateAccount';
 import AdminLayout from './layouts/AdminLayout';
 import RecruiterDashboard from './pages/recruiter/Dashboard';
 import JobManagement from './pages/recruiter/JobManagement';
@@ -29,7 +32,7 @@ import Settings from './pages/Settings';
 import './App.css';
 
 const App = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user, getDashboardRoute } = useAuth();
 
   if (loading) {
     return null;
@@ -52,8 +55,8 @@ const App = () => {
             <AdminLayout>
               <Routes>
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="sub-accounts" element={<AdminDashboard />} />
-                <Route path="create-account" element={<AdminDashboard />} />
+                <Route path="sub-accounts" element={<SubAccountManagement />} />
+                <Route path="create-account" element={<CreateAccount />} />
                 <Route path="settings" element={<Settings />} />
               </Routes>
             </AdminLayout>
@@ -170,12 +173,15 @@ const App = () => {
       {/* ===== HOME - PUBLIC ===== */}
       <Route path="/" element={<Home />} />
 
+      {/* ===== RECRUITMENT - PUBLIC ===== */}
+      <Route path="/:slug/recruitment" element={<Recruitment />} />
+
       {/* ===== FALLBACK ===== */}
       <Route
         path="*"
         element={
           isAuthenticated ? (
-            <Navigate to="/recruiter/dashboard" replace />
+            <Navigate to={user ? getDashboardRoute() : '/recruiter/dashboard'} replace />
           ) : (
             <Navigate to="/login" replace />
           )

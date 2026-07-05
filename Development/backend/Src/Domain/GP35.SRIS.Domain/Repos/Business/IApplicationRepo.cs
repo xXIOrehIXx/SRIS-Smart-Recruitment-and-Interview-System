@@ -10,6 +10,23 @@ public record ApplicationRankingRow(
     decimal? AiMatchScore,
     string CurrentState);
 
+/// <summary>1 hồ sơ chưa có điểm cần chấm nền (Cách A) — kèm company_id để worker set đúng tenant.</summary>
+public record UnscoredApplication(long CompanyId, long ApplicationId);
+
+/// <summary>1 card trên Kanban: hồ sơ + ứng viên + 2 loại điểm (cả-CV và theo tiêu chí — 5.18).</summary>
+public record ApplicationBoardRow(
+    long ApplicationId, long CandidateId, string CandidateName, string CandidateEmail,
+    string CurrentState, decimal? AiMatchScore, decimal? CriteriaScore,
+    long CvId, DateTime? AppliedAt);
+
+/// <summary>Chi tiết 1 hồ sơ cho màn xem ứng viên (join Candidate + Job + CvDocument).</summary>
+public record ApplicationDetailRow(
+    long ApplicationId, string CurrentState, decimal? AiMatchScore, decimal? CriteriaScore,
+    string? RejectReason, DateTime? AppliedAt, DateTime? StageUpdatedAt,
+    long CandidateId, string CandidateName, string CandidateEmail, string? CandidatePhone, string? CandidateSource,
+    long JobId, string JobTitle,
+    long CvId, string? CvFileName, string CvParseStatus);
+
 /// <summary>Thông tin liên hệ ứng viên + vị trí của 1 hồ sơ — để dựng email gửi ứng viên (5.13).</summary>
 public record ApplicationContactInfo(
     long ApplicationId,
@@ -35,8 +52,17 @@ public interface IApplicationRepo : IBaseRepo<long, Application>
     /// <summary>Lưu điểm AI (0-100) vào hồ sơ.</summary>
     Task UpdateScoreAsync(long companyId, long applicationId, decimal score);
 
+    /// <summary>Lưu điểm chấm theo TỪNG tiêu chí (0-100 — 5.18) vào hồ sơ.</summary>
+    Task UpdateCriteriaScoreAsync(long companyId, long applicationId, decimal score);
+
     /// <summary>Bảng xếp hạng ứng viên của 1 job theo điểm giảm dần.</summary>
     Task<IEnumerable<ApplicationRankingRow>> GetRankingByJobAsync(long companyId, long jobId);
+
+    /// <summary>Toàn bộ hồ sơ của 1 job cho Kanban (mới nộp trước trong từng cột).</summary>
+    Task<IReadOnlyList<ApplicationBoardRow>> GetBoardByJobAsync(long companyId, long jobId);
+
+    /// <summary>Chi tiết 1 hồ sơ (join Candidate + Job + CvDocument). Null nếu không thuộc company.</summary>
+    Task<ApplicationDetailRow?> GetDetailAsync(long companyId, long applicationId);
 
     /// <summary>
     /// Đổi trạng thái hồ sơ (state machine — 5.8) + ghi mốc thời gian. rejectReason chỉ có khi
@@ -51,4 +77,10 @@ public interface IApplicationRepo : IBaseRepo<long, Application>
 
     /// <summary>Email + tên ứng viên + tên vị trí của 1 hồ sơ (join Candidate, Job). Null nếu không thấy.</summary>
     Task<ApplicationContactInfo?> GetContactInfoAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// (Cách A — sweep lúc khởi động) MỌI hồ sơ chưa có điểm mà CV đọc được (parse OK), XUYÊN tenant.
+    /// Để worker nền vớt chấm lại các hồ sơ còn sót khi server từng restart giữa chừng.
+    /// </summary>
+    Task<IReadOnlyList<UnscoredApplication>> GetAllUnscoredAsync();
 }

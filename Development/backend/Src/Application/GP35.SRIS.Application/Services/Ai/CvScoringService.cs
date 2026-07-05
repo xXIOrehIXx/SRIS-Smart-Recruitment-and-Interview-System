@@ -22,6 +22,7 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
     private readonly ICvDocumentRepo _cvRepo;
     private readonly IApplicationRepo _applicationRepo;
     private readonly IFileStorageService _fileStorage;
+    private readonly ICvScoreQueue _cvScoreQueue;
     private readonly ILogger _logger;
 
     public CvScoringService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -33,6 +34,7 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
         _cvRepo = serviceProvider.GetRequiredService<ICvDocumentRepo>();
         _applicationRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _fileStorage = serviceProvider.GetRequiredService<IFileStorageService>();
+        _cvScoreQueue = serviceProvider.GetRequiredService<ICvScoreQueue>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<CvScoringService>();
     }
 
@@ -87,8 +89,8 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
             };
         }
 
-        // --- Loại 1 + 2: bóc được text -> chấm điểm ---
-        var result = await ScoreCoreAsync(companyId, jobId, candidateId, candidateName,
+        // --- Loại 1 + 2: bóc được text -> LƯU hồ sơ (chưa chấm) + đẩy vào hàng đợi chấm nền (Cách A) ---
+        var result = await SaveForScoringAsync(companyId, jobId, candidateId, candidateName,
             extract.Text, fileUrl, fileName, mimeType, fileBytes.Length);
 
         result.PageCount = extract.PageCount;
@@ -178,50 +180,42 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
     }
 
     // ============================================================
-    //  Luồng lõi: embed CV -> lazy embed JD -> lưu CV + Application
-    //  -> VECTOR_DISTANCE -> quy đổi điểm -> lưu điểm. Dùng chung cho text & PDF.
+    //  Cách A — pha "LƯU" (đồng bộ, trong request nộp CV):
+    //  kiểm job hợp lệ (KHÔNG gọi AI) -> lưu CV (chưa embedding) + hồ sơ NEW (chưa điểm)
+    //  -> đẩy vào hàng đợi chấm nền -> trả PENDING ngay. KHÔNG bắt ứng viên đợi AI.
     // ============================================================
-    private async Task<CvScoreResultDto> ScoreCoreAsync(
+    private async Task<CvScoreResultDto> SaveForScoringAsync(
         long companyId, long jobId, long candidateId, string candidateName,
         string cvText, string? fileUrl, string? fileName, string? mimeType, int? fileSize)
     {
-        // (1) Job tồn tại? + JD đã có embedding chưa
+        // (1) Kiểm job hợp lệ + có JD (đọc nhẹ, KHÔNG gọi AI) -> fail SỚM để ứng viên biết ngay,
+        //     tránh tạo hồ sơ "treo" không bao giờ chấm được.
         var jobInfo = await _jobRepo.GetEmbeddingInfoAsync(companyId, jobId);
         if (jobInfo is null)
         {
             return new CvScoreResultDto
             {
-                Status = CvParseStatus.Failed,
+                Status = CvScoreStatus.Failed,
                 Reason = $"Không tìm thấy Job (jobId={jobId}) trong công ty này.",
                 CandidateId = candidateId,
                 CandidateName = candidateName
             };
         }
-
-        // (2) Lazy embedding cho JD (chỉ chạy 1 lần/job)
-        if (!jobInfo.HasEmbedding)
+        if (string.IsNullOrWhiteSpace(jobInfo.JdText))
         {
-            if (string.IsNullOrWhiteSpace(jobInfo.JdText))
+            return new CvScoreResultDto
             {
-                return new CvScoreResultDto
-                {
-                    Status = CvParseStatus.Failed,
-                    Reason = "Job chưa có mô tả công việc (jd_text) nên không thể chấm điểm.",
-                    CandidateId = candidateId,
-                    CandidateName = candidateName
-                };
-            }
-
-            var jdVector = await _embeddingClient.EmbedAsync(jobInfo.JdText);
-            await _jobRepo.UpdateEmbeddingAsync(companyId, jobId, jdVector);
+                Status = CvScoreStatus.Failed,
+                Reason = "Job chưa có mô tả công việc (jd_text) nên không thể chấm điểm.",
+                CandidateId = candidateId,
+                CandidateName = candidateName
+            };
         }
 
-        // (3) Sinh embedding cho CV + lưu CvDocument
-        var cvVector = await _embeddingClient.EmbedAsync(cvText);
+        // (2) Lưu CV (parse OK, embedding NULL) + hồ sơ ứng tuyển (NEW, điểm NULL)
         var cvDoc = BuildCvDoc(companyId, candidateId, fileUrl, fileName, mimeType, fileSize, cvText, CvParseStatus.Ok);
-        var cvId = await _cvRepo.InsertAsync(cvDoc, cvVector);
+        var cvId = await _cvRepo.InsertAsync(cvDoc, embedding: null);
 
-        // (4) Tạo hồ sơ ứng tuyển
         var applicationId = await _applicationRepo.InsertAsync(companyId, new Domain.Entities.Application
         {
             JobId = jobId,
@@ -230,25 +224,87 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
             CurrentState = ApplicationState.New
         });
 
-        // (5) Đo khoảng cách cosine CV <-> JD ngay trong SQL Server
-        var distance = await _applicationRepo.GetCvJdCosineDistanceAsync(companyId, cvId, jobId);
-
-        // (6) Quy đổi khoảng cách -> điểm 0-100 (distance nhỏ = giống nhiều = điểm cao)
-        var score = Math.Clamp((decimal)Math.Round((1.0 - distance) * 100.0, 2), 0m, 100m);
-
-        // (7) Lưu điểm
-        await _applicationRepo.UpdateScoreAsync(companyId, applicationId, score);
+        // (3) Đẩy vào hàng đợi chấm nền — KHÔNG đợi (Cách A). Worker sẽ embed + tính điểm sau.
+        _cvScoreQueue.Enqueue(companyId, applicationId);
 
         return new CvScoreResultDto
         {
-            Status = "SCORED",
+            Status = CvScoreStatus.Pending,
             ApplicationId = applicationId,
             CandidateId = candidateId,
             CvId = cvId,
-            CandidateName = candidateName,
-            Score = score,
-            CosineDistance = Math.Round(distance, 4)
+            CandidateName = candidateName
         };
+    }
+
+    // ============================================================
+    //  Cách A — pha "CHẤM" (chạy nền, ngoài request): embed CV -> lazy embed JD
+    //  -> VECTOR_DISTANCE -> quy đổi điểm -> lưu điểm. Gọi bởi CvScoringWorker.
+    // ============================================================
+    public async Task ScoreApplicationAsync(long companyId, long applicationId)
+    {
+        var app = await _applicationRepo.GetByIdAsync(companyId, applicationId);
+        if (app is null)
+        {
+            _logger.Warning("ScoreApplication: không thấy hồ sơ app={AppId} (company={Co}) — bỏ qua.",
+                applicationId, companyId);
+            return;
+        }
+
+        var cvText = await _cvRepo.GetExtractedTextAsync(companyId, app.CvId);
+        if (string.IsNullOrWhiteSpace(cvText))
+        {
+            _logger.Warning("ScoreApplication: CV {CvId} của hồ sơ {AppId} chưa có text — bỏ qua.",
+                app.CvId, applicationId);
+            return;
+        }
+
+        var jobInfo = await _jobRepo.GetEmbeddingInfoAsync(companyId, app.JobId);
+        if (jobInfo is null)
+        {
+            _logger.Warning("ScoreApplication: không thấy Job {JobId} của hồ sơ {AppId} — bỏ qua.",
+                app.JobId, applicationId);
+            return;
+        }
+
+        // Lazy embedding cho JD (chỉ 1 lần/job)
+        if (!jobInfo.HasEmbedding)
+        {
+            if (string.IsNullOrWhiteSpace(jobInfo.JdText))
+            {
+                _logger.Warning("ScoreApplication: Job {JobId} thiếu jd_text — không chấm được hồ sơ {AppId}.",
+                    app.JobId, applicationId);
+                return;
+            }
+
+            var jdVector = await _embeddingClient.EmbedAsync(jobInfo.JdText);
+            await _jobRepo.UpdateEmbeddingAsync(companyId, app.JobId, jdVector);
+        }
+
+        // Embed CV -> cập nhật vector cho CvDocument đã lưu
+        var cvVector = await _embeddingClient.EmbedAsync(cvText);
+        await _cvRepo.UpdateEmbeddingAsync(companyId, app.CvId, cvVector);
+
+        // Đo cosine CV <-> JD trong SQL Server -> quy đổi điểm 0-100 (distance nhỏ = giống nhiều) -> lưu
+        var distance = await _applicationRepo.GetCvJdCosineDistanceAsync(companyId, app.CvId, app.JobId);
+        var score = Math.Clamp((decimal)Math.Round((1.0 - distance) * 100.0, 2), 0m, 100m);
+        await _applicationRepo.UpdateScoreAsync(companyId, applicationId, score);
+
+        _logger.Information("ScoreApplication: app={AppId} job={JobId} cv={CvId} -> score={Score} (dist={Dist}).",
+            applicationId, app.JobId, app.CvId, score, Math.Round(distance, 4));
+
+        // Tầng 2 — chấm theo TỪNG tiêu chí (5.18). Best-effort: job chưa có tiêu chí thì service
+        // tự bỏ qua; lỗi tầng này KHÔNG được phá điểm cả-CV vừa lưu.
+        try
+        {
+            var criteriaScoring = _serviceProvider.GetRequiredService<ICriteriaScoringService>();
+            await criteriaScoring.ScoreByCriteriaAsync(companyId, applicationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "ScoreApplication: chấm theo tiêu chí thất bại (app={AppId}) — giữ điểm cả-CV.",
+                applicationId);
+        }
     }
 
     /// <summary>Tìm ứng viên theo email; chưa có thì tạo mới. Trả về candidate_id.</summary>

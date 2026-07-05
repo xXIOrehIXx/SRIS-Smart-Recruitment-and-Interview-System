@@ -10,7 +10,7 @@ public class CandidateStatusDto
     public string CandidateName { get; set; } = null!;
     public string JobTitle { get; set; } = null!;
 
-    /// <summary>State chuẩn (NEW/SCREENING/QUIZ/INTERVIEW/OFFER/HIRED/REJECTED) — cho FE render progress.</summary>
+    /// <summary>State chuẩn (NEW/SCREENING/INTERVIEW/OFFER/HIRED/REJECTED) — cho FE render progress.</summary>
     public string CurrentStage { get; set; } = null!;
     /// <summary>Nhãn thân thiện của bước hiện tại (vd "Vòng phỏng vấn").</summary>
     public string StageLabel { get; set; } = null!;

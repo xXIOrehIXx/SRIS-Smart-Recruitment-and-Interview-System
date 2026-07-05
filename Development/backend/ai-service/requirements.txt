@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
-sentence-transformers
 ollama
 pydantic
+# Embedding (bge-m3) chạy QUA Ollama -> không cần torch/sentence-transformers.
+# Cần: `ollama pull bge-m3` (embed) và `ollama pull qwen2.5` (bóc tiêu chí).

@@ -7,7 +7,7 @@ namespace GP35.SRIS.Application.Contracts.Services.Business;
 public interface INotificationService : IBaseService
 {
     /// <summary>
-    /// Gửi email kèm nút magic link cho ứng viên theo purpose (QUIZ mời làm bài, SCHEDULE mời chọn lịch,
+    /// Gửi email kèm nút magic link cho ứng viên theo purpose (SCHEDULE mời chọn lịch,
     /// OFFER_RESPONSE gửi offer, STATUS xem trạng thái). Token gốc nhúng vào URL frontend.
     /// </summary>
     Task SendMagicLinkAsync(long companyId, long applicationId, string purpose, string rawToken, DateTime expiresAt);

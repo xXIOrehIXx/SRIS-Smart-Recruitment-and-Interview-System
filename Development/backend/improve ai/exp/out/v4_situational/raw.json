@@ -1,0 +1,1395 @@
+[
+  {
+    "jd_id": "dev_dotnet_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "C# OOP",
+        "question": "Bạn đang phát triển một ứng dụng quản lý thư viện. Bạn cần tạo một lớp `Sach` (Sách) để lưu thông tin sách, trong đó có các thuộc tính như `MaSach`, `TenSach`, `TacGia`. Để đảm bảo `MaSach` luôn duy nhất, bạn nên sử dụng phương thức nào sau đây?",
+        "options": [
+          "Tạo một phương thức `SetMaSach()` để gán giá trị cho `MaSach`",
+          "Thêm thuộc tính `MaSach` làm thuộc tính chỉ đọc (`readonly`) và khởi tạo trong constructor",
+          "Thêm phương thức `GetMaSach()` để trả về giá trị của `MaSach`",
+          "Tạo một phương thức `CheckMaSachUniqueness()` để kiểm tra sự duy nhất của `MaSach`"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "C# OOP",
+        "question": "Bạn đang thiết kế lớp `NhanVien` và muốn đảm bảo rằng mỗi nhân viên chỉ có một địa chỉ email duy nhất. Bạn nên sử dụng thuộc tính nào sau đây để thực hiện điều này?",
+        "options": [
+          "Tạo một phương thức `SetEmail()` để gán giá trị cho `Email`",
+          "Thêm thuộc tính `Email` làm thuộc tính chỉ đọc (`readonly`) và khởi tạo trong constructor",
+          "Thêm phương thức `GetEmail()` để trả về giá trị của `Email`",
+          "Tạo một phương thức `CheckEmailUniqueness()` để kiểm tra sự duy nhất của `Email`"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "LINQ",
+        "question": "Bạn cần lấy danh sách các sản phẩm có giá bán trên 100.000 VND từ bảng Products, nhưng chỉ muốn hiển thị tên và giá của chúng. Cách viết LINQ đúng là gì?",
+        "options": [
+          "var result = from p in Products where p.Price > 100000 select new { Name, Price };",
+          "var result = from p in Products where p.Price < 100000 select new { p.Name, p.Price };",
+          "var result = from p in Products where p.Price > 100000 select p;",
+          "var result = from p in Products where p.Price > 100000 select new { p.Name, p.Price };"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "HTTP/REST",
+        "question": "Một ứng dụng RESTful API của bạn nhận được nhiều yêu cầu GET từ một client không tin cậy, dẫn đến việc sử dụng quá nhiều tài nguyên. Cách tốt nhất để giải quyết vấn đề này là gì?",
+        "options": [
+          "Tăng số lượng CPU trên máy chủ",
+          "Thêm index vào đường dẫn API",
+          "Thiết lập giới hạn rate cho các request GET",
+          "Chuyển đổi tất cả các phương thức HTTP sang POST"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "HTTP/REST",
+        "question": "Bạn nhận được yêu cầu từ một client muốn cập nhật thông tin của một sản phẩm trong hệ thống. Sản phẩm này có nhiều thuộc tính, nhưng chỉ cần cập nhật giá và tên. Cách tốt nhất để thực hiện yêu cầu này là gì?",
+        "options": [
+          "Sử dụng phương thức PUT với tất cả các thuộc tính",
+          "Sử dụng phương thức POST với toàn bộ thông tin sản phẩm",
+          "Sử dụng phương thức PATCH với chỉ những thuộc tính cần thay đổi",
+          "Sử dụng phương thức DELETE sau đó INSERT mới"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "SQL SELECT, JOIN",
+        "question": "Có hai bảng Orders và OrderDetails. Bảng Orders chứa thông tin đơn hàng, trong khi OrderDetails lưu chi tiết từng sản phẩm trong mỗi đơn hàng. Bạn cần lấy ra danh sách các đơn hàng cùng với tổng số lượng của từng sản phẩm. Cách viết truy vấn SQL đúng là gì?",
+        "options": [
+          "SELECT o.OrderId, SUM(od.Quantity) FROM Orders o JOIN OrderDetails od ON o.OrderId = od.OrderId GROUP BY o.OrderId",
+          "SELECT o.OrderId, od.ProductId, SUM(od.Quantity) FROM Orders o JOIN OrderDetails od ON o.OrderId = od.OrderId GROUP BY o.OrderId, od.ProductId",
+          "SELECT o.OrderId, SUM(od.Quantity) FROM Orders o JOIN OrderDetails od ON o.OrderId = od.OrderId GROUP BY o.OrderId, od.ProductId",
+          "SELECT o.OrderId, od.ProductId, SUM(od.Quantity) FROM Orders o JOIN OrderDetails od ON o.OrderId = od.OrderId GROUP BY o.OrderId"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "SQL SELECT, JOIN",
+        "question": "Bảng Employees và Departments có mối quan hệ một-đa. Bạn cần lấy ra danh sách các bộ phận cùng với số lượng nhân viên trong mỗi bộ phận. Cách viết truy vấn SQL đúng là gì?",
+        "options": [
+          "SELECT d.DepartmentName, COUNT(e.EmployeeId) FROM Employees e JOIN Departments d ON e.DepartmentId = d.DepartmentId GROUP BY d.DepartmentName",
+          "SELECT d.DepartmentName, COUNT(e.EmployeeId) FROM Employees e JOIN Departments d ON e.DepartmentId = d.DepartmentId GROUP BY e.EmployeeId",
+          "SELECT d.DepartmentName, COUNT(*) FROM Employees e JOIN Departments d ON e.DepartmentId = d.DepartmentId GROUP BY d.DepartmentName, e.EmployeeId",
+          "SELECT d.DepartmentName, COUNT(e.EmployeeId) FROM Employees e JOIN Departments d ON e.DepartmentId = d.DepartmentId GROUP BY e.DepartmentId"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "SQL SELECT, JOIN",
+        "question": "Bảng Products và Suppliers có mối quan hệ nhiều-nhiều. Bạn cần lấy ra danh sách các sản phẩm cùng với tên nhà cung cấp của chúng. Cách viết truy vấn SQL đúng là gì?",
+        "options": [
+          "SELECT p.ProductName, s.SupplierName FROM Products p JOIN Suppliers s ON p.SupplierId = s.SupplierId",
+          "SELECT p.ProductName, s.SupplierName FROM Products p JOIN Suppliers s ON p.SupplierId = s.SupplierId WHERE p.SupplierId IS NOT NULL",
+          "SELECT p.ProductName, s.SupplierName FROM Products p LEFT JOIN Suppliers s ON p.SupplierId = s.SupplierId",
+          "SELECT p.ProductName, s.SupplierName FROM Products p RIGHT JOIN Suppliers s ON p.SupplierId = s.SupplierId"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Entity Framework Core",
+        "question": "Khi sử dụng Entity Framework Core để thực hiện truy vấn, bạn nhận thấy rằng việc lặp qua một danh sách lớn của đối tượng gây ra hiệu suất kém. Cách tiếp cận tốt nhất để cải thiện hiệu suất là gì?",
+        "options": [
+          "Sử dụng Include() để tải các bảng liên kết",
+          "Tăng kích thước bộ đệm trong DbContext",
+          "Thay đổi phương thức Linq thành SQL",
+          "Thêm chỉ mục cho các cột được sử dụng trong điều kiện WHERE"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Entity Framework Core",
+        "question": "Bạn cần tạo một quan hệ 1:N giữa bảng Orders và OrderDetails. Cách thực hiện đúng là gì?",
+        "options": [
+          "Tạo một thuộc tính virtual OrderDetails[] trong class Order",
+          "Thêm một thuộc tính virtual ICollection<Order> trong class OrderDetails",
+          "Thêm một thuộc tính virtual Order trong class OrderDetails",
+          "Sử dụng Fluent API để cấu hình quan hệ 1:N"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "dev_dotnet_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Thiết kế kiến trúc microservices",
+        "question": "Một ứng dụng microservices của bạn đang gặp vấn đề về độ trễ khi gửi thông báo qua dịch vụ tin nhắn SMS. Dịch vụ này thường mất khoảng 1-2 giây để phản hồi, nhưng đôi khi có thể lên đến 30 giây. Cách tiếp cận tốt nhất để giải quyết vấn đề này là gì?",
+        "options": [
+          "Tăng thời gian chờ đợi trong hàm gửi tin nhắn SMS",
+          "Sử dụng retry mechanism với độ trễ tăng dần",
+          "Thay đổi dịch vụ SMS thành một microservice độc lập và sử dụng queueing system",
+          "Giảm số lượng yêu cầu gửi SMS đồng thời"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Thiết kế kiến trúc microservices",
+        "question": "Bạn nhận thấy rằng một microservice thường xuyên gặp lỗi khi xử lý các yêu cầu lớn từ dịch vụ API gateway. Điều này dẫn đến việc tăng độ trễ và giảm hiệu suất của hệ thống. Cách tiếp cận tốt nhất để giải quyết vấn đề này là gì?",
+        "options": [
+          "Tăng số lượng instance của microservice",
+          "Giảm kích thước của các yêu cầu lớn từ API gateway",
+          "Sử dụng load balancer để phân tán tải lên nhiều instance",
+          "Thay đổi microservice thành một batch processing task"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": ".NET Framework",
+        "question": "Khi triển khai ứng dụng .NET Framework trên môi trường sản xuất, bạn phát hiện rằng ứng dụng chạy chậm và sử dụng nhiều bộ nhớ hơn mong đợi. Cách tiếp cận hiệu quả nhất để cải thiện tình hình là gì?",
+        "options": [
+          "Tăng cường xử lý trong mã bằng cách tối ưu hóa vòng lặp và hàm",
+          "Thay đổi cấu hình garbage collection của .NET Framework",
+          "Đổi từ .NET Framework sang .NET Core hoặc .NET 5+ để tận dụng hiệu năng tốt hơn",
+          "Kiểm tra và tối ưu hóa các dependency injection trong ứng dụng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)",
+        "question": "Khi thực hiện truy vấn lấy danh sách sản phẩm theo loại và sắp xếp theo giá, bạn nhận thấy hiệu suất thấp. Cách tối ưu hiệu quả nhất là gì?",
+        "options": [
+          "Tạo index trên cột Loại và Giá",
+          "Thêm chỉ mục compound trên cột Loại và Giá",
+          "Đổi SELECT * thành SELECT cột cụ thể",
+          "Chạy truy vấn vào ban đêm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)",
+        "question": "Trong một ứng dụng, bạn phát hiện rằng mỗi khi hiển thị danh sách đơn hàng của khách hàng, hệ thống thực hiện nhiều truy vấn SQL riêng biệt cho mỗi đơn hàng. Cách nào sau đây sẽ giúp tránh N+1 query?",
+        "options": [
+          "Tạo index trên cột Khách hàng",
+          "Sử dụng eager loading hoặc include để tải dữ liệu liên kết cùng lúc",
+          "Đổi SELECT * thành SELECT cột cụ thể",
+          "Chạy truy vấn vào ban đêm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Tối ưu truy vấn Entity Framework Core và SQL Server (index, execution plan, tránh N+1 query)",
+        "question": "Khi thực hiện truy vấn lấy tổng doanh thu theo tháng, bạn nhận thấy execution plan sử dụng cả clustered và non-clustered index. Cách tối ưu hiệu quả nhất là gì?",
+        "options": [
+          "Tạo thêm một index non-clustered trên cột tháng",
+          "Loại bỏ clustered index",
+          "Sử dụng hint query để chỉ định index cụ thể",
+          "Đổi SELECT * thành SELECT cột cụ thể"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "API Design and Review",
+        "question": "Một API đang xử lý yêu cầu GET /users?role=admin&status=active. Bạn nhận thấy có thể xảy ra truy vấn SQL không cần thiết. Cách cải thiện hiệu suất tốt nhất là gì?",
+        "options": [
+          "Thêm index trên cột role và status trong bảng users",
+          "Sử dụng caching cho kết quả API này",
+          "Đổi từ GET sang POST để tăng độ bảo mật",
+          "Tạo một phương thức riêng biệt /users/admin-active để tránh truy vấn SQL không cần thiết"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "API Design and Review",
+        "question": "Một ứng dụng .NET đang sử dụng Entity Framework Core. Khi thực hiện nhiều lần truy vấn, bạn nhận thấy hiệu suất giảm đáng kể. Cách cải thiện hiệu suất tốt nhất là gì?",
+        "options": [
+          "Tăng số lượng thread trong pool database connection",
+          "Sử dụng lazy loading thay vì eager loading",
+          "Đổi Entity Framework Core sang Entity Framework 6",
+          "Thực hiện batch query để giảm số lần truy vấn đến cơ sở dữ liệu"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Pattern CQRS, Repository, Dependency Injection",
+        "question": "Khi triển khai ứng dụng CQRS và Repository pattern, bạn nhận thấy các thao tác đọc dữ liệu từ database chậm hơn so với mong đợi. Cách tiếp cận nào sau đây sẽ hiệu quả nhất để cải thiện vấn đề này?",
+        "options": [
+          "Tăng số lượng thread trong pool của Entity Framework",
+          "Sử dụng caching tại layer Repository trước khi truy cập database",
+          "Thay đổi từ Entity Framework Core sang ADO.NET",
+          "Tối ưu hóa cấu trúc cây thư mục nơi lưu trữ các service xử lý CQRS"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Xử lý concurrency",
+        "question": "Khi ứng dụng .NET của bạn xử lý nhiều yêu cầu đồng thời từ các khách hàng, bạn phát hiện ra rằng một số phương thức không thread-safe và gây ra lỗi. Cách tốt nhất để giải quyết vấn đề này là gì?",
+        "options": [
+          "Tăng số luồng trong Application Pool",
+          "Sử dụng `lock` statement hoặc `Mutex` để bảo vệ các phương thức không thread-safe",
+          "Thay đổi thiết kế API thành asynchronous và sử dụng `async/await`",
+          "Chuyển toàn bộ ứng dụng sang .NET Core"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "frontend_react_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Tối ưu render React",
+        "question": "Khi render một component React với nhiều props và state, bạn nhận thấy hiệu suất giảm đáng kể. Cách tối ưu hiệu quả nhất là gì?",
+        "options": [
+          "Sử dụng shouldComponentUpdate để kiểm soát việc re-render",
+          "Tăng số lượng CPU trên máy chủ",
+          "Đổi từ useState thành useReducer",
+          "Loại bỏ tất cả các props và state không cần thiết"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Tối ưu render React",
+        "question": "Một component React của bạn đang được render nhiều lần trong vòng lặp for, dẫn đến hiệu suất kém. Cách tối ưu nào sau đây sẽ giúp cải thiện?",
+        "options": [
+          "Tăng số lượng CPU trên máy chủ",
+          "Sử dụng key unique cho mỗi item trong vòng lặp",
+          "Loại bỏ tất cả các props và state không cần thiết",
+          "Đổi từ useState thành useReducer"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Viết test bằng Jest/React Testing Library",
+        "question": "Khi viết test cho một component React sử dụng useState hook để quản lý state, bạn cần kiểm tra xem state có được cập nhật đúng không. Cách nào sau đây là cách hiệu quả nhất để thực hiện?",
+        "options": [
+          "Sử dụng `fireEvent.change` để giả lập sự kiện thay đổi và kiểm tra state sau đó",
+          "Sử dụng `act` từ React Testing Library để đảm bảo component được render trong một giao diện giả lập trước khi kiểm tra state",
+          "Đặt state ban đầu và sử dụng `expect` để kiểm tra state không thay đổi",
+          "Thêm một hàm console.log(state) vào component để in ra state sau mỗi lần cập nhật"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Xây dựng component tái sử dụng",
+        "question": "Khi xây dựng một component trong React, bạn nhận thấy rằng component này cần được sử dụng ở nhiều nơi khác nhau trên trang web. Để tối ưu hóa code và đảm bảo tính tái sử dụng, bạn nên làm gì tiếp theo?",
+        "options": [
+          "Tạo một state riêng để quản lý dữ liệu của component",
+          "Chuyển đổi component thành một function component bình thường",
+          "Sử dụng hooks như useState hoặc useContext để chia sẻ state giữa các component",
+          "Đưa component vào thư viện riêng và sử dụng import ở mọi nơi cần thiết"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Quản lý state bằng Redux hoặc Context API",
+        "question": "Khi ứng dụng React của bạn cần quản lý state cho một component con sâu 3 cấp, bạn nên sử dụng Redux hay Context API?",
+        "options": [
+          "Redux",
+          "Context API",
+          "useState",
+          "useReducer"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Quản lý state bằng Redux hoặc Context API",
+        "question": "Trong quá trình chuyển đổi từ Context API sang Redux, ứng dụng của bạn gặp vấn đề về hiệu suất do việc dispatch action quá nhiều lần. Cách giải quyết tốt nhất là gì?",
+        "options": [
+          "Tăng số lượng action",
+          "Giảm số lượng component sử dụng context",
+          "Sử dụng memoization trong hooks",
+          "Tối ưu hóa action creator và reducer"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Tích hợp REST API",
+        "question": "Khi tích hợp một REST API vào ứng dụng React, bạn nhận thấy rằng việc tải dữ liệu từ API làm chậm giao diện. Cách tiếp cận tốt nhất để cải thiện vấn đề này là gì?",
+        "options": [
+          "Tăng thời gian chờ trong hàm useEffect",
+          "Sử dụngSuspense và ErrorBoundary để quản lý loading và error",
+          "Đóng gói tất cả các request API vào một component duy nhất",
+          "Thay đổi phương thức fetch thành axios"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Hiểu virtual DOM",
+        "question": "Khi ứng dụng React của bạn cập nhật một state và render lại giao diện, virtual DOM sẽ làm gì để tối ưu hóa quá trình này?",
+        "options": [
+          "Tạo ra một bản sao hoàn toàn mới của DOM gốc",
+          "So sánh các thay đổi giữa DOM hiện tại và DOM dự kiến, chỉ update những phần cần thiết",
+          "Xóa bỏ tất cả các node trong DOM và rebuild lại từ đầu",
+          "Gửi yêu cầu render đầy đủ đến server để nhận về một phiên bản mới của giao diện"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Biết tối ưu hiệu năng frontend",
+        "question": "Khi ứng dụng React của bạn gặp vấn đề với hiệu năng khi hiển thị nhiều component cùng lúc, bạn nhận thấy việc render lại toàn bộ component không cần thiết. Cách tối ưu nào sau đây sẽ giúp cải thiện hiệu suất?",
+        "options": [
+          "Tăng số lượng component được render",
+          "Sử dụng lifecycle method để giảm thời gian render",
+          "Thay đổi state của component để tăng tần suất render",
+          "Sử dụng React.memo hoặc useMemo để tránh re-render không cần thiết"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Biết tối ưu hiệu năng frontend",
+        "question": "Trong quá trình phát triển, bạn nhận thấy rằng việc sử dụng nhiều hiệu ứng CSS như animate.css làm chậm tốc độ tải trang. Cách nào sau đây sẽ giúp cải thiện vấn đề này?",
+        "options": [
+          "Tăng số lượng hiệu ứng CSS",
+          "Sử dụng inline style thay vì class từ thư viện animate.css",
+          "Giảm số lượng hiệu ứng CSS được sử dụng",
+          "Thay đổi màu sắc của hiệu ứng"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "data_engineer_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "SQL nâng cao",
+        "question": "Có bảng Orders và Products. Bạn cần tính tổng giá trị đơn hàng (Quantity * UnitPrice) cho mỗi CustomerId, nhưng gặp vấn đề hiệu suất khi truy vấn. Cách tốt nhất để cải thiện là gì?",
+        "options": [
+          "Tạo index trên cột Quantity và UnitPrice",
+          "Thêm RAM cho máy chủ",
+          "Đưa bảng Products vào trong JOIN thay vì sử dụng INNER JOIN",
+          "Chạy truy vấn vào ban đêm"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "SQL nâng cao",
+        "question": "Bạn cần tìm ra các sản phẩm được bán nhiều nhất trong tháng vừa qua. Trong quá trình viết truy vấn, bạn gặp phải vấn đề về hiệu suất. Cách tối ưu hóa hiệu quả nhất là gì?",
+        "options": [
+          "Tạo index trên cột Date và ProductId",
+          "Thêm RAM cho máy chủ",
+          "Đưa bảng Orders vào trong JOIN thay vì sử dụng INNER JOIN",
+          "Chạy truy vấn vào ban đêm"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "SQL nâng cao",
+        "question": "Bạn cần tìm ra các khách hàng đã mua sản phẩm từ nhiều nhà cung cấp khác nhau. Trong quá trình viết truy vấn, bạn gặp phải vấn đề về hiệu suất. Cách tối ưu hóa hiệu quả nhất là gì?",
+        "options": [
+          "Tạo index trên cột CustomerId và ProductId",
+          "Thêm RAM cho máy chủ",
+          "Đưa bảng Products vào trong JOIN thay vì sử dụng INNER JOIN",
+          "Chạy truy vấn vào ban đêm"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Window function trong SQL",
+        "question": "Có bảng Sales với cột OrderID, ProductName và TotalPrice. Bạn cần tính tổng doanh thu theo từng sản phẩm và hiển thị top 5 sản phẩm có doanh thu cao nhất. Cách thực hiện đúng là gì?",
+        "options": [
+          "Sử dụng GROUP BY ProductName và ORDER BY SUM(TotalPrice) DESC LIMIT 5",
+          "Sử dụng WINDOW FUNCTION ROW_NUMBER() OVER (ORDER BY TotalPrice DESC) và LIMIT 5",
+          "Sử dụng WINDOW FUNCTION RANK() OVER (ORDER BY SUM(TotalPrice) DESC) và LIMIT 5",
+          "Sử dụng GROUP BY ProductName, sau đó sử dụng ORDER BY COUNT(OrderID) DESC LIMIT 5"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Window function trong SQL",
+        "question": "Bảng Employees có cột EmployeeID, DepartmentId và Salary. Bạn cần tính tổng lương của mỗi bộ phận và hiển thị tên bộ phận cùng với tổng lương. Cách thực hiện đúng là gì?",
+        "options": [
+          "Sử dụng GROUP BY DepartmentId, sau đó SELECT DepartmentName, SUM(Salary) FROM Employees GROUP BY DepartmentId",
+          "Sử dụng WINDOW FUNCTION SUM() OVER (PARTITION BY DepartmentId) và SELECT DepartmentName, SUM(Salary) AS TotalSalary FROM Employees",
+          "Sử dụng WINDOW FUNCTION ROLLUP() OVER (DepartmentId) và SELECT DepartmentName, SUM(Salary) AS TotalSalary FROM Employees",
+          "Sử dụng GROUP BY DepartmentId, sau đó SELECT DepartmentName, SUM(Salary) FROM Employees GROUP BY DepartmentId"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "CTE (Common Table Expressions) trong SQL",
+        "question": "Công ty của bạn cần thống kê tổng số đơn hàng đã giao cho mỗi khách hàng trong tháng vừa qua. Bạn muốn sử dụng CTE để cải thiện hiệu suất truy vấn. Cách viết đúng là gì?",
+        "options": [
+          "WITH OrdersCTE AS (SELECT CustomerId, COUNT(*) as TotalOrders FROM Orders WHERE OrderDate >= '2023-10-01' GROUP BY CustomerId) SELECT * FROM OrdersCTE",
+          "WITH OrdersCTE AS (SELECT CustomerId, COUNT(*) as TotalOrders FROM Orders WHERE OrderDate BETWEEN '2023-10-01' AND '2023-10-31') SELECT * FROM OrdersCTE",
+          "WITH OrdersCTE AS (SELECT CustomerId, COUNT(*) as TotalOrders FROM Orders) SELECT * FROM OrdersCTE WHERE OrderDate >= '2023-10-01'",
+          "WITH OrdersCTE AS (SELECT CustomerId, COUNT(*) as TotalOrders FROM Orders WHERE OrderDate = '2023-10-01') SELECT * FROM OrdersCTE"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Python",
+        "question": "Khi xử lý một tập dữ liệu lớn với nhiều cột, bạn phát hiện rằng việc truy vấn SQL đang chạy rất chậm. Cách tiếp cận hiệu quả nhất để cải thiện tốc độ truy vấn là gì?",
+        "options": [
+          "Tạo chỉ mục (index) trên các cột thường được sử dụng trong điều kiện WHERE",
+          "Chuyển đổi toàn bộ dữ liệu sang định dạng JSON",
+          "Giảm số lượng dòng dữ liệu bằng cách xóa những hàng không cần thiết",
+          "Tăng thời gian chờ đợi của truy vấn"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Python",
+        "question": "Bạn đang làm việc với một tập dữ liệu lớn và phát hiện có nhiều giá trị NaN trong cột 'Age'. Để xử lý các giá trị này, bạn nên thực hiện điều gì?",
+        "options": [
+          "Xóa tất cả các dòng chứa giá trị NaN",
+          "Thay thế NaN bằng trung bình của cột 'Age'",
+          "Để NaN như là nó đang tồn tại",
+          "Tạo một cột mới chỉ chứa thông tin về NaN"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Python",
+        "question": "Bạn cần tạo một biểu đồ để thể hiện mối quan hệ giữa doanh thu và chi phí trong các tháng. Trong Python, thư viện nào sẽ giúp bạn thực hiện điều này?",
+        "options": [
+          "Matplotlib",
+          "NumPy",
+          "Pandas",
+          "Scikit-learn"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Spark",
+        "question": "Một ứng dụng sử dụng Spark để xử lý dữ liệu lớn từ nhiều nguồn khác nhau. Tuy nhiên, bạn nhận thấy rằng quá trình đọc dữ liệu từ HDFS chậm và chiếm nhiều thời gian CPU. Cách tiếp cận hiệu quả nhất để cải thiện tình hình này là gì?",
+        "options": [
+          "Tăng số worker trong Spark Cluster",
+          "Thay đổi phương thức đọc dữ liệu từ `textFile` sang `wholeTextFiles`",
+          "Sử dụng `coalesce` hoặc `repartition` để giảm số partition trước khi đọc",
+          "Kiểm tra và tối ưu hóa cấu hình HDFS, ví dụ tăng block size"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "ketoan_tonghop_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Nắm vững nguyên lý kế toán kép",
+        "question": "Doanh nghiệp bán hàng với giá trị 50 triệu đồng nhưng khách hàng thanh toán sau 3 tháng. Bút toán ghi nhận khi bán hàng và khi nhận tiền đúng là gì?",
+        "options": [
+          "Nợ Hàng hóa / Có Doanh thu, Nợ Tiền mặt / Có Doanh thu",
+          "Nợ Doanh thu / Có Hàng hóa, Nợ Tiền mặt / Có Doanh thu",
+          "Nợ Doanh thu / Có Hàng hóa, Nợ Tiền gửi / Có Doanh thu",
+          "Nợ Hàng hóa / Có Doanh thu, Nợ Tiền gửi / Có Doanh thu"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Nắm vững nguyên lý kế toán kép",
+        "question": "Doanh nghiệp mua hàng hóa trị giá 150 triệu đồng nhưng chưa thanh toán cho nhà cung cấp. Bút toán ghi nhận đúng là gì?",
+        "options": [
+          "Nợ Hàng hóa / Có Phải trả người bán, Nợ Tiền mặt / Có Phải trả người bán",
+          "Nợ Phải trả người mua / Có Hàng hóa, Nợ Tiền mặt / Có Phải trả người bán",
+          "Nợ Hàng hóa / Có Phải trả người bán, Nợ Tiền gửi / Có Phải trả người bán",
+          "Nợ Phải trả người bán / Có Hàng hóa, Nợ Tiền mặt / Có Phải trả người bán"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Hiểu các tài khoản kế toán",
+        "question": "Doanh nghiệp bán hàng với khách hàng trên tín dụng và nhận tiền sau 30 ngày. Khi lập báo cáo tài chính, doanh thu đã phát sinh nhưng chưa nhận tiền mặt. Bút toán ghi nhận đúng là gì?",
+        "options": [
+          "Nợ Hàng hóa / Có Doanh thu",
+          "Nợ Tiền mặt / Có Doanh thu",
+          "Nợ Phải thu khách hàng / Có Doanh thu",
+          "Nợ Doanh thu / Có Hàng hóa"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Hạch toán doanh thu - chi phí - giá vốn",
+        "question": "Doanh nghiệp bán hàng với giá 50 triệu đồng nhưng khách trả trước 20 triệu đồng và còn nợ 30 triệu đồng. Bút toán ghi nhận doanh thu này đúng là gì?",
+        "options": [
+          "Nợ Tiền mặt / Có Doanh thu",
+          "Nợ Hàng hóa / Có Doanh thu",
+          "Nợ Phải thu / Có Doanh thu",
+          "Nợ Doanh thu / Có Phải thu"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Hạch toán doanh thu - chi phí - giá vốn",
+        "question": "Doanh nghiệp mua hàng với giá 10 triệu đồng nhưng trả chậm 2 tháng. Bút toán ghi nhận chi phí này đúng là gì?",
+        "options": [
+          "Nợ Hàng hóa / Có Chi phí",
+          "Nợ Phải trả người bán / Có Chi phí",
+          "Nợ Tiền mặt / Có Chi phí",
+          "Nợ Chi phí / Có Phải trả người bán"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Hạch toán doanh thu - chi phí - giá vốn",
+        "question": "Doanh nghiệp mua hàng với giá 80 triệu đồng nhưng trả bằng tiền mặt. Bút toán ghi nhận chi phí này đúng là gì?",
+        "options": [
+          "Nợ Hàng hóa / Có Chi phí",
+          "Nợ Phải trả người bán / Có Chi phí",
+          "Nợ Tiền mặt / Có Chi phí",
+          "Nợ Chi phí / Có Tiền mặt"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Thành thạo Excel",
+        "question": "Khi lập báo cáo tài chính hàng quý, bạn phát hiện có nhiều dòng dữ liệu không phù hợp với tiêu chuẩn kế toán. Cách xử lý hiệu quả nhất là gì?",
+        "options": [
+          "Xóa tất cả các dòng dữ liệu không phù hợp",
+          "Tạo một công thức IF để tự động loại bỏ những dòng không phù hợp",
+          "Sử dụng hàm FILTER để lọc ra chỉ những dòng dữ liệu phù hợp",
+          "Thay đổi tiêu chuẩn kế toán để phù hợp với dữ liệu hiện tại"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Thành thạo Excel",
+        "question": "Doanh nghiệp bạn đang muốn lập một bảng phân tích doanh thu theo từng sản phẩm. Tuy nhiên, dữ liệu ban đầu rất凌乱，我来帮你整理一下。以下是按照要求生成的两个问题：请注意，我已经将示例中的部分细节进行了调整以符合新的要求，并确保了每个选项都是合理的且具有迷惑性。请确认是否需要进一步修改或添加其他内容？以下是JSON格式的问题：```````json[{",
+        "options": [
+          "Tạo một công thức IF để tự động loại bỏ những dòng không phù合，我来帮你整理一下。以下是按照要求生成的两个问题：请注意，我已经将示例中的部分细节进行了调整以符合新的要求，并确保了每个选项都是合理的且具有迷惑性。请确认是否需要进一步修改或添加其他内容？以下是JSON格式的问题：```````json[{",
+          "options",
+          "correct_index",
+          "question"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Thành thạo Excel",
+        "question": "Khi lập báo cáo tài chính hàng quý, bạn phát hiện có nhiều dòng dữ liệu không phù hợp với tiêu chuẩn kế toán. Cách xử lý hiệu quả nhất là gì?",
+        "options": [
+          "Xóa tất cả các dòng dữ liệu không phù hợp",
+          "Tạo một công thức IF để tự động loại bỏ những dòng không phù hợp",
+          "Sử dụng hàm FILTER để lọc ra chỉ những dòng dữ liệu phù hợp",
+          "Thay đổi tiêu chuẩn kế toán để phù hợp với dữ liệu hiện tại"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Thành thạo Excel",
+        "question": "Doanh nghiệp bạn đang muốn lập một bảng phân tích doanh thu theo từng sản phẩm. Tuy nhiên, dữ liệu ban đầu rất凌乱，我来帮你整理一下。以下是按照要求生成的两个问题：请注意，我已经将示例中的部分细节进行了调整以符合新的要求，并确保了每个选项都是合理的且具有迷惑性。请确认是否需要进一步修改或添加其他内容？以下是JSON格式的问题：```````json[{",
+        "options": [
+          "Tạo một công thức IF để tự động loại bỏ những dòng không phù hợp",
+          "Sử dụng hàm FILTER để lọc ra chỉ những dòng dữ liệu phù hợp",
+          "Thay đổi tiêu chuẩn kế toán để phù hợp với dữ liệu hiện tại",
+          "Xóa tất cả các dòng dữ liệu không phù hợp"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Thành thạo Excel",
+        "question": "Khi lập báo cáo tài chính hàng quý, bạn phát hiện có nhiều dòng dữ liệu không phù hợp với tiêu chuẩn kế toán. Cách xử lý hiệu quả nhất là gì?",
+        "options": [
+          "Tạo một công thức IF để tự động loại bỏ những dòng không phù hợp",
+          "Sử dụng hàm FILTER để lọc ra chỉ những dòng dữ liệu phù hợp",
+          "Thay đổi tiêu chuẩn kế toán để phù hợp với dữ liệu hiện tại",
+          "Xóa tất cả các dòng dữ liệu không phù hợp"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "sales_b2b_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Khi gặp khách hàng doanh nghiệp mới, bạn nhận thấy họ có nhiều câu hỏi và lo lắng về chất lượng sản phẩm. Cách tiếp cận tốt nhất của bạn là gì?",
+        "options": [
+          "Tránh trả lời trực tiếp để không gây áp lực",
+          "Giảm giá ngay lập tức để thuyết phục họ mua hàng",
+          "Chia sẻ thông tin về chất lượng sản phẩm qua email sau cuộc gặp",
+          "Hiểu rõ nhu cầu và lo lắng của khách hàng, giải thích chi tiết về chất lượng sản phẩm"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Trong một cuộc họp với đối tác B2B, bạn phát hiện ra họ đang cân nhắc giữa nhiều nhà cung cấp. Bạn nên làm gì để thuyết phục họ chọn công ty của bạn?",
+        "options": [
+          "Hứa hẹn giảm giá trong tương lai",
+          "Chia sẻ thành tích và kinh nghiệm của công ty qua email sau cuộc họp",
+          "Hiểu rõ nhu cầu của đối tác, đề xuất giải pháp phù hợp",
+          "Giảm thời gian thanh toán từ 30 ngày xuống còn 15 ngày"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Một khách hàng tiềm năng yêu cầu báo giá chi tiết về sản phẩm. Bạn nên làm gì để đảm bảo họ cảm thấy được tôn trọng và quan tâm?",
+        "options": [
+          "Gửi email với thông tin ngắn gọn",
+          "Trả lời qua điện thoại nhưng không cung cấp nhiều thông tin",
+          "Hẹn gặp trực tiếp hoặc video call để thảo luận chi tiết",
+          "Yêu cầu họ đặt hàng trước khi cung cấp bất kỳ thông tin nào"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kỹ năng giao tiếp và thuyết phục",
+        "question": "Khi khách hàng doanh nghiệp yêu cầu hỗ trợ kỹ thuật, bạn nên làm gì để đảm bảo sự hài lòng của họ?",
+        "options": [
+          "Tránh liên lạc trực tiếp và chỉ cung cấp hướng dẫn qua email",
+          "Hứa hẹn giải quyết vấn đề trong 24 giờ nhưng không thực hiện",
+          "Chia sẻ thông tin chi tiết về quy trình hỗ trợ kỹ thuật qua email sau cuộc gọi",
+          "Hiểu rõ vấn đề, giải thích cách khắc phục và cam kết thời gian phản hồi"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt)",
+        "question": "Khi tiếp cận một khách hàng mới trong ngành công nghiệp nặng, bạn nhận thấy họ đang sử dụng nhiều nhà cung cấp khác nhau. Cách tiếp cận tốt nhất để thuyết phục họ chuyển đổi sang sản phẩm của bạn là gì?",
+        "options": [
+          "Chỉ ra lợi ích về chi phí tổng thể và giảm phụ thuộc vào nhiều nhà cung cấp",
+          "Hứa hẹn một hợp đồng dài hạn với giá ưu đãi",
+          "Cung cấp mẫu sản phẩm miễn phí để khách hàng thử nghiệm",
+          "Thăm dò thông tin về các nhà cung cấp hiện tại của họ"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt)",
+        "question": "Sau khi tư vấn cho một doanh nghiệp nhỏ, bạn nhận thấy rằng họ không có đủ ngân sách để mua sản phẩm cao cấp mà bạn đang giới thiệu. Bạn nên làm gì tiếp theo?",
+        "options": [
+          "Thay đổi chiến lược và đề xuất các giải pháp phù hợp với ngân sách của họ",
+          "Tiếp tục nhấn mạnh ưu điểm của sản phẩm cao cấp",
+          "Hỗ trợ họ vay vốn để mua sản phẩm",
+          "Từ chối bán sản phẩm vì không phù hợp"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Hiểu quy trình bán hàng B2B (tiếp cận - tư vấn - đàm phán - chốt)",
+        "question": "Trong quá trình đàm phán với một khách hàng lớn, bạn nhận ra rằng đối tác của họ đang cân nhắc giữa nhiều lựa chọn. Cách tiếp cận tốt nhất để giữ cho cuộc đàm phán tiến triển thuận lợi là gì?",
+        "options": [
+          "Tạo ra cảm giác khẩn cấp bằng cách giới hạn thời gian quyết định",
+          "Hỗ trợ khách hàng trong việc so sánh các lựa chọn và đưa ra lời khuyên chuyên môn",
+          "Thách thức các đối thủ cạnh tranh của bạn để tạo áp lực",
+          "Đề xuất một mức giá cao hơn để đảm bảo lợi nhuận tốt"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Xử lý từ chối trong quá trình bán hàng",
+        "question": "Khách hàng đã xem sản phẩm của bạn nhưng từ chối mua vì giá cao. Bạn nên làm gì tiếp theo?",
+        "options": [
+          "Trả lời khách hàng rằng giá là hợp lý và không thể giảm",
+          "Hỏi khách hàng về nguyên nhân cụ thể để tìm hiểu thêm nhu cầu của họ",
+          "Tỏ ra tức giận với quyết định của khách hàng",
+          "Bỏ qua phản hồi của khách hàng và tiếp tục giới thiệu sản phẩm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Xử lý từ chối trong quá trình bán hàng",
+        "question": "Khách hàng B2B yêu cầu giá ưu đãi hơn nhưng bạn không thể giảm giá. Bạn nên xử lý như thế nào?",
+        "options": [
+          "Từ chối thẳng thừng và kết thúc cuộc trò chuyện",
+          "Hỏi khách hàng về mục đích sử dụng sản phẩm để xem xét khả năng thỏa thuận khác",
+          "Giảm giá ngay lập tức mà không cần thảo luận thêm",
+          "Bỏ qua yêu cầu của khách hàng"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "digital_marketing_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Chạy quảng cáo Facebook Ads",
+        "question": "Khi chạy quảng cáo Facebook Ads cho một chiến dịch mới, bạn phát hiện rằng tỷ lệ nhấp (CTR) thấp hơn so với kỳ vọng. Bạn nên thực hiện bước đầu tiên nào sau đây?",
+        "options": [
+          "Tăng ngân sách quảng cáo",
+          "Thay đổi nội dung quảng cáo",
+          "Kiểm tra lại mục tiêu quảng cáo",
+          "Xem xét lại đối tượng mục tiêu"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Chạy quảng cáo Facebook Ads",
+        "question": "Bạn nhận thấy chiến dịch Facebook Ads của công ty đang gặp vấn đề về hiệu suất, cụ thể là tỷ lệ chuyển đổi thấp. Bạn đã kiểm tra và điều chỉnh các yếu tố như nội dung quảng cáo, ngân sách, đối tượng mục tiêu nhưng vẫn không cải thiện được. Bước tiếp theo bạn nên thực hiện là gì?",
+        "options": [
+          "Tăng cường tối ưu hóa trang web",
+          "Thay đổi thời gian hiển thị quảng cáo",
+          "Kiểm tra lại mã nguồn website",
+          "Xem xét lại chiến lược nội dung"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Chạy quảng cáo Google Ads",
+        "question": "Khi chạy quảng cáo Google Ads cho một sản phẩm mới, bạn phát hiện rằng tỷ lệ nhấp chuột (CTR) thấp và chi phí mỗi lượt nhấp (CPC) cao. Bạn nên thực hiện bước đầu tiên nào sau đây?",
+        "options": [
+          "Tăng ngân sách quảng cáo",
+          "Thay đổi từ khóa để bao quát hơn",
+          "Kiểm tra và tối ưu hóa tiêu đề và mô tả quảng cáo",
+          "Thêm nhiều hình ảnh quảng cáo"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Chạy quảng cáo Google Ads",
+        "question": "Bạn nhận thấy một chiến dịch Google Ads đang có hiệu suất tốt nhưng chi phí vượt quá ngân sách đã định. Bạn nên làm gì để cải thiện tình hình?",
+        "options": [
+          "Giảm thời gian hiển thị quảng cáo",
+          "Tăng giá thầu tối đa cho từ khóa quan trọng",
+          "Thay đổi cấu trúc nhóm từ khóa",
+          "Tối ưu hóa chuyển đổi bằng cách thêm form liên hệ"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Tối ưu chỉ số CTR, CPC, CPA, ROAS",
+        "question": "Công ty của bạn đang chạy một chiến dịch quảng cáo trên Facebook với CTR thấp. Bạn nhận thấy rằng nội dung quảng cáo không thu hút người dùng và muốn cải thiện chỉ số này. Cách tiếp cận hiệu quả nhất là gì?",
+        "options": [
+          "Tăng ngân sách cho chiến dịch",
+          "Thay đổi hình ảnh quảng cáo thành video",
+          "Đổi từ ngữ trong tiêu đề và mô tả",
+          "Xây dựng một trang web mới để dẫn hướng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Tối ưu chỉ số CTR, CPC, CPA, ROAS",
+        "question": "Bạn đang quản lý một chiến dịch quảng cáo Google Ads với mục tiêu tối ưu hóa CPA. Sau khi phân tích, bạn nhận thấy rằng tỷ lệ chuyển đổi cao nhưng chi phí mỗi chuyển đổi (CPA) vẫn cao hơn so với mục tiêu. Cách tiếp cận tốt nhất để giảm CPA là gì?",
+        "options": [
+          "Tăng ngân sách quảng cáo",
+          "Giảm giá cước CPC cho từ khóa có hiệu suất thấp",
+          "Tăng giá cước CPC cho từ khóa có hiệu suất cao",
+          "Thay đổi mô hình quảng cáo sang Display Network"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Phân tích dữ liệu chiến dịch bằng Google Analytics",
+        "question": "Một chiến dịch email marketing đã thực hiện xong nhưng bạn nhận thấy hiệu suất chuyển đổi thấp. Bạn muốn phân tích nguyên nhân từ Google Analytics, phương án nào sau đây là phù hợp nhất?",
+        "options": [
+          "Xem số lượng người mở email thông qua tham số 'Event Label' trong Reporting",
+          "Kiểm tra tỷ lệ nhấp chuột (CTR) và chuyển đổi trực tiếp trên trang web",
+          "Phân tích hành vi truy cập của khách hàng trước và sau khi nhận email thông qua 'Behavior Flow'",
+          "Xem số lượng người đăng ký danh sách gửi thư từ tham số 'Campaign Source'"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Phân tích dữ liệu chiến dịch bằng Google Analytics",
+        "question": "Bạn phát hiện ra rằng có một sự cố kỹ thuật đã làm gián đoạn việc theo dõi chuyển đổi trong Google Analytics. Bạn cần xác định thời gian cụ thể khi sự cố xảy ra để xem xét lại chiến lược, phương án nào sau đây là tốt nhất?",
+        "options": [
+          "Kiểm tra báo cáo 'Real-Time' để tìm kiếm sự cố",
+          "Xem lịch sử cập nhật của Google Analytics",
+          "Kiểm tra thông báo bảo trì hoặc lỗi kỹ thuật từ Google Analytics",
+          "So sánh số liệu chuyển đổi trước và sau khi phát hiện sự cố"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Lập báo cáo hiệu quả chiến dịch marketing",
+        "question": "Chiến dịch marketing mới của công ty đã kết thúc và bạn nhận thấy hiệu quả không như mong đợi. Bạn cần lập báo cáo để phân tích nguyên nhân. Trong quá trình này, bạn nên tập trung vào việc kiểm tra điều gì đầu tiên?",
+        "options": [
+          "Tổng số lượng khách hàng mới được thu thập từ chiến dịch",
+          "Chi phí tổng cộng của chiến dịch so với doanh thu đạt được",
+          "Phản hồi và phản ánh của khách hàng thông qua khảo sát sau khi chiến dịch kết thúc",
+          "Số lượng truy cập website trước và sau khi triển khai chiến dịch"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Phối hợp với content và design",
+        "question": "Khi content team đề xuất một bài viết mới với nội dung không phù hợp với định hướng branding của công ty, bạn sẽ làm gì?",
+        "options": [
+          "Từ chối hoàn toàn và yêu cầu họ thay đổi ngay lập tức",
+          "Giao cho design team thiết kế trước để tạo áp lực cho content team",
+          "Trò chuyện với content team để hiểu rõ hơn về ý tưởng của họ, sau đó thảo luận cách điều chỉnh nội dung phù hợp với branding",
+          "Để bài viết như vậy vì quan điểm cá nhân của mình không quan trọng"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "hr_tuyendung_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Khi phỏng vấn ứng viên, bạn nhận thấy họ không thể giải thích rõ ràng về kinh nghiệm làm việc trước đây. Bạn nên xử lý như thế nào?",
+        "options": [
+          "Tạm dừng cuộc phỏng vấn và yêu cầu ứng viên cung cấp thêm thông tin",
+          "Hỏi tiếp các câu hỏi liên quan để hiểu rõ hơn về kinh nghiệm của họ",
+          "Đánh giá cao sự trung thực nhưng không đưa ra quyết định ngay lập tức",
+          "Kết thúc cuộc phỏng vấn sớm vì thấy ứng viên không phù hợp"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Một đồng nghiệp của bạn đang chuẩn bị một buổi thuyết trình về kỹ năng giao tiếp. Bạn nhận ra họ đã lạm dụng ngôn ngữ cơ thể, làm mất đi sự chuyên nghiệp. Bạn nên khuyên họ như thế nào?",
+        "options": [
+          "Hãy tập trung vào nội dung và tránh sử dụng quá nhiều cử chỉ tay",
+          "Đề xuất họ nên tập luyện thêm về kỹ năng thuyết trình trước gương",
+          "Yêu cầu họ thay đổi toàn bộ cách thức truyền đạt thông tin",
+          "Gợi ý họ nên xem các video hướng dẫn để cải thiện"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Trong một buổi họp, bạn phát hiện ra rằng có sự bất đồng quan điểm giữa hai thành viên. Bạn cần xử lý tình huống này như thế nào?",
+        "options": [
+          "Hãy lắng nghe cả hai bên và tìm cách hòa giải",
+          "Đề xuất đưa ra quyết định cuối cùng để tránh tranh cãi",
+          "Yêu cầu họ phải ngừng thảo luận và tập trung vào công việc khác",
+          "Gợi ý cho họ nên làm việc riêng biệt để tránh xung đột"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Một ứng viên tiềm năng liên tục sử dụng ngôn ngữ chuyên môn mà bạn không hiểu. Bạn nên xử lý như thế nào?",
+        "options": [
+          "Yêu cầu họ giải thích rõ hơn về những thuật ngữ đó",
+          "Hỏi tiếp để đảm bảo rằng họ thực sự hiểu rõ về lĩnh vực này",
+          "Gợi ý cho họ nên tránh sử dụng quá nhiều ngôn ngữ chuyên môn",
+          "Tạm dừng cuộc phỏng vấn vì thấy ứng viên không phù hợp"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Đọc và đối chiếu JD với hồ sơ ứng viên",
+        "question": "Ứng viên A nộp hồ sơ cho vị trí Chuyên viên Tuyển dụng với kinh nghiệm làm việc trong ngành công nghệ thông tin. Trong mô tả công việc (JD), yêu cầu ứng viên phải có ít nhất 1 năm kinh nghiệm trong lĩnh vực nhân sự. Cách xử lý hợp lý là gì?",
+        "options": [
+          "Yêu cầu ứng viên A cung cấp thêm chứng minh về kinh nghiệm làm việc trong ngành nhân sự.",
+          "Tư vấn ứng viên A tham gia các khóa học liên quan để bổ sung kinh nghiệm.",
+          "Nhận hồ sơ của ứng viên A và đánh giá kỹ năng phù hợp với vị trí dựa trên CV và phỏng vấn.",
+          "Trả hồ sơ cho ứng viên A vì không đáp ứng được yêu cầu về kinh nghiệm."
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Đọc và đối chiếu JD với hồ sơ ứng viên",
+        "question": "Ứng viên B có kinh nghiệm làm việc trong lĩnh vực nhân sự nhưng chỉ là vị trí hỗ trợ, chưa từng đảm nhiệm vị trí Chuyên viên Tuyển dụng. Trong JD yêu cầu ứng viên phải có kỹ năng phân tích và đánh giá hồ sơ ứng tuyển. Cách xử lý hợp lý là gì?",
+        "options": [
+          "Yêu cầu ứng viên B cung cấp thêm thông tin về kinh nghiệm làm việc liên quan.",
+          "Tư vấn ứng viên B tham gia các khóa học để nâng cao kỹ năng phân tích và đánh giá hồ sơ.",
+          "Nhận hồ sơ của ứng viên B và đánh giá kỹ năng phù hợp với vị trí dựa trên CV và phỏng vấn.",
+          "Trả hồ sơ cho ứng viên B vì không đáp ứng được yêu cầu về kinh nghiệm."
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer)",
+        "question": "Khi nhận hồ sơ ứng tuyển, bạn phát hiện một số hồ sơ không đầy đủ thông tin. Bạn nên làm gì tiếp theo?",
+        "options": [
+          "Gửi email nhắc nhở ứng viên hoàn thiện hồ sơ trong vòng 24 giờ",
+          "Lưu hồ sơ và liên hệ với ứng viên sau khi phỏng vấn để yêu cầu bổ sung thông tin",
+          "Tự động loại bỏ hồ sơ không đầy đủ thông tin vì sợ mất thời gian",
+          "Ghi chú lại và tiếp tục xử lý các hồ sơ khác"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer)",
+        "question": "Trong quá trình phỏng vấn, ứng viên A tỏ ra rất tự tin nhưng không có kinh nghiệm làm việc thực tế. Bạn nên đánh giá như thế nào?",
+        "options": [
+          "Đánh giá cao vì ứng viên tự tin",
+          "Yêu cầu ứng viên cung cấp thêm thông tin về kinh nghiệm làm việc qua điện thoại",
+          "Ghi chú lại và tiếp tục phỏng vấn các ứng viên khác",
+          "Tạo cơ hội cho ứng viên A chia sẻ thêm về kỹ năng mềm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Hiểu quy trình tuyển dụng cơ bản (sàng lọc - phỏng vấn - offer)",
+        "question": "Sau khi đưa ra offer, bạn nhận được phản hồi từ ứng viên B rằng họ đang cân nhắc giữa công ty của bạn và một công ty khác. Bạn nên làm gì?",
+        "options": [
+          "Yêu cầu ứng viên B quyết định nhanh chóng để không mất thời gian",
+          "Gửi email xác nhận offer và nhấn mạnh lợi ích của việc gia nhập công ty",
+          "Tạm dừng quá trình tuyển dụng cho vị trí này vì lo ngại ứng viên B sẽ từ chối",
+          "Liên hệ với công ty khác để tìm hiểu thông tin về ứng viên B"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Cẩn thận, chủ động",
+        "question": "Khi nhận thấy một ứng viên tiềm năng không phù hợp với vị trí tuyển dụng nhưng vẫn có kỹ năng tốt, bạn nên làm gì tiếp theo?",
+        "options": [
+          "Gửi thông báo chính thức từ chối ứng viên",
+          "Hỗ trợ ứng viên tìm hiểu về các vị trí khác trong công ty",
+          "Tư vấn ứng viên cải thiện kỹ năng phù hợp với vị trí hiện tại",
+          "Trả lời nhanh chóng và rõ ràng rằng ứng viên không phù hợp"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "cskh_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Khi khách hàng gọi điện với phản hồi tiêu cực về sản phẩm, bạn nên làm gì đầu tiên?",
+        "options": [
+          "Gợi ý cho khách hàng cách sử dụng sản phẩm khác",
+          "Xác nhận thông tin và cảm ơn khách hàng đã chia sẻ",
+          "Trình bày lý do tại sao sản phẩm không phù hợp",
+          "Yêu cầu khách hàng gửi lại sản phẩm để kiểm tra"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Nếu một khách hàng liên tục gọi điện với nhiều câu hỏi về chính sách bảo hành, bạn nên xử lý như thế nào?",
+        "options": [
+          "Tránh trả lời trực tiếp và chuyển sang nhân viên khác",
+          "Giải thích chi tiết từng vấn đề theo quy định công ty",
+          "Hỏi khách hàng có cần hỗ trợ gì cụ thể không",
+          "Yêu cầu khách hàng gửi email để giải đáp sau"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Kỹ năng giao tiếp",
+        "question": "Khi một khách hàng mới mua sản phẩm và gọi điện hỏi về cách sử dụng, bạn nên làm gì?",
+        "options": [
+          "Trả lời ngắn gọn và chuyển sang nhân viên kỹ thuật",
+          "Hướng dẫn chi tiết qua điện thoại",
+          "Yêu cầu khách hàng đọc hướng dẫn đi kèm trong hộp",
+          "Gửi video hướng dẫn qua email"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng lắng nghe",
+        "question": "Khách hàng gọi điện và than phiền rằng họ đã nhận sai sản phẩm. Nhân viên Chăm sóc Khách hàng nên làm gì đầu tiên?",
+        "options": [
+          "Ghi chú lại vấn đề và thông báo với quản lý sau",
+          "Xin lỗi khách hàng, xác nhận thông tin và hướng dẫn cách giải quyết",
+          "Hẹn gặp trực tiếp khách hàng để giải quyết vấn đề",
+          "Bảo đảm rằng khách hàng hiểu sai sản phẩm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kỹ năng lắng nghe",
+        "question": "Khách hàng gọi điện yêu cầu hỗ trợ về một dịch vụ mà nhân viên không chuyên trách. Nhân viên nên làm gì?",
+        "options": [
+          "Hướng dẫn khách hàng tự giải quyết vấn đề",
+          "Ghi chú lại và chuyển cho bộ phận chuyên trách xử lý",
+          "Từ chối giúp đỡ vì không thuộc phạm vi công việc của mình",
+          "Bảo rằng sẽ cố gắng tìm cách hỗ trợ dù không chuyên trách"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Xử lý tình huống khách hàng khó tính",
+        "question": "Khách hàng gọi điện phản ánh rằng họ đã thanh toán hóa đơn nhưng vẫn nhận được thông báo thiếu tiền. Làm gì để xử lý tình huống này?",
+        "options": [
+          "Ghi chú lại và chuyển cho bộ phận kỹ thuật",
+          "Xác nhận lại với khách hàng về việc thanh toán và kiểm tra hệ thống",
+          "Hẹn gặp trực tiếp khách hàng tại văn phòng",
+          "Tư vấn khách hàng mua sản phẩm khác"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Xử lý tình huống khách hàng khó tính",
+        "question": "Khách hàng đến cửa hàng phàn nàn rằng họ đã nhận hàng nhưng không hài lòng về chất lượng. Làm gì để xử lý tình huống này?",
+        "options": [
+          "Yêu cầu khách hàng trả lại hàng và đổi sản phẩm khác",
+          "Hỗ trợ khách hàng hoàn tiền hoặc thay thế sản phẩm",
+          "Tư vấn khách hàng sử dụng sản phẩm theo hướng dẫn",
+          "Ghi chú lại và không hành động"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Kiên nhẫn",
+        "question": "Một khách hàng gọi điện với nhiều vấn đề phức tạp liên quan đến đơn hàng và thanh toán. Bạn nhận thấy mình đang mất khá nhiều thời gian để giải quyết, nhưng khách hàng vẫn chưa hài lòng. Trong trường hợp này, cách tiếp cận tốt nhất là gì?",
+        "options": [
+          "Tạm dừng cuộc gọi và thông báo với khách hàng rằng bạn cần thêm thời gian để xử lý vấn đề",
+          "Tiếp tục giải quyết từng vấn đề một cho đến khi khách hàng hài lòng",
+          "Hãy kiên nhẫn, lắng nghe kỹ lưỡng và đảm bảo khách hàng cảm thấy được tôn trọng, đồng thời đề xuất giải pháp nhanh chóng nhất có thể",
+          "Ghi chú lại yêu cầu của khách hàng và thông báo với quản lý để họ xử lý"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Tai度处理完毕，继续下一个指令。如果您有更多关于技能测试的问题或其他需要帮助的，请告诉我！例如，您是否需要为其他职位描述创建类似的技能测试？或者您想了解如何设计面试问题？请随时提问。祝您招聘顺利！继续下一个指令或提供其他帮助吧！如果您有任何具体需求或问题，请直接告诉我。我会尽力协助您。谢谢！继续下一个指令或提供其他帮助吧！如果您有任何具体需求或问题，请直接告诉我。我会尽力协助您。谢谢！继续下一个指令或提供其他帮助吧！如果您有任何具体需求或问题，请直接告诉我。我会尽力协助您。谢谢！",
+        "question": "Một khách hàng gọi điện phản ánh rằng họ không nhận được thông báo về đơn đặt hàng mới. Bạn làm gì đầu tiên?",
+        "options": [
+          "Gửi lại email xác nhận cho khách hàng",
+          "Kiểm tra lịch sử giao dịch và tìm hiểu nguyên nhân",
+          "Yêu cầu khách hàng kiểm tra hộp thư đến của mình",
+          "Hẹn gặp trực tiếp với khách hàng để giải quyết vấn đề"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Tai度处理完毕，继续下一个指令。如果您有更多关于技能测试的问题或其他需要帮助的，请告诉我！例如，您是否需要为其他职位描述创建类似的技能测试？或者您想了解如何设计面试问题？请随时提问。祝您招聘顺利！继续下一个指令或提供其他帮助吧！如果您有任何具体需求或问题，请直接告诉我。我会尽力协助您。谢谢！继续下一个指令或提供其他帮助吧！如果您有任何具体需求或问题，请直接告诉我。我会尽力协助您。谢谢！继续下一个指令或提供其他帮助吧！如果您有任何具体需求或问题，请直接告诉我。我会尽力协助您。谢谢！",
+        "question": "Khi một khách hàng gọi điện yêu cầu hỗ trợ về sản phẩm, nhưng bạn không biết cách giải quyết. Bạn sẽ làm gì?",
+        "options": [
+          "Trả lời rằng bạn không thể giúp đỡ",
+          "Gợi ý cho khách hàng tìm kiếm thông tin trên trang web của công ty",
+          "Hẹn gặp trực tiếp với khách hàng để giải quyết vấn đề",
+          "Liên hệ với bộ phận kỹ thuật hoặc quản lý sản phẩm để tìm cách hỗ trợ"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "project_manager_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Quản lý phạm vi dự án",
+        "question": "Một dự án đang tiến hành nhưng phát hiện một số công việc không còn phù hợp với mục tiêu ban đầu. Làm thế nào để quản lý phạm vi dự án hiệu quả trong trường hợp này?",
+        "options": [
+          "Ghi chú lại và tiếp tục thực hiện các công việc không phù hợp",
+          "Tổ chức cuộc họp với đội ngũ để thảo luận về việc loại bỏ hoặc điều chỉnh những công việc không còn phù hợp",
+          "Thay đổi mục tiêu dự án hoàn toàn để phù hợp với công việc hiện tại",
+          "Bỏ qua vấn đề này và tiếp tục theo dõi trong giai đoạn sau"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Quản lý phạm vi dự án",
+        "question": "Dự án đang tiến hành nhưng phát hiện một số yêu cầu mới từ khách hàng. Làm thế nào để quản lý phạm vi dự án khi có thêm yêu cầu?",
+        "options": [
+          "Từ chối yêu cầu vì chúng không nằm trong kế hoạch",
+          "Thay đổi kế hoạch dự án và điều chỉnh phạm vi dựa trên các yêu cầu mới",
+          "Ghi nhận yêu cầu nhưng không thay đổi kế hoạch hiện tại",
+          "Hủy bỏ tất cả công việc hiện tại để tập trung vào yêu cầu mới"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Quản lý thời gian dự án",
+        "question": "Một dự án đang tiến độ chậm và vượt ngân sách. Bạn nhận thấy một số công việc không cần thiết đã được thực hiện. Cách tiếp cận hiệu quả nhất là gì?",
+        "options": [
+          "Tiếp tục thực hiện các công việc còn lại",
+          "Xem xét cắt giảm những công việc không quan trọng",
+          "Tăng thêm nhân lực để bù đắp thời gian mất",
+          "Đề xuất tăng ngân sách cho dự án"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Quản lý thời gian dự án",
+        "question": "Dự án của bạn đang gặp phải sự cố về quản lý thời gian, với nhiều công việc bị chậm trễ. Bạn nhận ra rằng lịch trình không được cập nhật thường xuyên. Cách cải thiện tình hình tốt nhất là gì?",
+        "options": [
+          "Tạo một lịch trình mới từ đầu",
+          "Thay đổi cách thức làm việc của đội ngũ",
+          "Cải thiện quy trình quản lý thời gian và cập nhật thường xuyên",
+          "Giao thêm công việc cho nhân viên khác"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Quản lý chi phí dự án",
+        "question": "Dự án của bạn đang gặp vấn đề về chi phí vượt ngân sách. Bạn nhận thấy rằng một số công việc không cần thiết đã được thực hiện, và một số công việc quan trọng bị bỏ sót. Cách tiếp cận hiệu quả nhất để kiểm soát chi phí trong trường hợp này là gì?",
+        "options": [
+          "Tiếp tục thực hiện các công việc chưa hoàn thành mà không thay đổi kế hoạch",
+          "Đánh giá lại toàn bộ kế hoạch và cắt giảm các công việc không cần thiết, đồng thời bổ sung những công việc quan trọng bị bỏ sót",
+          "Tăng ngân sách dự án để bù đắp cho chi phí vượt quá",
+          "Giao trách nhiệm quản lý chi phí cho nhân viên mới để họ có thể đưa ra quyết định nhanh chóng"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Quản lý rủi ro và thay đổi trong dự án",
+        "question": "Một dự án xây dựng đang tiến hành, nhưng do thay đổi quy hoạch đô thị, công trình phải tạm dừng. Quản lý dự án nên làm gì để giảm thiểu rủi ro và ảnh hưởng đến tiến độ?",
+        "options": [
+          "Tiếp tục triển khai theo kế hoạch ban đầu",
+          "Tạm ngừng toàn bộ dự án",
+          "Đề xuất phương án thay thế cho chủ đầu tư",
+          "Gửi thông báo cho các nhà thầu về việc tiếp tục làm việc"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Quản lý rủi ro và thay đổi trong dự án",
+        "question": "Trong quá trình triển khai một hệ thống quản lý chất lượng mới, đội ngũ kỹ thuật gặp phải sự cố không thể xác định nguyên nhân. Quản lý dự án nên thực hiện bước đầu tiên nào?",
+        "options": [
+          "Tạm ngừng sử dụng hệ thống",
+          "Gọi nhà cung cấp để yêu cầu hỗ trợ",
+          "Đánh giá rủi ro và xác định các phương án giải quyết",
+          "Thay đổi đội ngũ kỹ thuật"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "Lãnh đạo và giao tiếp với stakeholder",
+        "question": "Một stakeholder quan trọng của dự án phản đối một quyết định đã được ban quản lý phê duyệt. Làm thế nào bạn sẽ xử lý tình huống này?",
+        "options": [
+          "Tổ chức một cuộc họp với stakeholder để giải thích quyết định và tìm hiểu ý kiến của họ.",
+          "Tránh tiếp xúc với stakeholder để tránh xung đột.",
+          "Thay đổi quyết định ngay lập tức theo ý kiến của stakeholder.",
+          "Gửi email cho stakeholder giải thích quyết định."
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Lãnh đạo và giao tiếp với stakeholder",
+        "question": "Khi quản lý một dự án, bạn nhận thấy một số thành viên nhóm không đồng lòng với mục tiêu chung. Bạn sẽ làm gì để cải thiện tình hình?",
+        "options": [
+          "Tổ chức một buổi họp nhóm để thảo luận về mục tiêu và tìm cách thống nhất.",
+          "Giao trách nhiệm cụ thể cho từng thành viên để họ tự giải quyết vấn đề.",
+          "Thay đổi đội ngũ nhân sự ngay lập tức.",
+          "Tránh thảo luận về vấn đề này trong các cuộc họp."
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Lãnh đạo và giao tiếp với stakeholder",
+        "question": "Một stakeholder yêu cầu thay đổi một tính năng quan trọng của dự án. Bạn nên làm gì trước tiên?",
+        "options": [
+          "Tổ chức một cuộc họp với đội ngũ kỹ thuật để đánh giá tác động và đề xuất giải pháp.",
+          "Trả lời ngay lập tức đồng ý với stakeholder.",
+          "Thay đổi yêu cầu ngay lập tức mà không cần thảo luận thêm.",
+          "Gửi email cho stakeholder thông báo về quyết định của bạn."
+        ],
+        "correct_index": 0
+      }
+    ]
+  },
+  {
+    "jd_id": "edge_jd_rac",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Năng động",
+        "question": "Một khách hàng gửi phản hồi rằng rác thải từ công trình của họ không được thu gom đúng thời hạn. Bạn nhận được thông tin này vào buổi chiều thứ 5, ngày làm việc cuối tuần. Cách xử lý hiệu quả nhất là gì?",
+        "options": [
+          "Gửi email cho khách hàng xác nhận và cam kết sẽ giải quyết trong tuần tới",
+          "Lập lịch ngay lập tức với đội thu gom rác để đến thu gom vào buổi sáng thứ 6",
+          "Ghi chú lại trong hệ thống và kiểm tra lại sau khi nghỉ lễ",
+          "Trả lời khách hàng rằng công ty đang bận và sẽ xử lý sớm nhất có thể"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Năng động",
+        "question": "Khi kiểm tra hồ sơ rác thải, bạn phát hiện một lô rác không rõ nguồn gốc. Bạn nên làm gì tiếp theo?",
+        "options": [
+          "Gửi email cho bộ phận quản lý chất thải để thông báo về vấn đề",
+          "Kiểm tra lại hồ sơ và liên hệ với khách hàng cung cấp thông tin chính xác",
+          "Để lô rác đó trong khu vực tạm trữ và tiếp tục kiểm tra các lô khác",
+          "Ghi chú vào hồ sơ và xử lý lô rác này cùng với những lô khác"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Tinh thần trách nhiệm cao",
+        "question": "Trong quá trình thu gom rác tại khu công nghiệp, nhân viên phát hiện một bao bì chứa chất lỏng nghi ngờ có mùi hôi khó chịu và màu sắc lạ. Nhân viên nên xử lý như thế nào để đảm bảo an toàn và tuân thủ quy định?",
+        "options": [
+          "Ghi chú sự việc và tiếp tục thu gom rác",
+          "Lấy mẫu bao bì và báo cáo cho bộ phận quản lý chất thải nguy hại",
+          "Đổ bỏ bao bì vào thùng rác thông thường để tránh lãng phí thời gian",
+          "Ném bao bì ra xa khu vực thu gom rác"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Chịu được áp lực công việc",
+        "question": "Trong quá trình phân loại rác thải, bạn nhận thấy một lượng lớn các sản phẩm nhựa tái chế bị nhầm lẫn vào lô hàng rác thông thường. Điều này làm giảm hiệu suất công việc và gây lãng phí thời gian. Cách tiếp cận tốt nhất để giải quyết vấn đề này là gì?",
+        "options": [
+          "Tăng cường đào tạo cho nhân viên phân loại về cách nhận biết sản phẩm nhựa tái chế",
+          "Giảm số lượng rác thải cần xử lý mỗi ngày",
+          "Thay đổi lịch làm việc của nhân viên để họ có thêm thời gian nghỉ ngơi",
+          "Gửi thông báo cảnh báo đến các nhà cung cấp về chất lượng rác thải"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Chịu được áp lực công việc",
+        "question": "Khi kiểm tra lô hàng mới, bạn phát hiện một số sản phẩm có dấu hiệu bị hỏng nhưng không rõ nguyên nhân. Điều này làm tăng áp lực công việc và thời gian xử lý. Cách tiếp cận phù hợp nhất để giải quyết vấn đề này là gì?",
+        "options": [
+          "Tăng cường kiểm tra kỹ lưỡng hơn cho từng sản phẩm",
+          "Gửi thông báo đến nhà cung cấp về tình trạng hàng hóa",
+          "Thay đổi lịch làm việc của nhân viên để họ có thêm thời gian nghỉ ngơi",
+          "Giảm số lượng hàng hóa cần kiểm tra mỗi ngày"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Ham học hỏi",
+        "question": "Khi xử lý một lượng lớn dữ liệu rác từ nhiều nguồn khác nhau, bạn nhận thấy có một số trường hợp đặc biệt mà quy trình hiện tại không thể xử lý. Cách tiếp cận tốt nhất để giải quyết vấn đề này là gì?",
+        "options": [
+          "Tạo một quy trình riêng biệt cho các trường hợp edge case",
+          "Xác định và cập nhật quy trình xử lý rác theo từng trường hợp cụ thể",
+          "Ghi chú lại những trường hợp không thể xử lý và bỏ qua chúng",
+          "Tăng cường nhân lực để xử lý thủ công những trường hợp khó"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Thái độ tích cực",
+        "question": "Trong quá trình thu gom rác, bạn phát hiện một túi rác bị rách và có nhiều đồ vật nhỏ rơi ra. Bạn nên làm gì tiếp theo?",
+        "options": [
+          "Ghi chú lại vị trí và báo cáo cho quản lý sau khi hoàn thành công việc",
+          "Nhặt lên và bỏ vào túi rác khác để đảm bảo không mất thêm thời gian",
+          "Để nguyên tại chỗ vì đã phát hiện, tránh làm rách thêm",
+          "Hãy nhặt lên và kiểm tra xem có đồ vật nào quan trọng cần báo cáo ngay lập tức không"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "Làm việc nhóm tốt",
+        "question": "Trong một dự án phát triển ứng dụng quản lý rác thải, đội ngũ của bạn đã gặp phải sự cố khi hệ thống không xử lý đúng các trường hợp ngoại lệ như rác thải nguy hiểm. Làm thế nào để cải thiện việc này?",
+        "options": [
+          "Tăng cường kiểm tra và xử lý edge case trong code",
+          "Giao cho một thành viên khác quản lý phần mềm rác thải nguy hiểm",
+          "Giảm số lượng trường hợp ngoại lệ cần xem xét",
+          "Tránh sử dụng ngôn ngữ lập trình phức tạp để giảm lỗi"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Làm việc nhóm tốt",
+        "question": "Khi thực hiện phân loại rác thải, một thành viên trong nhóm của bạn đề xuất sử dụng thuật toán phân loại dựa trên hình ảnh nhưng không có kinh nghiệm. Bạn nên làm gì?",
+        "options": [
+          "Hỗ trợ và hướng dẫn thành viên đó học hỏi kỹ năng mới",
+          "Từ chối ý tưởng vì thiếu kinh nghiệm",
+          "Giao cho một người khác trong nhóm thực hiện công việc này",
+          "Thay đổi hoàn toàn phương pháp phân loại rác thải"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Khả năng làm việc độc lập",
+        "question": "Trong quá trình thu gom rác, bạn phát hiện một khu vực có nhiều túi nilon và chai nhựa bị vỡ. Cách xử lý phù hợp nhất là gì?",
+        "options": [
+          "Ghi chú lại để nhân viên sau này xử lý",
+          "Đưa tất cả vào thùng rác thông thường",
+          "Tách riêng ra, đeo găng tay và cẩn thận thu gom từng món",
+          "Nhận định đây không phải là công việc của mình và bỏ qua"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "edge_jd_thieu_kythuat",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Một khách hàng gọi điện phản ánh rằng họ đã thanh toán hóa đơn nhưng vẫn chưa nhận được sản phẩm. Bạn làm gì đầu tiên?",
+        "options": [
+          "Gọi lại khách hàng để xác nhận thông tin",
+          "Kiểm tra hệ thống xem có giao dịch nào chưa được xử lý không",
+          "Yêu cầu khách hàng cung cấp thêm thông tin về hóa đơn đã thanh toán",
+          "Tư vấn khách hàng rằng sản phẩm sẽ đến trong 2-3 ngày tới"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Trong một cuộc họp, đồng nghiệp của bạn đưa ra ý kiến không phù hợp với dự án. Bạn nên làm gì?",
+        "options": [
+          "Gợi ý nhẹ nhàng về cách tiếp cận khác",
+          "Tỏ thái độ không đồng tình và im lặng",
+          "Phản đối mạnh mẽ để bảo vệ ý kiến của mình",
+          "Yêu cầu mọi người bỏ phiếu"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Bạn nhận được email từ một khách hàng yêu cầu hỗ trợ kỹ thuật gấp. Tuy nhiên, bạn không phải là chuyên viên kỹ thuật. Bạn nên làm gì?",
+        "options": [
+          "Trả lời rằng bạn không thể giúp đỡ",
+          "Gửi email cho bộ phận kỹ thuật và thông báo với khách hàng",
+          "Yêu cầu khách hàng liên hệ trực tiếp với bộ phận kỹ thuật",
+          "Tư vấn khách hàng cách tự giải quyết"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Giao tiếp tiếng Việt",
+        "question": "Một đồng nghiệp của bạn thường xuyên đến muộn. Bạn nên làm gì?",
+        "options": [
+          "Gọi điện nhắc nhở và thảo luận về sự cố này",
+          "Trực tiếp nói chuyện với họ để tìm hiểu nguyên nhân",
+          "Bỏ qua vấn đề vì không muốn gây xích mích",
+          "Yêu cầu toàn bộ đội nhóm thay đổi giờ làm việc"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)",
+        "question": "Khi soạn thảo báo cáo tài chính, bạn phát hiện có một số lỗi chính tả và dấu câu. Bạn nên sử dụng tính năng nào của Microsoft Word để tự động kiểm tra?",
+        "options": [
+          "Tính năng Tìm và thay thế",
+          "Tính năng Kiểm tra chính tả và ngữ pháp",
+          "Tính năng Tạo chỉ mục",
+          "Tính năng Thêm hình ảnh"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)",
+        "question": "Bạn cần tạo một bảng tính để theo dõi doanh thu hàng tháng. Bạn muốn sử dụng công thức để tự động tính tổng doanh thu cho từng tháng. Công thức nào sau đây là đúng?",
+        "options": [
+          "=SUM(A2:A30)",
+          "=AVERAGE(B2:B30)",
+          "=COUNT(C2:C30)",
+          "=MAX(D2:D30)"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Sử dụng phần mềm văn phòng (Word, Excel, PowerPoint)",
+        "question": "Trong một bài thuyết trình, bạn muốn thêm một hình ảnh từ thư viện hình ảnh của PowerPoint. Tuy nhiên, bạn không nhớ rõ cách làm. Bạn nên chọn công cụ nào?",
+        "options": [
+          "Chọn 'Insert' > 'Picture' > 'From File'",
+          "Chọn 'Insert' > 'Object' > 'Text Box'",
+          "Chọn 'Format' > 'Background'",
+          "Chọn 'Design' > 'Layout Options'"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "Quản lý lịch hẹn và lịch trình",
+        "question": "Một khách hàng liên tục hủy và đặt lại lịch hẹn với chuyên viên văn phòng. Bạn nhận thấy rằng việc này đang làm gián đoạn công việc của cả đội. Cách xử lý hiệu quả nhất là gì?",
+        "options": [
+          "Tăng cường đào tạo kỹ năng giao tiếp cho nhân viên",
+          "Thiết lập quy trình xác nhận lịch hẹn rõ ràng và chính thức",
+          "Giảm giá dịch vụ để khách hàng không muốn hủy",
+          "Gửi thông báo nhắc nhở tự động vào phút cuối"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "Quản lý lịch hẹn và lịch trình",
+        "question": "Chuyên viên văn phòng nhận được yêu cầu từ một bộ phận khác về việc thay đổi lịch họp. Tuy nhiên, trong hệ thống hiện tại không có chức năng cập nhật lịch hẹn trực tiếp từ bên ngoài. Cách xử lý hợp lý nhất là gì?",
+        "options": [
+          "Tạo một bản ghi mới cho cuộc họp mới",
+          "Gửi email thông báo cho bộ phận khác về việc không thể thay đổi",
+          "Yêu cầu bộ phận liên hệ trực tiếp với chuyên viên văn phòng để cập nhật",
+          "Tạo một quy trình thủ công để cập nhật lịch hẹn"
+        ],
+        "correct_index": 3
+      }
+    ]
+  }
+]

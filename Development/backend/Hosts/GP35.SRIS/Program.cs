@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
@@ -48,88 +49,6 @@ services.AddAuthentication(options =>
     ClockSkew = TimeSpan.Zero
   };
 
-  options.Events = new JwtBearerEvents
-  {
-    OnTokenValidated = async context =>
-    {
-      var logger = context.HttpContext.RequestServices
-          .GetRequiredService<ILogger<Program>>();
-
-      var userId = context.Principal?
-          .FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-      logger.LogInformation("✅ Token validated for user: {UserId}", userId);
-
-      // 👇 Nếu muốn thêm claims từ DB:
-      // var dbContext = context.HttpContext.RequestServices
-      //     .GetRequiredService<AppDbContext>();
-      // var userRoles = await dbContext.UserRoles
-      //     .Where(ur => ur.UserId == userId)
-      //     .ToListAsync();
-      //
-      // var claimsIdentity = (ClaimsIdentity)context.Principal!.Identity!;
-      // foreach (var role in userRoles)
-      //     claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, role.Name));
-    },
-
-    OnAuthenticationFailed = async context =>
-    {
-      var logger = context.HttpContext.RequestServices
-          .GetRequiredService<ILogger<Program>>();
-
-      if (!context.Response.HasStarted)
-      {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        context.Response.ContentType = MediaTypeNames.Application.Json;
-        // await context.Response.WriteAsync(new ErrorObjectCommon()
-        // {
-        //   ErrorCode = AuthErrorCode.UserNotLoggedIn,
-        //   DevMsg = AuthErrorMessage.UserNotLoggedIn,
-        //   UserMsg = AuthErrorMessage.UserNotLoggedIn
-        // }.ToString(), Encoding.UTF8);
-        // return;
-      }
-    },
-
-    OnChallenge = async context =>
-    {
-      var logger = context.HttpContext.RequestServices
-          .GetRequiredService<ILogger<Program>>();
-
-      context.HandleResponse();
-
-      if (!context.Response.HasStarted)
-      {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        context.Response.ContentType = MediaTypeNames.Application.Json;
-
-        // await context.Response.WriteAsync(new ErrorObjectCommon()
-        // {
-        //   ErrorCode = AuthErrorCode.UserNotLoggedIn,
-        //   DevMsg = AuthErrorMessage.UserNotLoggedIn,
-        //   UserMsg = AuthErrorMessage.UserNotLoggedIn
-        // }.ToString(), Encoding.UTF8);
-        // return;
-      }
-    },
-
-    OnForbidden = async context =>
-    {
-      if (!context.Response.HasStarted)
-      {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        context.Response.ContentType = MediaTypeNames.Application.Json;
-
-        // await context.Response.WriteAsync(new ErrorObjectCommon()
-        // {
-        //   ErrorCode = AuthErrorCode.UserNotLoggedIn,
-        //   DevMsg = AuthErrorMessage.UserNotLoggedIn,
-        //   UserMsg = AuthErrorMessage.UserNotLoggedIn
-        // }.ToString(), Encoding.UTF8);
-        // return;
-      }
-    }
-  };
 });
 
 builder.Services.AddAuthorization();
@@ -138,11 +57,13 @@ services.ConfigureCommonServices();
 services.AddBusinessServices();
 services.AddBusinessRepos(configuration);
 services.AddAutoMapper();
+// Worker chấm điểm CV chạy nền (Cách A) — rút hàng đợi + vớt hồ sơ chưa chấm lúc khởi động.
+services.AddHostedService<GP35.SRIS.Workers.CvScoringWorker>();
 services
   .AddControllers()
   .AddJsonOptions(options =>
   {
-    options.JsonSerializerOptions.PropertyNamingPolicy = null;
+      options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
   });
 services.AddSwaggerGen(c =>
 {
@@ -231,12 +152,13 @@ app.ConfigureExceptionHandler(app.Services.GetRequiredService<Serilog.ILogger>()
 // app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseRouting();
-
 app.UseCors(o =>
 {
     o.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
 });
+
+app.UseRouting();
+
 
 // Swagger phải đứng TRƯỚC AuthMiddleware: AuthMiddleware trả 404 cho mọi request
 // không khớp endpoint controller, sẽ chặn cả /swagger nếu đặt sau.
@@ -252,10 +174,10 @@ app.UseAuthorization();
 
 
 // Cổng ứng viên (magic link): giải tenant từ tiền tố token TRƯỚC khi controller/DbContext tạo.
-// app.UseMiddleware<CandidateTenantMiddleware>();
+app.UseMiddleware<CandidateTenantMiddleware>();
 
 // Career Site công khai (/api/public/{slug}): giải tenant từ slug TRƯỚC khi controller/DbContext tạo.
-// app.UseMiddleware<CareerSiteTenantMiddleware>();
+app.UseMiddleware<CareerSiteTenantMiddleware>();
 
 app.UseMiddleware<AuthMiddleware>();
 

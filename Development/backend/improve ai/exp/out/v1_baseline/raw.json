@@ -1,0 +1,1406 @@
+[
+  {
+    "jd_id": "dev_dotnet_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Ngôn ngữ lập trình chính được sử dụng trong vị trí này là gì?",
+        "options": [
+          "Python",
+          "Java",
+          "C#",
+          "JavaScript"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Một yêu cầu kỹ thuật quan trọng để ứng tuyển vào vị trí này là gì?",
+        "options": [
+          "Nắm vững SQL Server",
+          "Hiểu về HTTP/REST",
+          "Có kinh nghiệm với Vue.js",
+          "Biết Node.js"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần nắm vững kiến thức nào trong C# để ứng tuyển?",
+        "options": [
+          "LINQ",
+          "HTML",
+          "CSS",
+          "JavaScript"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Đối với vị trí này, ứng viên đã làm gì sẽ được ưu tiên?",
+        "options": [
+          "Thực tập tại công ty khác",
+          "Làm đồ án hoặc thực tập có sản phẩm thực tế",
+          "Học lập trình tự do",
+          "Xây dựng website cá nhân"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần viết unit test cho các hàm được giao, công cụ nào thường được sử dụng trong vị trí này?",
+        "options": [
+          "Selenium",
+          "NUnit",
+          "React",
+          "Angular"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Một ứng viên có thể viết API RESTful cơ bản cho vị trí này, HTTP/REST là gì?",
+        "options": [
+          "Một loại ngôn ngữ lập trình",
+          "Phương thức truyền dữ liệu qua mạng internet",
+          "Mô hình thiết kế web",
+          "Công cụ quản lý dự án"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần sử dụng công cụ nào để quản lý mã nguồn?",
+        "options": [
+          "Git",
+          "SVN",
+          "TFS",
+          "Bitbucket"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Một yêu cầu kỹ thuật quan trọng khác đối với vị trí này là gì?",
+        "options": [
+          "Nắm vững JavaScript",
+          "Hiểu về Entity Framework Core",
+          "Có kinh nghiệm với Angular",
+          "Biết Node.js"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần viết API RESTful cơ bản, trong đó HTTP/REST là gì?",
+        "options": [
+          "Một loại ngôn ngữ lập trình",
+          "Phương thức truyền dữ liệu qua mạng internet",
+          "Mô hình thiết kế web",
+          "Công cụ quản lý dự án"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần viết unit test cho các hàm được giao, công cụ nào thường được sử dụng trong vị trí này?",
+        "options": [
+          "Selenium",
+          "NUnit",
+          "React",
+          "Angular"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "dev_dotnet_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Ứng viên cần có bao nhiêu năm kinh nghiệm với C#/.NET để đáp ứng yêu cầu của vị trí?",
+        "options": [
+          "1 năm",
+          "2 năm",
+          "4+ năm",
+          "6 năm"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Trong Entity Framework Core, phương pháp nào được sử dụng để tối ưu truy vấn và tránh N+1 query?",
+        "options": [
+          "Include()",
+          "AsNoTracking()",
+          "Load()",
+          "ThenInclude()"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Pattern nào sau đây không phải là một trong những pattern mà ứng viên cần áp dụng khi thiết kế API?",
+        "options": [
+          "CQRS",
+          "Repository",
+          "Singleton",
+          "Dependency Injection"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có hiểu biết sâu về khái niệm nào dưới đây để xử lý concurrency hiệu quả?",
+        "options": [
+          "Synchronous programming",
+          "Thread safety",
+          "Asynchronous programming",
+          "Deadlocks"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Trong quản lý bộ nhớ, phương pháp nào sau đây không được đề cập trong JD?",
+        "options": [
+          "Garbage collection",
+          "Memory leak detection",
+          "Heap allocation",
+          "Stack overflow prevention"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kinh nghiệm với công nghệ nào để tối ưu truy vấn Entity Framework Core và SQL Server?",
+        "options": [
+          "Redis",
+          "SQL Server indexing",
+          "Message queue",
+          "Caching"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Pattern nào sau đây không được đề cập trong JD khi thiết kế API?",
+        "options": [
+          "CQRS",
+          "Repository",
+          "Dependency Injection",
+          "Observer pattern"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có hiểu biết về quản lý bộ nhớ nào để tối ưu hiệu năng hệ thống microservices?",
+        "options": [
+          "Memory leak detection",
+          "Garbage collection tuning",
+          "Heap allocation optimization",
+          "Stack size adjustment"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Trong JD, ứng viên cần có kinh nghiệm với pattern nào để xử lý vấn đề concurrency?",
+        "options": [
+          "CQRS",
+          "Repository",
+          "Dependency Injection",
+          "Thread safety"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có hiểu biết về transaction isolation level nào để đảm bảo tính nhất quán của hệ thống?",
+        "options": [
+          "Read uncommitted",
+          "Read committed",
+          "Repeatable read",
+          "Serializable"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "frontend_react_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Component nào trong React không cần quản lý state?",
+        "options": [
+          "Function Component",
+          "Class Component",
+          "Stateless Functional Component",
+          "Hook"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Redux và Context API đều được sử dụng để quản lý gì trong React?",
+        "options": [
+          "State",
+          "Props",
+          "Events",
+          "CSS"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Một phương pháp tối ưu render trong React là gì?",
+        "options": [
+          "setState()",
+          "useEffect()",
+          "useMemo()",
+          "useState()"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "React Testing Library và Jest đều được sử dụng để làm gì?",
+        "options": [
+          "Xử lý state",
+          "Tích hợp API",
+          "Viết test",
+          "Quản lý component"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Virtual DOM là gì trong React?",
+        "options": [
+          "Một loại state",
+          "Một phương thức render",
+          "Một kỹ thuật tối ưu hóa",
+          "Một hook"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Hooks useState và useEffect đều được sử dụng để làm gì?",
+        "options": [
+          "Xử lý state",
+          "Tích hợp API",
+          "Viết test",
+          "Quản lý component"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Responsive design trong web phát triển có nghĩa là gì?",
+        "options": [
+          "Thiết kế cho một kích thước màn hình cụ thể",
+          "Thiết kế cho nhiều kích thước màn hình khác nhau",
+          "Chỉ thiết kế cho desktop",
+          "Không cần quan tâm đến kích thước màn hình"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Cross-browser là gì?",
+        "options": [
+          "Kiểm tra tính năng của trình duyệt",
+          "Thiết kế cho nhiều trình duyệt khác nhau",
+          "Tích hợp API giữa các trình duyệt",
+          "Xử lý state giữa các trình duyệt"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Một phương pháp tối ưu hóa hiệu năng frontend không bao gồm?",
+        "options": [
+          "Memoization",
+          "Lazy loading",
+          "Virtual DOM",
+          "CSS Grid"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "CSS Flexbox và Grid đều được sử dụng để làm gì?",
+        "options": [
+          "Xử lý state",
+          "Tích hợp API",
+          "Thiết kế layout",
+          "Viết test"
+        ],
+        "correct_index": 2
+      }
+    ]
+  },
+  {
+    "jd_id": "data_engineer_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Trong mô tả công việc, ứng viên cần có bao nhiêu năm kinh nghiệm?",
+        "options": [
+          "1",
+          "2",
+          "3",
+          "4+"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần thành thạo ngôn ngữ lập trình nào để viết job xử lý batch và streaming?",
+        "options": [
+          "Java",
+          "C++",
+          "Python",
+          "JavaScript"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Mô hình dữ liệu nào được đề cập trong mô tả công việc?",
+        "options": [
+          "Entity-Relationship Diagram (ERD)",
+          "Star Schema",
+          "E-R Model",
+          "Relational Model"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kinh nghiệm với công cụ orchestrator nào?",
+        "options": [
+          "Kubernetes",
+          "Docker",
+          "Airflow",
+          "Jenkins"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Trong SQL nâng cao, ứng viên cần nắm vững các tính năng nào?",
+        "options": [
+          "Window function",
+          "CTE",
+          "Joins",
+          "All of the above"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần hiểu về kiến trúc phân tán và kỹ thuật gì liên quan?",
+        "options": [
+          "Load balancing",
+          "Caching",
+          "Partitioning",
+          "Replication"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Kỹ thuật nào được đề cập để tối ưu truy vấn trên kho dữ liệu?",
+        "options": [
+          "Indexing",
+          "Normalization",
+          "Denormalization",
+          "Sharding"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kinh nghiệm với định dạng cột nào?",
+        "options": [
+          "JSON",
+          "XML",
+          "Parquet",
+          "CSV"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Trong mô tả công việc, ứng viên cần thiết kế và vận hành gì?",
+        "options": [
+          "Data pipeline (ETL/ELT)",
+          "Web application",
+          "Mobile application",
+          "Database schema"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên có trách nhiệm quản lý chất lượng dữ liệu như thế nào?",
+        "options": [
+          "Through data validation and cleaning processes",
+          "By implementing user interfaces",
+          "By developing marketing strategies",
+          "By creating financial reports"
+        ],
+        "correct_index": 0
+      }
+    ]
+  },
+  {
+    "jd_id": "ketoan_tonghop_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Nguyên lý nào sau đây là nguyên lý cơ bản của kế toán kép?",
+        "options": [
+          "Nguyên lý kế toán",
+          "Nguyên lý kế toán kép",
+          "Nguyên lý tài chính",
+          "Nguyên lý quản trị"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần nắm vững về các tài khoản kế toán để thực hiện công việc, trong số các tài khoản sau đây, tài khoản nào không thuộc nhóm tài khoản doanh thu?",
+        "options": [
+          "Tài khoản Doanh thu từ bán hàng",
+          "Tài khoản Chi phí bán hàng",
+          "Tài khoản Thu nhập khác",
+          "Tài khoản Doanh thu từ cung cấp dịch vụ"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần thành thạo phần mềm kế toán để thực hiện công việc, trong số các phần mềm sau đây, phần mềm nào không thuộc nhóm phần mềm kế toán?",
+        "options": [
+          "MISA",
+          "Fast",
+          "Excel",
+          "FPT Accounting"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Theo Thông tư 200, báo cáo tài chính bao gồm những thông tin gì?",
+        "options": [
+          "Bảng cân đối kế toán và Bảng lưu chuyển tiền tệ",
+          "Bảng cân đối kế toán, Báo cáo kết quả hoạt động kinh doanh và Báo cáo lưu chuyển tiền tệ",
+          "Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ và Báo cáo lưu chuyển ngoại tệ",
+          "Bảng cân đối kế toán, Báo cáo lưu chuyển tiền tệ, Báo cáo lưu chuyển ngoại tệ và Báo cáo tài chính khác"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần hiểu quy định thuế hiện hành để thực hiện công việc, trong số các loại thuế sau đây, loại thuế nào không thuộc nhóm thuế doanh nghiệp?",
+        "options": [
+          "Thuế thu nhập doanh nghiệp",
+          "Thuế giá trị gia tăng",
+          "Thuế tiêu thụ đặc biệt",
+          "Thuế môn bài"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần hạch toán doanh thu - chi phí - giá vốn, trong số các phương pháp sau đây, phương pháp nào không thuộc nhóm phương pháp hạch toán?",
+        "options": [
+          "Phương pháp ghi chép",
+          "Phương pháp phân bổ",
+          "Phương pháp kiểm kê",
+          "Phương pháp tính giá"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần lập tờ khai thuế GTGT, trong số các thông tin sau đây, thông tin nào không thuộc nhóm thông tin cần thiết để lập tờ khai?",
+        "options": [
+          "Thông tin về doanh thu",
+          "Thông tin về chi phí",
+          "Thông tin về giá trị gia tăng",
+          "Thông tin về đối tượng chịu thuế"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần theo dõi công nợ phải thu/phải trả, trong số các phương pháp sau đây, phương pháp nào không thuộc nhóm phương pháp theo dõi?",
+        "options": [
+          "Phương pháp đối chiếu",
+          "Phương pháp phân tích",
+          "Phương pháp kiểm kê",
+          "Phương pháp ghi chép"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần quản lý sổ sách, trong số các loại sổ sau đây, loại sổ nào không thuộc nhóm sổ kế toán?",
+        "options": [
+          "Sổ nhật ký",
+          "Sổ chi tiết",
+          "Sổ tài khoản",
+          "Sổ lưu trữ"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần hiểu về nghiệp vụ hạch toán phát sinh, trong số các nghiệp vụ sau đây, nghiệp vụ nào không thuộc nhóm nghiệp vụ kế toán?",
+        "options": [
+          "Nghiệp vụ mua hàng",
+          "Nghiệp vụ bán hàng",
+          "Nghiệp vụ thanh toán",
+          "Nghiệp vụ quản lý nhân sự"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "sales_b2b_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Mục tiêu chính của vị trí này là gì?",
+        "options": [
+          "Tìm kiếm và phát triển khách hàng cá nhân",
+          "Xây dựng quan hệ với khách hàng doanh nghiệp",
+          "Chăm sóc khách hàng sau bán hàng",
+          "Quản lý dự án sản phẩm mới"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ngoài việc giới thiệu giải pháp/sản phẩm, công việc này còn bao gồm gì?",
+        "options": [
+          "Xây dựng quan hệ với khách hàng",
+          "Tư vấn nhu cầu của khách hàng",
+          "Đàm phán và chốt hợp đồng",
+          "Cả B và C"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "CRM trong mô tả công việc có ý nghĩa gì?",
+        "options": [
+          "Chăm sóc khách hàng sau bán",
+          "Quản lý quan hệ với khách hàng",
+          "Tư vấn nhu cầu của khách hàng",
+          "Đàm phán và chốt hợp đồng"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng nào để thành công trong vị trí này?",
+        "options": [
+          "Kỹ năng giao tiếp và thuyết phục tốt",
+          "Hiểu quy trình bán hàng B2B",
+          "Biết xử lý từ chối",
+          "Cả A, B và C"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên có kinh nghiệm bán hàng sẽ được ưu tiên như thế nào?",
+        "options": [
+          "Không cần",
+          "Được đánh giá thấp hơn",
+          "Được đánh giá cao hơn",
+          "Không ảnh hưởng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Trong quá trình làm việc, ứng viên sẽ quản lý gì?",
+        "options": [
+          "Doanh số",
+          "Quan hệ với khách hàng",
+          "Pipeline bán hàng",
+          "Giải pháp/sản phẩm"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ngoài việc chốt hợp đồng, công việc này còn bao gồm gì?",
+        "options": [
+          "Xây dựng quan hệ với khách hàng",
+          "Tư vấn nhu cầu của khách hàng",
+          "Đàm phán và chốt hợp đồng",
+          "Cả A, B và C"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có hiểu biết về quy trình bán hàng nào?",
+        "options": [
+          "B2B (tiếp cận - tư vấn - đàm phán - chốt)",
+          "B2C",
+          "B2G",
+          "C2B"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có khả năng xử lý tình huống nào?",
+        "options": [
+          "Xử lý từ chối",
+          "Xây dựng quan hệ với khách hàng",
+          "Tư vấn nhu cầu của khách hàng",
+          "Đàm phán và chốt hợp đồng"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần chịu được áp lực như thế nào?",
+        "options": [
+          "Áp lực doanh số",
+          "Áp lực từ công việc",
+          "Áp lực quản lý",
+          "Cả A và B"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  {
+    "jd_id": "digital_marketing_mid",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Chiến dịch marketing đa kênh bao gồm các nền tảng nào theo mô tả công việc?",
+        "options": [
+          "Facebook Ads",
+          "Google Ads",
+          "SEO",
+          "Email"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Một trong những chỉ số quan trọng mà ứng viên cần tối ưu là gì?",
+        "options": [
+          "CTR (Click-Through Rate)",
+          "CPC (Cost Per Click)",
+          "CPA (Cost Per Acquisition)",
+          "ROAS (Return On Ad Spend)"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có bao nhiêu năm kinh nghiệm trong lĩnh vực digital marketing?",
+        "options": [
+          "1-2 năm",
+          "2-3 năm",
+          "3-4 năm",
+          "4-5 năm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ngoài chạy quảng cáo, ứng viên còn cần làm gì khác trong công việc này?",
+        "options": [
+          "Phân tích dữ liệu chiến dịch",
+          "Lập báo cáo hiệu quả",
+          "Phối hợp content và design",
+          "Tất cả các phương án trên"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần nắm vững kiến thức về SEO on-page?",
+        "options": [
+          "Có",
+          "Không",
+          "Tham khảo",
+          "Không chắc"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng tư duy dữ liệu như thế nào?",
+        "options": [
+          "Kỹ năng phân tích",
+          "Kỹ năng lập trình",
+          "Kỹ năng thiết kế",
+          "Kỹ năng viết nội dung"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần quản lý ngân sách quảng cáo như thế nào?",
+        "options": [
+          "Tăng cường",
+          "Giảm bớt",
+          "Tối ưu hóa",
+          "Không quan tâm"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Phương án nào dưới đây không phải là công việc của ứng viên?",
+        "options": [
+          "Triển khai chiến dịch marketing",
+          "Quản lý ngân sách quảng cáo",
+          "Thiết kế nội dung",
+          "Phân tích dữ liệu"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần hiểu về phễu marketing để làm tốt công việc này?",
+        "options": [
+          "Có",
+          "Không",
+          "Tham khảo",
+          "Không chắc"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần biết đọc và tối ưu chỉ số chuyển đổi như thế nào?",
+        "options": [
+          "Rất tốt",
+          "Trung bình",
+          "Kém",
+          "Không quan tâm"
+        ],
+        "correct_index": 0
+      }
+    ]
+  },
+  {
+    "jd_id": "hr_tuyendung_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Một trong những nhiệm vụ chính của vị trí này là gì?",
+        "options": [
+          "Lập trình ứng dụng",
+          "Đăng tin tuyển dụng và sàng lọc hồ sơ",
+          "Thiết kế giao diện người dùng",
+          "Quản lý dự án"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng nào để thực hiện công việc?",
+        "options": [
+          "Kỹ năng lập trình",
+          "Kỹ năng giao tiếp tốt",
+          "Kỹ năng thiết kế đồ họa",
+          "Kỹ năng phân tích dữ liệu"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ngoài việc sàng lọc hồ sơ, vị trí này còn cần làm gì?",
+        "options": [
+          "Xây dựng website",
+          "Tham gia phỏng vấn ứng viên",
+          "Quản lý dự án IT",
+          "Tư vấn khách hàng"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần hiểu rõ về quy trình tuyển dụng như thế nào?",
+        "options": [
+          "Chỉ cần biết sơ lược",
+          "Hãy nắm bắt các bước chính từ sàng lọc đến offer",
+          "Phải là chuyên gia trong lĩnh vực này",
+          "Không cần thiết phải hiểu"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ngoài việc tuyển dụng, vị trí này còn có trách nhiệm gì khác?",
+        "options": [
+          "Hỗ trợ bán hàng",
+          "Chăm sóc ứng viên xuyên suốt quy trình",
+          "Thiết kế sản phẩm",
+          "Quản lý kho"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kinh nghiệm trong lĩnh vực nào?",
+        "options": [
+          "Kinh doanh",
+          "Tuyển dụng",
+          "Marketing",
+          "Nhân sự tổng hợp"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Việc liên hệ và chăm sóc ứng viên diễn ra trong giai đoạn nào?",
+        "options": [
+          "Trước khi đăng tin tuyển dụng",
+          "Từ lúc sàng lọc đến sau offer",
+          "Chỉ trước phỏng vấn",
+          "Sau khi nhận offer"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ngoài việc tuyển dụng, vị trí này còn có trách nhiệm gì khác?",
+        "options": [
+          "Hỗ trợ kỹ thuật",
+          "Báo cáo các chỉ số tuyển dụng",
+          "Quản lý tài chính",
+          "Thiết kế nội dung"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần cẩn thận trong công việc để đảm bảo gì?",
+        "options": [
+          "Tăng doanh thu",
+          "Giữ thông tin ứng viên an toàn và chính xác",
+          "Nâng cao chất lượng sản phẩm",
+          "Tối ưu hóa quy trình sản xuất"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Việc hỗ trợ onboarding nhân viên mới là trách nhiệm của vị trí này?",
+        "options": [
+          "Không",
+          "Có",
+          "Chỉ trong một số trường hợp",
+          "Được giao cho bộ phận khác"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "cskh_junior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Kỹ năng nào sau đây không phải là yêu cầu bắt buộc của vị trí này?",
+        "options": [
+          "kỹ năng giao tiếp",
+          "biết xử lý tình huống khách hàng khó tính",
+          "thái độ tích cực",
+          "biết sử dụng phần mềm quản lý ticket"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Việc nào dưới đây không phải là trách nhiệm của nhân viên trong vị trí này?",
+        "options": [
+          "giải đáp thắc mắc về sản phẩm/dịch vụ",
+          "hướng dẫn sử dụng sản phẩm/dịch vụ",
+          "phối hợp các bộ phận để giải quyết vấn đề",
+          "thiết kế giao diện website"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Phương án nào dưới đây không phải là lợi thế?",
+        "options": [
+          "biết sử dụng phần mềm quản lý ticket",
+          "có kinh nghiệm trong lĩnh vực bán hàng trực tuyến",
+          "thái độ tích cực",
+          "kỹ năng giao tiếp"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Trong quá trình xử lý yêu cầu của khách hàng, nhân viên cần phải làm gì?",
+        "options": [
+          "chỉ giải đáp thắc mắc mà không cần ghi nhận phản hồi",
+          "gửi thông tin cho bộ phận khác mà không cần phối hợp",
+          "đảm bảo trải nghiệm khách hàng tốt",
+          "tránh tiếp xúc trực tiếp với khách hàng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Kỹ năng nào dưới đây là yêu cầu bắt buộc của vị trí này?",
+        "options": [
+          "biết sử dụng phần mềm quản lý ticket",
+          "kỹ năng giao tiếp và lắng nghe",
+          "thái độ tích cực",
+          "kinh nghiệm trong lĩnh vực IT"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Việc nào dưới đây không phải là một phần của quy trình xử lý yêu cầu khách hàng?",
+        "options": [
+          "ghi nhận phản hồi từ khách hàng",
+          "phối hợp với các bộ phận khác để giải quyết vấn đề",
+          "đảm bảo trải nghiệm khách hàng tốt",
+          "tư vấn về cách thiết kế sản phẩm mới"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Trong trường hợp khách hàng có yêu cầu khó khăn, nhân viên cần làm gì?",
+        "options": [
+          "tránh tiếp xúc với khách hàng để tránh mâu thuẫn",
+          "giải quyết vấn đề một cách kiên nhẫn và chuyên nghiệp",
+          "từ chối giải quyết nếu quá phức tạp",
+          "gửi yêu cầu cho bộ phận khác mà không cần xử lý"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Việc nào dưới đây là lợi thế của ứng viên?",
+        "options": [
+          "biết sử dụng phần mềm quản lý ticket",
+          "kỹ năng giao tiếp và lắng nghe",
+          "thái độ tích cực",
+          "kinh nghiệm trong lĩnh vực IT"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Trong quá trình xử lý yêu cầu, nhân viên cần đảm bảo điều gì?",
+        "options": [
+          "trải nghiệm khách hàng tốt",
+          "tư vấn về cách thiết kế sản phẩm mới",
+          "phối hợp với các bộ phận khác để giải quyết vấn đề",
+          "giải quyết vấn đề một cách nhanh chóng mà không cần ghi nhận phản hồi"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Kỹ năng nào dưới đây là yêu cầu bắt buộc của vị trí này?",
+        "options": [
+          "kỹ năng giao tiếp và lắng nghe",
+          "biết xử lý tình huống khách hàng khó tính",
+          "thái độ tích cực",
+          "kinh nghiệm trong lĩnh vực IT"
+        ],
+        "correct_index": 0
+      }
+    ]
+  },
+  {
+    "jd_id": "project_manager_senior",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Dự án quản lý của vị trí này bao gồm các giai đoạn nào?",
+        "options": [
+          "Khởi tạo, thiết kế, triển khai, bàn giao",
+          "Khởi tạo, lập kế hoạch, thực hiện, kiểm tra, bàn giao",
+          "Khởi tạo, phân tích yêu cầu, thiết kế, triển khai, bàn giao",
+          "Khởi tạo, quản lý phạm vi, thời gian, chi phí, rủi ro, bàn giao"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Vị trí này yêu cầu ứng viên có bao nhiêu năm kinh nghiệm quản lý dự án?",
+        "options": [
+          "<5 năm",
+          "5+ năm",
+          "3-4 năm",
+          "2 năm"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Dự án quản lý của vị trí này áp dụng phương pháp Agile/Scrum hay Waterfall?",
+        "options": [
+          "Agile/Scrum",
+          "Waterfall",
+          "Cả hai đều áp dụng",
+          "Không áp dụng"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Dự án quản lý yêu cầu ứng viên hiểu về các ràng buộc dự án nào?",
+        "options": [
+          "Scope, Time, Cost (SCOPE, TIME, COST)",
+          "Time, Cost, Risk",
+          "Scope, Cost, Quality",
+          "Scope, Time, Risk"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng gì để làm việc với stakeholder?",
+        "options": [
+          "Lãnh đạo và giao tiếp",
+          "Kỹ thuật lập trình",
+          "Phân tích dữ liệu",
+          "Thiết kế UI/UX"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Dự án quản lý yêu cầu ứng viên có kỹ năng gì để điều phối nguồn lực?",
+        "options": [
+          "Lãnh đạo và giao tiếp",
+          "Kỹ thuật lập trình",
+          "Phân tích dữ liệu",
+          "Thiết kế UI/UX"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Dự án quản lý yêu cầu ứng viên có hiểu biết về phương pháp nào?",
+        "options": [
+          "Sprint, Backlog, Retrospective (Agile/Scrum)",
+          "Waterfall",
+          "PMP",
+          "Cả hai đều áp dụng"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Dự án quản lý yêu cầu ứng viên có chứng chỉ gì?",
+        "options": [
+          "PMP/Scrum",
+          "Agile/Scrum",
+          "Waterfall",
+          "Không yêu cầu chứng chỉ"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Vị trí này yêu cầu ứng viên quản lý rủi ro và thay đổi như thế nào?",
+        "options": [
+          "Quản lý rủi ro và thay đổi",
+          "Chỉ quản lý rủi ro",
+          "Chỉ quản lý thay đổi",
+          "Không cần quản lý"
+        ],
+        "correct_index": 0
+      },
+      {
+        "skill": "",
+        "question": "Dự án quản lý yêu cầu ứng viên làm việc với stakeholder như thế nào?",
+        "options": [
+          "Báo cáo tiến độ",
+          "Lãnh đạo và giao tiếp",
+          "Phân tích dữ liệu",
+          "Thiết kế UI/UX"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "edge_jd_rac",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Nhân viên được tuyển dụng cần phải có tinh thần như thế nào?",
+        "options": [
+          "Bất tài",
+          "Năng động, nhiệt huyết",
+          "Lười biếng",
+          "Thái độ tiêu cực"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên nào sẽ được ưu tiên trong quá trình tuyển dụng?",
+        "options": [
+          "Ứng viên mới vào nghề",
+          "Ứng viên có kinh nghiệm lâu dài",
+          "Ứng viên không có kinh nghiệm",
+          "Ứng viên làm việc ngắn hạn"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Nhân viên cần phải chịu được áp lực công việc như thế nào?",
+        "options": [
+          "Không cần",
+          "Rất ít",
+          "Có",
+          "Hết sức không"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Môi trường làm việc của công ty như thế nào?",
+        "options": [
+          "Nghiêm túc, cổ hủ",
+          "Trẻ trung, năng động",
+          "Boring",
+          "Thiếu thốn"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Lương cho vị trí này sẽ được xác định như thế nào?",
+        "options": [
+          "Theo kinh nghiệm",
+          "Thỏa thuận",
+          "Theo thời gian làm việc",
+          "Theo số lượng công việc hoàn thành"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có khả năng làm việc như thế nào?",
+        "options": [
+          "Độc lập, không nhóm",
+          "Nhóm, không độc lập",
+          "Cả nhóm và độc lập",
+          "Chỉ nhóm"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ngoài tinh thần trách nhiệm cao, ứng viên còn cần có thái độ gì?",
+        "options": [
+          "Tích cực",
+          "Tiêu cực",
+          "Bất định",
+          "Không quan trọng"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên nào sẽ không được ưu tiên trong quá trình tuyển dụng?",
+        "options": [
+          "Ứng viên có kinh nghiệm lâu dài",
+          "Ứng viên mới vào nghề",
+          "Ứng viên năng động, nhiệt huyết",
+          "Ứng viên ham học hỏi"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Nhân viên cần phải ham học hỏi như thế nào?",
+        "options": [
+          "Không cần",
+          "Rất ít",
+          "Có",
+          "Hết sức không"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên nào sẽ phù hợp với vị trí này?",
+        "options": [
+          "Người lười biếng, ham chơi",
+          "Người năng động, nhiệt huyết",
+          "Người ít học hỏi, ngại áp lực",
+          "Người làm việc không nhóm"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  {
+    "jd_id": "edge_jd_thieu_kythuat",
+    "json_ok": true,
+    "error": "",
+    "questions": [
+      {
+        "skill": "",
+        "question": "Một trong những nhiệm vụ chính của vị trí này là gì?",
+        "options": [
+          "Lập trình phần mềm",
+          "Sắp xếp lịch họp",
+          "Thiết kế đồ họa",
+          "Quản lý dự án"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng gì để quản lý văn bản giấy tờ?",
+        "options": [
+          "Kỹ năng lái xe",
+          "Kỹ năng giao tiếp",
+          "Kỹ năng sử dụng máy tính văn phòng",
+          "Kỹ năng bán hàng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có tinh thần như thế nào để phù hợp với vị trí này?",
+        "options": [
+          "Tự lập",
+          "Hợp tác",
+          "Khám phá",
+          "Nghiên cứu"
+        ],
+        "correct_index": 1
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần biết sử dụng các công cụ nào để hỗ trợ công việc?",
+        "options": [
+          "Công cụ thiết kế web",
+          "Công cụ quản lý dự án",
+          "Công cụ máy tính văn phòng cơ bản",
+          "Công cụ phân tích dữ liệu"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng nào để sắp xếp lịch họp?",
+        "options": [
+          "Kỹ năng lái xe",
+          "Kỹ năng giao tiếp",
+          "Kỹ năng sử dụng máy tính văn phòng",
+          "Kỹ năng bán hàng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có phẩm chất nào để quản lý văn bản giấy tờ?",
+        "options": [
+          "Tự lập",
+          "Hợp tác",
+          "Trung thực",
+          "Khám phá"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng nào để hỗ trợ các phòng ban khi cần?",
+        "options": [
+          "Kỹ năng lái xe",
+          "Kỹ năng giao tiếp",
+          "Kỹ năng sử dụng máy tính văn phòng",
+          "Kỹ năng bán hàng"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có tinh thần như thế nào để quản lý văn bản giấy tờ?",
+        "options": [
+          "Tự lập",
+          "Hợp tác",
+          "Trung thực",
+          "Khám phá"
+        ],
+        "correct_index": 3
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có phẩm chất nào để sắp xếp lịch họp?",
+        "options": [
+          "Tự lập",
+          "Hợp tác",
+          "Trung thực",
+          "Khám phá"
+        ],
+        "correct_index": 2
+      },
+      {
+        "skill": "",
+        "question": "Ứng viên cần có kỹ năng gì để hỗ trợ các phòng ban khi cần?",
+        "options": [
+          "Kỹ năng lái xe",
+          "Kỹ năng giao tiếp",
+          "Kỹ năng sử dụng máy tính văn phòng",
+          "Kỹ năng bán hàng"
+        ],
+        "correct_index": 2
+      }
+    ]
+  }
+]

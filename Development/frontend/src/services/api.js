@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Cấu hình base URL - đổi thành URL thật khi deploy
-const BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const BASE_URL = process.env.REACT_APP_API_URL || '';
 
 // Tạo axios instance
 const api = axios.create({
@@ -66,6 +66,15 @@ export const authAPI = {
 
 // ==================== JOBS ====================
 
+// Public API instance - không có interceptor redirect login
+const publicApi = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 export const jobsAPI = {
   getAll: (includeInactive = false) =>
     api.get(`/jobs${includeInactive ? '?includeInactive=true' : ''}`),
@@ -82,15 +91,26 @@ export const jobsAPI = {
   delete: (id) =>
     api.delete(`/jobs/${id}`),
 
-  // Public career site
-  getPublicJobs: (slug) =>
-    api.get(`/api/public/${slug}/jobs`),
+  // Public: lấy tất cả job đang tuyển (dùng endpoint gốc /jobs)
+  getPublicJobs: () =>
+    publicApi.get('/jobs'),
 
-  getPublicJob: (slug, jobId) =>
-    api.get(`/api/public/${slug}/jobs/${jobId}`),
+  getPublicJob: (jobId) =>
+    publicApi.get(`/jobs/${jobId}`),
 
-  applyForJob: (slug, jobId, data) =>
-    api.post(`/api/public/${slug}/jobs/${jobId}/apply`, data),
+  // Public: ứng tuyển job
+  applyForJob: (jobId, data) =>
+    publicApi.post(`/jobs/${jobId}/apply`, data),
+
+  // Public career site với slug
+  getPublicJobsBySlug: (slug) =>
+    publicApi.get(`/public/${slug}/jobs`),
+
+  getPublicJobBySlug: (slug, jobId) =>
+    publicApi.get(`/public/${slug}/jobs/${jobId}`),
+
+  applyForJobBySlug: (slug, jobId, data) =>
+    publicApi.post(`/public/${slug}/jobs/${jobId}/apply`, data),
 };
 
 // ==================== CV SCORING ====================
@@ -291,13 +311,16 @@ export const mailTemplateAPI = {
 
 export const dashboardAPI = {
   getOverview: (jobId) =>
-    api.get(`/api/dashboard/overview${jobId ? `?jobId=${jobId}` : ''}`),
+    api.get(`/dashboard/overview${jobId ? `?jobId=${jobId}` : ''}`),
+
+  getKanban: (jobId) =>
+    api.get(`/dashboard/kanban${jobId ? `?jobId=${jobId}` : ''}`),
 
   getFunnelData: (jobId) =>
-    api.get(`/api/dashboard/funnel?jobId=${jobId}`),
+    api.get(`/dashboard/funnel?jobId=${jobId}`),
 
   getSourceAnalytics: () =>
-    api.get('/api/dashboard/sources'),
+    api.get('/dashboard/sources'),
 };
 
 // ==================== TALENT POOL ====================
@@ -340,6 +363,16 @@ export const usersAPI = {
 
   changePassword: (id, oldPassword, newPassword) =>
     api.post(`/api/users/${id}/change-password`, { oldPassword, newPassword }),
+};
+
+// ==================== PUBLIC CAREER SITE ====================
+
+export const publicCareerAPI = {
+  // Nộp CV cho một job (multipart/form-data)
+  apply: (slug, jobId, formData) =>
+    api.post(`/public/${slug}/jobs/${jobId}/apply`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 };
 
 export default api;

@@ -3,12 +3,30 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
-// Các vai trò trong hệ thống
+// Các vai trò trong hệ thống - hỗ trợ nhiều tên gọi từ backend
 export const ROLES = {
   ADMIN: 'Admin',
   RECRUITER: 'Recruiter',
   INTERVIEWER: 'Interviewer',
   CANDIDATE: 'Candidate',
+};
+
+// Mapping từ các role name khác nhau sang role chuẩn
+const ROLE_MAPPING = {
+  'Admin': ROLES.ADMIN,
+  'Recruiter': ROLES.RECRUITER,
+  'Interviewer': ROLES.INTERVIEWER,
+  'Candidate': ROLES.CANDIDATE,
+  'admin': ROLES.ADMIN,
+  'recruiter': ROLES.RECRUITER,
+  'interviewer': ROLES.INTERVIEWER,
+  'candidate': ROLES.CANDIDATE,
+};
+
+// Chuyển đổi role về chuẩn
+const normalizeRole = (role) => {
+  if (!role) return null;
+  return ROLE_MAPPING[role] || role;
 };
 
 // Route theo vai trò - chuyển hướng sau khi login
@@ -28,18 +46,18 @@ export const ROLE_MENUS = {
   ],
   [ROLES.RECRUITER]: [
     { key: '/recruiter/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
-    { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Job Posts' },
-    { key: '/quiz', icon: 'QuestionCircleOutlined', label: 'Quiz Management' },
-    { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Interviews' },
+    { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
+    { key: '/quiz', icon: 'QuestionCircleOutlined', label: 'Quiz' },
+    { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
-    { key: '/notifications', icon: 'BellOutlined', label: 'Notifications' },
-    { key: '/settings', icon: 'SettingOutlined', label: 'Settings' },
+    { key: '/notifications', icon: 'BellOutlined', label: 'Thông Báo' },
+    { key: '/settings', icon: 'SettingOutlined', label: 'Cài Đặt' },
   ],
   [ROLES.INTERVIEWER]: [
     { key: '/interviewer/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
-    { key: '/interviewer/incoming', icon: 'CalendarOutlined', label: 'Incoming Interviews' },
-    { key: '/notifications', icon: 'BellOutlined', label: 'Notifications' },
-    { key: '/settings', icon: 'SettingOutlined', label: 'Settings' },
+    { key: '/interviewer/incoming', icon: 'CalendarOutlined', label: 'Phỏng Vấn Sắp Tới' },
+    { key: '/notifications', icon: 'BellOutlined', label: 'Thông Báo' },
+    { key: '/settings', icon: 'SettingOutlined', label: 'Cài Đặt' },
   ],
 };
 
@@ -47,6 +65,8 @@ export const ROLE_MENUS = {
 export const hasPermission = (userRole, route) => {
   if (!userRole) return false;
 
+  const normalizedRole = normalizeRole(userRole);
+  
   const rolePermissions = {
     [ROLES.ADMIN]: [
       '/admin',
@@ -73,7 +93,7 @@ export const hasPermission = (userRole, route) => {
     ],
   };
 
-  const permissions = rolePermissions[userRole] || [];
+  const permissions = rolePermissions[normalizedRole] || [];
   return permissions.some(path => route.startsWith(path));
 };
 
@@ -90,9 +110,12 @@ export const AuthProvider = ({ children }) => {
     if (storedUser && token) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        // Đảm bảo role được normalize
+        parsedUser.role = normalizeRole(parsedUser.role);
         setUser(parsedUser);
         setIsAuthenticated(true);
       } catch (e) {
+        console.error('Error parsing stored user:', e);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
       }
@@ -101,21 +124,43 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await authAPI.login(email, password);
-    const { accessToken, refreshToken } = response.data;
+    try {
+      const response = await authAPI.login(email, password);
+      const data = response.data;
+      
+      // Lấy tokens - hỗ trợ nhiều cấu trúc response
+      const accessToken = data.accessToken || data.token || data.access_token;
+      const refreshToken = data.refreshToken || data.refresh_token;
 
-    // Lưu vào localStorage
-    localStorage.setItem('token', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+      if (!accessToken) {
+        throw new Error('Không nhận được access token từ server');
+      }
 
-    // Parse JWT token để lấy user info
-    const userData = parseJwt(accessToken);
-    localStorage.setItem('user', JSON.stringify(userData));
+      // Lưu vào localStorage
+      localStorage.setItem('token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
 
-    setUser(userData);
-    setIsAuthenticated(true);
+      // Parse JWT token để lấy user info
+      const userData = parseJwt(accessToken);
+      
+      // Đảm bảo role được normalize
+      userData.role = normalizeRole(userData.role);
+      
+      localStorage.setItem('user', JSON.stringify(userData));
 
-    return userData;
+      setUser(userData);
+      setIsAuthenticated(true);
+
+      return userData;
+    } catch (error) {
+      // Xóa localStorage nếu login thất bại
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      throw error;
+    }
   };
 
   // Parse JWT token
@@ -133,28 +178,40 @@ export const AuthProvider = ({ children }) => {
       
       console.log('JWT Payload:', payload); // DEBUG
       
-      // Tìm role - thử tất cả các key có thể (không phân biệt hoa thường)
+      // Tìm role - thử tất cả các key có thể
       let role = payload.Role || payload.role;
       if (!role) {
+        // Tìm trong các key mở rộng
         const roleKey = Object.keys(payload).find(k => 
           k.toLowerCase().includes('role') || 
-          k.includes('identity/claims/role')
+          k.includes('identity/claims/role') ||
+          k === 'user_role' ||
+          k === 'userType'
         );
         if (roleKey) role = payload[roleKey];
       }
       
+      // Nếu vẫn không có, thử lấy từ http://schemas.microsoft.com/ws/2008/06/identity/claims/role
+      if (!role && payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']) {
+        role = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+      }
+      
       // Tìm email - thử nhiều key
-      let email = payload.Email || payload.email || payload.UniqueName || payload.unique_name;
+      let email = payload.Email || payload.email || payload.Username || payload.username;
       
       // Tìm fullName - thử nhiều key  
       let fullName = payload.FullName || payload.fullName || payload.Name || payload.name;
-      if (!fullName) fullName = payload.UniqueName || payload.unique_name;
+      if (!fullName) fullName = payload.Username || payload.username;
       
       // Tìm userId - thử nhiều key
-      let userId = payload.UserId || payload.userId || payload.NameId || payload.nameid;
+      let userId = payload.UserId || payload.userId || payload.NameId || payload.nameid || payload.sub;
       
       // Tìm companyId - thử nhiều key
-      let companyId = payload.CompanyId || payload.companyId;
+      let companyId = payload.CompanyId || payload.companyId || payload.company_id;
+      
+      // Tìm thêm các trường bổ sung
+      let phone = payload.Phone || payload.phone || payload.PhoneNumber;
+      let avatar = payload.Avatar || payload.avatar || payload.picture;
       
       return {
         userId: userId,
@@ -162,28 +219,51 @@ export const AuthProvider = ({ children }) => {
         fullName: fullName,
         role: role,
         companyId: companyId,
+        phone: phone,
+        avatar: avatar,
+        // Giữ lại payload gốc để debug
+        _rawPayload: payload,
       };
     } catch (e) {
       console.error('Error parsing JWT:', e);
-      return null;
+      return {
+        userId: null,
+        email: null,
+        fullName: null,
+        role: null,
+        companyId: null,
+      };
     }
   };
 
   const register = async (data) => {
-    const response = await authAPI.register(data);
-    const { token, user: userData } = response.data;
+    try {
+      const response = await authAPI.register(data);
+      const responseData = response.data;
 
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+      const token = responseData.token || responseData.accessToken;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(responseData.user || responseData));
 
-    setUser(userData);
-    setIsAuthenticated(true);
+      setUser(responseData.user || responseData);
+      setIsAuthenticated(true);
 
-    return userData;
+      return responseData;
+    } catch (error) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      throw error;
+    }
   };
 
   const logout = () => {
+    try {
+      authAPI.logout();
+    } catch (e) {
+      // Ignore logout API errors
+    }
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
@@ -191,12 +271,14 @@ export const AuthProvider = ({ children }) => {
 
   const getMenuItems = () => {
     if (!user?.role) return [];
-    return ROLE_MENUS[user.role] || [];
+    const normalizedRole = normalizeRole(user.role);
+    return ROLE_MENUS[normalizedRole] || [];
   };
 
   const getDashboardRoute = () => {
     if (!user?.role) return '/login';
-    return ROLE_ROUTES[user.role] || '/';
+    const normalizedRole = normalizeRole(user.role);
+    return ROLE_ROUTES[normalizedRole] || '/';
   };
 
   const value = {

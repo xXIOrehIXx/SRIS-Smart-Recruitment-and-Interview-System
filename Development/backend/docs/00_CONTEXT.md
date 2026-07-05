@@ -1,278 +1,294 @@
 # 00 — CONTEXT.md
 
-> **Kim chỉ nam (single source of truth) cho mọi chat trong Project SRIS. Mọi chat mới Claude PHẢI đọc file này đầu tiên.**
->
-> *Quy ước tên gọi: **Radar Chart** = hình dạng mạnh/yếu theo trục tiêu chí; **standard deviation (độ lệch chuẩn)** = con số đo các interviewer có lệch nhau không → flag "cần bàn". Đừng gọi lẫn hai thứ.*
+Kim chỉ nam (single source of truth) cho mọi chat trong Project SRIS. Mọi chat mới Claude PHẢI đọc file này đầu tiên.
+Quy ước tên gọi: Radar Chart = hình dạng mạnh/yếu theo trục tiêu chí; standard deviation (độ lệch chuẩn) = con số đo các interviewer có lệch nhau không → flag "cần bàn". Đừng gọi lẫn hai thứ.
 
 ---
 
 ## 0. TRẠNG THÁI DỰ ÁN
 
-- Đã báo cáo thầy (Business Overview Document) → OK; đang chỉnh theo feedback (Section 12).
-- AI dùng **Local AI + Vector** (không OpenAI/Gemini).
-- **Đã hoàn thành PoC chạy thật:** Việc 2 (Local AI+Vector), Việc 3 (PDF extract), Việc 4 (Gen Quiz AI), Việc 5 (State Machine). Chi tiết & bài học ở Section 14.
-- **Thiết kế xong, chờ code:** Đặt lịch phỏng vấn (Section 15).
-- **Mô hình role:** 4 role đăng nhập Portal — Admin, Recruiter, Interviewer, Department Manager; Candidate là khách ẩn danh dùng magic link. Người quyết tuyển một vị trí là Department Manager của job (cột `Job.department_manager_id`; để trống → Recruiter quyết). Tiêu chí chấm per-job do Recruiter cấu hình. OfferDetail cho state OFFER; ứng viên tự nhận/từ chối qua magic link `OFFER_RESPONSE`. **DB: 21 bảng** (V001). **ERD vẽ 19 thực thể nghiệp vụ** — GIỮ `MagicLinkToken` (cơ chế cửa vào của Candidate), KHÔNG vẽ `ActivityLog` + `EmailLog` (log/audit thuần). Quan hệ `Application` → `MagicLinkToken` là **1-N**, nhãn `generates` (một hồ sơ phát sinh nhiều token theo 4 purpose + cấp lại khi hết hạn). ERD vẽ kiểu **chỉ thuộc tính + quan hệ bằng đường nối, không vẽ cột khóa ngoại**; mọi bảng đều có `company_id` (cô lập tenant) nên không vẽ hết các đường Company cho đỡ rối. `Job` có 2 FK tới `User` (`department_manager_id`, `created_by`) nhưng theo quy ước KHÔNG vẽ cột FK trong box → thể hiện bằng 2 đường nối: `decides hiring for` (Department Manager quyết tuyển) + `creates` (Recruiter tạo job).
-- **Phạm vi:** tuyển cho **MỌI vị trí**, không chỉ IT (Charter/Persona nghiêng IT chỉ là ví dụ).
-- Tên đồ án: **Smart Recruitment and Interview System (SRIS)**.
-- **CẦN HỎI THẦY:** (1) "Đề xuất CV" (basic) có in-scope không; (2) phỏng vấn nhiều vòng có in-scope không (đã có bằng chứng thực tế VPBank ủng hộ — xem 5.12, 10).
+- **ĐÃ BẢO VỆ HỘI ĐỒNG (07/2026)** — nhận 4 feedback, quy về 3 vấn đề gốc (Section 12). Toàn bộ tái định vị hậu-hội-đồng đã CHỐT trong file này: target thu hẹp (≤200 người + công ty gia đình), pipeline hiển thị 4 pha, chấm CV theo TIÊU CHÍ (bỏ ném cả JD↔CV), Talent Pool nâng lên hero smart feature.
+- **MODULE QUIZ ĐÃ LOẠI HOÀN TOÀN KHỎI SCOPE — thầy hướng dẫn ĐÃ XÁC NHẬN (07/2026)** (cả quiz nhập tay lẫn AI gen — lý do & đạn Q&A: Section 3 OUT + Section 10). State machine còn 6 state, magic link còn 3 purpose. **Code quiz đã GỠ HẲN khỏi main (07/2026):** xóa toàn bộ entities/services/controllers/endpoint AI; migration `V012__drop_quiz.sql` drop 6 bảng quiz + siết CHECK còn 6 state/3 purpose; state machine (bỏ G1), email, trang status ứng viên đã cập nhật theo. KHÔNG demo, KHÔNG đưa vào tài liệu.
+- AI dùng Local AI + Vector (không OpenAI/Gemini).
+- Đã hoàn thành PoC chạy thật: Việc 2 (Local AI+Vector), Việc 3 (PDF extract), Việc 4 (pipeline LLM JSON — tính năng gốc đã loại, GIỮ pattern tái dùng), Việc 5 (State Machine). Chi tiết & bài học ở Section 14.
+- Thiết kế xong, chờ code: Đặt lịch phỏng vấn (Section 15). **Chấm CV theo tiêu chí (5.18) ĐÃ CODE end-to-end (07/2026 — Việc B4 phần code, xem 5.18 mục TRẠNG THÁI CODE + Section 14); còn phần ĐO ngưỡng/chunk (khung §16, P/R/F1) chưa làm.** Yêu cầu tuyển dụng (5.17) chờ chốt mô hình hóa (Việc B3).
+- Mô hình role: 4 role đăng nhập Portal — Admin, Recruiter, Interviewer, Department Manager; **một người gán được NHIỀU role** (công ty gia đình: 1 chủ giữ cả 4). Candidate là khách ẩn danh dùng magic link. Người quyết tuyển = Department Manager của job (Job.department_manager_id; để trống → Recruiter quyết). OfferDetail cho state OFFER; ứng viên tự nhận/từ chối qua magic link OFFER_RESPONSE. DB: nhóm bảng Quiz ĐÃ GỠ (V012); EvaluationCriteria ĐÃ MỞ RỘNG + thêm CvChunk/ApplicationCriterionMatch (V013 — 5.18); ERD mới (Việc B3) còn lại: thêm Yêu cầu tuyển dụng + vẽ lại sơ đồ. ERD vẽ kiểu chỉ thuộc tính + quan hệ bằng đường nối, không vẽ cột FK; GIỮ MagicLinkToken, KHÔNG vẽ ActivityLog + EmailLog; mọi bảng đều có company_id. Quan hệ Application → MagicLinkToken là 1-N, nhãn generates. Job có 2 FK tới User (department_manager_id, created_by) → 2 đường nối: decides hiring for + creates.
+- Phạm vi: tuyển cho MỌI vị trí, không chỉ IT (Charter/Persona nghiêng IT chỉ là ví dụ).
+- Tên đồ án: Smart Recruitment and Interview System (SRIS).
+- CẦN HỎI THẦY: (1) phỏng vấn nhiều vòng có in-scope không (bằng chứng VPBank — 5.12, 10); (2) xác nhận tái định vị target ≤200 người + luồng Yêu cầu tuyển dụng mới.
 
 ---
 
 ## 1. TÓM TẮT DỰ ÁN
 
-- **Tên:** Smart Recruitment and Interview System (SRIS) — Hệ thống Tuyển dụng và Phỏng vấn Thông minh.
-- **Mô hình:** SaaS Multi-tenant ATS tích hợp AI — **cung cấp DỊCH VỤ (thuê dùng, trả phí định kỳ), KHÔNG bán đứt.** Nhiều công ty dùng chung một hệ thống, cô lập theo `company_id`.
-- **Đối tượng:** công ty 100+ nhân sự, tuyển mọi vị trí.
-- **Thời gian:** 3 tháng (01/04 — 15/07/2026).
-- **Team 5:** 1 BA Lead/PM (kiêm Backend, là tôi) · 2 Backend (.NET) · 2 Frontend (React).
-- **Stack:** .NET 10 minimal API **+ EF Core** (orchestration & DB) · Python FastAPI (AI: embedding + LLM) · React · **SQL Server 2025** (kiểu VECTOR) · **MinIO** (object storage — lưu CV gốc) · Local AI · Vercel (FE) · Render/VPS (BE).
-- **2 mảng chủ đạo:** Recruitment (tuyển dụng) · Interview (phỏng vấn).
+- Tên: Smart Recruitment and Interview System (SRIS) — Hệ thống Tuyển dụng và Phỏng vấn Thông minh.
+- Mô hình: SaaS Multi-tenant ATS tích hợp AI — cung cấp DỊCH VỤ (thuê dùng, trả phí định kỳ), KHÔNG bán đứt. Nhiều công ty dùng chung một hệ thống, cô lập theo company_id.
+- **Đối tượng (CHỐT hậu-hội-đồng): công ty NHỎ ≤200 nhân sự + công ty gia đình** — nhóm chưa có phòng HR chuyên trách hoặc HR kiêm nhiệm. (Mốc ≤200 lao động khớp định nghĩa DNNVV theo Luật Hỗ trợ DNNVV 04/2017/QH14 — dùng làm căn cứ pháp lý khi bảo vệ.)
+- **Định vị (CHỐT): "Quy trình tuyển dụng tối giản đúng chuẩn cho công ty chưa có phòng HR."** AI là trợ lý thầm lặng, KHÔNG phải ngôi sao. Nguyên tắc thiết kế xuyên suốt: **đơn giản là mặc định, phức tạp là tùy chọn** — hệ thống lớn lên cùng công ty. Hệ thống KHÔNG thêm quy trình cho công ty nhỏ — nó CẤU TRÚC HÓA đúng các bước họ đang làm rời rạc (Section 4).
+- **Luận điểm PDPD (CHỐT):** Luật Bảo vệ dữ liệu cá nhân VN hiệu lực 01/01/2026 → doanh nghiệp tuyển dụng phải tuân thủ nghiêm về dữ liệu ứng viên. Local AI + cô lập dữ liệu của SRIS = **lợi thế TUÂN THỦ PHÁP LUẬT**, không chỉ là điểm kỹ thuật. Dùng cho cả defense lẫn định vị thị trường.
+- Thời gian: 3 tháng (01/04 — 15/07/2026). Đã qua Bảo vệ 1; đang giai đoạn sửa theo feedback hội đồng.
+- Team 5: 1 BA Lead/PM (kiêm Backend, là tôi) · 2 Backend (.NET) · 2 Frontend (React).
+- Stack: .NET 10 minimal API + EF Core (orchestration & DB) · Python FastAPI (AI: embedding + LLM) · React · SQL Server 2025 (kiểu VECTOR) · Amazon S3 (object storage — lưu CV gốc) · Local AI · Vercel (FE) · Render/VPS (BE).
+- 2 mảng chủ đạo: Recruitment (tuyển dụng) · Interview (phỏng vấn).
 
 ---
 
 ## 2. VAI TRÒ NGƯỜI DÙNG
 
-> **Nguyên tắc cửa vào:** người trong cuộc đều **đăng nhập Portal** — Admin, Recruiter, Interviewer, Department Manager. **Chỉ Candidate** là khách ẩn danh, tham gia qua **magic link an toàn, KHÔNG cần account**. (Câu chốt khi bảo vệ.)
+Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal — Admin, Recruiter, Interviewer, Department Manager. Chỉ Candidate là khách ẩn danh, tham gia qua magic link an toàn, KHÔNG cần account. (Câu chốt khi bảo vệ.)
 
-> **Ba vai tách bạch — chấm / quyết / thao tác:** **Interviewer** *chấm* (cho điểm phỏng vấn). **Department Manager** (trưởng bộ phận) *quyết* (chốt tuyển hay không, ở bước OFFER). **Recruiter** *thao tác* (vận hành cả pipeline, sàng lọc CV, đặt lịch, gen quiz). Người mở nhu cầu tuyển một vị trí chính là Department Manager của job đó.
+**GÁN CHỒNG ROLE:** 4 role là 4 TẬP QUYỀN, không phải 4 con người. Một User gán được nhiều role cùng lúc. Công ty gia đình: 1 chủ giữ cả 4 role, làm hết từ đăng tin đến quyết tuyển. Công ty lớn hơn: tách dần từng role ra từng người. → Câu bảo vệ: "Hệ thống phân quyền đầy đủ 4 role, sẵn sàng cho công ty tách vai — nhưng công ty nhỏ chỉ cần MỘT người giữ hết. Không bắt công ty 10 người xài bộ máy công ty 1000 người."
+
+Ba vai tách bạch — chấm / quyết / thao tác: Interviewer chấm (cho điểm phỏng vấn). Department Manager (trưởng bộ phận) quyết (chốt tuyển hay không, ở bước OFFER) **và ra đề tuyển dụng (tạo Yêu cầu tuyển dụng — 5.17)**. Recruiter thao tác (vận hành cả pipeline, sàng lọc CV, đặt lịch).
 
 | Role | Mô tả | Cách vào | Quyền chính |
 |---|---|---|---|
-| Admin (per tenant) | Quản trị viên công ty | Đăng nhập Portal | Quản lý user, cấu hình brand |
-| Recruiter | Vận hành toàn bộ pipeline | Đăng nhập Portal | Tạo job, cấu hình tiêu chí chấm theo job, quản lý Kanban, sàng lọc & duyệt CV, gen + duyệt quiz, đặt lịch, gửi offer |
-| Interviewer | Người chấm phỏng vấn | Đăng nhập Portal | Xem buổi PV được giao, chấm điểm theo tiêu chí (Blind Review), sửa điểm đã gửi (tới khi buổi/vòng bị khóa), xem lịch sử buổi đã chấm |
-| Department Manager | Trưởng bộ phận — người quyết định tuyển | Đăng nhập Portal | Mở/sở hữu nhu cầu tuyển (job); ở bước OFFER xem điểm/Radar rồi **chốt tuyển hay không**. Không đụng sàng lọc CV / quiz / phỏng vấn |
-| Candidate | Ứng viên ngoài hệ thống | **Magic link** | Nộp CV, làm quiz / chọn lịch / xem trạng thái / nhận-từ chối offer |
+| Admin (per tenant) | Quản trị viên công ty | Đăng nhập Portal | Quản lý user, gán role, cấu hình brand |
+| Recruiter | Vận hành toàn bộ pipeline | Đăng nhập Portal | Xem Yêu cầu tuyển dụng → tạo Tin tuyển dụng; duyệt bộ tiêu chí AI bóc; quản lý Kanban, sàng lọc CV, đặt lịch, gửi offer |
+| Interviewer | Người chấm phỏng vấn | Đăng nhập Portal | Xem buổi PV được giao, chấm điểm theo tiêu chí (Blind Review nếu bật), sửa điểm đã gửi (tới khi khóa), xem lịch sử |
+| Department Manager | Trưởng bộ phận — ra đề và quyết | Đăng nhập Portal | Tạo Yêu cầu tuyển dụng (vị trí + tiêu chí cần thiết — 5.17); ở bước OFFER xem điểm/Radar rồi chốt tuyển hay không. Không đụng sàng lọc CV / vận hành |
+| Candidate | Ứng viên ngoài hệ thống | Magic link | Nộp CV, chọn lịch / xem trạng thái / nhận-từ chối offer |
 
-> **Cách phân biệt role (chống nhầm):** **(1) Vào bằng gì?** 4 role nội bộ đều login; chỉ Candidate dùng magic link. **(2) Việc cốt lõi 1 động từ?** Câu thần chú: **Recruiter lái · Interviewer chấm · Department Manager quyết · Candidate ứng tuyển · Admin dựng sân.**
->
-> **"Chấm" vs "quyết" — câu hay bị hỏi:** `Interviewer` cho điểm (input). `Department Manager` ra phán xét tuyển/loại — chỉ ở **một điểm duy nhất** trong cả luồng là bước OFFER. `Recruiter` vận hành Kanban giữa hai việc đó và gác khúc sàng lọc CV. Người quyết của một job = Department Manager gán cho job (`Job.department_manager_id`); job không gán DM thì Recruiter tự quyết. **Ghi thẳng câu này trong báo cáo** — ba vai chấm/quyết/thao tác tách bạch là điểm cộng nghiệp vụ.
+Cách phân biệt role (chống nhầm): (1) Vào bằng gì? 4 role nội bộ đều login; chỉ Candidate dùng magic link. (2) Việc cốt lõi 1 động từ? Câu thần chú: Recruiter lái · Interviewer chấm · Department Manager quyết · Candidate ứng tuyển · Admin dựng sân.
+"Chấm" vs "quyết": Interviewer cho điểm (input). Department Manager ra phán xét tuyển/loại — chỉ ở MỘT điểm duy nhất là bước OFFER. Job không gán DM → Recruiter tự quyết. DM đứng HAI ĐẦU quy trình: ra đề (Yêu cầu tuyển dụng + tiêu chí) và chốt (OFFER) — vai tròn trịa, dễ bảo vệ.
 
 ---
 
 ## 3. SCOPE
 
 ### IN-SCOPE
-**Recruitment:** Career Site · Pipeline Kanban + State Machine · AI chấm điểm CV (Local AI + Vector) · Email Automation · Multi-tenant (shared schema + company_id) · Brand theming.
-**Interview:** Quiz Engine 2 loại (Async + Onsite) · AI Gen quiz từ JD (Local LLM) · Anti-cheat 3-layer · Collaborative Scoring + Radar Chart · CRUD tiêu chí chấm.
-**Chung:** Dashboard Analytics · RBAC 4 role (login) + Candidate magic link · Activity Log & Internal Notes.
-**"Wow":** Hybrid 2-stage test · Blind Review · Insight std deviation · Ứng viên tự nhận/từ chối offer online (self-service) · Disclosure & Consent.
+- Recruitment: Career Site · Pipeline Kanban (hiển thị 4 pha — 5.16) + State Machine nội bộ · **Yêu cầu tuyển dụng (DM) → Tin tuyển dụng (Recruiter) — 5.17** · **AI bóc tiêu chí + chấm CV THEO TỪNG TIÊU CHÍ có giải thích (Local AI + Vector) — 5.18** · Email Automation · Multi-tenant (shared schema + company_id) · Brand theming.
+- Interview: Collaborative Scoring + Radar Chart (Blind Review tự bật khi >1 người chấm) · CRUD tiêu chí chấm (dùng CHUNG bộ tiêu chí với chấm CV — 5.18) · Đặt lịch phỏng vấn nội bộ + .ics (Section 15).
+- Chung: Dashboard Analytics · RBAC 4 role gán chồng + Candidate magic link · Activity Log & Internal Notes.
+- **"Smart" (2 điểm nhấn khi bảo vệ):** (1) **Talent Pool reverse matching** — CV cũ "sống lại" cho job mới (hero, ĐÃ CODE); (2) **Chấm CV theo tiêu chí có giải thích** (khớp/thiếu + câu bằng chứng) — trả lời thẳng câu hội đồng "AI chấm dựa vào đâu".
+- "Wow" phụ: Blind Review · Insight std deviation · Ứng viên tự nhận/từ chối offer online · Đặt lịch self-service kiểu Calendly thu nhỏ.
+
+### TALENT POOL / CV SUGGESTION — HERO (đã code)
+- Recruiter bấm "Gợi ý CV", hệ thống tìm CV cũ có vector gần JD/tiêu chí → Top N + điểm. Vector search LUÔN kèm company_id. KHÔNG real-time, không gợi ý ngược.
+- Nguồn dữ liệu = KHO CvDocument CŨ của chính công ty đó — không nguồn mới, không scrape, không mua data. Vector không mất khi ứng viên rớt / job đóng.
+- Cơ chế = ĐẢO CHIỀU truy vấn chấm CV: "JD mới → quét lại kho CV cũ". Tái dùng embedding + vector search, KHÔNG thêm model/hạ tầng.
+- Cô lập tenant: chỉ thấy CV nộp vào cùng company_id.
+- Pháp lý/đạo đức: ứng viên đã chủ động nộp CV cho chính công ty đó → xét lại cho vị trí khác là hợp lý. Khớp tinh thần PDPD (dữ liệu ở lại công ty).
+- Giới hạn (ghi thẳng): chỉ có giá trị khi kho CV đủ lớn; công ty mới / kho trống → gợi ý không ra gì.
+- **Vì sao là hero với target công ty nhỏ:** công ty nhỏ tuyển lặp các vị trí giống nhau + tuyển qua quan hệ; kho CV cũ là tài sản họ đang bỏ phí. Câu kể: "CV cũ không chết — hệ thống tự sống lại chúng cho vị trí mới."
 
 ### SOFT IN-SCOPE (chờ thầy)
-- **CV Suggestion / Talent Pool (basic) — QUYẾT ĐỊNH: SẼ LÀM** (vẫn xác nhận thầy phạm vi phase 1). Recruiter bấm "Gợi ý CV", hệ thống tìm CV cũ có vector gần JD → Top N + điểm. Vector search LUÔN kèm `company_id`. KHÔNG real-time, không gợi ý ngược. (PoC đã chứng minh khả thi.)
-  * **Nguồn dữ liệu = KHO `CvDocument` CŨ của chính công ty đó** — không nguồn mới, không scrape, không mua data. Mỗi CV ứng viên từng nộp đã được parse + sinh embedding + lưu; vector đó không mất khi ứng viên rớt / job đóng. Talent Pool chỉ quét lại kho đã tích lũy.
-  * **Cơ chế = ĐẢO CHIỀU truy vấn chấm CV đã PoC:** thay vì "CV mới vào → so 1 JD", thì "JD mới → quét lại kho CV cũ". Tái dùng đúng embedding + vector search, KHÔNG thêm model / hạ tầng.
-  * **Cô lập tenant:** chỉ thấy CV nộp vào cùng `company_id` — không bao giờ gợi ý xuyên công ty (câu hội đồng hay hỏi).
-  * **Pháp lý/đạo đức:** ứng viên đã chủ động nộp CV cho chính công ty đó → xét lại cho vị trí khác là hợp lý, không phải dùng lén.
-  * **Giới hạn (ghi thẳng, đừng vẽ thần kỳ):** chỉ có giá trị khi kho CV đủ lớn; công ty mới / kho trống → gợi ý không ra gì.
-- **Phỏng vấn nhiều vòng (2-3 vòng):** xem 5.12. (Bằng chứng thực tế: VPBank có PV nhóm + PV cá nhân — 10.)
+- Phỏng vấn nhiều vòng (2-3 vòng): xem 5.12. (Bằng chứng thực tế: VPBank — 10.)
 
 ### OUT-OF-SCOPE
-CV Suggestion nâng cao · dynamic subdomain · Super Admin portal · đồng bộ 2 chiều Google/Outlook Calendar (đặt lịch *nội bộ* thì CÓ làm — Section 15; .ics đính kèm vẫn in-scope) · tự dò lịch rảnh interviewer · coding challenge · Core Recruiter · chatbot real-time · **chat tự do Recruiter↔Local AI** (thay bằng nút hành động AI — 5.6) · LDAP/SSO · mobile native · **webcam proctoring / giám sát sinh trắc** (đối lập có chủ đích với JobTest — 5.5) · OCR cho PDF scan.
+**Toàn bộ module Quiz / bài test online (cả nhập tay lẫn AI gen) — ĐÃ CÂN NHẮC VÀ LOẠI.** Lý do nghiệp vụ: (1) desk research + feedback hội đồng cho thấy công ty ≤200 người hầu như KHÔNG tổ chức test — họ tin phỏng vấn trực tiếp, tham chiếu và thử việc; giữ quiz = ép công ty nhỏ dùng quy trình công ty lớn, mâu thuẫn đúng điểm hội đồng chê. Lý do chất lượng: (2) chất lượng đề AI gen không có người kiểm chứng chuyên môn trong target segment; (3) chống gian lận online không thể đảm bảo trọn vẹn trong scope đồ án. Công ty cần kiểm tra năng lực (kế toán, kỹ thuật viên...) → tự tổ chức offline, ghi kết quả vào Internal Notes.
+Các mục OUT khác: CV Suggestion nâng cao · dynamic subdomain · Super Admin portal · đồng bộ 2 chiều Google/Outlook Calendar (đặt lịch nội bộ CÓ làm — Section 15; .ics vẫn in-scope) · tự dò lịch rảnh interviewer · coding challenge · Core Recruiter · chatbot real-time · chat tự do Recruiter↔Local AI (thay bằng nút hành động AI đơn stateless) · LDAP/SSO · mobile native · webcam proctoring / giám sát sinh trắc · OCR cho PDF scan · **AI tham gia/hoà giải quyết định tuyển (ĐÃ CÂN NHẮC VÀ LOẠI — không ai giao quyết định tuyển cho AI; AI = decision support, người quyết)**.
 
 ---
 
-## 4. KPI
+## 4. BỐI CẢNH, NGHIỆP VỤ AS-IS & KPI
+
+### 4.1 Số liệu desk research CÓ NGUỒN (dùng cho báo cáo, trích nguồn khi viết)
+- Việt Nam ~900.000 doanh nghiệp, trên 98% là DNNVV, đóng góp hơn 40% GDP, tạo hơn 50% việc làm (Bộ KH&ĐT, Q1/2025).
+- DNNVV = lao động BHXH bình quân năm ≤200 người (Luật Hỗ trợ DNNVV 04/2017/QH14) — target SRIS khớp định nghĩa pháp lý.
+- 55% doanh nghiệp nhỏ chưa từng áp dụng bất kỳ công nghệ số nào vào kinh doanh (khảo sát VCCI, đầu 2025); 60% nêu chi phí là lý do chính trì hoãn giải pháp số; đa số chưa có bộ phận CNTT chuyên trách, không biết bắt đầu từ đâu.
+- Doanh nghiệp quy mô dưới 25 nhân viên gặp thiếu hụt nhân sự cao nhất, 40,6% (TopCV, Báo cáo Thị trường tuyển dụng).
+- Doanh nghiệp mất trung bình 23 ngày để tìm ứng viên phù hợp, dành ~1/3 thời gian trong tháng cho phỏng vấn (Glassdoor); phỏng vấn vội/hỏi sai dẫn đến tuyển sai tốn hơn 15.000 USD/năm (CareerBuilder).
+- 62% doanh nghiệp nhỏ từng tuyển sai (Monster) · chi phí tuyển sai ≈ 3-4 lần lương năm (SHRM) · ~78% nhà tuyển dụng mất ứng viên vì xếp lịch chậm (Calendly Blog) · 90% HR tại SME VN làm việc không theo quy trình nhất quán.
+
+### 4.2 Quy trình As-Is của công ty ≤200 người (desk research — nền bối cảnh, ĐỐI CHIẾU với phỏng vấn sâu B2)
+
+| Bước | Công ty nhỏ ĐANG làm | Vấn đề | SRIS cấu trúc hóa thành |
+|---|---|---|---|
+| 1. Phát sinh nhu cầu | Trưởng bộ phận/chủ "nói miệng" cần người; tiêu chí trong đầu | Người sàng lọc không biết chính xác cần gì | Yêu cầu tuyển dụng (5.17) |
+| 2. Tìm nguồn | Người quen/nhân viên giới thiệu + đăng tin (Facebook/Zalo, trang tuyển dụng) | Ưu ái hồ sơ quen → loại nhầm hồ sơ giỏi | Career Site + Talent Pool |
+| 3. Nhận CV | Rải email, Zalo/Messenger, bản in | Thất lạc, quên phản hồi | Pha Hồ sơ mới — kho tập trung |
+| 4. Sàng lọc | Chủ/quản lý tự đọc, cảm tính, hay tuyển theo "hình mẫu bản thân" | Tuyển sai lặp lại (62% — Monster) | Pha Sàng lọc — chấm theo tiêu chí + bằng chứng (5.18) |
+| 5. Kiểm tra năng lực | HẦU NHƯ KHÔNG tổ chức bài test — thử việc mới là vòng đánh giá thật | — | KHÔNG có bước test (căn cứ loại quiz) |
+| 6. Phỏng vấn | Thường 1 vòng, chủ + trưởng bộ phận cùng ngồi, không phiếu chấm; bắt qua nhiều vòng → ứng viên tự bỏ | So sánh ứng viên bằng trí nhớ | Pha Phỏng vấn — phiếu chấm chung, mặc định 1 vòng (5.7, 5.12) |
+| 7. Quyết + offer | Quyết nhanh nhưng hay im lặng kéo dài với UV; offer qua điện thoại/tin nhắn | Mất ứng viên vì im lặng/chậm lịch (78% — Calendly) | Pha Quyết định — DM chốt tại OFFER; UV tự xem trạng thái + phản hồi offer (5.15) |
+| 8. Thử việc, tham chiếu | Vòng đánh giá thật; tham chiếu chỉ với vị trí quan trọng | — | Ngoài scope — ghi Internal Notes (Limitations) |
+
+**Luận điểm vàng cho defense:** công ty nhỏ KHÔNG thiếu bước — họ làm gần đủ các bước như công ty lớn nhưng làm PHI CẤU TRÚC (miệng, Zalo, trí nhớ, cảm tính). SRIS không thêm quy trình — SRIS cấu trúc hóa đúng những gì họ đang làm sẵn. Trả lời trực diện feedback #1 của hội đồng.
+
+**Trả lời nghi vấn "công ty nhỏ tuyển ít, cần gì hệ thống":** (1) số học — công ty 30-200 người với turnover ~15-25%/năm vẫn tuyển 8-60 lượt/năm, mỗi lượt hàng chục CV (số cụ thể chờ B2/trích nguồn); (2) người tuyển là chủ/trưởng bộ phận — giờ công đắt nhất công ty; (3) tuyển sai 1 người ở công ty 15 người = 7% nhân sự, rủi ro theo tỷ lệ NGHỊCH với quy mô; (4) "tuyển ít" chính là lý do họ không thể thuê HR chuyên trách hay mua ATS enterprise → khoảng trống cho SaaS thuê tháng giá rẻ.
+
+### 4.3 KPI
 
 | KPI | As-Is | To-Be |
 |---|---|---|
-| Time-to-Hire | 18 ngày | < 12 ngày (-30%) |
-| Recruiter làm tác vụ admin | 3-4 h/ngày | < 1 h/ngày |
+| Time-to-Hire | **CHỜ SỐ KHẢO SÁT/PHỎNG VẤN SÂU (Việc B2)** — tham chiếu desk research: 23 ngày (Glassdoor) | Giảm ~30% so baseline khảo sát |
+| Recruiter/chủ làm tác vụ admin | CHỜ SỐ B2 (tham khảo cũ: 3-4 h/ngày) | < 1 h/ngày |
 | Báo cáo nguồn ứng viên | Không có | Dashboard 360° theo UTM |
-| Phát hiện gian lận quiz | 0% | > 60% |
+| Kho hồ sơ tập trung, không thất lạc | CV rải email/Zalo/Excel (90% HR SME làm không theo quy trình) | 100% hồ sơ tập trung + truy vết |
+
+QUY TẮC: mọi con số As-Is trong tài liệu chính thức phải có nguồn (phỏng vấn sâu/khảo sát của nhóm hoặc desk research trích dẫn được — 4.1). KHÔNG tự bịa số.
 
 ---
 
 ## 5. CÁC QUYẾT ĐỊNH THIẾT KẾ ĐÃ CHỐT
 
+Ghi chú đánh số: giữ ổn định số mục để khớp tài liệu/chat cũ — **5.5 và 5.6 không tồn tại** (thuộc module Quiz đã loại khỏi scope, xem Section 3 OUT).
+
 ### 5.1 Authentication
-- **Internal user (Admin / Recruiter / Interviewer / Department Manager):** JWT + Email/Password, đăng nhập Portal.
-- **Candidate:** Magic Link (token 1 lần khi chốt, TTL cấu hình) — KHÔNG cần account. Là actor ẩn danh **duy nhất**.
-- **Vì sao người trong cuộc đều login:** interviewer cần xem lịch sử các buổi đã chấm và sửa điểm đã gửi (tới khi buổi/vòng bị khóa); department manager cần xem kết quả để quyết tuyển. Đó là nhu cầu định danh lâu dài, magic link một-tác-vụ không kham được. Dùng lại đúng cơ chế JWT đã có cho Admin/Recruiter — như các ATS thật (Greenhouse, Lever).
+- Internal user (Admin / Recruiter / Interviewer / Department Manager): JWT + Email/Password, đăng nhập Portal.
+- Candidate: Magic Link (token 1 lần khi chốt, TTL cấu hình) — KHÔNG cần account. Là actor ẩn danh duy nhất.
+- Vì sao người trong cuộc đều login: interviewer cần xem lịch sử buổi đã chấm và sửa điểm; department manager cần xem kết quả để quyết. Nhu cầu định danh lâu dài, magic link một-tác-vụ không kham được. Dùng lại JWT như các ATS thật (Greenhouse, Lever).
 
 ### 5.2 Database — SQL Server 2025 + cô lập tenant
-- **Engine:** SQL Server 2025 (kiểu VECTOR). Dev: Developer Edition. Deploy: Azure SQL Free Tier (đã xác minh hỗ trợ VECTOR; 100k vCore-giây/tháng, 32GB).
-- **Multi-tenant:** shared schema + cột `company_id` mọi bảng; routing path-based `/t/{slug}`.
-- **Cô lập tenant — giá trị thật KHÔNG ở cột `company_id` (việc đó tầm thường) mà ở việc ĐẢM BẢO không rò dữ liệu xuyên tenant.** Đây là phần kỹ thuật + câu hội đồng hay hỏi. 3 lớp phòng thủ:
-  1. **RLS (lõi, ép ở tầng DB):** security predicate gắn vào bảng, tự chèn điều kiện lọc tenant vào MỌI câu SELECT/UPDATE/DELETE/INSERT — dev quên `company_id` thì DB vẫn chặn. Cần FILTER + BLOCK predicate. Tenant set qua `SESSION_CONTEXT` đầu mỗi request. **Bẫy:** connection pooling → PHẢI set lại `SESSION_CONTEXT` mỗi request.
-  2. **EF Core Global Query Filter (tầng code):** khai báo 1 lần, mọi LINQ tự kèm `company_id`. (Một lý do chọn EF Core — xem 5.11.)
-  3. **Test cô lập tenant (lưới):** test tạo dữ liệu công ty A+B, đăng nhập A khẳng định không thấy dòng của B; chạy trong CI. Khớp kế hoạch test (môn SWT, bảng 1.2).
-- **Unique scope tenant:** mọi UNIQUE theo `(company_id, ...)`. VD email ứng viên unique `(company_id, email)` — 1 người nộp 2 công ty là bình thường.
-- **Vector search:** `VECTOR_DISTANCE('cosine', ...)` — exact (kNN), đủ cho < 50.000 vector. KHÔNG dùng vector index / `VECTOR_SEARCH` (experimental). Trong EF Core: `EF.Functions.VectorDistance("cosine", ...)`. Câu vector PHẢI kèm `company_id`.
+- Engine: SQL Server 2025 (kiểu VECTOR). Dev: Developer Edition. Deploy: Azure SQL Free Tier (đã xác minh hỗ trợ VECTOR; 100k vCore-giây/tháng, 32GB).
+- Multi-tenant: shared schema + cột company_id mọi bảng; routing path-based /t/{slug}.
+- Cô lập tenant — giá trị thật KHÔNG ở cột company_id mà ở ĐẢM BẢO không rò dữ liệu xuyên tenant. 3 lớp phòng thủ:
+  1. RLS (lõi, ép ở tầng DB): security predicate tự chèn điều kiện lọc tenant vào MỌI câu SELECT/UPDATE/DELETE/INSERT — dev quên company_id thì DB vẫn chặn. Cần FILTER + BLOCK predicate. Tenant set qua SESSION_CONTEXT đầu mỗi request. Bẫy: connection pooling → PHẢI set lại SESSION_CONTEXT mỗi request.
+  2. EF Core Global Query Filter (tầng code): khai báo 1 lần, mọi LINQ tự kèm company_id.
+  3. Test cô lập tenant: tạo dữ liệu công ty A+B, đăng nhập A khẳng định không thấy dòng của B; chạy trong CI. Khớp kế hoạch test (SWT, bảng 1.2).
+- Unique scope tenant: mọi UNIQUE theo (company_id, ...). VD email ứng viên unique (company_id, email).
+- Vector search: VECTOR_DISTANCE('cosine', ...) — exact (kNN), đủ cho < 50.000 vector. KHÔNG dùng vector index / VECTOR_SEARCH (experimental). EF Core: EF.Functions.VectorDistance("cosine", ...). Câu vector PHẢI kèm company_id.
 
 ### 5.3 AI Integration — Local AI + Vector
-**KHÔNG OpenAI/Gemini** (thầy: gọi API là mức thấp nhất, tốn tiền/request, phụ thuộc bên thứ 3).
+KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/request, phụ thuộc bên thứ 3). Cộng thêm luận điểm PDPD (Section 1): dữ liệu CV không rời hệ thống.
 
 | Tính năng | Cách làm |
 |---|---|
-| Chấm điểm CV ↔ JD | Embedding local → vector → cosine. Tự viết logic điểm. |
-| Đề xuất CV / tìm Talent Pool | Vector search trong SQL Server 2025 |
-| Gen Quiz từ JD | Local LLM qua Ollama (qwen2.5) |
+| Bóc tiêu chí từ Yêu cầu tuyển dụng/JD | Local LLM (Ollama, qwen2.5) → danh sách tiêu chí DRAFT cho người duyệt (5.18) |
+| Chấm điểm CV theo TỪNG tiêu chí | Embedding tiêu chí + embedding đoạn CV → cosine per-criterion → khớp/thiếu + bằng chứng (5.18) |
+| Đề xuất CV / Talent Pool | Vector search trong SQL Server 2025 (đảo chiều — Section 3) |
 
-- **Embedding model (chốt):** `paraphrase-multilingual-MiniLM-L12-v2`, 384 chiều → `vector(384)`. Hỗ trợ tiếng Việt.
-- **RE-EMBEDDING:** vector 2 model khác nhau KHÔNG so sánh được. Đổi model → BẮT BUỘC sinh lại vector toàn bộ CV/JD cũ. Cần quy trình re-embedding.
-- **Hướng:** Hybrid — Embedding/Vector (chấm điểm, đã PoC) + Local LLM (Gen Quiz, đã PoC).
+- Embedding model (chốt): BAAI/bge-m3, 1024 chiều → vector(1024). Đa ngôn ngữ (hỗ trợ tiếng Việt), đọc tới 8192 token nên embed trọn CV dài. (Bản nhẹ dự phòng: paraphrase-multilingual-mpnet-base-v2, 768 chiều.)
+- RE-EMBEDDING: vector 2 model khác nhau KHÔNG so sánh được. Đổi model → BẮT BUỘC sinh lại vector toàn bộ CV/JD/tiêu chí cũ. Áp cho CẢ HAI tầng vector (5.18).
+- Hướng: Hybrid — Embedding/Vector (chấm điểm, đã PoC) + Local LLM (bóc tiêu chí — pattern JSON schema đã PoC ở Việc 4).
 
 ### 5.4 Python vs .NET
-- **Python (FastAPI):** sinh embedding + gen quiz. Stateless, KHÔNG đụng DB, KHÔNG biết tenant.
-- **.NET + EF Core:** orchestration, business logic, truy cập DB. Mọi request qua .NET; .NET gọi Python qua HTTP nội bộ.
-- Embedding: Python trả `float[]` → .NET bọc `SqlVector<float>` → EF Core lưu `vector(384)`. Tách Python/.NET KHÔNG đổi.
+- Python (FastAPI): sinh embedding + bóc tiêu chí. Stateless, KHÔNG đụng DB, KHÔNG biết tenant.
+- .NET + EF Core: orchestration, business logic, truy cập DB. Mọi request qua .NET; .NET gọi Python qua HTTP nội bộ.
+- Embedding: Python trả float[] → .NET bọc SqlVector<float> → EF Core lưu vector(1024).
 - Chỉ tách Python KHI bắt buộc (thư viện AI). Phần .NET tự làm được (vd extract PDF) thì để .NET.
-- **Hệ quả:** mọi tác vụ AI giữ dạng **gen đơn, stateless** (1 request → 1 kết quả). Đây là lý do KHÔNG làm chat tự do Recruiter↔AI (cần giữ lịch sử hội thoại → phá stateless); thay bằng nút hành động AI (5.6).
-
-### 5.5 Anti-cheat — "Raise the cost of cheating"
-| Layer | Mô tả | Detect |
-|---|---|---|
-| 1. Behavioral | Tab switch, paste, DevTools, blur/minimize, disconnect, time/câu | Gian lận đơn thiết bị |
-| 2. Question design | Câu tình huống thay vì tra cứu; xáo trộn câu + đáp án (test matrix) | Khó Google 30s; khó trao đáp án |
-| 3. Cross-check Stage 1↔2 | Async vs Onsite chênh > 30% | Gian lận đa thiết bị / nhờ AI ở nhà |
-
-- **Rule cụ thể Layer 1 (tham khảo VPBank + JobTest):**
-  * Chuyển tab quá **ngưỡng N** (cấu hình) → cảnh báo, vượt thì **auto-submit/khóa bài**.
-  * **Blur/minimize/đóng trình duyệt** → cảnh báo hoặc dừng bài, lưu phần đã làm.
-  * **Mất mạng/disconnect** → auto-save phần đã làm (không mất sạch).
-  * Đếm **số màn hình** trước khi vào thi (chống multi-monitor).
-- **Disclosure (CÔNG KHAI ngưỡng):** báo rõ cho ứng viên "bài thi có giám sát; tối đa **N lần** chuyển tab, lần N+1 khóa bài" — ngưỡng N cấu hình được. Lý do chọn công khai (kiểu VPBank): minh bạch + răn đe mạnh + tránh loại nhầm người lỡ tay.
-- **Consent bắt buộc:** UV tick đồng ý (có giám sát + làm độc lập, không dùng AI/công cụ/tài liệu) mới làm bài. (Honor code + hợp lệ pháp lý.)
-- **Đối lập có chủ đích với JobTest:** JobTest bán phần đắt = giám sát sinh trắc (webcam + AI khuôn mặt). SRIS cố tình dừng ở behavioral + thiết kế câu hỏi + cross-check → triết lý "raise the cost of cheating", không giám sát camera; webcam = OUT (riêng tư + ngoài scope). SRIS hơn JobTest ở **cross-check 2 vòng** (JobTest chỉ 1 bài test).
-
-### 5.6 Quiz — Hybrid 2 Stage (MCQ-only)
-**2 stage:** Pre-screening (UV làm tại nhà, MCQ cơ bản ~10 câu) · Technical Assessment (onsite có giám sát, MCQ + tình huống ~20 câu). Hai stage tạo dữ liệu cho cross-check Layer 3 (5.5).
-
-- **MCQ-only (KHÔNG tự luận):** lý do — (1) chấm tự động, khách quan, không cần AI chấm; (2) tự luận bị ChatGPT viết hộ dễ; (3) local 7B chấm tự luận không đáng tin, khó bảo vệ. *Lưu ý:* test năng lực kiểu VPBank (logic, lập luận số) bản chất CŨNG là trắc nghiệm — đi hướng nào cũng MCQ.
-- **Lõi nội dung = JD-based + câu tình huống:** AI gen quiz **theo từng JD** (đúng thế mạnh + mục tiêu "tuyển mọi vị trí"). KHÔNG đua aptitude chung (cần ngân hàng đề cố định, lệch định vị AI-gen). KHÔNG tự chấm văn hóa/tính cách (chủ quan — đó là sản phẩm riêng của JobTest). Muốn chạm văn hóa/soft-skill: dùng **câu tình huống MCQ** + Recruiter **thêm câu văn hóa thủ công** ở bước duyệt.
-- **Timer tách khỏi TTL (2 đồng hồ khác nhau):**
-  * **TTL magic link** = cửa sổ được phép VÀO (vd Quiz 48h). Vào lúc nào trong cửa sổ cũng được.
-  * **Timer lượt làm** = khi bấm Bắt đầu thì có X phút liên tục, hết giờ **auto-submit**. Tính ở **server** (bắt đầu khi load quiz lần đầu), không tin client.
-  * Phải có CẢ HAI: thiếu timer-lượt → UV mở link tra cứu cả ngày.
-- **Duyệt quiz AI:** Recruiter vừa gen vừa review/duyệt trong portal. Quiz AI sinh ra luôn ở **DRAFT** → Recruiter xem/sửa/duyệt → **READY** mới phát cho ứng viên. AI lo phần thô, Recruiter là cổng chất lượng cuối. Giữ đơn giản: KHÔNG kéo interviewer vào duyệt quiz, KHÔNG thêm role/state riêng cho quiz.
-- **Nút hành động AI cho Recruiter (thay cho chat tự do):** mỗi nút = 1 lệnh gen đơn stateless (đúng pipeline đã PoC), KHÔNG dựng chatbot:
-  * **Tạo thêm N câu** — gen thêm từ cùng JD, nối vào DRAFT.
-  * **Gen lại câu này** — làm lại riêng 1 câu, thay tại chỗ.
-  * **Thêm câu theo chủ đề [ô nhập]** — gen 1 câu ràng buộc chủ đề Recruiter gõ (vd "Docker").
-  * **Sửa tay** — Recruiter tự gõ sửa text/đáp án (không gọi AI).
-  * Lý do bỏ chat tự do: local 7B multi-turn dễ trôi/vỡ JSON; phải giữ lịch sử → phá stateless (5.4); chậm (mỗi lượt ~15-20s); Quiz là SHOULD-have, không đáng phình scope/rủi ro demo.
-
-- **QUIZ ENGINE = PROVIDER-AGNOSTIC (tách engine khỏi nguồn đề):** engine lõi (phát đề, chấm tự động, anti-cheat, 2-stage, magic link) KHÔNG quan tâm đề từ đâu ra. AI gen HẠ từ "lõi" xuống "công cụ hỗ trợ OPTIONAL" — thiếu LLM hệ thống vẫn chạy. **3 nguồn đề (không loại trừ nhau):** (1) Recruiter nhập tay / import file — đơn giản nhất, luôn có, là lõi; (2) AI gợi ý câu nháp từ JD — optional, nút trợ giúp; (3) ngân hàng câu hỏi đã duyệt — tái dùng.
-- **KHUNG SẴN 2 tầng (trả lời "HR tự nghĩ ra à / phải có khung sẵn"):**
-  * **Thư viện tiêu chí mẫu (template) theo nhóm vị trí** — vd Dev: "Kỹ năng kỹ thuật / Giải quyết vấn đề / Giao tiếp"; Sales: "Hiểu sản phẩm / Kỹ năng bán hàng". HR CHỌN template rồi tùy biến, KHÔNG nghĩ từ con số không.
-  * **Ngân hàng câu hỏi đã duyệt** — câu Recruiter duyệt tốt → lưu lại, tái dùng cho job tương tự; mỗi câu có nguồn gốc (gen từ JD nào, ai duyệt). Càng dùng càng giàu, công ty có bộ đề riêng.
-- **TRẢ LỜI CÂU THẦY "HR thêm tiêu chí/câu rồi nghỉ việc thì ai biết nó thêm gì":** hệ thống KHÔNG dựa trí nhớ người. (1) **Tri thức từ JD** — tiêu chí & câu hỏi dẫn xuất từ JD do **Department Manager viết** (không phải HR bịa); đúng nguyên tắc "tri thức từ DM/JD, thao tác từ Recruiter". (2) **Template làm khung** — kế thừa từ thư viện chuẩn. (3) **Nguồn gốc** — mỗi tiêu chí/câu gắn JD nào (per-job, đã có). (4) **Audit** — `ActivityLog` ghi ai thêm/sửa lúc nào. Người kế nhiệm mở lên thấy ngay: kế thừa template nào, gắn JD nào, ai thêm ngày nào.
-- **PIPELINE GEN CHẤT LƯỢNG (ĐANG NGHIÊN CỨU — KHÔNG gửi mỗi JD trống cho AI):** JD là input SAI để gen câu (nhiều chữ chung chung, thiếu chi tiết). Hướng: tách thành các bước, mỗi bước task hẹp cho model nhỏ.
-  1. **Trích skill từ JD** (AI, task hẹp) → danh sách `{skill, num_questions}`.
-  2. **Recruiter chốt khung** — chỉ chọn **CẤP VỊ TRÍ** (Junior/Mid/Senior); AI tự gán độ khó từng câu theo cấp. **HR KHÔNG cần chuyên môn đặt "EF khó / SQL dễ"** — đó là việc AI làm dựa JD; HR chỉ làm phán xét cấp vị trí (việc HR chắc chắn làm được). Recruiter vẫn bớt skill thừa / đổi số câu / thêm chủ đề.
-  3. **Gen TỪNG CHỦ ĐỀ** (mỗi skill 1 lượt, không "1 phát 10 câu") + **few-shot** (1-2 câu mẫu) + ép **câu tình huống** (áp dụng, không hỏi định nghĩa thuộc lòng — trùng Layer 2 anti-cheat) + **distractor hợp lý** (3 đáp án sai dựa lỗi hiểu sai thường gặp) + **self-critique 2 lượt** (AI tự soát "đúng 1 đáp án? distractor có lộ?").
-  4. → DRAFT → Recruiter duyệt → vào ngân hàng câu hỏi.
-  * **Câu chốt bảo vệ:** "AI không phải nguồn chân lý. Nó gợi ý câu nháp từ JD; người duyệt mới quyết câu nào vào ngân hàng. Có khung chuẩn để dựa, có người duyệt chịu trách nhiệm, có log truy vết. Thiếu AI thì nhập tay từ template — engine không phụ thuộc AI." KHÔNG claim "câu AI local chất lượng cao" → reframe thành **kiến trúc pipeline + kiểm soát con người**.
+- Hệ quả: mọi tác vụ AI giữ dạng gen đơn, stateless (1 request → 1 kết quả). KHÔNG chat tự do Recruiter↔AI.
 
 ### 5.7 Collaborative Scoring — Blind Review + tách "chấm" vs "quyết định"
-- Recruiter TỰ định nghĩa bộ tiêu chí từng job (không hard-code).
-- **Interviewer chấm trong Portal (đăng nhập):** Recruiter set up buổi PV + gán interviewer → interviewer đăng nhập, thấy danh sách buổi được giao → mở trang chấm (tiêu chí + ô điểm + ô note từng tiêu chí) → submit. Interviewer **sửa lại điểm đã gửi** đến khi buổi/vòng bị khóa, và **xem lịch sử các buổi đã chấm**.
-- **Chấm LIVE trong buổi PV, KHÔNG dựa trí nhớ:** thực tế người ta vừa phỏng vấn vừa ghi → trang mở từ đầu buổi, gõ điểm + note ngay; **nháp TỰ LƯU ở server** (đổi máy/đóng nhầm tab vẫn còn); cuối buổi mới Submit. Số hóa đúng thói quen as-is.
-- **Blind Review giữ nguyên:** mỗi interviewer chấm độc lập, nháp riêng tư, hệ thống chỉ MỞ BLIND (lộ điểm/note nhau) SAU khi đã submit. Chống bias hùa theo + tạo dữ liệu. (Login không phá blind — nháp vẫn riêng.)
+**Mặc định tối giản:** job chỉ 1 người chấm (chủ/quản lý tự phỏng vấn tự chấm) → không có blind, không radar so sánh — chỉ là phiếu chấm theo tiêu chí có lưu vết. **Blind Review + std deviation + Radar tự BẬT khi job có >1 interviewer.** (Đúng nguyên tắc "đơn giản mặc định, phức tạp tùy chọn".)
 
-**TÁCH BẠCH "chấm" vs "quyết định" (câu hay bị hỏi):**
-- **Chấm điểm = INPUT** (interviewer cho ý kiến: điểm + note). **Quyết định = phán xét tuyển/loại** (Department Manager).
-- **Ai quyết:** **Department Manager của job** (`Job.department_manager_id`, 5.14). DM mở nhu cầu tuyển rồi giao Recruiter chạy; DM **không đụng** sàng lọc CV / quiz / phỏng vấn; chỉ vào ở **bước OFFER** xem điểm/Radar rồi chốt tuyển hay không. Job không gán DM → **Recruiter tự quyết**.
-- **Recruiter thao tác Kanban.** Recruiter kéo state. Tại cửa INTERVIEW→OFFER: job có DM thì DM là người chốt; không có DM thì Recruiter chốt luôn. Tách rạch ròi: **quyết = Department Manager (hoặc Recruiter mặc định), thao tác Kanban = Recruiter.**
-- **"Check" là MÁY làm, không phải người soi điểm:** sau khi cả panel submit, hệ thống tổng hợp **Radar Chart** (hình dạng mạnh/yếu) + **standard deviation** (lệch chuẩn — đo đồng thuận). Lệch thấp = panel đồng ý, tin được; **lệch cao ở 1 trục = panel bất đồng → flag "cần bàn"**. Đây là cải tiến so với as-is "ghi giấy + chốt mồm".
-- **Khi nào bàn mồm:** CHỈ ở tiêu chí bị flag lệch cao (người quyết hỏi nhanh người chấm thấp/cao lý do, đọc note). Tiêu chí đồng thuận thì bảng tự nói, khỏi họp. → Luận điểm nghiệp vụ: **hệ thống không thay phán xét con người, nó làm cuộc nói chuyện gọn + đúng trọng tâm.**
-- **Người quyết đọc bảng theo thứ tự:** nhìn cột đồng thuận trước (không nhìn TB trước) → đào chỗ lệch (đọc note) → Radar xem tổng thể → quyết. Hệ thống KHÔNG auto-quyết (tuyển người là phán xét con người).
-- **Tiêu chí chấm là PER-JOB:** bộ tiêu chí định nghĩa theo từng job (linh hoạt), không phải một bộ chung cả công ty. Trong ERD `EvaluationCriteria` có `job_id`.
+- Bộ tiêu chí chấm phỏng vấn = DÙNG CHUNG bộ tiêu chí của job (5.18): nhóm tiêu chí INTERVIEW_ONLY + có thể chấm lại cả nhóm CV_MATCHABLE ở mức người thật. Recruiter/DM tùy biến per-job, không hard-code.
+- Interviewer chấm trong Portal: Recruiter set up buổi PV + gán interviewer → interviewer login, thấy buổi được giao → trang chấm (tiêu chí + ô điểm + note từng tiêu chí) → submit. Sửa được điểm đến khi buổi/vòng khóa; xem lịch sử.
+- Chấm LIVE trong buổi PV, KHÔNG dựa trí nhớ: trang mở từ đầu buổi, gõ điểm + note ngay; nháp TỰ LƯU ở server; cuối buổi Submit. Số hóa đúng thói quen as-is.
+- Blind Review (khi bật): mỗi interviewer chấm độc lập, nháp riêng tư, hệ thống chỉ MỞ BLIND sau khi đã submit. Chống bias hùa theo.
+- TÁCH BẠCH "chấm" vs "quyết định": chấm = INPUT (interviewer). Quyết = phán xét tuyển/loại (DM của job; không gán DM → Recruiter). Recruiter thao tác Kanban.
+- "Check" là MÁY làm: sau khi panel submit, hệ thống tổng hợp Radar (hình dạng mạnh/yếu) + standard deviation (đo đồng thuận). Lệch cao ở 1 trục → flag "cần bàn". Khi nào bàn mồm: CHỈ ở tiêu chí bị flag. → Luận điểm: hệ thống không thay phán xét con người, nó làm cuộc nói chuyện gọn + đúng trọng tâm.
+- Người quyết đọc bảng: cột đồng thuận trước → đào chỗ lệch (đọc note) → Radar tổng thể → quyết. Hệ thống KHÔNG auto-quyết (đã loại phương án AI hoà giải — Section 3 OUT).
+- reject_reason — bắt buộc nhưng 1-CHẠM: chip preset (Chuyên môn chưa đạt · Thiếu kinh nghiệm · Không hợp văn hóa · Lương không khớp · Đã chọn người khác · Khác). Tách 2 thứ: reject_reason (NỘI BỘ, analytics, ghi thật) ≠ email báo rớt (lịch sự chung chung). Reject hàng loạt ở SCREENING → tự điền "Điểm CV dưới ngưỡng".
 
-**`reject_reason` — bắt buộc nhưng 1-CHẠM:**
-- **Giữ bắt buộc** (KPI dashboard "tại sao rớt" sống nhờ field này; optional → ai cũng skip → dashboard vô dụng + mất điểm bảo vệ). Friction sợ hãi đến từ tưởng tượng "ô text bắt gõ luận văn" — sai.
-- **Cách đúng = chip preset 1 chạm:** `Chuyên môn chưa đạt` · `Thiếu kinh nghiệm` · `Không hợp văn hóa` · `Lương không khớp` · `Đã chọn người khác` · `Khác (ghi rõ)`. Tap 1 cái là xong; ô text optional nếu muốn thêm.
-- **Tách 2 thứ:** `reject_reason` (NỘI BỘ, để analytics, ghi thật) ≠ email báo rớt (gửi ứng viên, lịch sự chung chung). Reason nội bộ KHÔNG tự gửi cho ứng viên.
-- Reject hàng loạt CV điểm thấp ở SCREENING → hệ thống tự điền `Điểm CV dưới ngưỡng`, không bắt gõ tay từng cái.
+### 5.8 State Machine — 6 trạng thái NỘI BỘ, hiển thị 4 PHA
+6 trạng thái: NEW → SCREENING → INTERVIEW → OFFER → HIRED / REJECTED. 8 transition, forward-only. **GIỮ NGUYÊN làm lõi kỹ thuật — KHÔNG phơi ra người dùng/hội đồng.** Người dùng thấy 4 PHA (5.16): Hồ sơ mới (NEW) · Sàng lọc (SCREENING) · Phỏng vấn (INTERVIEW) · Quyết định (OFFER→HIRED/REJECTED).
 
-### 5.8 State Machine
-**7 trạng thái:** NEW → SCREENING → QUIZ → INTERVIEW → OFFER → HIRED / REJECTED. **11 transition**, forward-only.
-- Forward (6): NEW→SCREENING · SCREENING→QUIZ · SCREENING→INTERVIEW (bỏ qua quiz, vị trí phi kỹ thuật) · QUIZ→INTERVIEW (**Guard G1:** phải có bài quiz đã nộp) · INTERVIEW→OFFER (**Guard G2:** ≥1 phiếu chấm đã submit) · OFFER→HIRED.
-- Reject (5): từ NEW/SCREENING/QUIZ/INTERVIEW/OFFER → **một** REJECTED duy nhất, bắt buộc `reject_reason`.
-- **Confirm marker** trên transition tới hạn (vào OFFER, nhận việc, mọi reject — vì có gửi email). KHÔNG làm admin override (confirm dialog đủ).
-- Việc 5 ĐÃ HOÀN THÀNH (PoC).
-- **Ai chạm hồ sơ ở từng stage:**
-  * **NEW:** chỉ **hệ thống** (chấm điểm vector tự động) + **Recruiter** (mở pipeline xem). Department Manager KHÔNG xem ở NEW.
-  * **SCREENING:** **Recruiter** sàng lọc và duyệt CV trực tiếp, chủ động chuyển stage. KHÔNG có cổng duyệt CV riêng — Recruiter là người gác khúc đầu.
-  * **INTERVIEW → OFFER:** **điểm quyết duy nhất** trong cả luồng. Recruiter đẩy hồ sơ tới đây (qua Guard G2); **Department Manager của job** xem điểm/Radar rồi chốt: tuyển (→ OFFER) hoặc loại (→ REJECTED). Job không gán DM → Recruiter chốt.
-- **forward-only ≠ cứng nhắc:** đổi lịch phỏng vấn (reschedule) và phỏng vấn nhiều vòng (5.12) diễn ra BÊN TRONG stage INTERVIEW, không phải transition → không mâu thuẫn.
+- Forward (4): NEW→SCREENING · SCREENING→INTERVIEW · INTERVIEW→OFFER (Guard G2: ≥1 phiếu chấm đã submit) · OFFER→HIRED. (Guard G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 để khớp tài liệu/chat cũ.)
+- Reject (4): từ NEW/SCREENING/INTERVIEW/OFFER → một REJECTED duy nhất, bắt buộc reject_reason.
+- Confirm marker trên transition tới hạn (vào OFFER, nhận việc, mọi reject). KHÔNG admin override.
+- Ai chạm hồ sơ ở từng stage: NEW: hệ thống (chấm theo tiêu chí tự động) + Recruiter. SCREENING: Recruiter sàng lọc trực tiếp, KHÔNG cổng duyệt riêng. INTERVIEW→OFFER: điểm quyết duy nhất — DM của job xem điểm/Radar rồi chốt; không DM → Recruiter.
+- forward-only ≠ cứng nhắc: reschedule + multi-round diễn ra BÊN TRONG stage INTERVIEW (5.12).
+- Khi trình bày/viết tài liệu: nói "quy trình 4 pha, chỉ tiến không lùi, có chốt cửa" — thuật ngữ state machine/guard chỉ dùng trong Q&A kỹ thuật.
 
 ### 5.9 Interview Scheduling — tóm tắt
-Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. **MỘT tính năng đặt lịch duy nhất:** Recruiter mở 1+ khung giờ + gán interviewer → magic link (`purpose=SCHEDULE`) cho ứng viên → ứng viên chọn/xác nhận khung → chốt, khóa khung còn lại, email xác nhận 2 bên + .ics.
-- **Nhóm hay cá nhân = Recruiter quyết lúc đó, KHÔNG phải 2 mode kỹ thuật:** Recruiter mở khung rảnh interviewer thành **pool slot dùng chung**, ứng viên tự chọn ai trước được trước (slot đặt rồi ẩn khỏi người khác → interviewer không trùng giờ); muốn PV nhóm/panel → cố ý mời nhiều ứng viên vào CÙNG khung. Hệ thống chỉ cần "mở khung + magic link + .ics".
-- Link đặt lịch RIÊNG, chỉ sinh sau khi card vào INTERVIEW + Recruiter mở khung. **Chi tiết kỹ thuật: Section 15.**
+Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính năng đặt lịch duy nhất: Recruiter mở 1+ khung giờ + gán interviewer → magic link (purpose=SCHEDULE) cho ứng viên → ứng viên chọn/xác nhận khung → chốt, khóa khung còn lại, email xác nhận 2 bên + .ics.
+- Nhóm hay cá nhân = Recruiter quyết lúc đó, KHÔNG phải 2 mode kỹ thuật: pool slot dùng chung, first-come-first-served; PV nhóm/panel → cố ý mời nhiều ứng viên CÙNG khung.
+- Link đặt lịch RIÊNG, chỉ sinh sau khi card vào INTERVIEW + Recruiter mở khung. Chi tiết: Section 15.
 
 ### 5.10 Cấu trúc Web — 2 site tách biệt
-- **Career Site (công khai)** — ứng viên, vào bằng link `/t/{slug}` + magic link, KHÔNG đăng nhập.
-- **Internal Portal (nội bộ)** — nhân sự đăng nhập `/t/{slug}/login` (JWT). Sau khi đăng nhập, vào khu theo role: `/t/{slug}/admin` · `/t/{slug}/recruiter` · `/t/{slug}/interviewer` · `/t/{slug}/manager` (Department Manager). Mỗi khu chỉ mở đúng quyền của role.
-- Nhân sự gõ `/t/{slug}/login` MỘT lần đầu; sau đó browser nhớ/bookmark/JWT còn hạn. 2 cửa riêng (như Greenhouse, Lever).
-- **KHÔNG nút "Đăng nhập" nổi bật ở header Career Site** (làm ứng viên tưởng phải tạo account — sợ persona Tuấn Kiệt). Nếu cần, chỉ link nhỏ ở footer.
-- **Các kiểu cửa vào:** Candidate = link công khai + magic link (không bao giờ login) · Admin / Recruiter / Interviewer / Department Manager = `/t/{slug}/login` (luôn login). Chỉ Candidate ẩn danh.
-- **DEMO:** chuẩn bị sẵn URL login để paste, hoặc mở sẵn 2 tab (Career Site + Portal đã login).
+- Career Site (công khai) — ứng viên, vào bằng /t/{slug} + magic link, KHÔNG đăng nhập.
+- Internal Portal (nội bộ) — nhân sự đăng nhập /t/{slug}/login (JWT). Khu theo role: /admin · /recruiter · /interviewer · /manager. Người giữ nhiều role thấy đủ các khu tương ứng.
+- KHÔNG nút "Đăng nhập" nổi bật ở header Career Site (ứng viên tưởng phải tạo account). Link nhỏ ở footer nếu cần.
+- DEMO: mở sẵn 2 tab (Career Site + Portal đã login).
 
 ### 5.11 Tầng truy cập DB — EF Core thay raw ADO.NET
-- **Quyết định:** dùng **EF Core** thay kế hoạch raw ADO.NET (viết SQL tay).
-- **Lý do 1 — vector đã hỗ trợ chính thức:** EF Core 10 hỗ trợ kiểu VECTOR của SQL Server 2025 (chỉ 2025+): `SqlVector<float>` + `[Column(TypeName="vector(384)")]` + `EF.Functions.VectorDistance("cosine", ...)`. Khớp đúng exact distance (5.2/5.3). VECTOR_SEARCH/index vẫn experimental → KHÔNG dùng. Nguồn: learn.microsoft.com/en-us/ef/core/providers/sql-server/vector-search.
-- **Lý do 2 — hội đồng chú trọng NGHIỆP VỤ**, không chấm việc viết SQL tay → ADO.NET không đổi điểm, chỉ tốn thời gian. EF Core cắt plumbing → dồn thời gian cho nghiệp vụ.
-- **Lý do 3 — vá lỗi multi-tenant:** EF Core có Global Query Filter (ADO.NET không có) → tự kèm `company_id`.
-- **Lý do 4 — an toàn vibe code:** AI sinh LINQ khó tạo SQL injection + khó quên company_id; ghép chuỗi SQL thô dễ dính cả hai.
-- **Cửa thoát:** câu nào EF dịch không gọn → dùng `FromSqlRaw` riêng chỗ đó.
-- **TRƯỚC KHI CHUYỂN:** (1) họp nhóm thống nhất; (2) spike verify `EF.Functions.VectorDistance` chạy đúng trên SQL Server 2025 thật; (3) migrate data layer PoC Việc 2-5 (rẻ vì đang giai đoạn đầu).
+- Lý do 1 — vector hỗ trợ chính thức: EF Core 10 hỗ trợ VECTOR của SQL Server 2025: SqlVector<float> + [Column(TypeName="vector(1024)")] + EF.Functions.VectorDistance. VECTOR_SEARCH/index vẫn experimental → KHÔNG dùng.
+- Lý do 2 — hội đồng chú trọng NGHIỆP VỤ → ADO.NET không đổi điểm, EF Core cắt plumbing.
+- Lý do 3 — Global Query Filter vá lỗi multi-tenant.
+- Lý do 4 — an toàn vibe code: AI sinh LINQ khó tạo SQL injection + khó quên company_id.
+- Cửa thoát: FromSqlRaw cho câu EF dịch không gọn.
+- TRƯỚC KHI CHUYỂN: họp nhóm thống nhất; spike verify trên SQL Server 2025 thật; migrate data layer PoC.
 
 ### 5.12 Phỏng vấn nhiều vòng (2-3 vòng) — dữ liệu trong INTERVIEW
-- **Nguyên tắc:** nhiều vòng = **DỮ LIỆU bên trong stage INTERVIEW**, KHÔNG thêm state. **Sơ đồ 7 state/11 transition giữ nguyên.**
-- Card nằm yên ở INTERVIEW suốt các vòng. Mỗi vòng = 1 Interview Request (đặt lịch riêng) + 1 phiếu Collaborative Scoring riêng. Xong vòng, Recruiter chọn: mở vòng kế (tạo thêm request, KHÔNG đổi state) / sang OFFER (qua G2) / REJECTED.
-- Số vòng cấu hình theo job, KHÔNG hard-code. Thêm `round_number` (hoặc bảng `InterviewRound`) + badge "Vòng x/y" trên Kanban. Có thể thêm `round_name` cấu hình.
-- Guard G2 giữ mức tối thiểu "≥1 phiếu chấm đã submit" — KHÔNG siết "chấm hết mọi vòng" (quyết định đủ vòng là việc của Recruiter).
-- Vì sao KHÔNG tạo INTERVIEW_1/_2/_3: phình state, hard-code số vòng, phá forward-only.
-- **Bằng chứng thực tế:** VPBank Young Talents 2026 có V3 PV nhóm + V4 PV cá nhân = đúng 2 vòng trong stage INTERVIEW (10).
+- Nhiều vòng = DỮ LIỆU bên trong stage INTERVIEW, KHÔNG thêm state. Card nằm yên ở INTERVIEW; mỗi vòng = 1 Interview Request + 1 phiếu chấm riêng. Xong vòng, Recruiter chọn: mở vòng kế / sang OFFER (G2) / REJECTED.
+- Số vòng cấu hình theo job. Thêm round_number (hoặc InterviewRound) + badge "Vòng x/y". Guard G2 giữ mức "≥1 phiếu chấm" — KHÔNG siết "chấm hết mọi vòng".
+- Vì sao KHÔNG INTERVIEW_1/_2/_3: phình state, hard-code số vòng, phá forward-only.
+- Với target công ty nhỏ: mặc định 1 vòng là đủ (khớp As-Is 4.2); multi-round là năng lực sẵn khi cần. Bằng chứng thực tế: VPBank Young Talents 2026 (10).
 
 ### 5.13 Actionable Email + Magic Link — cùng MỘT cơ chế
-- **Magic link:** URL chứa chuỗi ngẫu nhiên dài (là "chìa khóa", không cần mật khẩu). Lưu DB kèm (purpose, hồ sơ nào, TTL, đã dùng chưa). Bấm → tra DB → mở đúng trang. Bảo mật: **lưu HASH token** (không lưu gốc), one-time, TTL cấu hình, rate limit, đếm số lần truy cập, ràng buộc purpose.
-- **Các purpose (4) — tất cả của ứng viên** (vì người trong cuộc đã đăng nhập Portal): QUIZ (UV làm bài) · SCHEDULE (UV chọn/xác nhận lịch) · STATUS (UV xem trạng thái) · OFFER_RESPONSE (UV xem offer + bấm Đồng ý/Từ chối).
-- **Actionable Email:** email HTML có nút (`<a>`) trỏ tới magic link. Dùng cho ứng viên: mời làm quiz, mời chọn lịch, gửi offer.
-- **BẪY quan trọng:** nút trong email KHÔNG được trực tiếp thực hiện hành động — vì trình quét email (Gmail/Outlook) có thể tự bấm thử link. **Cách đúng:** nút email chỉ MỞ một **trang nhỏ** (hiện nội dung + nút hành động); người dùng bấm nút *trên trang đó* mới ghi kết quả.
-
-- **Làm rõ "one-time":** "one-time" = **hành động CHỐT chỉ làm một lần**, KHÔNG phải "mở một lần". Token chỉ bị **đốt khi bấm chốt** (Nộp bài / Xác nhận lịch / Phản hồi offer). Trong lúc còn hạn (TTL), **mở đi mở lại bao nhiêu lần cũng được.**
-  * Đang làm quiz dở, đóng nhầm tab → bấm lại link cũ → trang mở lại, nháp khôi phục, làm tiếp.
-  * Đã chốt rồi mới mở lại → trang hiện "Đã xử lý, không sửa được" (chỉ xem).
-  * Vẫn an toàn: TTL + rate limit + đếm lần truy cập + không submit lại lần hai.
-
-- **TTL theo purpose (cấu hình được):**
-
-| Purpose | TTL gợi ý | Lý do |
-|---|---|---|
-| QUIZ | 48h | Cửa sổ được vào làm; timer-lượt tính riêng ở server (5.6) |
-| SCHEDULE | ~5 ngày | Đủ để UV rảnh là chọn slot (15.3) |
-| OFFER_RESPONSE | ~5–7 ngày | Đủ để UV cân nhắc, thương lượng ngoài hệ thống rồi chốt |
-| STATUS | dài / tới khi đóng vị trí | UV xem trạng thái lâu dài |
-
-- **Chấm điểm KHÔNG dùng magic link nữa:** interviewer đăng nhập Portal, danh sách buổi được giao hiện ngay sau login (5.7). Không phát link chấm; không có purpose SCORE/APPROVE/OFFER. Quyết tuyển cũng nằm trong Portal (Department Manager — 5.14).
+- Magic link: URL chứa chuỗi ngẫu nhiên dài. Lưu DB kèm (purpose, hồ sơ, TTL, đã dùng chưa). Bảo mật: lưu HASH token, one-time, TTL cấu hình, rate limit, đếm truy cập, ràng buộc purpose.
+- **3 purpose — đều của ứng viên: SCHEDULE · STATUS · OFFER_RESPONSE.**
+- Actionable Email: email HTML có nút trỏ magic link. BẪY: nút email KHÔNG trực tiếp thực hiện hành động (trình quét email tự bấm thử) — nút chỉ MỞ trang nhỏ, người dùng bấm nút trên trang mới ghi kết quả.
+- "one-time" = hành động CHỐT chỉ làm một lần, KHÔNG phải "mở một lần". Token đốt khi bấm chốt. Trong TTL mở lại được, nháp khôi phục; đã chốt → trang "Đã xử lý, chỉ xem".
+- TTL theo purpose: SCHEDULE ~5 ngày · OFFER_RESPONSE ~5-7 ngày · STATUS dài.
+- Chấm điểm & quyết tuyển KHÔNG dùng magic link — nằm trong Portal.
 
 ### 5.14 Người quyết tuyển — Department Manager
-- **Người quyết tuyển một vị trí = Department Manager (trưởng bộ phận) sở hữu job đó.** Mô hình hóa bằng cột **`Job.department_manager_id → User`** (nullable). Có DM → DM đó quyết ở bước OFFER; **để trống → Recruiter quyết** (job tuyển số lượng lớn không cần trưởng bộ phận duyệt).
-- **DM chỉ xuất hiện ở bước OFFER:** mở nhu cầu tuyển rồi giao Recruiter chạy; KHÔNG gác cổng CV, KHÔNG đụng quiz/phỏng vấn. Cả luồng chỉ có **một điểm quyết** — cửa INTERVIEW→OFFER (5.8).
-- **Một người có thể vừa là DM vừa chấm phỏng vấn:** nếu DM tham gia buổi PV, chỉ cần gán họ làm interviewer của slot đó (`InterviewSlot.interviewer_id` trỏ về User). Không cần cơ chế riêng.
-- **KHÔNG còn cổng duyệt CV riêng và KHÔNG có bảng cấu hình thẩm quyền:** Recruiter tự sàng lọc và chuyển bước (đúng thực tế recruiter gác khúc đầu). "Ai quyết" chỉ là đọc `Job.department_manager_id` ở bước offer — không cần thực thể trung gian.
-- **Luận điểm bảo vệ:** ba vai chấm/quyết/thao tác là ba con người khác nhau, rõ ràng và sát cơ cấu thật của doanh nghiệp (trưởng bộ phận mở req và quyết, recruiter vận hành, interviewer chấm).
+- Người quyết = DM sở hữu job (Job.department_manager_id → User, nullable). Có DM → DM quyết ở OFFER; trống → Recruiter quyết (đây cũng là đường mặc định của công ty nhỏ 1 người nhiều role).
+- DM xuất hiện ở HAI đầu: tạo Yêu cầu tuyển dụng (5.17) và chốt ở OFFER. KHÔNG gác cổng CV, KHÔNG đụng vận hành.
+- Một người vừa là DM vừa chấm phỏng vấn: gán họ làm interviewer của slot (InterviewSlot.interviewer_id). Không cần cơ chế riêng.
+- KHÔNG cổng duyệt CV riêng, KHÔNG bảng cấu hình thẩm quyền.
 
 ### 5.15 Offer — OfferDetail + ứng viên tự phản hồi
-- **OfferDetail (tối giản):** gắn 1-1 (0..1) với Application. Field: `salary_amount`, `currency`, `start_date`, `status` (PENDING/ACCEPTED/DECLINED), `sent_at`, `responded_at`. Mục đích: state OFFER **có nội dung thật** thay vì nhãn rỗng, và mở KPI **tỉ lệ nhận offer** (offer acceptance rate) — số liệu nghiệp vụ hội đồng thích.
-- **KHÔNG làm (giữ scope):** lịch sử thương lượng nhiều vòng, tạo offer letter, ký số. Đó là Core Recruiter — ngoài scope. Một offer / một application; thương lượng diễn ra ngoài hệ thống, Recruiter cập nhật con số cuối.
-- **Luồng ra offer:** tại cửa INTERVIEW→OFFER, **Department Manager của job quyết tuyển** (xem điểm/Radar rồi chốt); job không gán DM thì Recruiter quyết. Quyết xong → tạo OfferDetail + Recruiter gửi offer cho ứng viên.
-- **Ứng viên tự nhận/từ chối (self-service):** ứng viên nhận magic link `purpose=OFFER_RESPONSE` → trang nhỏ hiện OfferDetail + 2 nút **Đồng ý / Từ chối** → bấm → cập nhật `OfferDetail.status` → đẩy state OFFER→HIRED / →REJECTED. Recruiter không phải nhập tay.
-  * Lý do chọn self-service: đồng bộ trải nghiệm ứng viên đầu-cuối (đã tự làm quiz/chọn lịch/xem trạng thái bằng magic link), không phải món lạ. Chi phí thấp: dùng lại khuôn trang SCHEDULE.
-  * **`status` của OfferDetail vs `current_state` của Application KHÔNG trùng:** một cái theo dõi artifact offer, một cái theo dõi pipeline; đồng bộ với nhau (`ACCEPTED` ↔ HIRED) chứ không thừa.
+- OfferDetail (tối giản): 1-1 (0..1) với Application. Field: salary_amount, currency, start_date, status (PENDING/ACCEPTED/DECLINED), sent_at, responded_at. Mở KPI offer acceptance rate.
+- KHÔNG làm: lịch sử thương lượng, tạo offer letter, ký số (Core Recruiter — ngoài scope).
+- Luồng: tại INTERVIEW→OFFER, DM quyết (không DM → Recruiter) → OfferDetail + gửi offer.
+- Self-service: magic link OFFER_RESPONSE → trang hiện OfferDetail + Đồng ý/Từ chối → cập nhật status → OFFER→HIRED / →REJECTED.
+- status OfferDetail vs current_state Application KHÔNG trùng: một theo artifact, một theo pipeline; đồng bộ (ACCEPTED ↔ HIRED).
+
+### 5.16 TÁI ĐỊNH VỊ HẬU-HỘI-ĐỒNG — 4 pha hiển thị + tối giản mặc định (CHỐT)
+**Nguyên tắc: đơn giản là mặc định, phức tạp là tùy chọn.** Hệ thống lớn lên cùng công ty — không bắt công ty 10 người xài bộ máy công ty 1000 người.
+
+- **4 pha người dùng thấy:** Hồ sơ mới → Sàng lọc → Phỏng vấn → Quyết định. (Map nội bộ: NEW → SCREENING → INTERVIEW → OFFER→HIRED/REJECTED.) Kanban hiển thị 4 cột pha; 6 state là chuyện bên trong.
+- **Bảng bật/tắt theo nhu cầu (per-company hoặc per-job):**
+
+| Tính năng | Mặc định | Bật khi |
+|---|---|---|
+| Blind Review + std dev + Radar so sánh | TẮT (tự bật) | Job có >1 interviewer |
+| Phiếu Yêu cầu tuyển dụng (5.17) | TẮT | Công ty có DM tách vai (chủ nhỏ tạo job + gõ tiêu chí trực tiếp) |
+| Người quyết tách riêng (DM ở OFFER) | TẮT (Recruiter quyết) | Job gán department_manager_id |
+| Phỏng vấn nhiều vòng | 1 vòng | Job cấu hình >1 vòng |
+
+- **Cách nói khi bảo vệ:** "Mặc định chỉ 4 bước, MỘT người làm được hết. Các bước nâng cao là tùy chọn, bật khi công ty lớn lên. Quy trình này không phải nhóm bịa ra — nó cấu trúc hóa đúng các bước doanh nghiệp nhỏ ĐÃ làm (As-Is 4.2 + phỏng vấn sâu B2 + đối chiếu VPBank), chỉ tự động hóa khúc chậm."
+- Trình bày demo: mở đầu bằng đường ĐƠN GIẢN NHẤT (đăng tin → CV vào, AI xếp hạng theo tiêu chí → phỏng vấn → tuyển), sau đó mới bật dần các tùy chọn.
+
+### 5.17 YÊU CẦU TUYỂN DỤNG (Hiring Requisition) — DM ra đề, Recruiter triển khai (chi tiết ERD = Việc B3)
+- **Luồng:** Department Manager tạo **Yêu cầu tuyển dụng** — KHÔNG phải JD chi tiết, chỉ cần: vị trí cần tuyển, số lượng, và **các tiêu chí cần thiết** (gõ tự nhiên). → Recruiter vào xem yêu cầu → tạo **Tin tuyển dụng** công khai (mô tả đầy đủ, phúc lợi, form nộp) từ yêu cầu đó.
+- **Vì sao:** (1) đúng thực tế doanh nghiệp — trưởng bộ phận biết cần người thế nào, HR biết cách đăng tin (khớp As-Is 4.2 bước 1); (2) giải quyết gốc câu hội đồng "tiêu chí từ đâu ra" — tri thức chuyên môn đến từ DM, không phải HR bịa, không phải AI bịa; (3) cho DM vai trò đầu-cuối tròn trịa (ra đề → chốt).
+- **Tùy chọn theo quy mô (5.16):** công ty nhỏ 1 người nhiều role → bỏ qua phiếu yêu cầu, tạo job + gõ tiêu chí trực tiếp (về bản chất là tự ra đề cho mình). Có DM tách vai → bật phiếu.
+- **CHỜ CHỐT (Việc B3):** mô hình hóa — entity HiringRequisition riêng hay Job có giai đoạn requisition; quan hệ với Job/EvaluationCriteria; trạng thái phiếu (DRAFT/SENT/CONVERTED...).
+
+### 5.18 TIÊU CHÍ LÀ TRỤC XUYÊN SUỐT + CHẤM CV THEO TỪNG TIÊU CHÍ (thay cách "ném cả JD↔CV")
+**Đây là câu trả lời chính thức cho câu hội đồng "AI chấm CV dựa vào đâu?" — cách cũ (embed cả JD ↔ cả CV, ra 1 con số) YẾU: không giải thích được, JD lẫn đoạn nhiễu (giới thiệu công ty, phúc lợi) làm loãng điểm. ĐÃ BỎ.**
+
+**Luồng tiêu chí (4 bước):**
+1. Người có chuyên môn (DM / chủ) viết Yêu cầu tuyển dụng hoặc JD — tri thức nằm ở ĐÂY.
+2. AI (Local LLM) bóc thành danh sách tiêu chí có cấu trúc — DRAFT, chỉ là gợi ý nháp (pattern DRAFT→duyệt→READY — Section 14, Việc 4).
+3. Người tuyển DUYỆT: sửa / thêm-bớt / chỉnh trọng số → chốt bộ tiêu chí. **AI không quyết tiêu chí — AI đỡ việc gõ tay.**
+4. Hệ thống chấm CV theo TỪNG tiêu chí đã chốt; cùng bộ tiêu chí dùng tiếp cho phiếu chấm phỏng vấn (5.7). MỘT bộ tiêu chí xuyên suốt từ lọc CV đến phỏng vấn — nhất quán, truy vết được.
+
+**Thuộc tính mỗi tiêu chí (mở rộng EvaluationCriteria — chi tiết Việc B3):**
+- Nguồn gốc: từ yêu cầu/JD nào, ai duyệt (audit).
+- Cờ đánh giá: CV_MATCHABLE (thấy được trong CV — kỹ năng, kinh nghiệm) vs INTERVIEW_ONLY (chỉ đánh giá khi gặp người — giao tiếp, quản lý, văn hóa). Chấm CV CHỈ tính nhóm CV_MATCHABLE — tránh loại oan ứng viên vì thứ CV không thể hiện.
+- Loại: HARD (yêu cầu cứng — chứng chỉ, địa điểm, số năm tối thiểu) vs SOFT (năng lực mềm dẻo). HARD → lọc bằng RULE/keyword (vector so ngữ nghĩa dễ sai với yêu cầu cứng); SOFT → vector. Nói thẳng thiết kế lai này khi bảo vệ — cho thấy nhóm hiểu giới hạn AI.
+- Trọng số (weight).
+
+**Cơ chế chấm (tầng vector):**
+- CV bổ thành các ĐOẠN (chunk) → embed từng đoạn. Mỗi tiêu chí SOFT → embed.
+- Mỗi tiêu chí đi tìm đoạn CV khớp nhất (cosine). ≥ ngưỡng → KHỚP, kèm CÂU BẰNG CHỨNG (đoạn CV đó); < ngưỡng → THIẾU.
+- Điểm tổng = tổng CÓ TRỌNG SỐ các tiêu chí khớp (trên nhóm CV_MATCHABLE, sau khi qua lọc HARD).
+- Hiển thị: "Khớp: React, Node (kèm trích đoạn) · Thiếu: kinh nghiệm quản lý" — KHÔNG chỉ một con số trần trụi. Người tuyển đọc bằng chứng và tự quyết — AI chỉ ra bằng chứng, con người phán.
+- Ngưỡng khớp/thiếu + cách chunk: số hiện tại là ĐIỂM KHỞI ĐẦU — PoC Việc B4 đo rồi mới khóa.
+- **2 TẦNG VECTOR song song:** tầng cả-CV (đang có, Talent Pool dùng — GIỮ NGUYÊN) + tầng từng-đoạn (mới, chấm theo tiêu chí). Không thay thế nhau. Về sau Talent Pool có thể nâng lên match theo tiêu chí, nhưng phase này giữ nguyên cách cả-CV đã code.
+
+**TRẠNG THÁI CODE (07/2026): toàn bộ luồng trên ĐÃ CODE end-to-end, build sạch.**
+- DB: migration `V013__criteria_scoring.sql` — EvaluationCriteria mở rộng (criteria_type HARD/SOFT · cv_matchable · source MANUAL/AI_EXTRACTED · status DRAFT/APPROVED + approved_by/at · keywords · embedding); bảng mới `CvChunk` (đoạn CV + VECTOR(1024)) + `ApplicationCriterionMatch` (matched/similarity/evidence, UNIQUE app+criteria); `Application.criteria_score` (TÁCH khỏi ai_match_score cả-CV); RLS đầy đủ cho bảng mới.
+- Python: `POST /extract-criteria` (Ollama qwen2.5, JSON schema + validate + retry 3 — tái dùng nguyên pattern Việc 4; lỗi → 502 để .NET fallback nhập tay). `/embed` không cần Ollama.
+- .NET: `EvaluationCriteriaService` (extract DRAFT → duyệt APPROVED, tạo tay = APPROVED luôn) · `CvChunker` (cắt 120-700 ký tự/đoạn) · `CriteriaScoringService` (HARD = dò keyword có bỏ dấu + evidence ±120 ký tự; SOFT = CROSS APPLY VECTOR_DISTANCE trong SQL lấy đoạn khớp nhất; điểm = Σweight khớp/Σweight×100 trên nhóm CV_MATCHABLE; rớt HARD = cờ HardPassed, KHÔNG auto-reject). Tự chạy trong worker chấm nền sau khi embed CV.
+- API: `POST api/jobs/{id}/criteria/extract` · `POST .../criteria/approve` · `GET api/applications/{id}/criteria-matches` · `POST .../criteria-score` (chấm lại).
+- Ngưỡng khớp: config `AiService:CriteriaMatchThreshold` (mặc định 0.6 — CHƯA calibrate, chờ phần đo B4). DRAFT không bao giờ lọt vào chấm/phiếu phỏng vấn (repo mặc định approvedOnly).
+
+**Câu chốt bảo vệ:** "Tiêu chí không do AI nghĩ ra — nó nằm trong yêu cầu tuyển dụng do người có chuyên môn viết. AI chỉ bóc thành danh sách cho người duyệt. Hệ thống chấm CV theo từng tiêu chí đã duyệt và chỉ ra bằng chứng trong CV — khớp gì, thiếu gì. AI đỡ việc tay và chỉ bằng chứng; con người đặt chuẩn và ra quyết định."
 
 ---
 
 ## 6. QUY TRÌNH NGHIỆP VỤ
 
-**MẢNG 1 — RECRUITMENT:** Recruiter tạo Job + JD (job thuộc một Department Manager, có thể để trống) → ứng viên nộp CV (Career Site) → parse + AI chấm điểm → Recruiter sàng lọc & duyệt CV trực tiếp trên Kanban (không có cổng duyệt riêng).
+**MẢNG 1 — RECRUITMENT:** [Nếu bật phiếu] DM tạo Yêu cầu tuyển dụng (vị trí + tiêu chí — 5.17) → Recruiter tạo Tin tuyển dụng từ yêu cầu / [Mặc định công ty nhỏ] chủ tạo job + gõ tiêu chí trực tiếp → AI bóc tiêu chí DRAFT → người duyệt chốt bộ tiêu chí (5.18) → ứng viên nộp CV (Career Site) → parse + chấm theo TỪNG tiêu chí (khớp/thiếu + bằng chứng) → Recruiter sàng lọc trên Kanban 4 pha (không cổng duyệt riêng). Talent Pool: mở job mới → hệ thống gợi ý CV cũ phù hợp (hero).
 
-**MẢNG 2 — INTERVIEW & OFFER:** Quiz (AI gen, Recruiter duyệt — 5.6, anti-cheat) → Phỏng vấn (có thể nhiều vòng — 5.12; PV nhóm/cá nhân tùy Recruiter — 5.9) + Collaborative Scoring (interviewer chấm trong Portal — 5.7) → tại cửa INTERVIEW→OFFER **Department Manager quyết tuyển** (job không có DM → Recruiter quyết — 5.14) → OfferDetail + ứng viên tự nhận/từ chối (OFFER_RESPONSE — 5.15) → HIRED/REJECTED + Dashboard.
+**MẢNG 2 — INTERVIEW & OFFER:** Đặt lịch phỏng vấn qua magic link SCHEDULE (5.9, Section 15) → Phỏng vấn (mặc định 1 vòng; multi-round nếu cấu hình — 5.12; nhóm/cá nhân tùy Recruiter) + chấm theo CÙNG bộ tiêu chí (1 người chấm mặc định; Blind Review tự bật khi >1 — 5.7) → tại cửa Phỏng vấn→Quyết định: DM quyết (không DM → Recruiter — 5.14) → OfferDetail + ứng viên tự nhận/từ chối (5.15) → HIRED/REJECTED + Dashboard.
 
 ---
 
@@ -280,29 +296,25 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. **MỘT tín
 
 | Module | Highlight |
 |---|---|
-| M1. Job Management | Career Site, Job CRUD, Form nộp CV one-page |
-| M2. Candidate Pipeline | Kanban, State Machine, Activity Log, Internal Notes |
-| M3. AI CV Scoring + Suggestion | Embedding + Vector, chấm điểm, ranking, gợi ý CV (basic) |
+| M1. Job Management | Career Site, Yêu cầu tuyển dụng (DM) → Job (Recruiter), Form nộp CV one-page |
+| M2. Candidate Pipeline | Kanban 4 pha, State Machine nội bộ (6 state), Activity Log, Internal Notes |
+| M3. AI Criteria + CV Scoring + Talent Pool | AI bóc tiêu chí (DRAFT→duyệt), chấm CV theo từng tiêu chí (khớp/thiếu + bằng chứng), **Talent Pool reverse matching (hero)** |
 | M4. Email Automation | Email trigger theo state machine, template động |
-| M5. Quiz Engine + AI | AI Gen (local LLM, MCQ + nút hành động AI), magic link, anti-cheat, 2-stage |
-| M6. Collaborative Scoring | Multi-interviewer (login Portal) + radar + Blind Review + CRUD tiêu chí |
-| M7. Dashboard & Analytics | Funnel chart, KPI card |
-| M8. Multi-tenant & Brand | Cô lập theo company_id (RLS + Global Query Filter), brand theming |
-| M9. Auth & Authorization | JWT + RBAC (Admin/Recruiter/Interviewer/Department Manager); candidate magic link |
-
-*(M10 — Interview Scheduling: Section 15.4)*
+| M5. Collaborative Scoring | Chấm theo bộ tiêu chí chung; multi-interviewer + radar + Blind Review tự bật khi >1 người chấm |
+| M6. Dashboard & Analytics | Funnel chart, KPI card, reject_reason analytics |
+| M7. Multi-tenant & Brand | Cô lập theo company_id (RLS + Global Query Filter), brand theming |
+| M8. Auth & Authorization | JWT + RBAC 4 role GÁN CHỒNG; candidate magic link |
+| M9. Interview Scheduling | Self-scheduling nội bộ + magic link SCHEDULE + .ics (chi tiết 15.4) |
 
 ---
 
-## 8. KẾ HOẠCH 3 THÁNG & MỐC
+## 8. KẾ HOẠCH & MỐC
 
-| Tháng | Mục tiêu |
+| Giai đoạn | Mục tiêu |
 |---|---|
-| T1 (T4) | Auth + RBAC, CRUD Job & Application, Kanban tĩnh, Form nộp CV, ERD + Use Case |
-| T2 (T5) | State machine + email, AI chấm điểm, Kanban động, Quiz, Collaborative Scoring, Dashboard |
-| T3 (T6-7) | Bug fix, deploy, báo cáo, slide, demo |
-
-**Mốc:** Tuần 5 review scope (report 1-2-3, rủi ro tăng scope → kiểm soát chặt) · Tuần 13-14 Bảo vệ 1.1 · sau đó Bảo vệ 1.2 (ăn điểm).
+| T1 (T4) — XONG | Auth + RBAC, CRUD Job & Application, Kanban tĩnh, Form nộp CV, ERD + Use Case |
+| T2 (T5) — XONG | State machine + email, AI chấm điểm (bản cũ), Kanban động, Collaborative Scoring, Dashboard (module quiz từng build ở giai đoạn này — nay đã loại khỏi scope, code tắt/tách nhánh) |
+| T3 (T6-7) — ĐANG | Bảo vệ 1 (XONG — nhận feedback) → **giai đoạn hậu-hội-đồng: phỏng vấn sâu + form (B2), ERD mới (B3), chấm theo tiêu chí (B4), tài liệu + trình bày lại (B5)** → Bảo vệ 2 (ăn điểm) |
 
 ---
 
@@ -310,37 +322,39 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. **MỘT tín
 
 | Người | Phụ trách |
 |---|---|
-| FE 1 | Candidate Portal — landing, form CV, trang quiz, status |
+| FE 1 | Candidate Portal — landing, form CV, trang đặt lịch, trang status/offer response |
 | FE 2 | Employer Dashboard — Kanban, chi tiết UV, báo cáo, brand |
 | BE 1 | Core API, Auth/JWT, RBAC, Multi-tenant, State Machine, Collaborative Scoring |
-| BE 2 | File upload, PDF extract, Email service, Quiz engine |
+| BE 2 | File upload, PDF extract, Email service, Interview Scheduling |
 | BE 3 (tôi) | AI service (Python, Vector), Analytics, tài liệu |
 
 ---
 
 ## 10. PITCH POINTS / Q&A HỘI ĐỒNG
 
-**HỘI ĐỒNG CHÚ TRỌNG NGHIỆP VỤ — hỏi nhiều, soi kỹ nghiệp vụ, KHÔNG chấm code cao siêu.** Chuẩn bị trả lời sâu về luồng nghiệp vụ + lý do thiết kế.
+HỘI ĐỒNG CHÚ TRỌNG NGHIỆP VỤ — hỏi nhiều, soi kỹ nghiệp vụ, KHÔNG chấm code cao siêu. TÂM THẾ: BẢO VỆ chứ không phải thuyết trình — câu hỏi của hội đồng là để mình giải thích, KHÔNG phải lệnh bắt sửa; mỗi thiết kế thủ sẵn "vì sao chọn vậy + vì sao không cách khác".
+Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát triển/vận hành; mô hình = dịch vụ SaaS.
 
-**Xưng hô (thầy):** KHÔNG "web của chúng em". Nhóm là người **thiết kế & phát triển/vận hành**, không phải chủ. Mô hình = **cung cấp dịch vụ SaaS** (thuê dùng, trả phí), không bán đứt.
-
-- **Vì sao đề tài:** nghiệp vụ sâu, enterprise, không phải CRUD; B2B SaaS ít nhóm chọn; AI có lý do thực tế; scope vừa 3 tháng.
-- **Về AI:** Local AI (embedding mã nguồn mở, chạy tại chỗ) + Vector trên SQL Server 2025, không phụ thuộc OpenAI; tự xây logic chấm; đã có PoC chạy thật.
-- **AI chấm CV thế nào:** model biến CV/JD thành vector; SQL đo tương đồng bằng VECTOR_DISTANCE; nhóm tự viết công thức ra điểm 0–100. AI chỉ sinh vector, không phải hộp đen.
-- **Đối chiếu thực tế — VPBank Young Talents 2026:** phễu V1 loại hồ sơ → SCREENING · V2 test online → QUIZ · V3 PV nhóm + V4 PV cá nhân → INTERVIEW (2 vòng, đúng multi-round 5.12) · V5 → OFFER/HIRED. Một ngân hàng lớn cũng có PV nhóm rồi cá nhân → chứng minh thiết kế của mình sát thực tế. VPBank thuê ngoài nền tảng test (jobtest.vn) — SRIS tự xây quiz engine + anti-cheat.
-- **Vì sao interviewer & department manager đăng nhập:** họ là người trong cuộc, cần xem lịch sử buổi đã chấm, sửa điểm đã gửi, xem kết quả để quyết — như các ATS thật (Greenhouse, Lever). Dùng lại JWT đã có. Chỉ ứng viên ẩn danh mới dùng magic link. Blind Review vẫn đảm bảo (submit độc lập, ẩn điểm tới khi nộp).
-- **Ba vai tách bạch:** Interviewer chấm (input), Department Manager quyết (chỉ ở bước OFFER), Recruiter vận hành pipeline + sàng lọc CV. Người quyết của job = Department Manager sở hữu job; job không có DM thì Recruiter quyết.
-- **Lỡ dev quên company_id thì sao:** *"Hệ thống không tin vào việc lập trình viên nhớ. RLS ở tầng DB tự ép điều kiện cô lập vào mọi câu lệnh; EF Core Global Query Filter tự lọc ở tầng code; có test cô lập chạy tự động."* (5.2)
-- **CV có rò rỉ giữa công ty không:** Không — vector search luôn kèm `company_id`, không cross-tenant.
-- **Có đề xuất CV không:** Có (gợi ý từ Talent Pool theo vector); nâng cao ngoài scope phase 1, kiến trúc sẵn sàng mở rộng.
-- **Chất lượng đề quiz đảm bảo thế nào:** AI sinh đề MCQ ở DRAFT, Recruiter review/sửa/duyệt (có nút gen thêm/gen lại/thêm theo chủ đề) rồi mới phát; AI lo phần thô, con người là cổng chất lượng cuối; thiếu LLM vẫn có fallback Recruiter nhập tay. (5.6)
-- **Thời ChatGPT, test online còn ý nghĩa gì:** test tại nhà chỉ để sàng nhanh; điểm thật xác nhận ở vòng onsite có giám sát; hệ thống tự đối chiếu 2 vòng (chênh > 30% → cờ gian lận). (5.5)
-- **Phỏng vấn nhiều vòng:** dữ liệu trong stage INTERVIEW (mỗi vòng đặt lịch + chấm riêng), không thêm state, số vòng cấu hình theo job. (5.12)
-- **Sao không tích hợp Google Calendar:** hệ thống tự quản lý lịch nội bộ + phát hành .ics chuẩn mở → không khóa cứng nhà cung cấp, không phát sinh chi phí. (15.3)
-- **LLM gen quiz deploy ở đâu:** tác vụ chạy nền lúc cấu hình job (không real-time), quiz sinh trước + lưu DB; kiến trúc tách service cho đặt LLM lên máy phù hợp; thiếu LLM vẫn chạy nhờ fallback Recruiter nhập tay.
-- **Mở rộng khi dữ liệu lớn:** hiện exact VECTOR_DISTANCE (< 50k vector); vượt ngưỡng → nâng vector index (DiskANN) không đổi thiết kế.
-- **PDF scan thì sao:** hệ thống nhận diện PDF scan (không lớp text) → từ chối file không đọc được; OCR là hướng mở rộng.
-- **Existing solution:** không so hơn thua, nêu "có tính năng X mà đối thủ (Teamtailor/Calendly/JobTest) không có/không phù hợp" — lấy khoảng trống đối thủ (so Calendly: 15.3; so JobTest: 5.5).
+- **Vì sao đề tài (khung 4 lớp, business trước):** (1) Vấn đề thật & tốn kém — tuyển sai đắt (3-4 lần lương năm), 62% DN nhỏ từng tuyển sai, hồ sơ thất lạc, quy trình tùy tiện (As-Is 4.2); (2) Khoảng trống — tool ngoại đắt + phải ghép nhiều cái, tool nội chấm CV nông, chưa ai làm "vừa đủ cấu trúc" cho công ty chưa có phòng HR; (3) Tại sao BÂY GIỜ — SQL Server 2025 VECTOR native + Local AI mã nguồn mở + PDPD hiệu lực 2026; (4) (phụ) hợp đồ án 3 tháng. Lưu ý: chi phí tuyển sai nói ĐỊNH TÍNH hoặc kèm nguồn, không bịa số.
+- **"Công ty nhỏ tuyển ít, cần gì hệ thống?"** → 4 vế (4.2): tuyển ít lần nhưng không ít việc (8-60 lượt/năm tùy quy mô, mỗi lượt hàng chục CV); người làm tuyển dụng là chủ/trưởng bộ phận — giờ công đắt nhất công ty; tuyển sai 1 người ở công ty 15 người = 7% nhân sự, rủi ro tỷ lệ nghịch quy mô; và chính vì tuyển ít nên họ KHÔNG THỂ nuôi HR chuyên trách hay mua ATS enterprise → cần dịch vụ thuê tháng "tối giản đúng chuẩn". "Tuyển ít" là lý do tồn tại của SRIS, không phải điểm yếu.
+- **"Quy trình quá phức tạp?"** → "Mặc định chỉ 4 pha, MỘT người làm được hết. Bước nâng cao là tùy chọn, bật khi công ty lớn lên. Quy trình không phải nhóm bịa — công ty nhỏ vốn làm gần đủ các bước này rồi nhưng làm phi cấu trúc (miệng, Zalo, trí nhớ — As-Is 4.2 + phỏng vấn sâu B2); hệ thống chỉ cấu trúc hóa và tự động hóa khúc chậm. Hệ thống còn tự BỎ bước cho bạn (không DM thì khỏi tầng duyệt, không có bước test)." (5.16)
+- **"Vì sao Bảo vệ 1 có quiz, giờ bỏ?"** → "Nhóm loại dựa trên bằng chứng: (1) hội đồng nhận xét tính năng chưa thực sự thông minh và quy trình quá cồng kềnh với công ty nhỏ; (2) nghiên cứu nghiệp vụ cho thấy công ty ≤200 người hầu như không tổ chức test — họ tin phỏng vấn trực tiếp và thử việc; (3) chất lượng đề AI và chống gian lận online không thể kiểm chứng trọn vẹn. Giữ quiz là ép công ty nhỏ dùng quy trình công ty lớn — mâu thuẫn đúng điểm hội đồng chỉ ra. Công ty cần kiểm tra năng lực thì tổ chức offline, kết quả ghi vào ghi chú nội bộ." (Loại tính năng theo bằng chứng = điểm cộng của tư duy BA, không phải điểm trừ.)
+- **"Tính năng chưa thông minh, ai cũng nghĩ đến rồi?"** → chỉ vào 2 điểm: (1) Talent Pool reverse matching — "CV cũ không chết, hệ thống tự sống lại chúng cho job mới; đối thủ nhỏ không làm, ATS xịn bán như tính năng cao cấp"; (2) chấm CV theo tiêu chí có giải thích + bằng chứng — "đa số chỉ đưa một con số; SRIS nói khớp gì thiếu gì kèm trích đoạn". Kèm câu: "thông minh nghiệp vụ, không phải khoe model."
+- **"AI chấm CV dựa vào đâu? Tiêu chí gì?"** → luồng 4 bước 5.18: tiêu chí từ Yêu cầu tuyển dụng do người có chuyên môn viết → AI bóc DRAFT → người duyệt chốt → chấm theo TỪNG tiêu chí, khớp/thiếu + bằng chứng. "AI đỡ việc tay và chỉ bằng chứng; con người đặt chuẩn và quyết."
+- **"AI đề xuất tiêu chí thì có uy tín không, phải người có chuyên môn chứ?"** → "Đúng — nên người có chuyên môn LÀ người đặt tiêu chí: họ viết yêu cầu tuyển dụng, và họ duyệt danh sách AI bóc ra. AI không quyết tiêu chí."
+- **"Có phương pháp đánh giá AI không?"** → khung Section 16: bộ test cố định, đổi 1 yếu tố/lần, đo 2 tầng (máy + rubric người); nhóm đã áp dụng khung này đo pipeline LLM (số máy đo cải thiện đều v1→v5: 11.7%→60.4%) và tái dùng cho chấm CV theo tiêu chí (Việc B4 — P/R/F1 hợp bài toán phân loại pass/loại theo ngưỡng).
+- **"Giá trị cho người dùng là gì?"** → nối pain đo được → tính năng: mất X giờ đọc CV (số B2) → chấm theo tiêu chí còn Y phút; hồ sơ thất lạc → kho tập trung truy vết; sợ luật dữ liệu → Local AI + cô lập = tuân thủ PDPD; tuyển lặp vị trí → Talent Pool tận dụng kho CV cũ; mất ứng viên vì xếp lịch chậm/im lặng → self-scheduling + trang trạng thái.
+- **Mô hình SaaS là gì, sao chọn:** phần mềm cung cấp như dịch vụ, thuê dùng trả phí kỳ, không mua đứt, không tự nuôi hạ tầng. Hợp target: công ty nhỏ cần dùng ngay, không nuôi đội IT; chi phí thêm 1 khách ≈ 0 (AI local) → giá thuê rẻ bền; dữ liệu cô lập từng công ty.
+- **Vì sao dùng Ollama:** công cụ chạy LLM mã nguồn mở tại máy/máy chủ nội bộ → đúng Local AI: chi phí ≈ 0, dữ liệu không ra ngoài; đổi model nhẹ nhàng; Ollama chỉ là "người chạy model", kiến trúc tách service nên thay được.
+- **Đối chiếu VPBank Young Talents 2026:** V1 lọc hồ sơ → Sàng lọc · V3 PV nhóm + V4 PV cá nhân → Phỏng vấn (multi-round 5.12) · V5 → Quyết định. (V2 test online của VPBank: SRIS cố ý KHÔNG làm — nghiệp vụ tập đoàn, không phải nghiệp vụ công ty ≤200 người; nếu khách cần thì tổ chức ngoài hệ thống.) Chứng minh pipeline sát thực tế; công ty nhỏ dùng bản rút gọn của cùng khung.
+- **Vì sao interviewer & DM đăng nhập:** người trong cuộc, cần lịch sử + sửa điểm + xem kết quả; như Greenhouse/Lever. Chỉ ứng viên ẩn danh magic link.
+- **Lỡ dev quên company_id:** "Hệ thống không tin trí nhớ lập trình viên. RLS tầng DB + Global Query Filter tầng code + test cô lập CI." (5.2)
+- **CV có rò rỉ giữa công ty không:** Không — vector search luôn kèm company_id; cộng luận điểm PDPD.
+- **Sao không tích hợp Google Calendar:** tự quản lịch nội bộ + .ics chuẩn mở → không khóa nhà cung cấp, không phát sinh chi phí (15.3).
+- **LLM deploy ở đâu:** bóc tiêu chí chạy nền lúc cấu hình job (không real-time); embedding nhẹ host cloud; LLM chạy local/batch, không host 24/7 → Cost Analysis.
+- **Mở rộng dữ liệu lớn:** exact VECTOR_DISTANCE (<50k vector); vượt → vector index (DiskANN) không đổi thiết kế.
+- **PDF scan:** nhận diện → từ chối file; OCR là hướng mở rộng.
+- **Existing solution:** không so hơn thua — mỗi đối thủ một mảnh (Teamtailor pipeline · Calendly đặt lịch), doanh nghiệp phải ghép nhiều tool nhiều khoản phí; SRIS gộp một dịch vụ + phần nghiệp vụ các đối thủ thiếu (tiêu chí xuyên suốt từ lọc CV đến phỏng vấn, blind review, talent pool) + rẻ (AI local) + PDPD. Với mảnh "bài test" (JobTest): SRIS cố ý đứng ngoài — target công ty nhỏ không test.
 
 ---
 
@@ -348,164 +362,138 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. **MỘT tín
 
 | Rủi ro | Impact | Mitigation |
 |---|---|---|
-| CV Suggestion phình to | Trung | Ghi rõ giới hạn basic, hỏi thầy |
-| Review tuần 5 tăng scope | Cao | Kiểm soát chặt, ghi Limitations & Exclusions |
-| Chuyển EF Core tốn công viết lại | Trung | Đổi NGAY giai đoạn đầu; họp nhóm; spike verify (5.11) |
-| Vector EF Core 10 còn mới | Trung | Spike verify trước; giữ FromSqlRaw làm cửa thoát |
-| Rò rỉ xuyên tenant (quên company_id) | Cao | RLS + Global Query Filter + test cô lập trong CI (5.2) |
-| User adoption (kháng cự từ Excel) | Cao | UI/UX mượt, Prototype sớm; ứng viên dùng magic link không cần login |
-| PDF extract sai/rỗng | Trung | PdfPig cho PDF text; scan → từ chối file |
-| Embedding sai ngoài IT | Trung | Model multilingual general-purpose; test thêm cặp ngoài IT |
-| Đổi embedding model phải re-embedding | Trung | Ghi rõ quy tắc; chốt model sớm |
-| Gen Quiz LLM chậm | Trung | Làm sau cùng; fallback Recruiter nhập tay; SHOULD-have; nút gen đơn stateless (không chat) |
-| Phỏng vấn nhiều vòng bị đẩy scope | Thấp | Ghi rõ mức làm (5.12); hỏi thầy; có bằng chứng VPBank |
+| **Redesign hậu-hội-đồng sát deadline (requisition + chấm theo tiêu chí)** | CAO | Tái dùng tối đa cái có sẵn (EvaluationCriteria đã per-job, vector pipeline đã PoC, pattern DRAFT→duyệt đã có); chi tiết mới = Việc B3/B4 có PoC trước khi khóa; KHÔNG thêm tính năng ngoài danh sách chốt |
+| Minh chứng khảo sát sơ cấp thiếu (form ít phản hồi) | Trung | **Chuyển trọng tâm sang phỏng vấn sâu 3-5 công ty** (mỗi thành viên tìm 1 công ty qua quan hệ); form Google chạy song song, được bao nhiêu tính bấy nhiêu; desk research có nguồn (4.1) làm lớp thứ 3 |
+| **Thời gian còn lại quá ngắn cho B2-B5 (hạn Bảo vệ 2 — CẦN XÁC NHẬN ngày thật)** | CAO | B2 chạy NGAY song song; critical path = B3→B4; B4 thu về mức PoC demo được nếu thiếu giờ; B5 làm cuối; KHÔNG nhận thêm việc ngoài danh sách |
+| Review tăng scope | Cao | Kiểm soát chặt, Limitations & Exclusions |
+| Chuyển EF Core tốn công | Trung | Đổi giai đoạn đầu; spike verify (5.11) |
+| Vector EF Core 10 còn mới | Trung | Spike verify; FromSqlRaw cửa thoát |
+| Rò rỉ xuyên tenant | Cao | RLS + Global Query Filter + test CI (5.2) |
+| User adoption (kháng Excel) | Cao | UI/UX mượt; magic link không cần login; mặc định 4 pha tối giản |
+| PDF extract sai/rỗng | Trung | PdfPig; scan → từ chối |
+| Đổi embedding model | Trung | Quy tắc re-embedding; chốt model sớm |
+| Chunk CV + ngưỡng khớp/thiếu chưa chuẩn | Trung | PoC Việc B4 đo trước khi khóa; hiển thị bằng chứng để người kiểm tra |
 
 ---
 
-## 12. FEEDBACK CỦA THẦY (20/05/2026)
+## 12. FEEDBACK
 
-**Kỹ thuật:** dùng Local AI (không OpenAI/Gemini, gọi API là mức thấp nhất + tốn tiền) · Python tính AI, .NET quản trị (tách khi cần) · SQL Server 2025 hỗ trợ Vector · cần bảng Cost Analysis.
-**Nghiệp vụ:** Phase 3+4 đều là sàng lọc → gộp · cho khách tự chọn tiêu chí (CRUD) · 2 mảng Recruitment + Interview · đề xuất CV → soft in-scope (chờ xác nhận) · rủi ro hội đồng đòi CV nâng cao → kiểm soát.
-**Trình bày:** KHÔNG "web của chúng em" · existing solution lấy khoảng trống đối thủ.
-**Tài liệu:** thích fishbone · class diagram tham khảo sách giáo trình (không Visual Paradigm) · Limitations & Exclusions thêm rủi ro tăng scope · Report 2 quan trọng Resource (1.1) + kế hoạch test (1.2, SWT) · không khách thật → không Acceptance Test · tham khảo môn SWR.
-**CẦN HỎI THẦY:** Đề xuất CV (basic) + phỏng vấn nhiều vòng có in-scope không.
+### 12.1 Thầy hướng dẫn (20/05/2026)
+- Kỹ thuật: Local AI (không OpenAI/Gemini) · Python tính AI, .NET quản trị · SQL Server 2025 Vector · cần Cost Analysis.
+- Nghiệp vụ: gộp phase sàng lọc · khách tự chọn tiêu chí (CRUD) · 2 mảng Recruitment + Interview · đề xuất CV soft in-scope.
+- Trình bày: KHÔNG "web của chúng em" · existing solution lấy khoảng trống.
+- Tài liệu: fishbone · class diagram theo giáo trình · Limitations & Exclusions · Report 2 Resource + kế hoạch test · không khách thật → không Acceptance Test.
+
+### 12.2 HỘI ĐỒNG (Bảo vệ, 07/2026) — 4 feedback → 3 vấn đề gốc → hướng giải ĐÃ CHỐT
+
+| # | Feedback hội đồng | Vấn đề gốc | Hướng giải (đã chốt trong file này) |
+|---|---|---|---|
+| 1 | Bổ sung bối cảnh và khảo sát | A. Thiếu minh chứng | **Phỏng vấn sâu 3-5 công ty nhỏ + form song song (Việc B2)** + desk research có nguồn (4.1) + As-Is (4.2); mọi số As-Is phải có nguồn |
+| 2 | Trình bày rõ vấn đề; quy trình quá phức tạp, tốn thời gian | B. Phức tạp | Target thu hẹp; 4 pha hiển thị; tối giản mặc định + tùy chọn bật (5.16); **loại hẳn module Quiz**; demo đường đơn giản trước; "hệ thống tự bỏ bước cho bạn" |
+| 3 | Chứng minh quy trình đúng với doanh nghiệp, phải có minh chứng | A + B | As-Is desk research (4.2) + phỏng vấn sâu quy trình thật; map 4 pha vào quy trình họ ĐANG làm; đối chiếu VPBank |
+| 4 | Tính năng chưa thông minh, ai cũng nghĩ đến rồi | C. Định vị "smart" | 2 điểm nhấn: Talent Pool reverse matching (hero, đã code) + chấm CV theo tiêu chí có giải thích (5.18); "thông minh nghiệp vụ, không khoe model"; quiz loại hẳn |
+| 5 | Làm sao thuyết phục giá trị cho người dùng | A | Value = pain đo được (B2 + 4.1) → tính năng → kết quả; PDPD compliance angle |
 
 ---
 
 ## 13. CHO CHAT MỚI — CÁCH DÙNG FILE NÀY
 
-1. Đọc file này TRƯỚC TIÊN. Tham chiếu file khác khi cần (Charter, Business Goals, Stakeholder Matrix, Personas, Feature Tree, 3 Report).
-2. **Format:** Markdown table (`|---|`), KHÔNG HTML table · tiếng Việt · vẽ flow → công cụ visualize (SVG) · tài liệu chính thức → file Word, không paste dài.
-3. **Lưu ý cốt lõi:**
-   - DB **SQL Server 2025**; AI **Local AI + Vector** (không OpenAI); embedding `paraphrase-multilingual-MiniLM-L12-v2` (384 chiều).
-   - Tầng DB dùng **EF Core** (`SqlVector<float>` + `EF.Functions.VectorDistance`; cửa thoát `FromSqlRaw`). (5.11)
-   - Cô lập tenant: **RLS + Global Query Filter + test** (5.2).
-   - **HỘI ĐỒNG CHÚ TRỌNG NGHIỆP VỤ** — ưu tiên làm rõ luồng nghiệp vụ hơn kỹ thuật.
-   - Không "web của chúng em"; mô hình **dịch vụ SaaS**, không bán đứt.
-   - Tuyển MỌI vị trí, không chỉ IT.
-   - **Role (4 login + 1 ẩn danh):** Admin, Recruiter, Interviewer, Department Manager đều đăng nhập Portal; chỉ Candidate dùng magic link. Câu thần chú: **Recruiter lái · Interviewer chấm · Department Manager quyết · Candidate ứng tuyển · Admin dựng sân** (2, 5.10).
-   - **Chấm vs quyết (5.7, 5.14):** interviewer chấm trong Portal = input (điểm + note, chấm LIVE, nháp lưu server, sửa được tới khi khóa, xem lịch sử); **Department Manager quyết tuyển — chỉ ở bước OFFER** (`Job.department_manager_id`, để trống → Recruiter quyết); người quyết đọc Radar + std dev; Recruiter thao tác Kanban + sàng lọc CV. Chỉ bàn mồm ở tiêu chí std dev cao. `reject_reason` bắt buộc nhưng 1-chạm (chip preset), nội bộ ≠ email gửi UV. Tiêu chí chấm = per-job.
-   - **Token (5.13):** "one-time" = đốt khi CHỐT, không phải khi mở → vào lại được trong TTL; magic link **4 purpose đều của ứng viên** (QUIZ/SCHEDULE/STATUS/OFFER_RESPONSE). Chấm điểm & quyết tuyển nằm trong Portal, không dùng magic link.
-   - Web 2 site: Career Site (`/t/{slug}`) + Internal Portal (`/t/{slug}/login`, khu theo role) (5.10).
-   - Quiz: **MCQ-only**, JD-based + câu tình huống; Recruiter gen + duyệt (DRAFT→READY) qua **nút hành động AI, không chat**; timer-lượt tách TTL (5.6).
-   - Anti-cheat: **công khai ngưỡng** tab-switch + xáo trộn câu/đáp án + đếm màn hình + cross-check 2 vòng; **webcam OUT** (5.5).
-   - **KHÔNG có cổng duyệt CV riêng** — Recruiter sàng lọc trực tiếp (5.8). Quyết tuyển ở cửa INTERVIEW→OFFER do Department Manager (để trống → Recruiter). Interviewer chấm trong Portal, Blind Review giữ (5.7). Offer có **OfferDetail** (lương/ngày vào làm/trạng thái); ứng viên tự nhận/từ chối qua `OFFER_RESPONSE` (5.15).
-   - Đặt lịch = **1 tính năng**, Recruiter mở khung mời 1 hay nhiều ứng viên; nhóm/cá nhân tùy Recruiter (5.9, 15).
-   - Multi-round = dữ liệu trong INTERVIEW, không thêm state (5.12).
-   - CV Suggestion + multi-round chờ xác nhận thầy.
+- Đọc file này TRƯỚC TIÊN. Tham chiếu file khác khi cần (Charter, Business Goals, Personas, Feature Tree, 3 Report — LƯU Ý: các Report cũ CHƯA cập nhật tái định vị + chưa bỏ quiz, file này mới là chuẩn).
+- Format: Markdown table (|---|), KHÔNG HTML table · tiếng Việt · vẽ flow → công cụ visualize (SVG) · tài liệu chính thức → file Word, không paste dài.
+- Lưu ý cốt lõi:
+  - **Định vị: quy trình tối giản đúng chuẩn cho công ty chưa có phòng HR (≤200 người + gia đình). Đơn giản mặc định, phức tạp tùy chọn. AI = trợ lý thầm lặng. Hệ thống KHÔNG thêm quy trình — nó cấu trúc hóa cái công ty nhỏ đang làm rời rạc (4.2).**
+  - **HỘI ĐỒNG CHÚ TRỌNG NGHIỆP VỤ. TÂM THẾ BẢO VỆ, không thuyết trình. Kỹ thuật là đạn Q&A dự phòng, không chủ động khoe.**
+  - **MODULE QUIZ ĐÃ LOẠI HOÀN TOÀN** (Section 3 OUT + đạn Q&A Section 10). Không thiết kế, không code, không tài liệu gì thêm cho quiz.
+  - DB SQL Server 2025; AI Local AI + Vector (không OpenAI); embedding BAAI/bge-m3 (1024 chiều, 8192 token). EF Core (SqlVector + VectorDistance; FromSqlRaw cửa thoát). Cô lập tenant: RLS + Global Query Filter + test (5.2). PDPD 2026 = luận điểm tuân thủ. Object storage: Amazon S3.
+  - Không "web của chúng em"; mô hình dịch vụ SaaS. Tuyển MỌI vị trí.
+  - Role: 4 role GÁN CHỒNG (1 người giữ được nhiều/cả 4); chỉ Candidate ẩn danh magic link. Câu thần chú: Recruiter lái · Interviewer chấm · DM quyết (và RA ĐỀ) · Candidate ứng tuyển · Admin dựng sân.
+  - **Luồng tiêu chí (5.17, 5.18): DM tạo Yêu cầu tuyển dụng (tùy chọn) → Recruiter tạo Job → AI bóc tiêu chí DRAFT → người duyệt chốt → chấm CV THEO TỪNG tiêu chí (CV_MATCHABLE, HARD lọc rule/SOFT vector, khớp/thiếu + bằng chứng) → cùng bộ tiêu chí chấm phỏng vấn. KHÔNG ném cả JD↔CV. Phần 5.18 ĐÃ CODE (xem TRẠNG THÁI CODE trong 5.18) — chat mới ĐỪNG thiết kế lại; 5.17 (requisition) còn chờ chốt B3.**
+  - Pipeline: hiển thị 4 pha (Hồ sơ mới · Sàng lọc · Phỏng vấn · Quyết định); **6 state nội bộ, 8 transition**, forward-only, guard G2 (5.8, 5.16). Bảng bật/tắt 5.16.
+  - Chấm vs quyết (5.7, 5.14): 1 người chấm mặc định; Blind + std dev + Radar tự bật khi >1. DM quyết chỉ ở OFFER; trống → Recruiter. reject_reason bắt buộc 1-chạm.
+  - Token (5.13): one-time = đốt khi CHỐT; **3 purpose**: SCHEDULE · STATUS · OFFER_RESPONSE. Web 2 site (5.10). Đặt lịch nội bộ + .ics (5.9, 15). Multi-round = dữ liệu trong INTERVIEW (5.12). Offer self-service (5.15).
+  - Talent Pool = HERO smart feature (đã code — Section 3).
+  - Số liệu: KHÔNG bịa; mọi As-Is chờ B2 (phỏng vấn sâu + form) hoặc trích desk research có nguồn (4.1).
 
-### CÁC VIỆC
+---
 
-**Đã xong (PoC chạy thật):** Việc 1 (file này) · Việc 2 (Local AI+Vector) · Việc 3 (PDF extract) · Việc 4 (Gen Quiz AI) · Việc 5 (State Machine). *(data layer viết ADO.NET → migrate EF Core khi nhóm chuyển — 5.11.)*
+## CÁC VIỆC
 
-**Ưu tiên kỹ thuật (mỗi việc 1 chat mới):**
-- [ ] Việc 0 (làm trước): spike verify EF Core + `EF.Functions.VectorDistance` trên SQL Server 2025; họp nhóm chuyển EF Core; migrate PoC cũ.
-- [ ] Việc 6: Email State Machine (gắn vào Việc 5).
-- [ ] Việc 7: Multi-tenant — RLS + Global Query Filter + test cô lập (5.2).
+### Ưu tiên HẬU-HỘI-ĐỒNG (mỗi việc 1 chat mới)
+- [x] **Việc B1:** Chốt tái định vị + cập nhật file context (CHÍNH LÀ BẢN NÀY — đã gồm quyết định loại quiz + desk research As-Is).
+- [ ] **Việc B2 — MINH CHỨNG SƠ CẤP (ĐANG CHẠY):** trọng tâm = **phỏng vấn sâu 3-5 công ty ≤200 người/gia đình** (mỗi thành viên nhóm tìm 1 công ty qua quan hệ; ~30 phút/công ty). **Kịch bản ĐÃ SOẠN XONG:** bộ 23 câu / 6 phần (`SRIS_B2_Bo_cau_hoi_phong_van.docx` — bản trần cho team; bản đầy đủ kèm phiếu ghi kết quả + khung trình bày: `SRIS_B2_Kich_ban_Phong_van_sau.docx`). LƯU Ý: kịch bản KHÔNG hỏi về bài test (đã chốt bỏ — quiz loại khỏi scope, luận cứ dùng desk research + feedback hội đồng là đủ; nếu đáp viên TỰ kể về test thì vẫn ghi nhận). Form Google 14 câu GIỮ chạy song song, được bao nhiêu tính bấy nhiêu. Deliverable: bảng "N công ty × quy trình thực tế × pain × con số" (gộp từ phiếu ghi) → điền KPI As-Is (4.3) + **3 slide trình bày**: (1) Phương pháp minh chứng 3 lớp + nêu hạn chế mẫu nhỏ, (2) Bảng kết quả + 1-2 quote nguyên văn ẩn danh, (3) KPI As-Is + câu chuyển "3 nỗi đau → 3 việc hệ thống giải quyết" (mock SVG đã có — thay số thật rồi dựng PowerPoint ở Việc B5).
+- [ ] **Việc B3 — ERD + thiết kế chi tiết mới (PHẦN SCHEMA TRONG CODE ĐÃ XONG TRƯỚC):** trong DB/code đã có sẵn: EvaluationCriteria mở rộng + ApplicationCriterionMatch + CvChunk + 2 tầng vector (V013 — xem 5.18 TRẠNG THÁI CODE); bảng Quiz đã gỡ (V012). **Còn lại của B3:** (1) chốt HiringRequisition — entity riêng hay giai đoạn của Job (khuyến nghị đang nghiêng entity riêng — phiếu và tin là 2 vật thể 2 chủ, tính năng tắt/bật được); (2) cờ bật/tắt 5.16 nằm ở đâu (Company setting / Job setting); (3) VẼ LẠI ERD .puml/.drawio khớp schema thật + đếm lại số entity.
+- [x] **Việc B4a — CODE chấm CV theo tiêu chí: XONG (07/2026).** Bóc tiêu chí (Ollama, JSON schema) → DRAFT → duyệt → chunk CV → HARD rule / SOFT vector + bằng chứng → điểm trọng số + API. Chi tiết: 5.18 mục TRẠNG THÁI CODE.
+- [ ] **Việc B4b — ĐO (phần còn lại của B4):** bộ CV/JD test đa ngành → đo chọn ngưỡng khớp/thiếu (hiện 0.6 placeholder, chỉnh qua config không cần sửa code) + cỡ chunk; P/R/F1 theo khung Section 16; đo chất lượng bóc tiêu chí (% tiêu chí trùng JD gốc, tầng rubric người). Màn hình FE hiển thị khớp/thiếu + bằng chứng (BE đã có API).
+- [ ] **Việc B5 — Tài liệu + trình bày lại:** cập nhật Business Overview/Report theo tái định vị + LOẠI QUIZ khỏi mọi tài liệu (SRS, Use Case, ERD, slide); slide bảo vệ 2: mở bằng bối cảnh + minh chứng B2 → 4 pha demo đơn giản trước → 2 điểm smart → Q&A dự phòng (gồm câu "vì sao bỏ quiz"). Cập nhật docs gửi nhóm.
 
-**Tài liệu:** Việc 8: Cost Analysis (chi phí AI = 0đ; chi phí biên thêm 1 tenant ≈ 0). · Việc 9: Cập nhật Business Overview Document.
-
-**Phát sinh:** Việc 10: Interview Scheduling (Section 15) + multi-round (5.12) — làm sau Việc 5-6.
-- [ ] Việc 11 (ĐANG NGHIÊN CỨU): Pipeline + prompt gen quiz chất lượng (5.6) — trích skill → blueprint cấp vị trí → gen từng chủ đề + few-shot + câu tình huống + distractor + self-critique. Viết prompt cho từng bước; thử trên qwen2.5 / model nhỏ. KHÔNG chỉ gửi mỗi JD. **Phương pháp đánh giá + 5 bước thực hiện: xem Section 16** (chuẩn bị khung đo → v1 baseline → cải tiến từng version → tổng hợp → báo cáo; chạy → ghi số → mới viết).
-- [ ] Việc 12: Thư viện tiêu chí mẫu (template) + ngân hàng câu hỏi đã duyệt (5.6) — schema (thêm bảng gì, audit/nguồn gốc ra sao).
-- [ ] Việc 13: CV Suggestion / Talent Pool (3, SẼ LÀM) — đảo chiều vector search trên kho `CvDocument` cũ, kèm `company_id`; gắn vào Feature Tree M3.
-- [ ] Deploy Local AI: embedding (nhẹ) lên VPS/cloud chạy thật; LLM quiz chạy nền/batch hoặc model nhỏ (gemma3:4b / qwen2.5:3b), KHÔNG host 24/7 — đưa trade-off RAM/máy vào Cost Analysis (Việc 8).
+### Backlog kỹ thuật (giữ từ trước, làm xen kẽ)
+- [ ] Việc 0: spike verify EF Core + VectorDistance trên SQL Server 2025; họp nhóm chuyển EF Core; migrate PoC.
+- [ ] Việc 6: Email State Machine (cập nhật theo 6 state). · Việc 7: Multi-tenant RLS + Global Query Filter + test cô lập (5.2).
+- [ ] Việc 8: Cost Analysis (chi phí AI = 0đ; chi phí biên thêm 1 tenant ≈ 0; trade-off RAM local LLM). · Việc 9: cập nhật Business Overview Document (gộp vào B5).
+- [ ] Việc 10: Interview Scheduling (Section 15) + multi-round (5.12).
+- [ ] Việc 12a: Thư viện tiêu chí mẫu theo nhóm vị trí — GIỮ, phục vụ 5.18 (template tiêu chí cho công ty nhỏ không biết bắt đầu từ đâu); gộp thiết kế schema vào Việc B3.
+- [x] Việc 13: Talent Pool (đã code — hero, Section 3).
+- [ ] Deploy Local AI: embedding lên VPS/cloud; LLM chạy nền/batch hoặc model nhỏ, KHÔNG host 24/7 → Cost Analysis.
 
 ---
 
 ## 14. TIẾN ĐỘ & BÀI HỌC KỸ THUẬT (PoC đã chạy thật)
 
-**Kiến trúc chung:** React → .NET (orchestration) → Python AI Service (sinh vector / gen quiz) + SQL Server 2025 (lưu vector + chấm). .NET là "bộ não"; Python "máy tính toán" stateless không đụng DB/tenant.
+Kiến trúc chung: React → .NET (orchestration) → Python AI Service (sinh vector / bóc tiêu chí) + SQL Server 2025 (lưu vector + chấm). .NET là "bộ não"; Python "máy tính toán" stateless không đụng DB/tenant.
 
-**Việc 2 — Local AI + Vector (23/05):** PoC chạy thật end-to-end "text → embedding → vector → điểm 0–100"; ranking đúng (CV .NET > Java > designer); CV trùng JD ~100đ. *Bài học:* chốt model 384 chiều multilingual; quy tắc re-embedding; điểm = (1 - cosine_distance)*100; dùng `127.0.0.1` thay `localhost` trên Windows.
-
-**Việc 3 — PDF extract (24/05):** PdfPig ở .NET (Apache/MIT — tránh iText7 AGPL); `PdfTextExtractor.cs` bóc text theo `GetWords()` (tránh dính chữ CV 2 cột); endpoint `POST /applications/upload` (multipart); hàm chung `ScoreCvAsync`. **File CV gốc lưu trên MinIO** (object storage): `CvDocument` giữ metadata `file_url` (object key, vd `cv/1/12/abc.pdf`) + `file_name`/`file_size`/`mime_type`; DB chỉ lưu text đã bóc + vector, không nhồi binary. 3 loại PDF: có-text → extract · 2-cột → extract được (thứ tự lộn xộn nhưng embedding không nhạy) · scan ảnh → text quá ngắn → `parse_status=FAILED`, từ chối file (không crash). PoC: PDF text → chấm điểm OK; scan → nhận diện đúng; ranking đúng qua đường PDF (.NET 86đ > Java 60đ > designer 21đ). *Bài học (chưa làm):* calibrate điểm bằng "2 mốc neo" (DIST_TOT=100đ, DIST_KEM=0đ) khi có dữ liệu thật; duplicate detection mức 1 (trùng email/SĐT) khi làm Pipeline; OCR out-scope.
-
-**Việc 4 — Gen Quiz AI (25/05):** LLM local qua **Ollama** (cổng 11434), model **qwen2.5**; Structured Output (JSON schema từ Pydantic + `format`, temperature=0); validate + retry 3 lần; fallback Recruiter nhập tay; dọn tiền tố "A) B)" bằng code. Mức A (script): "JD → 10 câu JSON sạch" ~15-20s, đa ngành OK (IT + Kế toán), ~8/10 câu dùng ngay. Mức B (nối hệ thống): Python phục vụ `/embed` + `/generate-quiz`; .NET thêm `POST /jobs/{id}/generate-quiz` + `GET /jobs/{id}/quiz`; bảng `Quizzes` (DRAFT/READY) + `QuizQuestions` (4 phương án JSON). *Bài học:* quiz AI luôn DRAFT → Recruiter review/duyệt → READY (5.6); gen chạy nền không real-time; SHOULD-have; **nút hành động AI = gen đơn stateless (không chat)** — đúng cách model nhỏ chạy tốt. Demo: gen sẵn quiz mẫu + demo live model nhẹ (gemma3:4b) trên laptop; chi phí LLM → Cost Analysis.
-
-**Việc 5 — State Machine:** xem 5.8 (đã hoàn thành PoC).
+- **Việc 2 — Local AI + Vector (23/05):** PoC end-to-end "text → embedding → vector → điểm 0–100"; ranking đúng (CV .NET > Java > designer). Bài học: chốt model multilingual (MiniLM 384 → nâng BAAI/bge-m3 1024/8192 token); quy tắc re-embedding; điểm = (1 - cosine_distance)*100; dùng 127.0.0.1 thay localhost trên Windows. LƯU Ý: pipeline này giờ là NỀN cho chấm theo tiêu chí (5.18) — đổi đơn vị so khớp từ "cả CV↔cả JD" sang "tiêu chí↔đoạn CV" (Việc B4), phần embedding + VectorDistance tái dùng nguyên.
+- **Việc 3 — PDF extract (24/05):** PdfPig ở .NET (tránh iText7 AGPL); bóc text theo GetWords() (tránh dính chữ CV 2 cột); POST /applications/upload; ScoreCvAsync. File CV gốc lưu object storage (Amazon S3): CvDocument giữ metadata file_url + file_name/size/mime; DB chỉ lưu text + vector. 3 loại PDF: có-text → extract · 2-cột → được (thứ tự lộn xộn, embedding không nhạy) · scan → text quá ngắn → parse_status=FAILED, từ chối. Bài học chưa làm: calibrate "2 mốc neo"; duplicate detection (trùng email/SĐT); OCR out-scope.
+- **Việc 4 — Pipeline Local LLM ra JSON có schema (25/05):** Ollama (11434), qwen2.5; Structured Output (JSON schema Pydantic, temperature=0); validate + retry 3; fallback nhập tay. Tính năng gốc (gen quiz) ĐÃ LOẠI khỏi scope — **giá trị còn lại của PoC: pattern "LLM ra JSON có schema + validate + retry + DRAFT→duyệt" TÁI DÙNG NGUYÊN cho bóc tiêu chí (5.18, Việc B4)**; demo bóc tiêu chí có thể dùng model nhẹ (gemma3:4b) nếu cần tốc độ.
+- **Việc 5 — State Machine:** xem 5.8 (PoC xong; cập nhật còn 6 state sau khi loại quiz).
+- **Việc B4a — Chấm CV theo tiêu chí (07/2026):** code end-to-end theo đúng 5.18 (chi tiết ở mục TRẠNG THÁI CODE của 5.18). Bài học: (1) tiêu chí HARD dò keyword phải so CẢ bản bỏ dấu (CV Việt hay gõ không dấu); (2) so khớp SOFT chạy ngay trong SQL Server (CROSS APPLY VECTOR_DISTANCE) — không kéo vector về .NET; (3) sửa nội dung tiêu chí → repo tự NULL embedding để lần chấm sau embed lại (quy tắc re-embedding); (4) tách criteria_score khỏi ai_match_score để so sánh được 2 cách chấm khi demo/đo; (5) LƯU CvChunk (không so xong vứt) → đổi tiêu chí chấm lại không tốn tiền embed lại cả kho CV. Còn thiếu: phần ĐO (Việc B4b) — ngưỡng 0.6 và cỡ chunk 120-700 là placeholder chưa calibrate.
 
 ---
 
 ## 15. ĐẶT LỊCH PHỎNG VẤN — CHI TIẾT KỸ THUẬT (thiết kế, chưa code)
 
-**Bối cảnh:** hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. Tách 2 bài toán: "chốt mốc thời gian các bên đồng ý" (nghiệp vụ lõi = IN) vs "đẩy lịch vào Google/Outlook" (đồng bộ = OUT). **MỘT tính năng đặt lịch duy nhất** (cơ chế ứng viên chọn/xác nhận slot — Calendly thu nhỏ) vì xóa vòng email qua lại (pain point chị Mai), tái dùng magic link, demo nổi bật.
-
-> **Nhóm hay cá nhân = Recruiter quyết, KHÔNG phải 2 mode kỹ thuật.** Recruiter mở khung rảnh của interviewer thành **pool slot dùng chung**; ứng viên tự chọn, ai chốt trước được trước, slot đặt rồi thì ẩn khỏi người khác (mỗi giờ thật dùng 1 lần → không trùng giờ interviewer). 3 ca: (1) 1 ứng viên chọn trong vài khung; (2) nhiều ứng viên dùng chung pool, first-come-first-served; (3) PV nhóm/panel → cố ý mời nhiều ứng viên vào CÙNG khung. Hệ thống chỉ cần "mở khung + magic link + .ics".
+Bối cảnh: tự đặt lịch nội bộ, KHÔNG Google Calendar. Tách 2 bài toán: "chốt mốc thời gian" (nghiệp vụ lõi = IN) vs "đẩy lịch vào Google/Outlook" (OUT). MỘT tính năng đặt lịch duy nhất (Calendly thu nhỏ): xóa vòng email qua lại, tái dùng magic link, demo nổi bật.
+Nhóm hay cá nhân = Recruiter quyết, KHÔNG phải 2 mode: pool slot dùng chung, ứng viên tự chọn, first-come-first-served, slot đặt rồi ẩn; PV nhóm → mời nhiều ứng viên CÙNG khung.
 
 ### 15.1 Thứ tự thao tác: KÉO trước, TẠO sau (thủ công)
-Card kéo sang Interview TRƯỚC ("cửa quyết định con người": pass quiz KHÔNG tự sang) → mở khóa "Tạo Interview Request" → Recruiter chủ động bấm tạo khi sẵn sàng (KHÔNG popup ép). Trạng thái phụ trên card: chưa có Schedule → PENDING → CONFIRMED.
+Card kéo sang Interview TRƯỚC ("cửa quyết định con người") → mở khóa "Tạo Interview Request" → Recruiter chủ động bấm (KHÔNG popup ép). Trạng thái phụ: chưa có Schedule → PENDING → CONFIRMED.
 
 ### 15.2 Token magic link
-Cùng cơ chế token, khác `purpose` (QUIZ/SCHEDULE/STATUS/OFFER_RESPONSE — đều của ứng viên). Bảo mật: token 32 byte; **lưu HASH** (không lưu gốc); one-time + TTL; ràng buộc purpose; rate limit; đếm số lần truy cập. (Là pattern ở 5.1/5.13, không xây mới.)
+Cùng cơ chế token, purpose SCHEDULE. Token 32 byte; lưu HASH; one-time + TTL; ràng buộc purpose; rate limit; đếm truy cập. (Pattern 5.1/5.13.)
 
 ### 15.3 TTL + nhánh hết khung + so sánh Calendly
-- TTL link đặt lịch ~5 ngày, **cấu hình được** (Quiz 48h · Đặt lịch ~5 ngày · Status dài). Lọc slot hiển thị = token còn hạn AND slot tương lai AND slot OPEN.
-- **Pool slot DÙNG CHUNG, ai chốt trước được trước (first-come-first-served).** Recruiter mở các khung rảnh của interviewer thành bộ slot dùng chung cho nhóm ứng viên đang xét; ứng viên nào chốt một slot trước → slot đó `BOOKED` → **biến mất** khỏi danh sách của ứng viên khác (mỗi giờ thật chỉ bị đặt 1 lần → interviewer không trùng giờ). Recruiter KHÔNG cần chia khung riêng từng người. 3 ca: **(1) 1 ứng viên** — mở vài khung, chọn 1; **(2) nhiều ứng viên, 1 interviewer ít giờ** — pool dùng chung, first-come-first-served, slot đặt rồi thì ẩn; **(3) PV nhóm/panel** — cố ý mời nhiều ứng viên vào CÙNG khung (chủ đích).
-- **"Tranh slot" KHÔNG phải lỗi cần né — là hành vi đúng** (thời gian interviewer là tài nguyên giới hạn). Hai ứng viên bấm cùng slot đúng cùng lúc → khóa lạc quan xử lý: `UPDATE InterviewSlot SET status='BOOKED' WHERE slot_id=@s AND status='OPEN'` — chỉ 1 câu ăn dòng (rowcount=1), người kia rowcount=0 → trang báo "khung vừa có người đặt, chọn khung khác". Không hỏng dữ liệu, không cần đăng nhập (token đã gắn hồ sơ; cái bảo vệ là kiểm tra lại lúc chốt, không phải session). Ẩn slot đã đặt theo kiểu **load lại trang là đủ**; auto-refresh real-time là SHOULD.
-- **Nhánh hết khung / link hết hạn:** nút "Không khung nào phù hợp" → báo Recruiter mở vòng mới (token cũ chết). Trạng thái `NO_SLOT_FITS`. (Tùy chọn: ô ghi chú UV gợi ý giờ rảnh — không tự khớp lịch.)
-- **So Calendly (lấy khoảng trống đối thủ):** Calendly tự đọc calendar thật của interviewer + tự đẩy event → phụ thuộc Google/Outlook API (chính là phần SRIS cố ý OUT). SRIS = "self-scheduling KHÔNG sync calendar", thay tự-đẩy bằng .ics. Số liệu (Calendly Blog — dẫn nguồn khi đưa vào báo cáo): Muck Rack từng tốn 80% thời gian xếp lại lịch, giảm time-to-hire 8 ngày; ~78% nhà tuyển dụng mất ứng viên vì xếp lịch chậm. Nguồn: calendly.com/blog/automate-recruiting-process.
+- TTL link đặt lịch ~5 ngày, cấu hình. Lọc slot = token còn hạn AND slot tương lai AND OPEN.
+- Pool slot DÙNG CHUNG, first-come-first-served. Mỗi giờ thật chỉ đặt 1 lần → interviewer không trùng giờ. 3 ca: 1 ứng viên chọn trong vài khung · nhiều ứng viên chung pool · PV nhóm cố ý cùng khung.
+- "Tranh slot" là hành vi đúng: khóa lạc quan — UPDATE InterviewSlot SET status='BOOKED' WHERE slot_id=@s AND status='OPEN'; rowcount=0 → "khung vừa có người đặt, chọn khung khác". Ẩn slot theo kiểu load lại trang; real-time là SHOULD.
+- Nhánh hết khung / hết hạn: nút "Không khung nào phù hợp" → NO_SLOT_FITS → Recruiter mở vòng mới (token cũ chết).
+- So Calendly (khoảng trống đối thủ): Calendly phụ thuộc Google/Outlook API — chính phần SRIS cố ý OUT. SRIS = self-scheduling KHÔNG sync, thay bằng .ics. Số liệu (Calendly Blog, dẫn nguồn): Muck Rack tốn 80% thời gian xếp lại lịch, giảm time-to-hire 8 ngày; ~78% recruiter mất ứng viên vì xếp lịch chậm.
 
-### 15.4 Gợi ý Feature Tree — M10
-**MUST:** Interview Request riêng từng ứng viên · magic link SCHEDULE (hash, one-time, TTL) · lọc slot (OPEN + tương lai + token hạn) · chốt slot + khóa + chống trùng · mời 1 hay nhiều ứng viên vào cùng khung (PV nhóm/cá nhân) · xử lý hết khung/hết hạn · trigger từ State Machine (Việc 5) + email (Việc 6) · màn hình Recruiter tạo request · trang ứng viên chọn/xác nhận slot · nút "Không khung phù hợp" · hiển thị giờ + trạng thái trên Kanban.
-**SHOULD:** .ics đính kèm · reschedule/cancel thủ công · ô ghi chú gợi ý giờ.
-**OUT:** Calendar 2-way sync · dò lịch rảnh interviewer · auto-suggest khung.
-**Bảng (kèm company_id):** `InterviewSchedule` (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED) · `InterviewSlot` (OPEN/BOOKED/LOCKED). *(Multi-round: thêm `round_number`/`InterviewRound` — 5.12.)*
+### 15.4 Gợi ý Feature Tree — M9
+- MUST: Interview Request riêng từng ứng viên · magic link SCHEDULE · lọc slot · chốt + khóa + chống trùng · mời 1/nhiều ứng viên cùng khung · xử lý hết khung/hạn · trigger State Machine + email · màn Recruiter tạo request · trang ứng viên chọn slot · nút "Không khung phù hợp" · hiển thị giờ + trạng thái trên Kanban.
+- SHOULD: .ics đính kèm · reschedule/cancel thủ công · ô ghi chú gợi ý giờ.
+- OUT: Calendar 2-way sync · dò lịch rảnh · auto-suggest.
+- Bảng (kèm company_id): InterviewSchedule (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED) · InterviewSlot (OPEN/BOOKED/LOCKED). (Multi-round: round_number/InterviewRound — 5.12.)
 
 ---
 
-## 16. PHƯƠNG PHÁP ĐÁNH GIÁ AI — GEN QUIZ (áp khung slide môn học)
+## 16. PHƯƠNG PHÁP ĐÁNH GIÁ AI — KHUNG TÁI DÙNG CHO VIỆC B4
 
-**Nguồn:** slide môn học (tài liệu chung, KHÔNG riêng SRIS) — khung 4 giai đoạn **Prompt → Test → Đánh giá → Báo cáo**; thông điệp lõi: *"prompt tốt không phải prompt dài/hay, mà là prompt ĐO LƯỜNG và SO SÁNH được"*; mục tiêu cuối = có **bằng chứng khoa học** trong báo cáo để thuyết phục hội đồng (không kết luận bằng cảm giác "AI trả lời hay"). Slide lấy ví dụ **chatbot** — phải DỊCH sang gen quiz, không bê nguyên.
+**TRẠNG THÁI:** khung phương pháp GIỮ; nguồn gốc là pipeline gen quiz (tính năng đã loại khỏi scope). Giá trị hiện tại: (1) đạn Q&A khi hội đồng hỏi "có phương pháp đánh giá AI không" — nhóm đã áp dụng và có số thật; (2) khung TÁI DÙNG cho đánh giá bóc tiêu chí + chấm CV theo tiêu chí ở Việc B4 (cùng triết lý: bộ test cố định, đổi 1 yếu tố/lần, đo 2 tầng).
 
-### 16.1 Map khung trường → gen quiz (chỗ lệch quan trọng)
-| Mục slide | Chatbot | Gen quiz áp thế nào |
-|---|---|---|
-| Prompt = business rule mềm + versioning | 1 prompt | Pipeline nhiều prompt (trích skill / gen / self-critique), versioning từng cái |
-| Dataset 150–200 + Ground Truth | 150–200 câu user + intent đúng | **Bộ JD test** (~12 JD đa ngành) → ~15 câu/JD ≈ 180 câu gen ra để chấm. "150–200" = tổng câu gen được đánh giá, KHÔNG phải 150 JD |
-| Định tính (rubric 3–5 tiêu chí) | Relevance/Clarity… cho câu trả lời | **Rubric riêng cho câu MCQ** (16.3) — TRỤC CHÍNH cho gen quiz |
-| Định lượng (Precision/Recall/F1, Confusion Matrix) | Phân loại intent | **KHÔNG ép vào "chất lượng câu quiz"** (generation không có 1 đáp án đúng duy nhất để so → hội đồng vặn "ground truth của câu tự sinh là gì"). Phần này hợp **CV SCORING** hơn (pass/loại theo ngưỡng = phân loại) |
-| Đa dạng câu (Baseline/Variation/Edge/Advanced) | Câu user nhiều kiểu | Đa dạng **JD test** (ngành, cấp vị trí) + edge case JD rác/thiếu thông tin |
-| Báo cáo so sánh version | Bảng điểm TB v1/v2/v3 + %cải thiện | Y nguyên — bảng version pipeline gen (16.4) |
+Nguồn: slide môn học — khung Prompt → Test → Đánh giá → Báo cáo; "prompt tốt là prompt ĐO và SO SÁNH được".
 
-> **CHỐT:** gen quiz đo bằng **rubric định tính + pass-rate**; **Precision/Recall/F1 để dành cho CV scoring** (đúng bài toán phân loại). Đừng nhét confusion matrix vào chất lượng câu quiz.
+### 16.1 Khung áp cho Việc B4
+- Prompt versioning: versioning từng prompt trong pipeline (bóc tiêu chí).
+- Dataset: bộ JD/CV test cố định đa ngành.
+- Đo 2 tầng: tầng tự động (máy, khách quan — % JSON hợp lệ, % tiêu chí trùng JD gốc...) + tầng người (rubric 0-5) → pass-rate.
+- Định lượng P/R/F1: HỢP với CV scoring (pass/loại theo ngưỡng = bài toán phân loại) — dùng làm chỉ số chính của B4.
 
-### 16.2 "Dataset" & "đo được" cho gen quiz
-- **Dataset đầu vào = bộ JD test** (~12 JD: Dev Junior/Senior, Kế toán, Sales, Marketing… + vài JD "xấu" thiếu chi tiết làm edge case). KHÔNG phải bộ câu quiz chuẩn.
-- **Đo 2 tầng (vẫn ra số định lượng mà không gượng):**
-  * **Tầng tự động** (máy check, khách quan tuyệt đối): % JSON hợp lệ · % câu có đúng 1 đáp án đúng · % câu không trùng · % câu dạng tình huống (không hỏi định nghĩa thuộc lòng). Ra % ngay, so version được.
-  * **Tầng rubric** (người chấm bareme 0–5 theo 16.3) → **pass-rate** = % câu đạt ngưỡng (vd ≥4/5). **Pass-rate là con số định lượng chốt — thay vai trò F1 trong báo cáo gen quiz.**
+### 16.2 Bằng chứng đã áp dụng khung (số máy đo, giữ làm đạn Q&A)
+Pipeline LLM cải thiện đều qua versioning trên cùng bộ 12 JD test: v1_baseline 11.7% → v2_skill_extraction 27.9% → v3_fewshot 43.2% → v4_situational 50.4% → v5_self_critique 60.4% (tỷ lệ câu đạt tiêu chí máy đo). File: quiz_grading_ALL.xlsx (6 sheet). Nếu hội đồng hỏi sâu: nói thẳng "tính năng gốc đã loại khỏi scope theo tái định vị; nhóm giữ phương pháp và tái dùng cho chấm CV theo tiêu chí — số liệu chứng minh kỷ luật đo lường".
 
-### 16.3 Rubric chấm 1 câu MCQ (mỗi tiêu chí 0–5, chọn 3–5 cái như slide khuyến nghị)
-| Tiêu chí | Hỏi gì | 0đ | 5đ |
-|---|---|---|---|
-| Correctness | Có đúng 1 đáp án đúng? | sai / nhiều đáp án đúng | đúng duy nhất 1 |
-| Relevance (bám JD) | Khớp skill trong JD? | lạc đề | đúng skill, đúng trọng tâm |
-| Distractor | 3 đáp án sai hợp lý? | lộ liễu, dễ loại | đều hợp lý, dựa lỗi hiểu sai thật |
-| Tình huống | Áp dụng hay thuộc lòng? | Google 10s ra | tình huống, hiểu mới làm được |
-| Rõ ràng | Rõ chữ, đúng độ khó cấp vị trí? | mơ hồ, sai cấp | rõ, đúng Junior/Senior |
-*(Gọn thì lấy 3 cái đầu.)*
-
-### 16.4 Prompt versioning — phần ăn điểm nhất (mỗi version đổi ĐÚNG 1 yếu tố, cùng bộ JD, cùng rubric)
-| Version | Đổi gì so với bản trước | Pass-rate kỳ vọng |
-|---|---|---|
-| v1_baseline | gửi JD → gen 10 câu (1 phát) | thấp (~40%) — mốc gốc |
-| v2_skill_extraction | thêm bước trích skill → gen từng skill | tăng |
-| v3_fewshot | thêm 1–2 câu mẫu vào prompt gen | tăng |
-| v4_situational | ép câu tình huống + ràng buộc distractor | tăng |
-| v5_self_critique | thêm lượt AI tự soát rồi sửa | cao nhất |
-- Lưu prompt + kết quả mỗi version (Google Sheet/file repo). Bảng này + pass-rate thật = **bằng chứng khoa học** slide đòi. **KHÔNG đổi nhiều yếu tố cùng lúc** (không thì không biết cải tiến từ đâu).
-
-### 16.5 Viết prompt 4 thành phần (slide 3) cho từng bước pipeline (mỗi prompt 1 việc hẹp)
-- **Trích skill** — vai: chuyên gia phân tích JD; nhiệm vụ: liệt kê skill cốt lõi; ngữ cảnh: vị trí X cấp Y; đầu ra: JSON `{skill, num_questions}`, không giải thích.
-- **Gen câu** — vai: người ra đề MCQ; nhiệm vụ: viết N câu tình huống cho 1 skill; ngữ cảnh: cấp vị trí + 1–2 câu mẫu (few-shot); đầu ra: JSON đúng schema, 4 đáp án, đúng 1 đúng, 3 distractor dựa lỗi hiểu sai thật.
-- **Self-critique** — vai: người soát đề; nhiệm vụ: kiểm đúng-1-đáp-án + distractor có lộ + có phải tình huống; đầu ra: câu đã sửa / cờ loại.
-
-### 16.6 CÁC BƯỚC THỰC HIỆN (chạy → ghi số → MỚI viết báo cáo)
-1. **Chuẩn bị khung đo (TRƯỚC khi chạy):** bộ JD test + file rubric (16.3) + bảng versioning trống (16.4). Có thước trước khi đo.
-2. **Viết prompt v1 baseline** → chạy trên bộ JD → chấm rubric → ghi pass-rate (mốc gốc).
-3. **Cải tiến từng version (v2→v5), mỗi lần 1 yếu tố** → chạy lại CÙNG bộ JD → chấm CÙNG rubric → điền bảng.
-4. **Tổng hợp:** bảng version đầy số thật → chọn version tốt nhất làm bản chốt.
-5. **Viết báo cáo:** lúc này mới viết, vì đã có bảng so sánh version + pass-rate + ví dụ câu tốt/xấu + kết luận version thắng + điểm cần cải thiện (đúng cấu trúc slide 6 "Đánh giá & tổng hợp").
-- **Kỷ luật ghi:** ngay từ bước 1, mỗi lần chạy lưu {version, JD, câu gen, điểm rubric, ghi chú}. Tới lúc viết báo cáo, bảng biểu/dẫn chứng nằm sẵn — không phải chạy lại/nhớ lại.
-- **Checklist trước nộp (slide 8):** prompt rõ + lưu version · bộ câu đủ lớn/đa dạng · không đánh giá bằng 1–2 câu · tiêu chí có bareme · có Ground Truth/đáp án mong đợi.
+### 16.3 Các bước thực hiện (chạy → ghi số → mới viết) — KHUNG cho Việc B4
+1. Chuẩn bị khung đo TRƯỚC khi chạy (bộ test + rubric + bảng versioning trống).
+2. Baseline → chạy → chấm → ghi (mốc gốc).
+3. Cải tiến từng version, mỗi lần 1 yếu tố, cùng bộ test cùng rubric.
+4. Tổng hợp bảng số thật → chọn bản chốt.
+5. Viết báo cáo sau cùng, khi bảng biểu nằm sẵn.
+- Kỷ luật ghi: mỗi lần chạy lưu {version, input, output, điểm, ghi chú}.

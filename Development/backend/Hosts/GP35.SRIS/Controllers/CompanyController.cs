@@ -44,5 +44,37 @@ namespace GP35.SRIS.Controllers
             var company = await _companyService.UpdateBrandAsync(_contextData.CompanyId, dto);
             return Ok(company);
         }
+
+        /// <summary>Cập nhật hồ sơ công ty (name/logo/màu) — CHỈ Admin. Slug (URL công khai) cố định.</summary>
+        [HttpPut]
+        [WithRole(RoleConstants.Admin)]
+        public async Task<IActionResult> Update([FromBody] UpdateBrandDto dto)
+        {
+            var company = await _companyService.UpdateBrandAsync(_contextData.CompanyId, dto);
+            return Ok(company);
+        }
+
+        /// <summary>Đọc cấu hình SMTP riêng của công ty (che mật khẩu) — CHỈ Admin.</summary>
+        [HttpGet("smtp")]
+        [WithRole(RoleConstants.Admin)]
+        public async Task<IActionResult> GetSmtp()
+            => Ok(await _companyService.GetSmtpAsync(_contextData.CompanyId));
+
+        /// <summary>Cấu hình SMTP riêng của công ty (email đi từ tên miền công ty) — CHỈ Admin.</summary>
+        [HttpPut("smtp")]
+        [WithRole(RoleConstants.Admin)]
+        public async Task<IActionResult> UpdateSmtp([FromBody] UpdateSmtpDto dto)
+            => Ok(await _companyService.UpdateSmtpAsync(_contextData.CompanyId, dto));
+
+        /// <summary>Gửi email thử bằng SMTP hiện hành để kiểm tra cấu hình — CHỈ Admin.</summary>
+        [HttpPost("smtp/test")]
+        [WithRole(RoleConstants.Admin)]
+        public async Task<IActionResult> TestSmtp([FromBody] SendTestEmailDto dto)
+        {
+            var sent = await _companyService.SendTestEmailAsync(_contextData.CompanyId, dto.ToEmail);
+            return Ok(new { sent, message = sent
+                ? "Đã gửi email thử. Kiểm tra hộp thư (cả Spam)."
+                : "Chưa gửi được — kiểm tra Host/User/Password SMTP." });
+        }
     }
 }

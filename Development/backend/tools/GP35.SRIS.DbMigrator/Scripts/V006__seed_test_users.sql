@@ -14,7 +14,7 @@
 ALTER SECURITY POLICY dbo.TenantSecurityPolicy WITH (STATE = OFF);
 GO
 
-DECLARE @pwd NVARCHAR(256) = N'fjwEDEYuI54d1+No0j+Dlk3tZV3oC3yh+X/NqmRhe+w='; -- 123456
+DECLARE @pwd NVARCHAR(256) = N'5NL5SaQBwE6c0L1BDjHW+BtBOXQVH8RYwY0tGGw3khk='; -- SHA256WithSalt("123456","salt")
 
 -- Cùng tenant với Recruiter sẵn có; DB mới chưa có thì lấy company đầu tiên.
 DECLARE @companyId BIGINT =

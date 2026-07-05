@@ -5,7 +5,6 @@ public static class ApplicationState
 {
     public const string New = "NEW";
     public const string Screening = "SCREENING";
-    public const string Quiz = "QUIZ";
     public const string Interview = "INTERVIEW";
     public const string Offer = "OFFER";
     public const string Hired = "HIRED";
@@ -13,17 +12,18 @@ public static class ApplicationState
 
     public static readonly IReadOnlyList<string> All = new[]
     {
-        New, Screening, Quiz, Interview, Offer, Hired, Rejected
+        New, Screening, Interview, Offer, Hired, Rejected
     };
 }
 
 /// <summary>
-/// Luật chuyển trạng thái hồ sơ (docs 5.8) — forward-only, 11 transition.
-/// Logic THUẦN (không I/O); guard G1/G2 cần dữ liệu nên kiểm ở tầng service.
+/// Luật chuyển trạng thái hồ sơ (docs 5.8) — 6 state, forward-only, 8 transition.
+/// Logic THUẦN (không I/O); guard G2 cần dữ liệu nên kiểm ở tầng service.
 ///
-/// Forward (6): NEW→SCREENING · SCREENING→QUIZ · SCREENING→INTERVIEW (bỏ qua quiz) ·
-///   QUIZ→INTERVIEW (G1: quiz đã nộp) · INTERVIEW→OFFER (G2: ≥1 phiếu chấm SUBMITTED) · OFFER→HIRED.
-/// Reject (5): NEW/SCREENING/QUIZ/INTERVIEW/OFFER → REJECTED (bắt buộc reject_reason).
+/// Forward (4): NEW→SCREENING · SCREENING→INTERVIEW ·
+///   INTERVIEW→OFFER (G2: ≥1 phiếu chấm SUBMITTED) · OFFER→HIRED.
+/// Reject (4): NEW/SCREENING/INTERVIEW/OFFER → REJECTED (bắt buộc reject_reason).
+/// (Guard G1 không còn — thuộc nhánh quiz đã loại khỏi scope; giữ tên G2 khớp tài liệu cũ.)
 /// </summary>
 public static class ApplicationStateMachine
 {
@@ -32,8 +32,7 @@ public static class ApplicationStateMachine
         new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
             [ApplicationState.New] = new[] { ApplicationState.Screening },
-            [ApplicationState.Screening] = new[] { ApplicationState.Quiz, ApplicationState.Interview },
-            [ApplicationState.Quiz] = new[] { ApplicationState.Interview },
+            [ApplicationState.Screening] = new[] { ApplicationState.Interview },
             [ApplicationState.Interview] = new[] { ApplicationState.Offer },
             [ApplicationState.Offer] = new[] { ApplicationState.Hired },
             [ApplicationState.Hired] = Array.Empty<string>(),
@@ -43,7 +42,7 @@ public static class ApplicationStateMachine
     public static bool IsValidState(string? state) =>
         state is not null && ApplicationState.All.Contains(state, StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Có được phép tiến từ from -> to (chưa tính guard G1/G2)?</summary>
+    /// <summary>Có được phép tiến từ from -> to (chưa tính guard G2)?</summary>
     public static bool IsForwardAllowed(string from, string to) =>
         Forward.TryGetValue(from, out var targets) &&
         targets.Contains(to, StringComparer.OrdinalIgnoreCase);
@@ -52,10 +51,6 @@ public static class ApplicationStateMachine
     public static bool CanReject(string from) =>
         !string.Equals(from, ApplicationState.Hired, StringComparison.OrdinalIgnoreCase) &&
         !string.Equals(from, ApplicationState.Rejected, StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>Transition QUIZ→INTERVIEW cần Guard G1 (phải có bài quiz đã nộp).</summary>
-    public static bool RequiresGuardG1(string from, string to) =>
-        Eq(from, ApplicationState.Quiz) && Eq(to, ApplicationState.Interview);
 
     /// <summary>Transition INTERVIEW→OFFER cần Guard G2 (≥1 phiếu chấm SUBMITTED).</summary>
     public static bool RequiresGuardG2(string from, string to) =>

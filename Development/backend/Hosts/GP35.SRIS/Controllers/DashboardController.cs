@@ -33,4 +33,12 @@ public class DashboardController : ControllerBase
         var result = await _dashboardService.GetOverviewAsync(_contextData.CompanyId, jobId);
         return Ok(result);
     }
+
+    /// <summary>Kanban board cho recruitment pipeline. jobId rỗng = toàn công ty.</summary>
+    [HttpGet("kanban")]
+    public async Task<IActionResult> Kanban([FromQuery] long? jobId = null)
+    {
+        var result = await _dashboardService.GetKanbanBoardAsync(_contextData.CompanyId, jobId);
+        return Ok(result);
+    }
 }

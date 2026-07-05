@@ -6,8 +6,8 @@ namespace GP35.SRIS.Lib.Services.Ai;
 /// </summary>
 public interface IEmbeddingClient
 {
-    /// <summary>Số chiều vector (khớp cột VECTOR(384) trong DB).</summary>
-    const int EmbeddingDimension = 384;
+    /// <summary>Số chiều vector (khớp cột VECTOR(1024) trong DB — model BAAI/bge-m3).</summary>
+    const int EmbeddingDimension = 1024;
 
     /// <summary>Nhận text -> trả về vector embedding. Ném khi không gọi được AI service.</summary>
     Task<float[]> EmbedAsync(string text);

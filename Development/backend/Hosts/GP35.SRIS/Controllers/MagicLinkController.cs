@@ -9,7 +9,7 @@ namespace GP35.SRIS.Controllers;
 
 /// <summary>
 /// Nội bộ (Recruiter): phát magic link cho ứng viên (docs 5.13). Token GỐC chỉ trả 1 lần ở đây
-/// để nhúng vào email; DB chỉ lưu hash. 4 purpose: QUIZ/SCHEDULE/STATUS/OFFER_RESPONSE.
+/// để nhúng vào email; DB chỉ lưu hash. 3 purpose: SCHEDULE/STATUS/OFFER_RESPONSE.
 /// </summary>
 [Route("api/applications/{applicationId:long}/magic-links")]
 [ApiController]
@@ -26,9 +26,9 @@ public class MagicLinkController : ControllerBase
         _magicLink = magicLink;
     }
 
-    /// <summary>Phát 1 magic link cho hồ sơ. TTL mặc định theo purpose (vd QUIZ 48h).</summary>
+    /// <summary>Phát 1 magic link cho hồ sơ. TTL mặc định theo purpose (vd SCHEDULE ~5 ngày).</summary>
     [HttpPost]
-    public async Task<IActionResult> Issue(long applicationId, [FromQuery] string purpose = "QUIZ")
+    public async Task<IActionResult> Issue(long applicationId, [FromQuery] string purpose = "STATUS")
     {
         var issued = await _magicLink.IssueAsync(_contextData.CompanyId, applicationId, purpose);
         return Ok(issued);
