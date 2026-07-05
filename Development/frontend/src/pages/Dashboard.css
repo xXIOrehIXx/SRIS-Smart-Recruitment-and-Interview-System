@@ -365,13 +365,6 @@
   justify-content: space-between;
 }
 
-/* Quiz */
-.quiz-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .action-buttons {
   display: flex;
   gap: 4px;
