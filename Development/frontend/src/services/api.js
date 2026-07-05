@@ -365,4 +365,14 @@ export const usersAPI = {
     api.post(`/api/users/${id}/change-password`, { oldPassword, newPassword }),
 };
 
+// ==================== PUBLIC CAREER SITE ====================
+
+export const publicCareerAPI = {
+  // Nộp CV cho một job (multipart/form-data)
+  apply: (slug, jobId, formData) =>
+    api.post(`/api/public/${slug}/jobs/${jobId}/apply`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+};
+
 export default api;

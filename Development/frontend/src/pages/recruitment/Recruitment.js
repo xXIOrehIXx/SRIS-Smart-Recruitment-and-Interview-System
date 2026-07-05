@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, Typography, Card, Row, Col, Button, Modal, Descriptions, Tag, Space, List, Divider, message, Input, Select, Statistic, Spin } from 'antd';
+import { Layout, Typography, Card, Row, Col, Button, Modal, Descriptions, Tag, Space, List, Divider, message, Input, Select, Statistic, Spin, Form, Upload } from 'antd';
 import { 
   SearchOutlined, 
   EnvironmentOutlined, 
@@ -13,12 +13,16 @@ import {
   CheckCircleOutlined,
   StarOutlined,
   CloseOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  UploadOutlined,
+  InboxOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { jobsAPI } from '../../services/api';
+import { jobsAPI, publicCareerAPI } from '../../services/api';
 import './Recruitment.css';
 import { useCompany } from '../../hooks/useCompany';
+
+const { Dragger } = Upload;
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -34,8 +38,10 @@ const Recruitment = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [applyModalVisible, setApplyModalVisible] = useState(false);
   const [applyingJob, setApplyingJob] = useState(null);
-  const [applyForm] = useState({ name: '', email: '', phone: '', coverLetter: '' });
+  const [applyForm] = Form.useForm();
+  const [file, setFile] = useState(null);
 
   useEffect(() => {
     fetchJobs();
@@ -106,26 +112,51 @@ const Recruitment = () => {
       message.info('Bạn đã ứng tuyển vị trí này rồi');
       return;
     }
-    
-    Modal.confirm({
-      title: 'Xác nhận ứng tuyển',
-      content: `Bạn có chắc muốn ứng tuyển vị trí "${job.title}"?`,
-      okText: 'Xác nhận',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        try {
-          setApplyingJob(jobId);
-          await jobsAPI.applyForJob(jobId, {});
-          setAppliedJobs([...appliedJobs, jobId]);
-          message.success(`Đã ứng tuyển thành công vị trí "${job.title}"! Chúng tôi sẽ liên hệ với bạn sớm.`);
-        } catch (error) {
-          console.error('Error applying for job:', error);
-          message.error('Không thể ứng tuyển. Vui lòng thử lại.');
-        } finally {
-          setApplyingJob(null);
-        }
-      },
-    });
+    setApplyingJob(job);
+    setApplyModalVisible(true);
+  };
+
+  const handleSubmitApplication = async () => {
+    try {
+      const values = await applyForm.validateFields();
+      
+      if (!file) {
+        message.error('Vui lòng upload CV (file PDF)');
+        return;
+      }
+
+      setApplyingJob({ ...applyingJob, submitting: true });
+      
+      const formData = new FormData();
+      formData.append('candidateName', values.candidateName);
+      formData.append('candidateEmail', values.candidateEmail);
+      formData.append('candidatePhone', values.candidatePhone);
+      formData.append('file', file);
+
+      const jobId = getJobId(applyingJob);
+      await publicCareerAPI.apply(slug, jobId, formData);
+      
+      message.success('Nộp CV thành công!');
+      setAppliedJobs([...appliedJobs, jobId]);
+      setApplyModalVisible(false);
+      applyForm.resetFields();
+      setFile(null);
+    } catch (error) {
+      if (error.errorFields) {
+        return; // Form validation failed
+      }
+      console.error('Error submitting application:', error);
+      message.error('Không thể nộp CV. Vui lòng thử lại.');
+    } finally {
+      setApplyingJob(prev => prev?.submitting ? null : prev);
+    }
+  };
+
+  const handleCancelApply = () => {
+    setApplyModalVisible(false);
+    applyForm.resetFields();
+    setFile(null);
+    setApplyingJob(null);
   };
 
   const getJobTypeColor = (type) => {
@@ -517,6 +548,82 @@ const Recruitment = () => {
           closeIcon={<CloseOutlined />}
         >
           {selectedJob && renderJobDetail()}
+        </Modal>
+
+        <Modal
+          title="Nộp CV Ứng Tuyển"
+          open={applyModalVisible}
+          onCancel={handleCancelApply}
+          footer={[
+            <Button key="cancel" onClick={handleCancelApply}>
+              Hủy
+            </Button>,
+            <Button 
+              key="submit" 
+              type="primary" 
+              loading={applyingJob?.submitting}
+              onClick={handleSubmitApplication}
+            >
+              Nộp CV
+            </Button>,
+          ]}
+          width={500}
+        >
+          <Form form={applyForm} layout="vertical" style={{ marginTop: 20 }}>
+            <Form.Item
+              label="Họ và tên"
+              name="candidateName"
+              rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
+            >
+              <Input placeholder="Nhập họ và tên của bạn" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label="Email"
+              name="candidateEmail"
+              rules={[
+                { required: true, message: 'Vui lòng nhập email!' },
+                { type: 'email', message: 'Email không hợp lệ!' }
+              ]}
+            >
+              <Input placeholder="Nhập email của bạn" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              label="Số điện thoại"
+              name="candidatePhone"
+              rules={[
+                { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                { pattern: /^[0-9]{9,11}$/, message: 'Số điện thoại không hợp lệ!' }
+              ]}
+            >
+              <Input placeholder="Nhập số điện thoại của bạn" size="large" />
+            </Form.Item>
+
+            <Form.Item label="Upload CV (PDF)">
+              <Dragger
+                name="file"
+                maxCount={1}
+                accept=".pdf"
+                beforeUpload={(f) => {
+                  if (!f.name.endsWith('.pdf')) {
+                    message.error('Chỉ chấp nhận file PDF!');
+                    return Upload.LIST_IGNORE;
+                  }
+                  setFile(f);
+                  return false;
+                }}
+                fileList={file ? [file] : []}
+                onRemove={() => setFile(null)}
+              >
+                <p className="ant-upload-drag-icon">
+                  <InboxOutlined />
+                </p>
+                <p className="ant-upload-text">Click hoặc kéo file vào đây để upload</p>
+                <p className="ant-upload-hint">Chỉ chấp nhận file PDF, dung lượng tối đa 20MB</p>
+              </Dragger>
+            </Form.Item>
+          </Form>
         </Modal>
       </Content>
 
