@@ -59,6 +59,11 @@ namespace GP35.SRIS.HostBase.Extensions
             // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
             // Đổi sang EmailService nếu muốn gửi qua NotificationCenter (HTTP).
             services.AddScoped<IEmailService, SmtpEmailService>();
+            // Per-tenant SMTP (Phase 2): SmtpEmailService hỏi provider này để lấy SMTP riêng của công ty.
+            services.AddScoped<GP35.SRIS.Domain.Shared.Email.ITenantSmtpProvider,
+                GP35.SRIS.Domain.SqlServer.Services.TenantSmtpProvider>();
+            // Mã hoá bí mật ở DB (smtp_password) — AES-256, khoá từ Auth:Key.
+            services.AddSingleton<GP35.SRIS.Domain.Shared.Security.ISecretProtector, AesSecretProtector>();
 
             // Lưu trữ file (MinIO, tương thích S3) — đổi sang S3 chỉ cần đổi config/registration này
             services.AddMinioStorage();

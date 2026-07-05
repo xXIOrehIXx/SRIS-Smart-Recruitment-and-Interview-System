@@ -40,6 +40,23 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
         return company.CompanyId;
     }
 
+    public async Task<Company?> UpdateSmtpAsync(
+        long companyId, string? host, int? port, string? username, string? password, string? fromEmail)
+    {
+        var company = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId);
+        if (company is null) return null;
+
+        company.SmtpHost = host;
+        company.SmtpPort = port;
+        company.SmtpUsername = username;
+        if (password is not null) company.SmtpPassword = password; // null = giữ nguyên
+        company.SmtpFromEmail = fromEmail;
+        company.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return company;
+    }
+
     public async Task<Company?> UpdateBrandAsync(long companyId, string? name, string? logoUrl, string? primaryColor)
     {
         // Tracking (không AsNoTracking) để EF phát UPDATE. Cô lập tenant: WHERE company_id tường minh + RLS.
