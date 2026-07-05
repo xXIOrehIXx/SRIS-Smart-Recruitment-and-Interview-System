@@ -47,12 +47,29 @@ QUY TẮC:
 - CHỈ bóc tiêu chí có thật trong văn bản. TUYỆT ĐỐI KHÔNG bịa thêm.
 - Bỏ qua phần giới thiệu công ty, phúc lợi, lương thưởng — đó không phải tiêu chí đánh giá.
 - type = "HARD" cho yêu cầu cứng loại-trừ (bằng cấp, chứng chỉ, số năm kinh nghiệm tối thiểu,
-  địa điểm làm việc, giấy phép). type = "SOFT" cho kỹ năng, kinh nghiệm, năng lực.
+  địa điểm làm việc, giấy phép, công nghệ/ngôn ngữ bắt buộc). type = "SOFT" cho kỹ năng, kinh nghiệm, năng lực.
 - cv_matchable = false cho thứ CV không thể hiện được (giao tiếp, thái độ, văn hóa) —
   nhóm này chỉ đánh giá khi phỏng vấn.
-- keywords: các từ/cụm từ nhận diện tiêu chí đó trong CV (cả tiếng Việt lẫn tiếng Anh nếu phù hợp).
+- keywords: BẮT BUỘC điền cho MỌI tiêu chí type="HARD". Đây là các CỤM TỪ CỤ THỂ sẽ dò
+  literal trong CV. Quy tắc:
+  * Điền cả BIẾN THỂ SONG NGỮ và cách viết khác nhau (vd "tiếng Anh" + "English" + "IELTS"/"TOEIC";
+    "kế toán" + "accounting"; "REST API" + "RESTful"). CV người ta viết lẫn Việt–Anh.
+  * Phải là cụm ĐẶC TRƯNG, đủ dài để không khớp bừa. KHÔNG dùng từ đơn chung chung
+    (vd đừng để mỗi "API", "rest", "quản lý"). KHÔNG chép nguyên câu tiêu chí.
+  * keywords CHỈ suy ra từ CHÍNH tiêu chí đang xét. TUYỆT ĐỐI không sao chép keyword từ
+    các VÍ DỤ bên dưới hay từ tiêu chí khác (vd tiêu chí về "kế toán" thì KHÔNG có "bán hàng").
 - weight: 1-5, yêu cầu càng quan trọng với vị trí thì càng cao.
 - Mỗi tiêu chí một dòng ngắn gọn, không gộp nhiều kỹ năng vào một tiêu chí.
+
+VÍ DỤ (nhiều ngành — chú ý keywords song ngữ, cụ thể của tiêu chí HARD):
+- name "Tốt nghiệp Cao đẳng/Đại học" -> type "HARD", keywords ["cao đẳng","đại học","cử nhân","bachelor"]
+- name "Thành thạo Excel" -> type "HARD", keywords ["Excel","Microsoft Excel","MS Excel"]
+- name "Có chứng chỉ hành nghề kế toán" -> type "HARD", keywords ["chứng chỉ kế toán","CPA","ACCA","chứng chỉ hành nghề"]
+- name "Sử dụng phần mềm kế toán MISA/Fast" -> type "HARD", keywords ["MISA","Fast","phần mềm kế toán"]
+- name "Có bằng lái xe B2" -> type "HARD", keywords ["bằng lái xe B2","GPLX B2","bằng B2"]
+- name "Tiếng Anh giao tiếp" -> type "HARD", keywords ["tiếng Anh","English","IELTS","TOEIC"]
+- name "Thành thạo SQL Server" -> type "HARD", keywords ["SQL Server","MS SQL","T-SQL"]
+- name "Kỹ năng giao tiếp, làm việc nhóm" -> type "SOFT", cv_matchable false, keywords []
 
 VĂN BẢN:
 {jd_text}
