@@ -28,9 +28,14 @@ export const ROLE_MENUS = {
   ],
   [ROLES.RECRUITER]: [
     { key: '/recruiter/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
+<<<<<<< Updated upstream
     { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Job Posts' },
     { key: '/quiz', icon: 'QuestionCircleOutlined', label: 'Quiz Management' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Interviews' },
+=======
+    { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
+    { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
+>>>>>>> Stashed changes
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
     { key: '/notifications', icon: 'BellOutlined', label: 'Notifications' },
     { key: '/settings', icon: 'SettingOutlined', label: 'Settings' },
@@ -52,7 +57,6 @@ export const hasPermission = (userRole, route) => {
       '/admin',
       '/recruiter',
       '/interviewer',
-      '/quiz',
       '/interviews',
       '/offers',
       '/notifications',
@@ -60,7 +64,6 @@ export const hasPermission = (userRole, route) => {
     ],
     [ROLES.RECRUITER]: [
       '/recruiter',
-      '/quiz',
       '/interviews',
       '/offers',
       '/notifications',

@@ -77,6 +77,50 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
         };
     }
 
+<<<<<<< Updated upstream
+=======
+    public async Task<KanbanBoardDto> GetKanbanBoardAsync(long companyId, long? jobId)
+    {
+        var cards = await _repo.GetKanbanCardsAsync(companyId, jobId);
+
+        var kanbanStates = new[] { "NEW", "INTERVIEW", "OFFER" };
+        var columns = kanbanStates
+            .Select(state => new KanbanColumnDto
+            {
+                State = state,
+                StateLabel = GetStateLabel(state),
+                Count = cards.Count(c => c.CurrentState == state),
+                Cards = cards
+                    .Where(c => c.CurrentState == state)
+                    .Select(c => new KanbanCardDto
+                    {
+                        ApplicationId = c.ApplicationId,
+                        CandidateId = c.CandidateId,
+                        CandidateName = c.CandidateName,
+                        CandidateEmail = c.CandidateEmail,
+                        JobTitle = c.JobTitle,
+                        JobId = c.JobId,
+                        CurrentState = c.CurrentState,
+                        AiMatchScore = c.AiMatchScore,
+                        AppliedAt = c.AppliedAt,
+                        StageUpdatedAt = c.StageUpdatedAt
+                    })
+                    .ToList()
+            })
+            .ToList();
+
+        return new KanbanBoardDto { Columns = columns };
+    }
+
+    private static string GetStateLabel(string state) => state switch
+    {
+        "NEW" => "Applied",
+        "INTERVIEW" => "Interview",
+        "OFFER" => "Offer",
+        _ => state
+    };
+
+>>>>>>> Stashed changes
     // ============================================================
 
     private static List<BreakdownItemDto> ToBreakdown(IReadOnlyList<LabelCount> rows, string nullLabel)

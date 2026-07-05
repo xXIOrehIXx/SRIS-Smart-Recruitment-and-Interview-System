@@ -16,6 +16,27 @@ import { useNavigate } from 'react-router-dom';
 import './css/Dashboard.css';
 
 const { Title, Text } = Typography;
+<<<<<<< Updated upstream
+=======
+const { Option } = Select;
+
+const MATCHA_GREEN = '#5D8C3E';
+const MATCHA_LIGHT = 'rgba(93, 140, 62, 0.1)';
+
+const STATE_COLORS = {
+  'NEW': '#1890ff',
+  'INTERVIEW': '#faad14',
+  'OFFER': '#52c41a'
+};
+
+const STATE_LABELS = {
+  'NEW': 'Applied',
+  'INTERVIEW': 'Interview',
+  'OFFER': 'Offer'
+};
+
+const KANBAN_STATES = ['NEW', 'INTERVIEW', 'OFFER'];
+>>>>>>> Stashed changes
 
 const RecruiterDashboard = () => {
   const navigate = useNavigate();
@@ -278,6 +299,7 @@ const RecruiterDashboard = () => {
                   <span>Schedule Interview</span>
                 </div>
               </Col>
+<<<<<<< Updated upstream
               <Col xs={24} sm={12} md={6}>
                 <div className="quick-action-item" onClick={() => navigate('/quiz/create')}>
                   <div className="action-icon" style={{ backgroundColor: 'rgba(82, 196, 26, 0.1)' }}>
@@ -286,6 +308,8 @@ const RecruiterDashboard = () => {
                   <span>Create Quiz</span>
                 </div>
               </Col>
+=======
+>>>>>>> Stashed changes
             </Row>
           </Card>
         </Col>

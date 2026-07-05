@@ -10,7 +10,6 @@ const Notifications = () => {
     { id: 1, type: 'interview', title: 'Interview Scheduled', description: 'Interview with Alex Morgan scheduled for tomorrow at 2:00 PM', time: '2 hours ago', read: false },
     { id: 2, type: 'application', title: 'New Application', description: 'Sam Smith applied for Senior Frontend Developer', time: '5 hours ago', read: false },
     { id: 3, type: 'offer', title: 'Offer Response', description: 'Sarah Wilson accepted the Product Manager offer', time: '1 day ago', read: true },
-    { id: 4, type: 'quiz', title: 'Quiz Completed', description: 'Emily Chen completed the JavaScript Fundamentals quiz', time: '2 days ago', read: true },
   ];
 
   const getIcon = (type) => {
@@ -18,7 +17,6 @@ const Notifications = () => {
       interview: <CalendarOutlined style={{ color: '#1890ff' }} />,
       application: <UserAddOutlined style={{ color: '#5D8C3E' }} />,
       offer: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-      quiz: <MailOutlined style={{ color: '#722ed1' }} />,
     };
     return icons[type] || <BellOutlined />;
   };
@@ -28,7 +26,6 @@ const Notifications = () => {
       interview: { color: 'blue', text: 'Interview' },
       application: { color: 'green', text: 'Application' },
       offer: { color: 'success', text: 'Offer' },
-      quiz: { color: 'purple', text: 'Quiz' },
     };
     return tags[type] || { color: 'default', text: 'Other' };
   };
