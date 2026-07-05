@@ -28,6 +28,8 @@ public class Company : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo
     public int? SmtpPort { get; set; }
     [Column("smtp_username")]
     public string? SmtpUsername { get; set; }
+    [Column("smtp_password")]
+    public string? SmtpPassword { get; set; }
     [Column("smtp_from_email")]
     public string? SmtpFromEmail { get; set; }
     [Column("subscription_plan")]
