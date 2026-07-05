@@ -37,7 +37,6 @@ namespace GP35.SRIS.Controllers
 
         /// <summary>Danh sách Job đang tuyển (public, không cần login).</summary>
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> List()
         {
             var jobs = await _jobService.GetPublicJobsAsync();

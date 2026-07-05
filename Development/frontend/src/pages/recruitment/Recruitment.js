@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { jobsAPI } from '../../services/api';
 import './Recruitment.css';
+import { useCompany } from '../../hooks/useCompany';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -40,10 +41,12 @@ const Recruitment = () => {
     fetchJobs();
   }, []);
 
+  const { slug }= useCompany();
+
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await jobsAPI.getPublicJobs();
+      const response = await jobsAPI.getPublicJobsBySlug(slug);
       const jobList = response.data?.data || response.data || [];
       setJobs(jobList);
     } catch (error) {
@@ -106,7 +109,7 @@ const Recruitment = () => {
     
     Modal.confirm({
       title: 'Xác nhận ứng tuyển',
-      content: `Bạn có chắc muốn ứng tuyển vị trí "${job.title}"?`,
+      content: `Bạn có chắc muốn ứng tuyển vị trí "${job.Title}"?`,
       okText: 'Xác nhận',
       cancelText: 'Hủy',
       onOk: async () => {
@@ -114,7 +117,7 @@ const Recruitment = () => {
           setApplyingJob(jobId);
           await jobsAPI.applyForJob(jobId, {});
           setAppliedJobs([...appliedJobs, jobId]);
-          message.success(`Đã ứng tuyển thành công vị trí "${job.title}"! Chúng tôi sẽ liên hệ với bạn sớm.`);
+          message.success(`Đã ứng tuyển thành công vị trí "${job.Title}"! Chúng tôi sẽ liên hệ với bạn sớm.`);
         } catch (error) {
           console.error('Error applying for job:', error);
           message.error('Không thể ứng tuyển. Vui lòng thử lại.');
@@ -169,7 +172,7 @@ const Recruitment = () => {
     >
       <div className="job-card-header">
         <div className="job-title-section">
-          <Title level={5} className="job-title">{job.title}</Title>
+          <Title level={5} className="job-title">{job.Title}</Title>
           <Space size="small">
             {job.department && <Tag color="blue" icon={<BankOutlined />}>{job.department}</Tag>}
             {job.employmentType && <Tag color={getJobTypeColor(job.employmentType)}>{job.employmentType}</Tag>}
@@ -184,7 +187,7 @@ const Recruitment = () => {
 
       <div className="job-card-body">
         <Paragraph ellipsis={{ rows: 2 }} className="job-description">
-          {job.jdText || job.description}
+          {job.JdText || job.description}
         </Paragraph>
 
         <Space size="middle" className="job-meta">

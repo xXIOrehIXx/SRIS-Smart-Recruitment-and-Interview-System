@@ -174,7 +174,7 @@ const App = () => {
       <Route path="/" element={<Home />} />
 
       {/* ===== RECRUITMENT - PUBLIC ===== */}
-      <Route path="/recruitment" element={<Recruitment />} />
+      <Route path="/:slug/recruitment" element={<Recruitment />} />
 
       {/* ===== FALLBACK ===== */}
       <Route
