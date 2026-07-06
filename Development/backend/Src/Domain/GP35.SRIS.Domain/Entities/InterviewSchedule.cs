@@ -14,6 +14,9 @@ public class InterviewSchedule : BaseEntity<long>, IHasCreateInfo, IHasModifyInf
     public long CompanyId { get; set; }
     [Column("application_id")]
     public long ApplicationId { get; set; }
+    /// <summary>Pool khung mà ứng viên được mời vào (docs 15). Null với lịch chốt tay không qua pool.</summary>
+    [Column("pool_id")]
+    public long? PoolId { get; set; }
     [Column("round_number")]
     public int RoundNumber { get; set; }
     [Column("round_name")]

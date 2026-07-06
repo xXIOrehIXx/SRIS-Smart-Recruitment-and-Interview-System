@@ -12,8 +12,11 @@ public class InterviewSlot : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, I
 
     [Column("company_id")]
     public long CompanyId { get; set; }
-    [Column("schedule_id")]
-    public long ScheduleId { get; set; }
+    [Column("pool_id")]
+    public long PoolId { get; set; }
+    /// <summary>Ứng viên (application) đã đặt khung này. Null khi khung còn OPEN.</summary>
+    [Column("booked_application_id")]
+    public long? BookedApplicationId { get; set; }
     [Column("interviewer_id")]
     public long InterviewerId { get; set; }
     [Column("start_time")]
