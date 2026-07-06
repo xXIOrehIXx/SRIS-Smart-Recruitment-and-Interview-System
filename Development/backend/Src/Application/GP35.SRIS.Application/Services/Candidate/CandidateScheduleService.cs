@@ -47,9 +47,11 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
             Status = schedule.Status
         };
 
-        if (string.Equals(schedule.Status, InterviewScheduleStatus.Pending, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(schedule.Status, InterviewScheduleStatus.Pending, StringComparison.OrdinalIgnoreCase)
+            && schedule.PoolId is long poolId)
         {
-            var slots = await _schedulingRepo.GetSlotsAsync(v.CompanyId, schedule.ScheduleId, onlyOpenFuture: true);
+            // Khung lấy từ POOL dùng chung — chỉ OPEN + tương lai (người khác đặt rồi thì không thấy).
+            var slots = await _schedulingRepo.GetSlotsByPoolAsync(v.CompanyId, poolId, onlyOpenFuture: true);
             dto.Slots = slots.Select(ToCandidateSlot).ToList();
         }
         else if (string.Equals(schedule.Status, InterviewScheduleStatus.Confirmed, StringComparison.OrdinalIgnoreCase)
@@ -72,7 +74,7 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
         var slot = await _schedulingRepo.GetSlotAsync(v.CompanyId, dto.SlotId)
             ?? throw NotFound("Không tìm thấy khung giờ.");
 
-        if (slot.ScheduleId != schedule.ScheduleId)
+        if (schedule.PoolId is not long poolId || slot.PoolId != poolId)
             throw Bad("Khung giờ không thuộc lịch này.");
         if (!string.Equals(slot.Status, InterviewSlotStatus.Open, StringComparison.OrdinalIgnoreCase))
             throw Conflict("Khung này đã được đặt hoặc đã khóa. Vui lòng chọn khung khác.");
@@ -83,8 +85,9 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
         if (await _schedulingRepo.IsInterviewerBookedAtAsync(v.CompanyId, slot.InterviewerId, slot.StartTime, slot.SlotId))
             throw Conflict("Người phỏng vấn đã có lịch vào giờ này. Vui lòng chọn khung khác.");
 
-        // Khóa lạc quan: ai chốt trước được trước (15.3).
-        var booked = await _schedulingRepo.BookAndConfirmAsync(v.CompanyId, schedule.ScheduleId, slot.SlotId);
+        // Khóa lạc quan: ai chốt trước được trước (15.3). KHÔNG khóa khung khác của pool.
+        var booked = await _schedulingRepo.BookAndConfirmAsync(
+            v.CompanyId, schedule.ScheduleId, slot.SlotId, v.ApplicationId);
         if (!booked)
             throw Conflict("Khung vừa có người đặt. Vui lòng chọn khung khác.");
 

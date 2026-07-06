@@ -35,6 +35,38 @@ public static class InterviewSlotStatus
     /// <summary>Ứng viên đã đặt khung này.</summary>
     public const string Booked = "BOOKED";
 
-    /// <summary>Khung còn lại bị khóa sau khi ứng viên đã chốt 1 khung khác.</summary>
+    /// <summary>Khung bị khóa khi pool bị hủy (không còn dùng được).</summary>
     public const string Locked = "LOCKED";
+}
+
+/// <summary>Trạng thái 1 pool khung phỏng vấn dùng chung (InterviewSlotPool.status) — docs 15.</summary>
+public static class InterviewPoolStatus
+{
+    /// <summary>Đang mở, còn nhận ứng viên chọn khung.</summary>
+    public const string Open = "OPEN";
+
+    /// <summary>Đã đóng (hết khung / recruiter đóng thủ công / dùng cho lịch chốt tay).</summary>
+    public const string Closed = "CLOSED";
+
+    /// <summary>Recruiter hủy pool.</summary>
+    public const string Cancelled = "CANCELLED";
+}
+
+/// <summary>
+/// Cờ nhắc recruiter khi ứng viên báo bận nhiều lần (docs 15). Đếm số schedule NO_SLOT_FITS:
+/// 0 = không cờ, 1 = vàng (tự quyết mở vòng mới / gọi điện), >= <see cref="RedThreshold"/> = đỏ (nên gọi điện chốt tay).
+/// Không auto-reject — chỉ để recruiter NHÌN THẤY.
+/// </summary>
+public static class SchedulingFlag
+{
+    public const string None = "NONE";
+    public const string Yellow = "YELLOW";
+    public const string Red = "RED";
+
+    /// <summary>Số lần báo bận để chuyển sang cờ đỏ.</summary>
+    public const int RedThreshold = 2;
+
+    /// <summary>Suy cờ từ số lần báo bận.</summary>
+    public static string From(int noSlotFitsCount) =>
+        noSlotFitsCount <= 0 ? None : noSlotFitsCount >= RedThreshold ? Red : Yellow;
 }
