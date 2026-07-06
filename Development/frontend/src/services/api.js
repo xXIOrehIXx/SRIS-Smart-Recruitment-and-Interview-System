@@ -137,7 +137,7 @@ export const cvScoringAPI = {
 
 export const applicationAPI = {
   getAll: (jobId) =>
-    api.get(jobId ? `/api/jobs/${jobId}/applications` : '/api/applications'),
+    api.get(jobId ? `/jobs/${jobId}/applications` : '/api/applications'),
 
   getById: (id) =>
     api.get(`/api/applications/${id}`),
@@ -162,10 +162,10 @@ export const applicationAPI = {
 
 export const interviewAPI = {
   getSchedules: (applicationId) =>
-    api.get(`/api/applications/${applicationId}/interview-schedules`),
+    api.get(`/applications/${applicationId}/interview-schedules`),
 
   createSchedule: (applicationId, data) =>
-    api.post(`/api/applications/${applicationId}/interview-schedules`, data),
+    api.post(`/applications/${applicationId}/interview-schedules`, data),
 
   reschedule: (scheduleId, newSlotId) =>
     api.put(`/api/interview-schedules/${scheduleId}/reschedule`, { slotId: newSlotId }),

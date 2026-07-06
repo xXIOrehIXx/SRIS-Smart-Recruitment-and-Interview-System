@@ -3,7 +3,7 @@ import { Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form, DateP
 import { PlusOutlined, CalendarOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { interviewAPI } from '../../services/api';
+import { interviewAPI, jobsAPI, applicationAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -16,9 +16,14 @@ const InterviewSchedule = () => {
   const [submitting, setSubmitting] = useState(false);
   const [interviewers, setInterviewers] = useState([]);
   const [candidates, setCandidates] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [candidateDetail, setCandidateDetail] = useState(null);
-  
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [selectedJobDetail, setSelectedJobDetail] = useState(null);
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [editingSlotId, setEditingSlotId] = useState(null);
+
   const { applicationId } = useParams();
   const [searchParams] = useSearchParams();
   const appId = applicationId || searchParams.get('applicationId');
@@ -30,8 +35,12 @@ const InterviewSchedule = () => {
       setLoading(false);
     }
     fetchInterviewers();
-    fetchCandidates();
+    fetchJobs();
   }, [appId]);
+
+  useEffect(() => {
+    form.setFieldsValue({ timeSlots });
+  }, [form, timeSlots]);
 
   const fetchInterviews = async (appId) => {
     setLoading(true);
@@ -55,52 +64,145 @@ const InterviewSchedule = () => {
     ]);
   };
 
-  const fetchCandidates = async () => {
-    // Mock candidates
-    setCandidates([
-      { applicationId: 1, name: 'Alex Morgan', position: 'Frontend Developer', cvUrl: '/cv/alex.pdf', appliedAt: '2026-06-20' },
-      { applicationId: 2, name: 'Jane Doe', position: 'Product Manager', cvUrl: '/cv/jane.pdf', appliedAt: '2026-06-21' },
-      { applicationId: 3, name: 'John Smith', position: 'UX Designer', cvUrl: '/cv/john.pdf', appliedAt: '2026-06-22' },
-    ]);
+  const fetchCandidates = async (jobId) => {
+    if (!jobId) {
+      setCandidates([]);
+      setSelectedCandidate(null);
+      setCandidateDetail(null);
+      form.setFieldsValue({ applicationId: undefined });
+      return;
+    }
+
+    try {
+      const response = await applicationAPI.getAll(jobId);
+      const applications = response?.data?.applications || response?.data || [];
+      const mappedCandidates = (Array.isArray(applications) ? applications : []).map((item) => ({
+        applicationId: item.applicationId,
+        candidateId: item.candidateId,
+        name: item.candidateName || 'N/A',
+        email: item.candidateEmail || '',
+        position: item.position || 'Chưa cập nhật',
+        cvUrl: item.cvId ? `/cv/${item.cvId}` : null,
+        appliedAt: item.appliedAt,
+        currentState: item.currentState,
+        aiMatchScore: item.aiMatchScore,
+        criteriaScore: item.criteriaScore,
+      }));
+
+      setCandidates(mappedCandidates);
+    } catch (error) {
+      console.error('Error fetching candidates:', error);
+      setCandidates([]);
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const response = await jobsAPI.getAll();
+      setJobs(response.data || []);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      setJobs([]);
+    }
+  };
+
+  const handleJobChange = (value) => {
+    const job = jobs.find((item) => String(item.jobId || item.id) === String(value));
+    setSelectedJob(value);
+    setSelectedJobDetail(job || null);
+    setSelectedCandidate(null);
+    setCandidateDetail(null);
+    form.setFieldsValue({ applicationId: undefined });
+    fetchCandidates(value);
+  };
+
+  const handleAddTimeSlot = () => {
+    if (timeSlots.length >= 3) {
+      message.warning('Tối đa chỉ có thể thêm 3 slot thời gian');
+      return;
+    }
+
+    const newSlot = { id: Date.now(), value: null };
+    setTimeSlots((prev) => [...prev, newSlot]);
+    setEditingSlotId(newSlot.id);
+  };
+
+  const handleTimeSlotChange = (slotId, value) => {
+    setTimeSlots((prev) => prev.map((slot) => (slot.id === slotId ? { ...slot, value } : slot)));
+    if (value) {
+      setEditingSlotId(null);
+    }
+  };
+
+  const handleEditTimeSlot = (slotId) => {
+    setEditingSlotId(slotId);
+  };
+
+  const handleRemoveTimeSlot = (slotId) => {
+    setTimeSlots((prev) => prev.filter((slot) => slot.id !== slotId));
+    if (editingSlotId === slotId) {
+      setEditingSlotId(null);
+    }
   };
 
   const handleCandidateChange = async (value) => {
-    const candidate = candidates.find(c => c.applicationId === value);
+    const candidate = candidates.find((c) => String(c.applicationId) === String(value));
     setSelectedCandidate(value);
-    
-    // Mock candidate detail
-    setCandidateDetail({
-      applicationId: value,
-      name: candidate?.name,
-      position: candidate?.position,
-      cvUrl: candidate?.cvUrl,
-      appliedAt: candidate?.appliedAt,
-      skills: ['React', 'TypeScript', 'Node.js', 'GraphQL'],
-      experience: '3 năm',
-      education: 'ĐH Bách Khoa HN',
-    });
+
+    setCandidateDetail(
+      candidate
+        ? {
+            applicationId: value,
+            name: candidate.name,
+            email: candidate.email,
+            position: candidate.position,
+            cvUrl: candidate.cvUrl,
+            appliedAt: candidate.appliedAt,
+            currentState: candidate.currentState,
+            aiMatchScore: candidate.aiMatchScore,
+            criteriaScore: candidate.criteriaScore,
+            skills: ['React', 'TypeScript', 'Node.js', 'GraphQL'],
+            experience: 'Chưa cập nhật',
+            education: 'Chưa cập nhật',
+          }
+        : null
+    );
   };
 
   const handleCreateSchedule = async (values) => {
-    if (!appId) {
+    const selectedApplicationId = candidateDetail?.applicationId || appId;
+
+    if (!selectedApplicationId) {
       message.error('Không tìm thấy thông tin ứng viên');
+      return;
+    }
+
+    if (!timeSlots.length || timeSlots.some((slot) => !slot.value)) {
+      message.error('Vui lòng chọn ít nhất một thời gian phỏng vấn');
       return;
     }
 
     setSubmitting(true);
     try {
       const payload = {
-        scheduledAt: values.scheduledAt.format('YYYY-MM-DDTHH:mm:ss'),
-        interviewerIds: values.interviewerIds,
+        RoundNumber: 0,
+        Slots: timeSlots.map((slot) => ({
+          InterviewerId: 5,
+          StartTime: slot.value?.toISOString?.() || dayjs(slot.value).toISOString(),
+        })),
       };
 
-      await interviewAPI.createSchedule(appId, payload);
+      await interviewAPI.createSchedule(selectedApplicationId, payload);
       message.success('Tạo lịch phỏng vấn thành công!');
       setIsModalOpen(false);
       form.resetFields();
       setSelectedCandidate(null);
       setCandidateDetail(null);
-      fetchInterviews(appId);
+      setSelectedJob(null);
+      setSelectedJobDetail(null);
+      setTimeSlots([]);
+      setEditingSlotId(null);
+      fetchInterviews(selectedApplicationId);
     } catch (error) {
       console.error('Error creating schedule:', error);
       message.error('Tạo lịch phỏng vấn thất bại. Vui lòng thử lại.');
@@ -110,10 +212,6 @@ const InterviewSchedule = () => {
   };
 
   const showModal = () => {
-    if (!appId) {
-      message.warning('Vui lòng chọn ứng viên trước khi tạo lịch phỏng vấn');
-      return;
-    }
     setIsModalOpen(true);
   };
 
@@ -122,6 +220,10 @@ const InterviewSchedule = () => {
     form.resetFields();
     setSelectedCandidate(null);
     setCandidateDetail(null);
+    setSelectedJob(null);
+    setSelectedJobDetail(null);
+    setTimeSlots([]);
+    setEditingSlotId(null);
   };
 
   const columns = [
@@ -189,10 +291,10 @@ const InterviewSchedule = () => {
 
       {appId && (
         <Card className="main-card" bordered={false}>
-          <Table 
-            columns={columns} 
-            dataSource={interviews} 
-            rowKey="id" 
+          <Table
+            columns={columns}
+            dataSource={interviews}
+            rowKey="id"
             loading={loading}
             locale={{ emptyText: 'Chưa có lịch phỏng vấn nào' }}
           />
@@ -210,12 +312,41 @@ const InterviewSchedule = () => {
         <Row gutter={24}>
           {/* Cột 1: Thông tin job và slots */}
           <Col span={12}>
+            <Form.Item
+              label="Tin tuyển dụng"
+              rules={[{ required: true, message: 'Vui lòng chọn ứng viên' }]}
+            >
+              <Select
+                placeholder="Tin tuyển dụng"
+                showSearch
+                allowClear
+                optionFilterProp="children"
+                value={selectedJob}
+                onChange={handleJobChange}
+              >
+                {jobs.map(job => (
+                  <Select.Option
+                    key={job.jobId || job.id}
+                    value={job.jobId || job.id}
+                  >
+                    {job.title}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+
             <Card title="Thông tin Job" size="small" style={{ marginBottom: 16 }}>
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Job">Frontend Developer</Descriptions.Item>
-                <Descriptions.Item label="Location">Hà Nội</Descriptions.Item>
-                <Descriptions.Item label="Salary">$1000 - $1500</Descriptions.Item>
-              </Descriptions>
+              {selectedJobDetail ? (
+                <Descriptions column={1} size="small">
+                  <Descriptions.Item label="Job">{selectedJobDetail.title || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Mô tả">{selectedJobDetail.jdText || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Vị trí">{selectedJobDetail.location || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Phòng ban">{selectedJobDetail.department || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Loại hình">{selectedJobDetail.employmentType || 'Chưa cập nhật'}</Descriptions.Item>
+                </Descriptions>
+              ) : (
+                <Text type="secondary">Chọn tin tuyển dụng để xem thông tin</Text>
+              )}
             </Card>
 
             <Card title="Các slot phỏng vấn" size="small">
@@ -242,11 +373,11 @@ const InterviewSchedule = () => {
                   onChange={handleCandidateChange}
                 >
                   {candidates.map(candidate => (
-                    <Select.Option 
-                      key={candidate.applicationId} 
+                    <Select.Option
+                      key={candidate.applicationId}
                       value={candidate.applicationId}
                     >
-                      {candidate.name} - {candidate.position}
+                      {candidate.name} {candidate.email ? `- ${candidate.email}` : ''}
                     </Select.Option>
                   ))}
                 </Select>
@@ -256,6 +387,9 @@ const InterviewSchedule = () => {
                 <Card title="Thông tin ứng viên" size="small" style={{ marginBottom: 16 }}>
                   <Descriptions column={1} size="small">
                     <Descriptions.Item label="Tên">{candidateDetail.name}</Descriptions.Item>
+                    <Descriptions.Item label="Email">{candidateDetail.email || 'Chưa cập nhật'}</Descriptions.Item>
+                    <Descriptions.Item label="Trạng thái">{candidateDetail.currentState || 'Chưa cập nhật'}</Descriptions.Item>
+                    <Descriptions.Item label="Điểm AI">{candidateDetail.aiMatchScore ?? 'Chưa cập nhật'}</Descriptions.Item>
                     <Descriptions.Item label="Vị trí">{candidateDetail.position}</Descriptions.Item>
                     <Descriptions.Item label="Kinh nghiệm">{candidateDetail.experience}</Descriptions.Item>
                     <Descriptions.Item label="Học vấn">{candidateDetail.education}</Descriptions.Item>
@@ -265,30 +399,93 @@ const InterviewSchedule = () => {
                       ))}
                     </Descriptions.Item>
                     <Descriptions.Item label="CV">
-                      <a href={candidateDetail.cvUrl} target="_blank" rel="noopener noreferrer">Xem CV</a>
+                      {candidateDetail.cvUrl ? (
+                        <a href={candidateDetail.cvUrl} target="_blank" rel="noopener noreferrer">Xem CV</a>
+                      ) : (
+                        'Chưa có CV'
+                      )}
                     </Descriptions.Item>
                   </Descriptions>
                 </Card>
               )}
 
               <Form.Item
-                name="scheduledAt"
+                name="timeSlots"
                 label="Thời gian"
-                rules={[{ required: true, message: 'Vui lòng chọn thời gian phỏng vấn' }]}
+                rules={[{
+                  validator: () =>
+                    timeSlots.length > 0 && timeSlots.every((slot) => slot.value)
+                      ? Promise.resolve()
+                      : Promise.reject(new Error('Vui lòng chọn ít nhất một thời gian phỏng vấn')),
+                }]}
               >
-                <DatePicker
-                  showTime
-                  format="DD/MM/YYYY HH:mm"
-                  placeholder="Chọn ngày và giờ"
-                  style={{ width: '100%' }}
-                  disabledDate={(current) => current && current < dayjs().startOf('day')}
-                />
+                <div>
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddTimeSlot}
+                    disabled={timeSlots.length >= 3}
+                    style={{ marginBottom: 12 }}
+                  >
+                    Thêm thời gian
+                  </Button>
+
+                  {timeSlots.length === 0 ? (
+                    <Text type="secondary">Chưa có slot thời gian nào</Text>
+                  ) : (
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      {timeSlots.map((slot, index) => (
+                        <div
+                          key={slot.id}
+                          style={{
+                            border: '1px solid #d9d9d9',
+                            borderRadius: 8,
+                            padding: '10px 12px',
+                            background: '#fafafa',
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, marginBottom: 8 }}>Slot {index + 1}</div>
+                          {editingSlotId === slot.id || !slot.value ? (
+                            <Space align="start" style={{ width: '100%' }}>
+                              <DatePicker
+                                showTime
+                                format="DD/MM/YYYY HH:mm"
+                                placeholder="Chọn ngày và giờ"
+                                value={slot.value}
+                                onChange={(value) => handleTimeSlotChange(slot.id, value)}
+                                disabledDate={(current) => current && current < dayjs().startOf('day')}
+                                style={{ width: '100%' }}
+                              />
+                              {slot.value && (
+                                <Button size="small" onClick={() => setEditingSlotId(null)}>
+                                  Hủy
+                                </Button>
+                              )}
+                            </Space>
+                          ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                              <Text>{dayjs(slot.value).format('DD/MM/YYYY HH:mm')}</Text>
+                              <Space>
+                                <Button size="small" onClick={() => handleEditTimeSlot(slot.id)}>
+                                  Sửa
+                                </Button>
+                                <Button size="small" danger onClick={() => handleRemoveTimeSlot(slot.id)}>
+                                  Xóa
+                                </Button>
+                              </Space>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </Space>
+                  )}
+                </div>
               </Form.Item>
 
               <Form.Item
                 name="interviewerIds"
                 label="Người phỏng vấn"
-                rules={[{ required: true, message: 'Vui lòng chọn người phỏng vấn' }]}
+                rules={[{ required: false, message: 'Vui lòng chọn người phỏng vấn' }]}
               >
                 <Select
                   mode="multiple"
