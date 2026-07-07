@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Typography, Form, Input, Button, Switch, Tabs, Divider, Avatar, message, Upload } from 'antd';
+import { Card, Typography, Form, Input, Button, Tabs, Avatar, message, Upload } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import './Settings.css';
 
@@ -53,38 +53,6 @@ const Settings = () => {
           </Form.Item>
           <Button type="primary" onClick={handleSave} className="save-btn">Update Password</Button>
         </Form>
-      ),
-    },
-    {
-      key: 'notifications',
-      label: 'Notifications',
-      children: (
-        <div className="settings-form">
-          <div className="setting-item">
-            <div>
-              <Text strong>Email Notifications</Text>
-              <Text type="secondary" className="setting-desc">Receive email updates about new applications</Text>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <Divider />
-          <div className="setting-item">
-            <div>
-              <Text strong>Interview Reminders</Text>
-              <Text type="secondary" className="setting-desc">Get reminded before scheduled interviews</Text>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <Divider />
-          <div className="setting-item">
-            <div>
-              <Text strong>Weekly Reports</Text>
-              <Text type="secondary" className="setting-desc">Receive weekly recruitment summary</Text>
-            </div>
-            <Switch />
-          </div>
-          <Button type="primary" onClick={handleSave} className="save-btn">Save Preferences</Button>
-        </div>
       ),
     },
   ];

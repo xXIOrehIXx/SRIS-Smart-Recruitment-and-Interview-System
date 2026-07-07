@@ -9,6 +9,7 @@ export const ROLES = {
   RECRUITER: 'Recruiter',
   INTERVIEWER: 'Interviewer',
   CANDIDATE: 'Candidate',
+  DEPARTMENT_MANAGER: 'DepartmentManager',
 };
 
 // Mapping từ các role name khác nhau sang role chuẩn
@@ -17,10 +18,12 @@ const ROLE_MAPPING = {
   'Recruiter': ROLES.RECRUITER,
   'Interviewer': ROLES.INTERVIEWER,
   'Candidate': ROLES.CANDIDATE,
+  'DepartmentManager': ROLES.DEPARTMENT_MANAGER,
   'admin': ROLES.ADMIN,
   'recruiter': ROLES.RECRUITER,
   'interviewer': ROLES.INTERVIEWER,
   'candidate': ROLES.CANDIDATE,
+  'departmentmanager': ROLES.DEPARTMENT_MANAGER,
 };
 
 // Chuyển đổi role về chuẩn
@@ -34,6 +37,7 @@ export const ROLE_ROUTES = {
   [ROLES.ADMIN]: '/admin/dashboard',
   [ROLES.RECRUITER]: '/recruiter/dashboard',
   [ROLES.INTERVIEWER]: '/interviewer/dashboard',
+  [ROLES.DEPARTMENT_MANAGER]: '/recruiter/dashboard',
 };
 
 // Menu items theo vai trò
@@ -42,21 +46,33 @@ export const ROLE_MENUS = {
     { key: '/admin/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/admin/sub-accounts', icon: 'TeamOutlined', label: 'Quản lý tài khoản' },
     { key: '/admin/create-account', icon: 'UserAddOutlined', label: 'Tạo tài khoản' },
-    { key: '/settings', icon: 'SettingOutlined', label: 'Cài đặt' },
+    { key: '/admin/company-branding', icon: 'GlobalOutlined', label: 'Thương Hiệu' },
+    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
+    { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
   ],
   [ROLES.RECRUITER]: [
     { key: '/recruiter/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
-    { key: '/notifications', icon: 'BellOutlined', label: 'Thông Báo' },
-    { key: '/settings', icon: 'SettingOutlined', label: 'Cài Đặt' },
+    { key: '/analytics', icon: 'BarChartOutlined', label: 'Báo Cáo' },
+    { key: '/analytics/cv-scoring', icon: 'TrophyOutlined', label: 'Chấm Điểm CV' },
+    { key: '/talent-pool', icon: 'TeamOutlined', label: 'Talent Pool' },
+    { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
+    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
   ],
   [ROLES.INTERVIEWER]: [
     { key: '/interviewer/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
-    { key: '/interviewer/incoming', icon: 'CalendarOutlined', label: 'Phỏng Vấn Sắp Tới' },
-    { key: '/notifications', icon: 'BellOutlined', label: 'Thông Báo' },
-    { key: '/settings', icon: 'SettingOutlined', label: 'Cài Đặt' },
+    { key: '/interviewer/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
+    { key: '/interviewer/history', icon: 'HistoryOutlined', label: 'Lịch Sử Phỏng Vấn' },
+    { key: '/interviewer/incoming', icon: 'VideoCameraOutlined', label: 'Phỏng Vấn Sắp Tới' },
+  ],
+  [ROLES.DEPARTMENT_MANAGER]: [
+    { key: '/dept/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
+    { key: '/dept/requests', icon: 'FileTextOutlined', label: 'Yêu Cầu Tuyển Dụng' },
+    { key: '/dept/interviews', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
+    { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Quyết Định Tuyển Dụng' },
+    { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],
 };
 
@@ -69,23 +85,26 @@ export const hasPermission = (userRole, route) => {
   const rolePermissions = {
     [ROLES.ADMIN]: [
       '/admin',
-      '/recruiter',
-      '/interviewer',
-      '/interviews',
-      '/offers',
-      '/notifications',
+      '/criteria',
+      '/mail-templates',
       '/settings',
     ],
     [ROLES.RECRUITER]: [
       '/recruiter',
       '/interviews',
       '/offers',
-      '/notifications',
+      '/analytics',
+      '/talent-pool',
+      '/criteria',
+      '/mail-templates',
       '/settings',
     ],
     [ROLES.INTERVIEWER]: [
       '/interviewer',
-      '/notifications',
+      '/settings',
+    ],
+    [ROLES.DEPARTMENT_MANAGER]: [
+      '/dept',
       '/settings',
     ],
   };

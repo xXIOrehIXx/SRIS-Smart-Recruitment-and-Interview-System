@@ -1,0 +1,26 @@
+.talent-pool-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.talent-pool-page .page-title {
+  margin: 0 0 4px 0 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #1a1a1a;
+}
+
+.talent-pool-page .table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.talent-pool-page .main-card,
+.talent-pool-page .stat-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}

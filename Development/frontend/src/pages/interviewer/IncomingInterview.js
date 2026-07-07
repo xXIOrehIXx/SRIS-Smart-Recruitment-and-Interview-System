@@ -1,11 +1,14 @@
 import React from 'react';
 import { Card, Table, Tag, Avatar, Button, Typography, Space, Input, Select } from 'antd';
-import { VideoCameraOutlined, SearchOutlined } from '@ant-design/icons';
+import { VideoCameraOutlined, SearchOutlined, CalendarOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
 
 const IncomingInterview = () => {
+  const navigate = useNavigate();
+
   const interviews = [
     { id: 1, candidate: 'Alex Morgan', position: 'Frontend Developer', date: '2026-06-24', time: '2:00 PM', type: 'Technical', status: 'upcoming' },
     { id: 2, candidate: 'Jane Doe', position: 'Product Manager', date: '2026-06-25', time: '10:00 AM', type: 'HR', status: 'upcoming' },
@@ -64,6 +67,14 @@ const IncomingInterview = () => {
           <Title level={3} className="page-title">Incoming Interviews</Title>
           <Text type="secondary">Your scheduled interviews</Text>
         </div>
+        <Button
+          type="primary"
+          icon={<CalendarOutlined />}
+          onClick={() => navigate('/interviewer/schedule')}
+          style={{ background: '#5D8C3E', borderColor: '#5D8C3E' }}
+        >
+          Xem Lịch Phỏng Vấn
+        </Button>
       </div>
 
       <Card className="main-card" bordered={false}>

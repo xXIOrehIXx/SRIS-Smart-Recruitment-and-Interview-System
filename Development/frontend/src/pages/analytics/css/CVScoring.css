@@ -1,0 +1,28 @@
+.cv-scoring-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.cv-scoring-page .page-title {
+  margin: 0 0 4px 0 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #1a1a1a;
+}
+
+.cv-scoring-page .main-card,
+.cv-scoring-page .stat-card,
+.cv-scoring-page .top-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.cv-scoring-page .top-card {
+  transition: transform 0.2s;
+}
+
+.cv-scoring-page .top-card:hover {
+  transform: translateY(-2px);
+}

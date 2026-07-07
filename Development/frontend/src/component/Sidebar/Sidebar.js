@@ -7,7 +7,6 @@ import {
   FileTextOutlined,
   CalendarOutlined,
   CheckSquareOutlined,
-  BellOutlined,
   SettingOutlined,
   SearchOutlined,
   QuestionCircleOutlined,
@@ -21,7 +20,6 @@ const ICON_MAP = {
   FileTextOutlined,
   CalendarOutlined,
   CheckSquareOutlined,
-  BellOutlined,
   SettingOutlined,
   QuestionCircleOutlined,
   UserAddOutlined,
@@ -41,11 +39,6 @@ const Sidebar = ({ collapsed }) => {
   }, [user?.role, getMenuItems]);
 
   const bottomMenuItems = useMemo(() => [
-    {
-      key: '/notifications',
-      icon: <BellOutlined />,
-      label: 'Thông báo',
-    },
     {
       key: '/settings',
       icon: <SettingOutlined />,
