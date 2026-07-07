@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import AuthLayout from './layouts/AuthLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth, ROLES } from './contexts/AuthContext';
@@ -45,109 +45,79 @@ const App = () => {
 
       {/* ===== ADMIN ROUTES ===== */}
       <Route
-        path="/admin/*"
         element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
-            <AdminLayout>
-              <Routes>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="sub-accounts" element={<SubAccountManagement />} />
-                <Route path="create-account" element={<CreateAccount />} />
-                <Route path="settings" element={<Settings />} />
-              </Routes>
-            </AdminLayout>
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/sub-accounts" element={<SubAccountManagement />} />
+        <Route path="/admin/create-account" element={<CreateAccount />} />
+      </Route>
 
       {/* ===== RECRUITER ROUTES ===== */}
       <Route
-        path="/recruiter/*"
         element={
           <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
-            <AdminLayout>
-              <Routes>
-                <Route path="dashboard" element={<RecruiterDashboard />} />
-                <Route path="jobs" element={<JobManagement />} />
-                <Route path="jobs/:id" element={<JobDetail />} />
-                <Route path="jobs/create" element={<CreateJob />} />
-                <Route path="jobs/:id/candidates" element={<CandidatePipeline />} />
-                <Route path="candidates/:id" element={<CandidateDetail />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="settings" element={<Settings />} />
-              </Routes>
-            </AdminLayout>
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
+        <Route path="/recruiter/jobs" element={<JobManagement />} />
+        <Route path="/recruiter/jobs/:id" element={<JobDetail />} />
+        <Route path="/recruiter/jobs/create" element={<CreateJob />} />
+        <Route path="/recruiter/jobs/:id/candidates" element={<CandidatePipeline />} />
+        <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
+      </Route>
 
       {/* ===== INTERVIEWS ROUTES ===== */}
       <Route
-        path="/interviews/*"
         element={
           <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
-            <AdminLayout>
-              <Routes>
-                <Route path="schedule" element={<InterviewSchedule />} />
-              </Routes>
-            </AdminLayout>
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/interviews/schedule" element={<InterviewSchedule />} />
+      </Route>
 
       {/* ===== OFFERS ROUTES ===== */}
       <Route
-        path="/offers/*"
         element={
           <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
-            <AdminLayout>
-              <Routes>
-                <Route path="" element={<OfferManagement />} />
-              </Routes>
-            </AdminLayout>
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/offers" element={<OfferManagement />} />
+      </Route>
 
       {/* ===== INTERVIEWER ROUTES ===== */}
       <Route
-        path="/interviewer/*"
         element={
           <ProtectedRoute allowedRoles={[ROLES.INTERVIEWER]}>
-            <AdminLayout>
-              <Routes>
-                <Route path="dashboard" element={<InterviewerDashboard />} />
-                <Route path="incoming" element={<IncomingInterview />} />
-                <Route path="grading/:id" element={<Grading />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="settings" element={<Settings />} />
-              </Routes>
-            </AdminLayout>
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/interviewer/dashboard" element={<InterviewerDashboard />} />
+        <Route path="/interviewer/incoming" element={<IncomingInterview />} />
+        <Route path="/interviewer/grading/:id" element={<Grading />} />
+      </Route>
 
       {/* ===== SHARED ROUTES ===== */}
       <Route
-        path="/notifications"
         element={
           <ProtectedRoute>
-            <AdminLayout>
-              <Notifications />
-            </AdminLayout>
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <AdminLayout>
-              <Settings />
-            </AdminLayout>
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
 
       {/* ===== HOME - PUBLIC ===== */}
       <Route path="/" element={<Home />} />

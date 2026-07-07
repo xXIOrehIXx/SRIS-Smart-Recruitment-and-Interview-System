@@ -28,18 +28,16 @@ const MATCHA_LIGHT = 'rgba(93, 140, 62, 0.1)';
 const STATE_COLORS = {
   'NEW': '#1890ff',
   'INTERVIEW': '#faad14',
-  'QUIZ': '#722ed1',
   'OFFER': '#52c41a'
 };
 
 const STATE_LABELS = {
   'NEW': 'Applied',
   'INTERVIEW': 'Interview',
-  'QUIZ': 'Làm Quiz',
   'OFFER': 'Offer'
 };
 
-const KANBAN_STATES = ['NEW', 'INTERVIEW', 'QUIZ', 'OFFER'];
+const KANBAN_STATES = ['NEW', 'INTERVIEW', 'OFFER'];
 
 const RecruiterDashboard = () => {
   const navigate = useNavigate();

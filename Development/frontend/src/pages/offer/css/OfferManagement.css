@@ -1,0 +1,55 @@
+.offer-management-page {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.offer-management-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.offer-management-page .page-title {
+  margin: 0 0 4px 0 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #1a1a1a;
+}
+
+.offer-management-page .table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.offer-management-page .toolbar-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.offer-management-page .main-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.offer-management-page .main-card .ant-card-body {
+  padding: 0;
+}
+
+.offer-management-page .main-card .ant-table-wrapper {
+  padding: 0 4px 4px;
+}
+
+.candidate-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
