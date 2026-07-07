@@ -164,6 +164,9 @@ export const interviewAPI = {
   getSchedules: (applicationId) =>
     api.get(`/api/applications/${applicationId}/interview-schedules`),
 
+  getAllSchedules: (jobId) =>
+    api.get(jobId ? `/api/interview-schedules?jobId=${jobId}` : '/api/interview-schedules'),
+
   createSchedule: (applicationId, data) =>
     api.post(`/api/applications/${applicationId}/interview-schedules`, data),
 
@@ -287,6 +290,9 @@ export const dashboardAPI = {
 export const talentPoolAPI = {
   getSuggestions: (jobId) =>
     api.get(`/api/jobs/${jobId}/talent-pool`),
+
+  getAll: () =>
+    api.get('/api/talent-pool'),
 };
 
 // ==================== COMPANY ====================

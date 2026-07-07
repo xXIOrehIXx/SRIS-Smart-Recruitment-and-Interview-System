@@ -1,0 +1,18 @@
+.company-branding-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.company-branding-page .page-title {
+  margin: 0 0 4px 0 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #1a1a1a;
+}
+
+.company-branding-page .main-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}

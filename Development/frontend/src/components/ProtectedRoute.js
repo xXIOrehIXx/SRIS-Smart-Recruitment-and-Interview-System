@@ -9,10 +9,12 @@ const ROLE_MAPPING = {
   'Recruiter': ROLES.RECRUITER,
   'Interviewer': ROLES.INTERVIEWER,
   'Candidate': ROLES.CANDIDATE,
+  'DepartmentManager': ROLES.DEPARTMENT_MANAGER,
   'admin': ROLES.ADMIN,
   'recruiter': ROLES.RECRUITER,
   'interviewer': ROLES.INTERVIEWER,
   'candidate': ROLES.CANDIDATE,
+  'departmentmanager': ROLES.DEPARTMENT_MANAGER,
 };
 
 // Chuyển đổi role về chuẩn
@@ -58,6 +60,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
         [ROLES.ADMIN]: '/admin/dashboard',
         [ROLES.RECRUITER]: '/recruiter/dashboard',
         [ROLES.INTERVIEWER]: '/interviewer/dashboard',
+        [ROLES.DEPARTMENT_MANAGER]: '/dept/dashboard',
       };
       const redirectPath = dashboardRoutes[userRole] || '/login';
       return <Navigate to={redirectPath} replace />;

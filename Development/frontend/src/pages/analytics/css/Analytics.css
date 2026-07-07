@@ -1,0 +1,23 @@
+.analytics-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.analytics-page .page-title {
+  margin: 0 0 4px 0 !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #1a1a1a;
+}
+
+.analytics-page .stat-card,
+.analytics-page .chart-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.analytics-page .chart-card .ant-card-head-title {
+  font-weight: 600;
+}
