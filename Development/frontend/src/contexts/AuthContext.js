@@ -47,7 +47,6 @@ export const ROLE_MENUS = {
   [ROLES.RECRUITER]: [
     { key: '/recruiter/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
-    { key: '/quiz', icon: 'QuestionCircleOutlined', label: 'Quiz' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
     { key: '/notifications', icon: 'BellOutlined', label: 'Thông Báo' },
