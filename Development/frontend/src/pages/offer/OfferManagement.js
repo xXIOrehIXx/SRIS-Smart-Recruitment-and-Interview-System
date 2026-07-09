@@ -10,7 +10,7 @@ import {
   DollarOutlined, CalendarOutlined, UserOutlined, MailOutlined,
   EditOutlined, StopOutlined, LoadingOutlined
 } from '@ant-design/icons';
-import { offerAPI, applicationAPI } from '../../services/api';
+import { offerAPI, applicationAPI, jobsAPI } from '../../services/api';
 import dayjs from 'dayjs';
 import './css/OfferManagement.css';
 
@@ -21,6 +21,8 @@ const OfferManagement = () => {
   const [loading, setLoading] = useState(false);
   const [offers, setOffers] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [selectedJobId, setSelectedJobId] = useState(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState(null);
@@ -31,43 +33,96 @@ const OfferManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    fetchOffers();
-    fetchApplications();
+    fetchJobs();
   }, []);
 
-  const fetchApplications = async () => {
+  useEffect(() => {
+    if (selectedJobId) {
+      fetchApplications(selectedJobId);
+      fetchOffers(selectedJobId);
+    } else {
+      setApplications([]);
+      setOffers([]);
+    }
+  }, [selectedJobId]);
+
+  const fetchJobs = async () => {
     try {
-      const response = await applicationAPI.getAll();
-      const apps = response.data || [];
-      const offerableApps = apps.filter(app =>
-        app.status === 'INTERVIEW' || app.status === 'INTERVIEWING'
-      );
+      const response = await jobsAPI.getAll();
+      const jobList = response.data || [];
+      setJobs(jobList);
+
+      if (!selectedJobId && jobList.length > 0) {
+        setSelectedJobId(jobList[0].jobId || jobList[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      message.error('Không thể tải danh sách công việc');
+    }
+  };
+
+  const fetchApplications = async (jobId = selectedJobId) => {
+    if (!jobId) {
+      setApplications([]);
+      return;
+    }
+
+    try {
+      const response = await applicationAPI.getAll(jobId);
+      const payload = response.data || {};
+      const apps = Array.isArray(payload) ? payload : payload.applications || [];
+      const selectedJob = jobs.find((job) => (job.jobId || job.id) === jobId) || null;
+
+      const offerableApps = apps
+        .map((app) => ({
+          ...app,
+          id: app.applicationId || app.id,
+          status: app.currentState || app.status,
+          candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
+          candidateEmail: app.candidateEmail || app.candidate?.email || '',
+          jobId: app.jobId || payload.jobId || jobId,
+          job: {
+            id: selectedJob?.jobId || selectedJob?.id || app.jobId || jobId,
+            title: selectedJob?.title || app.job?.title || app.jobTitle || 'N/A',
+          },
+          applicationStatus: app.currentState || app.status,
+          appliedAt: app.appliedAt || app.createdAt,
+        }))
+        .filter((app) => ['NEW', 'SCREENING', 'INTERVIEW', 'INTERVIEWING', 'OFFER'].includes(app.status));
+
       setApplications(offerableApps);
     } catch (error) {
       console.error('Error fetching applications:', error);
     }
   };
 
-  const fetchOffers = async () => {
+  const fetchOffers = async (jobId = selectedJobId) => {
+    if (!jobId) {
+      setOffers([]);
+      return;
+    }
+
     try {
       setLoading(true);
-      const appsResponse = await applicationAPI.getAll();
-      const apps = appsResponse.data || [];
+      const appsResponse = await applicationAPI.getAll(jobId);
+      const payload = appsResponse.data || {};
+      const apps = Array.isArray(payload) ? payload : payload.applications || [];
+      const selectedJob = jobs.find((job) => (job.jobId || job.id) === jobId) || null;
 
       const offerPromises = apps
-        .filter(app => app.offer || app.status === 'OFFER')
+        .filter((app) => app.offer || app.status === 'OFFER' || app.currentState === 'OFFER')
         .map(async (app) => {
           try {
-            const offerRes = await offerAPI.getByApplication(app.id);
+            const offerRes = await offerAPI.getByApplication(app.applicationId || app.id);
             const offer = offerRes.data;
             return {
               ...offer,
-              applicationId: app.id,
+              applicationId: app.applicationId || app.id,
               candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
               candidateEmail: app.candidateEmail || app.candidate?.email || '',
-              position: app.job?.title || app.jobTitle || 'N/A',
-              jobId: app.job?.id || app.jobId,
-              applicationStatus: app.status,
+              position: selectedJob?.title || app.job?.title || app.jobTitle || 'N/A',
+              jobId: selectedJob?.jobId || selectedJob?.id || app.job?.id || app.jobId || jobId,
+              applicationStatus: app.currentState || app.status,
               appliedAt: app.appliedAt || app.createdAt,
             };
           } catch {
@@ -94,13 +149,13 @@ const OfferManagement = () => {
         deadline: values.deadline?.format('YYYY-MM-DD'),
         notes: values.notes,
       };
-      await offerAPI.create(selectedApplication, payload);
+      await offerAPI.create(selectedApplication.id || selectedApplication.applicationId, payload);
       message.success('Tạo offer thành công!');
       setCreateModalOpen(false);
       form.resetFields();
       setSelectedApplication(null);
-      setSelectedApplication(null);
-      fetchOffers();
+      fetchApplications(selectedJobId);
+      fetchOffers(selectedJobId);
     } catch (error) {
       console.error('Error creating offer:', error);
       message.error(error?.response?.data?.message || 'Không thể tạo offer');
@@ -145,8 +200,16 @@ const OfferManagement = () => {
   };
 
   const getAppStatusTag = (status) => {
-    const colors = { INTERVIEW: 'processing', INTERVIEWING: 'processing', OFFER: 'success', HIRED: 'success' };
-    return <Tag color={colors[status] || 'default'}>{status}</Tag>;
+    const normalizedStatus = (status || '').toUpperCase();
+    const colors = {
+      NEW: 'default',
+      SCREENING: 'processing',
+      INTERVIEW: 'processing',
+      INTERVIEWING: 'processing',
+      OFFER: 'success',
+      HIRED: 'success',
+    };
+    return <Tag color={colors[normalizedStatus] || 'default'}>{status || 'N/A'}</Tag>;
   };
 
   const columns = [
@@ -221,7 +284,12 @@ const OfferManagement = () => {
       dataIndex: 'status',
       key: 'status',
       width: 150,
-      render: (status) => getStatusTag(status),
+      render: (status, record) => {
+        if (record.applicationStatus) {
+          return getAppStatusTag(record.applicationStatus);
+        }
+        return getStatusTag(status);
+      },
       filters: [
         { text: 'Chờ phản hồi', value: 'PENDING' },
         { text: 'Đồng ý', value: 'ACCEPTED' },
@@ -273,12 +341,34 @@ const OfferManagement = () => {
     },
   ];
 
-  const filteredData = offers.filter(offer => {
+  const selectedJob = jobs.find((job) => (job.jobId || job.id) === selectedJobId) || null;
+
+  const tableData = applications.map((app) => {
+    const matchedOffer = offers.find((offer) => (offer.applicationId || offer.id) === (app.id || app.applicationId));
+    return {
+      ...app,
+      ...(matchedOffer || {}),
+      id: app.id,
+      applicationId: app.id,
+      candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
+      candidateEmail: app.candidateEmail || app.candidate?.email || '',
+      position: selectedJob?.title || app.job?.title || app.jobTitle || 'N/A',
+      jobId: app.jobId || selectedJobId,
+      status: matchedOffer?.status || 'PENDING',
+      salary: matchedOffer?.salary ?? null,
+      startDate: matchedOffer?.startDate ?? null,
+      deadline: matchedOffer?.deadline ?? null,
+      notes: matchedOffer?.notes ?? null,
+      applicationStatus: app.status,
+    };
+  });
+
+  const filteredData = tableData.filter((row) => {
     const matchesSearch =
-      (offer.candidateName || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (offer.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (offer.candidateEmail || '').toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || offer.status === statusFilter;
+      (row.candidateName || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (row.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (row.candidateEmail || '').toLowerCase().includes(searchText.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || row.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -290,13 +380,14 @@ const OfferManagement = () => {
           <Text type="secondary">Tạo và theo dõi các offer cho ứng viên</Text>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchOffers} loading={loading}>
+          <Button icon={<ReloadOutlined />} onClick={() => { fetchApplications(selectedJobId); fetchOffers(selectedJobId); }} loading={loading}>
             Làm mới
           </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setCreateModalOpen(true)}
+            disabled={!selectedJobId}
           >
             Tạo Offer Mới
           </Button>
@@ -306,6 +397,18 @@ const OfferManagement = () => {
       <Card className="main-card" bordered={false}>
         <div className="table-toolbar">
           <div className="toolbar-left">
+            <Select
+              placeholder="Chọn công việc"
+              value={selectedJobId}
+              onChange={(value) => setSelectedJobId(value)}
+              style={{ width: 260 }}
+              options={jobs.map((job) => ({
+                value: job.jobId || job.id,
+                label: `${job.title} (${job.jobId || job.id})`,
+              }))}
+              showSearch
+              optionFilterProp="label"
+            />
             <Input
               placeholder="Tìm kiếm ứng viên, vị trí..."
               prefix={<FileTextOutlined style={{ color: '#8c8c8b' }} />}
