@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Cấu hình base URL - đổi thành URL thật khi deploy
-const BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7048/api/';
+const BASE_URL = process.env.REACT_APP_API_URL || '';
 
 // Tạo axios instance
 const api = axios.create({
@@ -213,13 +213,13 @@ export const candidateAPI = {
 
 export const offerAPI = {
   create: (applicationId, data) =>
-    api.post(`/applications/${applicationId}/offer`, data),
+    api.post(`/api/applications/${applicationId}/offer`, data),
 
   getByApplication: (applicationId) =>
-    api.get(`/applications/${applicationId}/offer`),
+    api.get(`/api/applications/${applicationId}/offer`),
 
   withdraw: (offerId) =>
-    api.post(`/offers/${offerId}/withdraw`),
+    api.post(`/api/offers/${offerId}/withdraw`),
 };
 
 // ==================== CRITERIA ====================
