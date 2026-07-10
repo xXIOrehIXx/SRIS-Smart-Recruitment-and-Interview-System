@@ -47,20 +47,17 @@ export const ROLE_MENUS = {
     { key: '/admin/sub-accounts', icon: 'TeamOutlined', label: 'Quản lý tài khoản' },
     { key: '/admin/create-account', icon: 'UserAddOutlined', label: 'Tạo tài khoản' },
     { key: '/admin/company-branding', icon: 'GlobalOutlined', label: 'Thương Hiệu' },
-    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
-    { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
   ],
   [ROLES.RECRUITER]: [
     { key: '/recruiter/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
-    { key: '/quiz', icon: 'QuestionCircleOutlined', label: 'Quiz' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
+    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
     { key: '/analytics', icon: 'BarChartOutlined', label: 'Báo Cáo' },
     { key: '/analytics/cv-scoring', icon: 'TrophyOutlined', label: 'Chấm Điểm CV' },
     { key: '/talent-pool', icon: 'TeamOutlined', label: 'Talent Pool' },
     { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
-    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
   ],
   [ROLES.INTERVIEWER]: [
     { key: '/interviewer/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
@@ -86,8 +83,6 @@ export const hasPermission = (userRole, route) => {
   const rolePermissions = {
     [ROLES.ADMIN]: [
       '/admin',
-      '/criteria',
-      '/mail-templates',
       '/settings',
     ],
     [ROLES.RECRUITER]: [

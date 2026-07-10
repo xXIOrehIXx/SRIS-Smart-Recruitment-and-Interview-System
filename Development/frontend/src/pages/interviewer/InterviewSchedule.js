@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Typography,
@@ -10,24 +10,23 @@ import {
   Input,
   Select,
   DatePicker,
-  Row,
-  Col,
   Badge,
   Modal,
   message,
+  Form,
 } from 'antd';
 import {
   CalendarOutlined,
+  CheckCircleOutlined,
   ClockCircleOutlined,
   VideoCameraOutlined,
   SearchOutlined,
-  FilterOutlined,
   UserOutlined,
-  TeamOutlined,
   ExclamationCircleOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { interviewAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -36,85 +35,61 @@ const { Option } = Select;
 const MATCHA_GREEN = '#5D8C3E';
 
 const InterviewerInterviewSchedule = () => {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [interviews, setInterviews] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [rescheduleModal, setRescheduleModal] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState(null);
+  const [rescheduleForm] = Form.useForm();
 
-  const interviews = [
-    {
-      id: 1,
-      candidate: 'Nguyễn Văn Minh',
-      position: 'Senior Frontend Developer',
-      department: 'Engineering',
-      date: '2026-07-08',
-      time: '14:00',
-      endTime: '15:00',
-      duration: 60,
-      type: 'Technical',
-      level: 1,
-      status: 'UPCOMING',
-      meetingLink: 'https://meet.google.com/abc-defg-hij',
-    },
-    {
-      id: 2,
-      candidate: 'Trần Thị Lan',
-      position: 'UI/UX Designer',
-      department: 'Design',
-      date: '2026-07-09',
-      time: '09:00',
-      endTime: '10:00',
-      duration: 60,
-      type: 'HR',
-      level: 1,
-      status: 'UPCOMING',
-      meetingLink: 'https://meet.google.com/xyz-uvwx-rst',
-    },
-    {
-      id: 3,
-      candidate: 'Lê Hoàng Nam',
-      position: 'Backend Developer',
-      department: 'Engineering',
-      date: '2026-07-10',
-      time: '15:00',
-      endTime: '16:00',
-      duration: 60,
-      type: 'Technical',
-      level: 2,
-      status: 'UPCOMING',
-      meetingLink: 'https://meet.google.com/pqr-stuv-wxy',
-    },
-    {
-      id: 4,
-      candidate: 'Phạm Thu Hà',
-      position: 'QA Engineer',
-      department: 'QA',
-      date: '2026-07-11',
-      time: '10:00',
-      endTime: '11:00',
-      duration: 60,
-      type: 'Culture',
-      level: 1,
-      status: 'PENDING',
-      meetingLink: 'https://meet.google.com/mno-pqrs-tuv',
-    },
-    {
-      id: 5,
-      candidate: 'Hoàng Đức Anh',
-      position: 'Product Manager',
-      department: 'Product',
-      date: '2026-07-12',
-      time: '13:00',
-      endTime: '14:00',
-      duration: 60,
-      type: 'HR',
-      level: 2,
-      status: 'PENDING',
-      meetingLink: 'https://meet.google.com/klm-nopq-rst',
-    },
-  ];
+  const fetchInterviewSchedules = async () => {
+    try {
+      setLoading(true);
+      const response = await interviewAPI.getMySchedules();
+
+      let data = response.data;
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        data = data.interviews || data.schedules || data.items || [];
+      }
+      data = data || [];
+
+      const normalized = Array.isArray(data)
+        ? data.map((item) => ({
+            id: item.scheduleId || item.id,
+            applicationId: item.applicationId,
+            candidate: item.candidateName || item.candidate || 'N/A',
+            candidateEmail: item.candidateEmail || '',
+            position: item.positionTitle || item.jobTitle || item.position || 'N/A',
+            jobId: item.jobId,
+            department: item.department || 'N/A',
+            date: item.interviewDate || item.scheduledDate || item.date,
+            time: item.interviewTime || item.startTime || item.time,
+            endTime: item.endTime || item.interviewEndTime,
+            duration: item.duration || 60,
+            type: item.interviewType || item.type || 'Technical',
+            level: item.round || item.interviewRound || item.level || 1,
+            status: item.status || 'UPCOMING',
+            meetingLink: item.meetingLink || item.meetingUrl || '',
+            location: item.location || '',
+            interviewerName: item.interviewerName || '',
+            notes: item.notes || '',
+          }))
+        : [];
+
+      setInterviews(normalized);
+    } catch (error) {
+      console.error('Error fetching interview schedules:', error);
+      message.error('Không thể tải lịch phỏng vấn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInterviewSchedules();
+  }, []);
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -122,6 +97,7 @@ const InterviewerInterviewSchedule = () => {
       PENDING: { color: 'warning', label: 'Chờ xác nhận', icon: <ClockCircleOutlined /> },
       COMPLETED: { color: 'default', label: 'Đã hoàn thành', icon: <CalendarOutlined /> },
       CANCELLED: { color: 'error', label: 'Đã hủy', icon: <ExclamationCircleOutlined /> },
+      CONFIRMED: { color: 'processing', label: 'Đã xác nhận', icon: <CheckCircleOutlined /> },
     };
     return configs[status] || { color: 'default', label: status };
   };
@@ -133,6 +109,31 @@ const InterviewerInterviewSchedule = () => {
       Culture: 'purple',
     };
     return colors[type] || 'default';
+  };
+
+  const handleReschedule = async (values) => {
+    if (!selectedInterview) return;
+    try {
+      await interviewAPI.reschedule(selectedInterview.id, selectedInterview.id);
+      message.success('Đã gửi yêu cầu đổi lịch!');
+      setRescheduleModal(false);
+      rescheduleForm.resetFields();
+      fetchInterviewSchedules();
+    } catch (error) {
+      console.error('Error rescheduling:', error);
+      message.error('Không thể đổi lịch. Vui lòng thử lại.');
+    }
+  };
+
+  const handleCancel = async (record) => {
+    try {
+      await interviewAPI.cancelSchedule(record.id, 'Interviewer cancelled');
+      message.success('Đã hủy lịch phỏng vấn');
+      fetchInterviewSchedules();
+    } catch (error) {
+      console.error('Error cancelling:', error);
+      message.error('Không thể hủy lịch. Vui lòng thử lại.');
+    }
   };
 
   const columns = [
@@ -166,11 +167,11 @@ const InterviewerInterviewSchedule = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <CalendarOutlined style={{ color: MATCHA_GREEN }} />
-            <Text>{dayjs(record.date).format('DD/MM/YYYY')}</Text>
+            <Text>{record.date ? dayjs(record.date).format('DD/MM/YYYY') : '-'}</Text>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <ClockCircleOutlined style={{ color: '#faad14' }} />
-            <Text>{record.time} - {record.endTime}</Text>
+            <Text>{record.time || '-'} - {record.endTime || '-'}</Text>
           </div>
         </div>
       ),
@@ -203,34 +204,20 @@ const InterviewerInterviewSchedule = () => {
       title: 'Thao tác',
       key: 'actions',
       fixed: 'right',
-      width: 220,
+      width: 160,
       render: (_, record) => (
         <Space size={4}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<VideoCameraOutlined />}
-            onClick={() => window.open(record.meetingLink, '_blank')}
-            style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-          >
-            Tham gia
-          </Button>
-          <Button
-            size="small"
-            onClick={() => {
-              setSelectedInterview(record);
-              setRescheduleModal(true);
-            }}
-          >
-            Đổi lịch
-          </Button>
-          <Button
-            type="text"
-            size="small"
-            onClick={() => navigate(`/interviewer/interview/${record.id}`)}
-          >
-            Chi tiết
-          </Button>
+          {record.status !== 'CANCELLED' && record.status !== 'COMPLETED' && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<VideoCameraOutlined />}
+              onClick={() => window.open(record.meetingLink, '_blank')}
+              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+            >
+              Tham gia
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -239,15 +226,15 @@ const InterviewerInterviewSchedule = () => {
   const filteredData = interviews.filter((item) => {
     const matchesSearch =
       !searchText ||
-      item.candidate.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.position.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.department.toLowerCase().includes(searchText.toLowerCase());
+      (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.department || '').toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     const matchesType = typeFilter === 'all' || item.type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const upcomingCount = interviews.filter((i) => i.status === 'UPCOMING').length;
+  const upcomingCount = interviews.filter((i) => i.status === 'UPCOMING' || i.status === 'CONFIRMED').length;
   const pendingCount = interviews.filter((i) => i.status === 'PENDING').length;
 
   return (
@@ -268,6 +255,9 @@ const InterviewerInterviewSchedule = () => {
               Chờ xác nhận: {pendingCount}
             </Button>
           </Badge>
+          <Button icon={<ReloadOutlined />} onClick={fetchInterviewSchedules} loading={loading}>
+            Làm mới
+          </Button>
         </Space>
       </div>
 
@@ -291,6 +281,7 @@ const InterviewerInterviewSchedule = () => {
               <Option value="all">Tất cả trạng thái</Option>
               <Option value="UPCOMING">Sắp tới</Option>
               <Option value="PENDING">Chờ xác nhận</Option>
+              <Option value="CONFIRMED">Đã xác nhận</Option>
               <Option value="COMPLETED">Đã hoàn thành</Option>
             </Select>
             <Select
@@ -314,6 +305,7 @@ const InterviewerInterviewSchedule = () => {
           columns={columns}
           dataSource={filteredData}
           rowKey="id"
+          loading={loading}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -329,24 +321,36 @@ const InterviewerInterviewSchedule = () => {
         onCancel={() => {
           setRescheduleModal(false);
           setSelectedInterview(null);
+          rescheduleForm.resetFields();
         }}
-        onOk={() => {
-          message.success('Đã gửi yêu cầu đổi lịch!');
-          setRescheduleModal(false);
-        }}
+        onOk={() => rescheduleForm.submit()}
         okText="Gửi yêu cầu"
       >
         {selectedInterview && (
-          <div>
+          <Form
+            form={rescheduleForm}
+            layout="vertical"
+            onFinish={handleReschedule}
+          >
             <Text>
               Bạn đang yêu cầu đổi lịch phỏng vấn với <strong>{selectedInterview.candidate}</strong> cho vị trí{' '}
               <strong>{selectedInterview.position}</strong>.
             </Text>
-            <div style={{ marginTop: 16 }}>
-              <Text strong>Chọn ngày mới:</Text>
-              <DatePicker style={{ width: '100%', marginTop: 8 }} />
-            </div>
-          </div>
+            <Form.Item
+              name="newDate"
+              label="Chọn ngày mới"
+              rules={[{ required: true, message: 'Vui lòng chọn ngày mới' }]}
+              style={{ marginTop: 16 }}
+            >
+              <DatePicker style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item
+              name="reason"
+              label="Lý do (tùy chọn)"
+            >
+              <Input.TextArea rows={3} placeholder="Nhập lý do đổi lịch..." />
+            </Form.Item>
+          </Form>
         )}
       </Modal>
     </div>
