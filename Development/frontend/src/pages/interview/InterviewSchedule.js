@@ -228,7 +228,7 @@ const InterviewSchedule = () => {
 
   const columns = [
     {
-      title: 'Candidate',
+      title: 'Ứng viên',
       dataIndex: 'candidate',
       key: 'candidate',
       render: (text) => (
@@ -238,7 +238,7 @@ const InterviewSchedule = () => {
         </div>
       ),
     },
-    { title: 'Position', dataIndex: 'position', key: 'position' },
+    { title: 'Phòng ban', dataIndex: 'department', key: 'department' },
     {
       title: 'Date & Time',
       dataIndex: 'scheduledAt',
@@ -256,7 +256,7 @@ const InterviewSchedule = () => {
       render: (names) => names?.map((name, idx) => <Tag key={idx}>{name}</Tag>) || '-',
     },
     {
-      title: 'Actions',
+      title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
         <Space>
@@ -270,6 +270,16 @@ const InterviewSchedule = () => {
       ),
     },
   ];
+
+  const filteredData = interviews.filter((item) => {
+    const matchesSearch =
+      !searchText ||
+      (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.department || '').toLowerCase().includes(searchText.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="interview-schedule-page">

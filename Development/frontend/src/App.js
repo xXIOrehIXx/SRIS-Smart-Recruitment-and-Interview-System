@@ -90,22 +90,12 @@ const App = () => {
         <Route path="/recruiter/jobs/:id/candidates" element={<CandidatePipeline />} />
         <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
         <Route path="/interviews/schedule" element={<InterviewSchedule />} />
+        <Route path="/criteria" element={<Criteria />} />
+        <Route path="/mail-templates" element={<MailTemplates />} />
         <Route path="/offers" element={<OfferManagement />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/analytics/cv-scoring" element={<CVScoring />} />
         <Route path="/talent-pool" element={<TalentPool />} />
-      </Route>
-
-      {/* ===== SHARED: Admin + Recruiter ===== */}
-      <Route
-        element={
-          <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.RECRUITER]}>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/criteria" element={<Criteria />} />
-        <Route path="/mail-templates" element={<MailTemplates />} />
       </Route>
 
       {/* ===== INTERVIEWER ONLY ===== */}

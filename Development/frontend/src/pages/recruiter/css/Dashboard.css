@@ -1,7 +1,6 @@
 /* Interviewer & Admin Dashboard Shared Styles */
 .interviewer-dashboard,
 .admin-dashboard,
-.quiz-management-page,
 .interview-schedule-page,
 .offer-management-page,
 .notifications-page,
@@ -9,9 +8,6 @@
 .sub-account-page,
 .create-account-page,
 .grading-page,
-.quiz-detail-page,
-.create-quiz-page,
-.take-quiz-page,
 .recruiter-dashboard {
   animation: fadeIn 0.3s ease;
 }
@@ -399,18 +395,6 @@
 
 .search-input {
   width: 280px;
-}
-
-/* Quiz Styles */
-.quiz-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 4px;
 }
 
 /* Grading Page */

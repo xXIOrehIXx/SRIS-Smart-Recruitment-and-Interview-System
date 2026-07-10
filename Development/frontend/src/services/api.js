@@ -167,6 +167,9 @@ export const interviewAPI = {
   getAllSchedules: (jobId) =>
     api.get(jobId ? `/api/interview-schedules?jobId=${jobId}` : '/api/interview-schedules'),
 
+  getInterviewPools: (jobId) =>
+    api.get(`/api/jobs/${jobId}/interview-pools`),
+
   createSchedule: (applicationId, data) =>
     api.post(`/applications/${applicationId}/interview-schedules`, data),
 
@@ -180,11 +183,18 @@ export const interviewAPI = {
   getMySchedules: () =>
     api.get('/api/me/interview-schedules'),
 
+  // Grading APIs
   getMySheet: (scheduleId) =>
-    api.get(`/api/interview-schedules/${scheduleId}/my-sheet`),
+    api.get(`/interview-schedules/${scheduleId}/my-sheet`),
 
-  submitScore: (scheduleId, scores) =>
-    api.put(`/api/interview-schedules/${scheduleId}/my-sheet`, scores),
+  updateMySheet: (scheduleId, data) =>
+    api.put(`/interview-schedules/${scheduleId}/my-sheet`, data),
+
+  submitMySheet: (scheduleId, data) =>
+    api.post(`/interview-schedules/${scheduleId}/my-sheet`, data),
+
+  getAggregate: (scheduleId) =>
+    api.get(`/interview-schedules/${scheduleId}/aggregate`),
 };
 
 // ==================== CANDIDATE (Magic Link) ====================
@@ -226,16 +236,19 @@ export const offerAPI = {
 
 export const criteriaAPI = {
   getTemplates: () =>
-    api.get('/api/criteria-templates'),
+    api.get('/criteria-templates'),
+
+  getById: (templateId) =>
+    api.get(`/criteria-templates/${templateId}`),
 
   createTemplate: (data) =>
-    api.post('/api/criteria-templates', data),
+    api.post('/criteria-templates', data),
 
-  updateTemplate: (id, data) =>
-    api.put(`/api/criteria-templates/${id}`, data),
+  updateTemplate: (templateId, data) =>
+    api.put(`/criteria-templates/${templateId}`, data),
 
-  deleteTemplate: (id) =>
-    api.delete(`/api/criteria-templates/${id}`),
+  deleteTemplate: (templateId) =>
+    api.delete(`/criteria-templates/${templateId}`),
 
   getByJob: (jobId) =>
     api.get(`/api/jobs/${jobId}/criteria`),
@@ -254,19 +267,19 @@ export const criteriaAPI = {
 
 export const mailTemplateAPI = {
   getAll: () =>
-    api.get('/api/mail-templates'),
+    api.get('/email-templates'),
 
-  getById: (id) =>
-    api.get(`/api/mail-templates/${id}`),
+  getById: (templateId) =>
+    api.get(`/email-templates/${templateId}`),
 
   create: (data) =>
-    api.post('/api/mail-templates', data),
+    api.post('/email-templates', data),
 
-  update: (id, data) =>
-    api.put(`/api/mail-templates/${id}`, data),
+  update: (templateId, data) =>
+    api.put(`/email-templates/${templateId}`, data),
 
-  delete: (id) =>
-    api.delete(`/api/mail-templates/${id}`),
+  delete: (templateId) =>
+    api.delete(`/email-templates/${templateId}`),
 };
 
 // ==================== DASHBOARD ====================
@@ -328,6 +341,9 @@ export const usersAPI = {
 
   changePassword: (id, oldPassword, newPassword) =>
     api.post(`/api/users/${id}/change-password`, { oldPassword, newPassword }),
+
+  resetPassword: (userId, newPassword) =>
+    api.post(`/api/users/${userId}/reset-password`, { newPassword }),
 };
 
 // ==================== PUBLIC CAREER SITE ====================

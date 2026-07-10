@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Typography,
@@ -12,6 +12,7 @@ import {
   Row,
   Col,
   Statistic,
+  message,
 } from 'antd';
 import {
   CalendarOutlined,
@@ -21,9 +22,11 @@ import {
   SearchOutlined,
   TeamOutlined,
   UserOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { applicationAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -33,92 +36,53 @@ const MATCHA_GREEN = '#5D8C3E';
 
 const InterviewerInterviewHistory = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const history = [
-    {
-      id: 1,
-      candidate: 'Alex Morgan',
-      position: 'Senior Frontend Developer',
-      department: 'Engineering',
-      date: '2026-07-01',
-      time: '14:00',
-      type: 'Technical',
-      level: 1,
-      status: 'COMPLETED',
-      score: 42,
-      maxScore: 50,
-      recommendation: 'STRONG_HIRE',
-      graded: true,
-    },
-    {
-      id: 2,
-      candidate: 'Jane Doe',
-      position: 'Product Manager',
-      department: 'Product',
-      date: '2026-07-02',
-      time: '10:00',
-      type: 'HR',
-      level: 1,
-      status: 'COMPLETED',
-      score: 35,
-      maxScore: 50,
-      recommendation: 'HIRE',
-      graded: true,
-    },
-    {
-      id: 3,
-      candidate: 'John Smith',
-      position: 'UX Designer',
-      department: 'Design',
-      date: '2026-07-03',
-      time: '15:00',
-      type: 'Culture',
-      level: 1,
-      status: 'COMPLETED',
-      score: null,
-      maxScore: 50,
-      recommendation: null,
-      graded: false,
-    },
-    {
-      id: 4,
-      candidate: 'Emily Chen',
-      position: 'Backend Engineer',
-      department: 'Engineering',
-      date: '2026-07-04',
-      time: '09:00',
-      type: 'Technical',
-      level: 2,
-      status: 'COMPLETED',
-      score: 28,
-      maxScore: 50,
-      recommendation: 'CONSIDER',
-      graded: true,
-    },
-    {
-      id: 5,
-      candidate: 'Mike Brown',
-      position: 'DevOps Engineer',
-      department: 'Infrastructure',
-      date: '2026-07-05',
-      time: '11:00',
-      type: 'Technical',
-      level: 1,
-      status: 'COMPLETED',
-      score: 18,
-      maxScore: 50,
-      recommendation: 'NO_HIRE',
-      graded: true,
-    },
-  ];
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await applicationAPI.getHistory(0);
+      const data = response.data || [];
+
+      const normalized = data.map((item) => ({
+        id: item.applicationId || item.id,
+        candidate: item.candidateName || item.candidate || 'N/A',
+        position: item.positionTitle || item.jobTitle || item.position || 'N/A',
+        department: item.department || 'N/A',
+        date: item.interviewDate || item.scheduledDate || item.date,
+        time: item.interviewTime || item.scheduledTime || item.time || '',
+        type: item.interviewType || item.type || 'N/A',
+        level: item.round || item.interviewRound || item.level || 1,
+        status: item.status || 'PENDING',
+        score: item.score ?? null,
+        maxScore: item.maxScore || 50,
+        recommendation: item.recommendation || null,
+        graded: item.graded ?? (item.score !== null && item.score !== undefined),
+        applicationId: item.applicationId || item.id,
+      }));
+
+      setHistory(normalized);
+    } catch (error) {
+      console.error('Error fetching interview history:', error);
+      message.error('Không thể tải lịch sử phỏng vấn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const getStatusConfig = (status) => {
     const configs = {
       COMPLETED: { color: 'success', label: 'Đã hoàn thành', icon: <CheckCircleOutlined /> },
       CANCELLED: { color: 'error', label: 'Đã hủy', icon: <CloseCircleOutlined /> },
       MISSED: { color: 'warning', label: 'Bỏ lỡ', icon: <ClockCircleOutlined /> },
+      PENDING: { color: 'processing', label: 'Chờ xử lý', icon: <ClockCircleOutlined /> },
     };
     return configs[status] || { color: 'default', label: status };
   };
@@ -134,6 +98,7 @@ const InterviewerInterviewHistory = () => {
   };
 
   const getScoreColor = (score, max) => {
+    if (score === null || score === undefined) return '#faad14';
     const percent = (score / max) * 100;
     if (percent >= 80) return '#52c41a';
     if (percent >= 60) return '#faad14';
@@ -168,7 +133,7 @@ const InterviewerInterviewHistory = () => {
       dataIndex: 'date',
       key: 'date',
       width: 120,
-      render: (date) => dayjs(date).format('DD/MM/YYYY'),
+      render: (date) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
     },
     {
       title: 'Loại',
@@ -234,7 +199,7 @@ const InterviewerInterviewHistory = () => {
             <Button
               type="link"
               size="small"
-              onClick={() => navigate(`/interviewer/interview/${record.id}`)}
+              onClick={() => navigate(`/interviewer/interview/${record.applicationId || record.id}`)}
             >
               Xem lại
             </Button>
@@ -242,7 +207,7 @@ const InterviewerInterviewHistory = () => {
             <Button
               type="primary"
               size="small"
-              onClick={() => navigate(`/interviewer/interview/${record.id}`)}
+              onClick={() => navigate(`/interviewer/interview/${record.applicationId || record.id}`)}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
             >
               Chấm điểm
@@ -256,8 +221,8 @@ const InterviewerInterviewHistory = () => {
   const filteredData = history.filter((item) => {
     const matchesSearch =
       !searchText ||
-      item.candidate.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.position.toLowerCase().includes(searchText.toLowerCase());
+      (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.position || '').toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -265,12 +230,12 @@ const InterviewerInterviewHistory = () => {
   const totalInterviews = history.length;
   const completedInterviews = history.filter((i) => i.status === 'COMPLETED').length;
   const avgScore =
-    history.filter((i) => i.graded).length > 0
+    history.filter((i) => i.graded && i.score !== null).length > 0
       ? Math.round(
           history
-            .filter((i) => i.graded)
+            .filter((i) => i.graded && i.score !== null)
             .reduce((sum, i) => sum + i.score, 0) /
-            history.filter((i) => i.graded).length
+            history.filter((i) => i.graded && i.score !== null).length
         )
       : 0;
 
@@ -281,6 +246,9 @@ const InterviewerInterviewHistory = () => {
           <Title level={3} className="page-title">Lịch Sử Phỏng Vấn</Title>
           <Text type="secondary">Xem lại các buổi phỏng vấn đã thực hiện</Text>
         </div>
+        <Button icon={<ReloadOutlined />} onClick={fetchHistory} loading={loading}>
+          Làm mới
+        </Button>
       </div>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -309,7 +277,7 @@ const InterviewerInterviewHistory = () => {
             <Statistic
               title="Điểm TB"
               value={avgScore}
-              suffix={`/ 50`}
+              suffix="/ 50"
               prefix={<TeamOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
@@ -348,6 +316,7 @@ const InterviewerInterviewHistory = () => {
           columns={columns}
           dataSource={filteredData}
           rowKey="id"
+          loading={loading}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

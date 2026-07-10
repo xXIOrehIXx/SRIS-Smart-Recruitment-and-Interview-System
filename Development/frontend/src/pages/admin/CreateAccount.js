@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Select, Button, Row, Col, Divider, message } from 'antd';
-import { ArrowLeftOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, MailOutlined, LockOutlined, UserOutlined, TeamOutlined, PhoneOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { usersAPI } from '../../services/api';
 import './SubAccountManagement.css';
 import './CreateAccount.css';
-
-const { Option } = Select;
 
 const CreateAccount = () => {
   const navigate = useNavigate();
@@ -13,46 +12,52 @@ const CreateAccount = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const roles = [
+    { value: 'recruiter', label: 'Recruiter' },
+    { value: 'interviewer', label: 'Interviewer' },
+    { value: 'department_manager', label: 'Department Manager' },
+  ];
+
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      console.log('Form values:', values);
-      message.success('Account created successfully');
+      const payload = {
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+        role: values.role,
+        department: values.department,
+        phone: values.phone,
+      };
+
+      await usersAPI.create(payload);
+      message.success('Tạo tài khoản thành công');
       navigate('/admin/sub-accounts');
     } catch (error) {
-      message.error('Failed to create account');
+      console.error('Create account error:', error);
+      if (error.response?.data?.message) {
+        message.error(error.response.data.message);
+      } else {
+        message.error('Không thể tạo tài khoản');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const roles = [
-    { value: 'admin', label: 'Admin' },
-    { value: 'recruiter', label: 'Recruiter' },
-    { value: 'interviewer', label: 'Interviewer' },
-  ];
-
-  const departments = [
-    { value: 'hr', label: 'Human Resources' },
-    { value: 'tech', label: 'Technology' },
-    { value: 'sales', label: 'Sales' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'finance', label: 'Finance' },
-  ];
-
   return (
     <div className="create-account-page">
-      <Button 
+      <Button
         className="back-btn"
-        onClick={() => navigate('/admin/sub-accounts')} 
+        onClick={() => navigate('/admin/sub-accounts')}
         icon={<ArrowLeftOutlined />}
       >
-        Back
+        Quay lại
       </Button>
 
       <Card className="main-card" bordered={false}>
-        <h2 className="page-title">Create Account</h2>
-        <p className="page-subtitle">Create a new user account for the system</p>
+        <h2 className="page-title">Tạo tài khoản mới</h2>
+        <p className="page-subtitle">Tạo tài khoản người dùng mới cho hệ thống</p>
 
         <Divider />
 
@@ -65,24 +70,24 @@ const CreateAccount = () => {
           <Row gutter={24}>
             <Col xs={24} md={12}>
               <Form.Item
-                name="accountName"
-                label="Account Name"
-                rules={[{ required: true, message: 'Please enter account name' }]}
+                name="fullName"
+                label="Họ và tên"
+                rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
               >
-                <Input placeholder="Enter account name" />
+                <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
               </Form.Item>
             </Col>
 
             <Col xs={24} md={12}>
               <Form.Item
-                name="accountEmail"
-                label="Account Email"
+                name="email"
+                label="Email"
                 rules={[
-                  { required: true, message: 'Please enter email' },
-                  { type: 'email', message: 'Please enter a valid email' }
+                  { required: true, message: 'Vui lòng nhập email' },
+                  { type: 'email', message: 'Email không hợp lệ' }
                 ]}
               >
-                <Input placeholder="Enter email address" />
+                <Input prefix={<MailOutlined />} placeholder="Nhập địa chỉ email" />
               </Form.Item>
             </Col>
           </Row>
@@ -91,34 +96,29 @@ const CreateAccount = () => {
             <Col xs={24} md={12}>
               <Form.Item
                 name="password"
-                label="Password"
+                label="Mật khẩu"
                 rules={[
-                  { required: true, message: 'Please enter password' },
-                  { min: 6, message: 'Password must be at least 6 characters' }
+                  { required: true, message: 'Vui lòng nhập mật khẩu' },
+                  { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
                 ]}
               >
-                <Input.Password 
-                  placeholder="Enter password"
-                  iconRender={(visible) => (
-                    visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
-                  )}
+                <Input.Password
+                  prefix={<LockOutlined />}
+                  placeholder="Nhập mật khẩu"
+                  visibilityToggle={{
+                    visible: passwordVisible,
+                    onVisibleChange: setPasswordVisible,
+                  }}
                 />
               </Form.Item>
             </Col>
 
             <Col xs={24} md={12}>
               <Form.Item
-                name="role"
-                label="Role"
-                rules={[{ required: true, message: 'Please select role' }]}
+                name="phone"
+                label="Số điện thoại"
               >
-                <Select placeholder="Select role">
-                  {roles.map((role) => (
-                    <Option key={role.value} value={role.value}>
-                      {role.label}
-                    </Option>
-                  ))}
-                </Select>
+                <Input prefix={<PhoneOutlined />} placeholder="Nhập số điện thoại" />
               </Form.Item>
             </Col>
           </Row>
@@ -126,15 +126,15 @@ const CreateAccount = () => {
           <Row gutter={24}>
             <Col xs={24} md={12}>
               <Form.Item
-                name="department"
-                label="Department"
-                rules={[{ required: true, message: 'Please select department' }]}
+                name="role"
+                label="Vai trò"
+                rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
               >
-                <Select placeholder="Select department">
-                  {departments.map((dept) => (
-                    <Option key={dept.value} value={dept.value}>
-                      {dept.label}
-                    </Option>
+                <Select placeholder="Chọn vai trò">
+                  {roles.map((role) => (
+                    <Select.Option key={role.value} value={role.value}>
+                      {role.label}
+                    </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
@@ -142,14 +142,11 @@ const CreateAccount = () => {
 
             <Col xs={24} md={12}>
               <Form.Item
-                name="status"
-                label="Status"
-                initialValue="active"
+                name="department"
+                label="Phòng ban"
+                rules={[{ required: true, message: 'Vui lòng nhập phòng ban' }]}
               >
-                <Select>
-                  <Option value="active">Active</Option>
-                  <Option value="inactive">Inactive</Option>
-                </Select>
+                <Input prefix={<TeamOutlined />} placeholder="Nhập tên phòng ban" />
               </Form.Item>
             </Col>
           </Row>
@@ -159,12 +156,12 @@ const CreateAccount = () => {
           <Row justify="end" gutter={12}>
             <Col>
               <Button onClick={() => navigate('/admin/sub-accounts')}>
-                Cancel
+                Hủy
               </Button>
             </Col>
             <Col>
               <Button type="primary" htmlType="submit" loading={loading}>
-                Create Account
+                Tạo tài khoản
               </Button>
             </Col>
           </Row>

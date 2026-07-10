@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Table, Tag, Modal, Form, Input, Select, Slider, Space, message, Popconfirm, Tooltip, Row, Col, Descriptions, Divider, Tabs } from 'antd';
+import {
+  Card, Typography, Button, Table, Tag, Modal, Form, Input, Select,
+  Slider, Space, message, Popconfirm, Tooltip, Row, Col, Descriptions,
+  Divider, Tabs, Empty, InputNumber
+} from 'antd';
 import {
   PlusOutlined, CheckSquareOutlined, EditOutlined, DeleteOutlined,
-  ReloadOutlined, CopyOutlined, CheckCircleOutlined, StarOutlined
+  ReloadOutlined, CopyOutlined, CheckCircleOutlined, StarOutlined,
+  EyeOutlined, SearchOutlined
 } from '@ant-design/icons';
 import { criteriaAPI, jobsAPI } from '../../services/api';
 import './css/Criteria.css';
@@ -17,10 +22,17 @@ const Criteria = () => {
   const [jobCriteria, setJobCriteria] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [searchText, setSearchText] = useState('');
+
+  // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editConfirmModalOpen, setEditConfirmModalOpen] = useState(false);
+  const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+
   const [form] = Form.useForm();
   const [assignForm] = Form.useForm();
   const [editForm] = Form.useForm();
@@ -52,10 +64,15 @@ const Criteria = () => {
     try {
       setLoading(true);
       const response = await criteriaAPI.getTemplates();
-      setTemplates(response.data || []);
+      let data = response.data || [];
+      if (!Array.isArray(data) && data.items) {
+        data = data.items;
+      }
+      setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching templates:', error);
       message.error('Không thể tải danh sách tiêu chí');
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -64,10 +81,98 @@ const Criteria = () => {
   const fetchJobCriteria = async (jobId) => {
     try {
       const response = await criteriaAPI.getByJob(jobId);
-      setJobCriteria(response.data || []);
+      let data = response.data || [];
+      if (!Array.isArray(data)) {
+        data = data.criteria || [];
+      }
+      setJobCriteria(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching job criteria:', error);
       setJobCriteria([]);
+    }
+  };
+
+  // View detail
+  const handleViewDetail = async (record) => {
+    try {
+      const response = await criteriaAPI.getById(record.id);
+      const data = response.data || record;
+      setSelectedTemplate({
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        isActive: data.isActive,
+        criteria: data.criteria || [],
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      });
+      setDetailModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching template detail:', error);
+      setSelectedTemplate({
+        id: record.id,
+        name: record.name,
+        description: record.description,
+        isActive: record.isActive,
+        criteria: record.criteria || [],
+      });
+      setDetailModalOpen(true);
+    }
+  };
+
+  // Edit flow
+  const handleEditClick = (record) => {
+    setSelectedTemplate(record);
+    editForm.setFieldsValue({
+      name: record.name,
+      description: record.description,
+      isActive: record.isActive,
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleEditConfirm = () => {
+    setEditConfirmModalOpen(true);
+  };
+
+  const handleUpdateTemplate = async () => {
+    try {
+      setSubmitting(true);
+      const values = editForm.getFieldsValue();
+      await criteriaAPI.updateTemplate(selectedTemplate.id, values);
+      message.success('Cập nhật template thành công!');
+      setEditModalOpen(false);
+      setEditConfirmModalOpen(false);
+      editForm.resetFields();
+      setSelectedTemplate(null);
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error updating template:', error);
+      message.error('Không thể cập nhật template');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete flow
+  const handleDeleteClick = (record) => {
+    setSelectedTemplate(record);
+    setDeleteConfirmModalOpen(true);
+  };
+
+  const handleDeleteTemplate = async () => {
+    try {
+      setSubmitting(true);
+      await criteriaAPI.deleteTemplate(selectedTemplate.id);
+      message.success('Xóa template thành công!');
+      setDeleteConfirmModalOpen(false);
+      setSelectedTemplate(null);
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      message.error('Không thể xóa template');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -114,34 +219,6 @@ const Criteria = () => {
     }
   };
 
-  const handleUpdateTemplate = async (values) => {
-    try {
-      setSubmitting(true);
-      await criteriaAPI.updateTemplate(selectedTemplate.id, values);
-      message.success('Cập nhật template thành công!');
-      setEditModalOpen(false);
-      editForm.resetFields();
-      setSelectedTemplate(null);
-      fetchTemplates();
-    } catch (error) {
-      console.error('Error updating template:', error);
-      message.error('Không thể cập nhật template');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDeleteTemplate = async (id) => {
-    try {
-      await criteriaAPI.deleteTemplate(id);
-      message.success('Xóa template thành công!');
-      fetchTemplates();
-    } catch (error) {
-      console.error('Error deleting template:', error);
-      message.error('Không thể xóa template');
-    }
-  };
-
   const templateColumns = [
     {
       title: 'Tên template',
@@ -174,36 +251,34 @@ const Criteria = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 180,
+      width: 200,
       render: (_, record) => (
         <Space size={4}>
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetail(record)}
+            />
+          </Tooltip>
           <Tooltip title="Chỉnh sửa">
             <Button
               type="text"
               size="small"
               icon={<EditOutlined />}
-              onClick={() => {
-                setSelectedTemplate(record);
-                editForm.setFieldsValue({
-                  name: record.name,
-                  description: record.description,
-                  criteria: record.criteria,
-                });
-                setEditModalOpen(true);
-              }}
+              onClick={() => handleEditClick(record)}
             />
           </Tooltip>
-          <Popconfirm
-            title="Xóa template này?"
-            onConfirm={() => handleDeleteTemplate(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="Xóa">
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteClick(record)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -271,13 +346,28 @@ const Criteria = () => {
     },
   ];
 
+  // Filter templates by search
+  const filteredTemplates = templates.filter(t =>
+    !searchText ||
+    (t.name || '').toLowerCase().includes(searchText.toLowerCase()) ||
+    (t.description || '').toLowerCase().includes(searchText.toLowerCase())
+  );
+
   const tabItems = [
     {
       key: 'templates',
       label: <span><CheckSquareOutlined /> Template tiêu chí</span>,
       children: (
         <>
-          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ marginBottom: 16, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <Input
+              placeholder="Tìm kiếm template..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 240 }}
+              allowClear
+            />
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -289,10 +379,11 @@ const Criteria = () => {
           </div>
           <Table
             columns={templateColumns}
-            dataSource={templates}
+            dataSource={filteredTemplates}
             rowKey="id"
             loading={loading}
             pagination={{ pageSize: 10 }}
+            locale={{ emptyText: 'Chưa có template tiêu chí nào' }}
           />
         </>
       ),
@@ -312,7 +403,7 @@ const Criteria = () => {
               filterOption={(input, option) =>
                 (option.label || '').toLowerCase().includes(input.toLowerCase())
               }
-              options={jobs.map(job => ({ value: job.id, label: job.title }))}
+              options={jobs.map(job => ({ value: job.id || job.jobId, label: job.title }))}
               allowClear
             />
             {selectedJob && (
@@ -332,6 +423,7 @@ const Criteria = () => {
               dataSource={jobCriteria}
               rowKey="id"
               pagination={{ pageSize: 10 }}
+              locale={{ emptyText: 'Chưa có tiêu chí nào cho vị trí này' }}
             />
           ) : (
             <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8b' }}>
@@ -350,7 +442,11 @@ const Criteria = () => {
           <Title level={3} className="page-title">Tiêu Chí Đánh Giá</Title>
           <Text type="secondary">Quản lý template và gán tiêu chí đánh giá cho vị trí tuyển dụng</Text>
         </div>
-        <Button icon={<ReloadOutlined />} onClick={() => { fetchTemplates(); if (selectedJob) fetchJobCriteria(selectedJob); }} loading={loading}>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={() => { fetchTemplates(); if (selectedJob) fetchJobCriteria(selectedJob); }}
+          loading={loading}
+        >
           Làm mới
         </Button>
       </div>
@@ -359,6 +455,7 @@ const Criteria = () => {
         <Tabs items={tabItems} />
       </Card>
 
+      {/* Modal Tạo Template */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -369,11 +466,15 @@ const Criteria = () => {
         open={createModalOpen}
         onCancel={() => { setCreateModalOpen(false); form.resetFields(); }}
         footer={null}
-        width={600}
+        width={500}
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleCreateTemplate} style={{ marginTop: 20 }}>
-          <Form.Item label="Tên template" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên template' }]}>
+          <Form.Item
+            label="Tên template"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên template' }]}
+          >
             <Input placeholder="VD: Template phỏng vấn kỹ thuật" />
           </Form.Item>
           <Form.Item label="Mô tả" name="description">
@@ -387,13 +488,185 @@ const Criteria = () => {
           </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button onClick={() => setCreateModalOpen(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={submitting} style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting}
+              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+            >
               Tạo template
             </Button>
           </div>
         </Form>
       </Modal>
 
+      {/* Modal Xem Chi Tiết */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <EyeOutlined style={{ color: MATCHA_GREEN }} />
+            Chi tiết template
+          </div>
+        }
+        open={detailModalOpen}
+        onCancel={() => setDetailModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalOpen(false)}>
+            Đóng
+          </Button>,
+          <Button
+            key="edit"
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setDetailModalOpen(false);
+              setTimeout(() => handleEditClick(selectedTemplate), 100);
+            }}
+          >
+            Chỉnh sửa
+          </Button>,
+        ]}
+        width={600}
+      >
+        {selectedTemplate && (
+          <>
+            <Descriptions column={1} bordered size="small" style={{ marginTop: 16 }}>
+              <Descriptions.Item label="Tên template">
+                <Text strong>{selectedTemplate.name}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Mô tả">
+                {selectedTemplate.description || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                <Tag color={selectedTemplate.isActive !== false ? 'success' : 'default'}>
+                  {selectedTemplate.isActive !== false ? 'Hoạt động' : 'Tắt'}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Số tiêu chí">
+                {selectedTemplate.criteria?.length || 0} tiêu chí
+              </Descriptions.Item>
+              {selectedTemplate.createdAt && (
+                <Descriptions.Item label="Ngày tạo">
+                  {new Date(selectedTemplate.createdAt).toLocaleString('vi-VN')}
+                </Descriptions.Item>
+              )}
+              {selectedTemplate.updatedAt && (
+                <Descriptions.Item label="Cập nhật lần cuối">
+                  {new Date(selectedTemplate.updatedAt).toLocaleString('vi-VN')}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            {selectedTemplate.criteria && selectedTemplate.criteria.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <Text strong>Danh sách tiêu chí:</Text>
+                <ul style={{ paddingLeft: 20, marginTop: 8 }}>
+                  {selectedTemplate.criteria.map((c, idx) => (
+                    <li key={idx}>
+                      <Text>{c.name || c.criterionName}</Text>
+                      <Text type="secondary"> - Điểm tối đa: {c.maxScore || 100}</Text>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </Modal>
+
+      {/* Modal Chỉnh sửa */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <EditOutlined style={{ color: MATCHA_GREEN }} />
+            Chỉnh sửa template
+          </div>
+        }
+        open={editModalOpen}
+        onCancel={() => { setEditModalOpen(false); editForm.resetFields(); }}
+        footer={[
+          <Button key="cancel" onClick={() => setEditModalOpen(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={submitting}
+            onClick={handleEditConfirm}
+          >
+            Lưu thay đổi
+          </Button>,
+        ]}
+        width={500}
+        destroyOnClose
+      >
+        <Form form={editForm} layout="vertical" style={{ marginTop: 20 }}>
+          <Form.Item
+            label="Tên template"
+            name="name"
+            rules={[{ required: true, message: 'Vui lòng nhập tên template' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item label="Mô tả" name="description">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item label="Trạng thái" name="isActive" valuePropName="checked">
+            <Space>
+              <CheckCircleOutlined style={{ color: '#52c41a' }} />
+              <Text>Hoạt động</Text>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal Xác nhận Chỉnh sửa */}
+      <Modal
+        title="Xác nhận chỉnh sửa"
+        open={editConfirmModalOpen}
+        onCancel={() => setEditConfirmModalOpen(false)}
+        onOk={handleUpdateTemplate}
+        okText="Xác nhận"
+        cancelText="Hủy"
+        okButtonProps={{ loading: submitting }}
+      >
+        <p>Bạn có chắc chắn muốn chỉnh sửa template "{selectedTemplate?.name}" không?</p>
+      </Modal>
+
+      {/* Modal Xác nhận Xóa */}
+      <Modal
+        title="Xác nhận xóa template"
+        open={deleteConfirmModalOpen}
+        onCancel={() => setDeleteConfirmModalOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setDeleteConfirmModalOpen(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            loading={submitting}
+            onClick={handleDeleteTemplate}
+          >
+            Xóa
+          </Button>,
+        ]}
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <DeleteOutlined style={{ fontSize: 48, color: '#ff4d4f', marginBottom: 16 }} />
+          <p>Bạn có chắc chắn muốn xóa template này không?</p>
+          {selectedTemplate && (
+            <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 8, marginTop: 16 }}>
+              <p><strong>Tên:</strong> {selectedTemplate.name}</p>
+              <p><strong>Mô tả:</strong> {selectedTemplate.description || '-'}</p>
+            </div>
+          )}
+          <p style={{ color: '#ff4d4f', marginTop: 16 }}>Hành động này không thể hoàn tác.</p>
+        </div>
+      </Modal>
+
+      {/* Modal Gán tiêu chí cho vị trí */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -408,7 +681,11 @@ const Criteria = () => {
         destroyOnClose
       >
         <Form form={assignForm} layout="vertical" onFinish={handleAssignToJob} style={{ marginTop: 20 }}>
-          <Form.Item label="Chọn tiêu chí từ template" name="templateId" rules={[{ required: true, message: 'Vui lòng chọn template' }]}>
+          <Form.Item
+            label="Chọn tiêu chí từ template"
+            name="templateId"
+            rules={[{ required: true, message: 'Vui lòng chọn template' }]}
+          >
             <Select
               placeholder="-- Chọn template --"
               showSearch
@@ -422,37 +699,13 @@ const Criteria = () => {
           </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button onClick={() => setAssignModalOpen(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={submitting} style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting}
+              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+            >
               Gán tiêu chí
-            </Button>
-          </div>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <EditOutlined style={{ color: MATCHA_GREEN }} />
-            Chỉnh sửa template
-          </div>
-        }
-        open={editModalOpen}
-        onCancel={() => { setEditModalOpen(false); editForm.resetFields(); setSelectedTemplate(null); }}
-        footer={null}
-        width={600}
-        destroyOnClose
-      >
-        <Form form={editForm} layout="vertical" onFinish={handleUpdateTemplate} style={{ marginTop: 20 }}>
-          <Form.Item label="Tên template" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên template' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setEditModalOpen(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={submitting} style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}>
-              Lưu thay đổi
             </Button>
           </div>
         </Form>
