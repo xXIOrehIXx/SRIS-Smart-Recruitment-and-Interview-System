@@ -9,17 +9,13 @@ import {
   Space,
   Input,
   Select,
-  DatePicker,
   Badge,
-  Modal,
   message,
-  Form,
 } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  VideoCameraOutlined,
   SearchOutlined,
   UserOutlined,
   ExclamationCircleOutlined,
@@ -40,9 +36,10 @@ const InterviewerInterviewSchedule = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [rescheduleModal, setRescheduleModal] = useState(false);
-  const [selectedInterview, setSelectedInterview] = useState(null);
-  const [rescheduleForm] = Form.useForm();
+
+  useEffect(() => {
+    fetchInterviewSchedules();
+  }, []);
 
   const fetchInterviewSchedules = async () => {
     try {
@@ -87,15 +84,11 @@ const InterviewerInterviewSchedule = () => {
     }
   };
 
-  useEffect(() => {
-    fetchInterviewSchedules();
-  }, []);
-
   const getStatusConfig = (status) => {
     const configs = {
-      UPCOMING: { color: 'success', label: 'Sắp tới', icon: <VideoCameraOutlined /> },
+      UPCOMING: { color: 'success', label: 'Sắp tới', icon: <CalendarOutlined /> },
       PENDING: { color: 'warning', label: 'Chờ xác nhận', icon: <ClockCircleOutlined /> },
-      COMPLETED: { color: 'default', label: 'Đã hoàn thành', icon: <CalendarOutlined /> },
+      COMPLETED: { color: 'default', label: 'Đã hoàn thành', icon: <CheckCircleOutlined /> },
       CANCELLED: { color: 'error', label: 'Đã hủy', icon: <ExclamationCircleOutlined /> },
       CONFIRMED: { color: 'processing', label: 'Đã xác nhận', icon: <CheckCircleOutlined /> },
     };
@@ -109,31 +102,6 @@ const InterviewerInterviewSchedule = () => {
       Culture: 'purple',
     };
     return colors[type] || 'default';
-  };
-
-  const handleReschedule = async (values) => {
-    if (!selectedInterview) return;
-    try {
-      await interviewAPI.reschedule(selectedInterview.id, selectedInterview.id);
-      message.success('Đã gửi yêu cầu đổi lịch!');
-      setRescheduleModal(false);
-      rescheduleForm.resetFields();
-      fetchInterviewSchedules();
-    } catch (error) {
-      console.error('Error rescheduling:', error);
-      message.error('Không thể đổi lịch. Vui lòng thử lại.');
-    }
-  };
-
-  const handleCancel = async (record) => {
-    try {
-      await interviewAPI.cancelSchedule(record.id, 'Interviewer cancelled');
-      message.success('Đã hủy lịch phỏng vấn');
-      fetchInterviewSchedules();
-    } catch (error) {
-      console.error('Error cancelling:', error);
-      message.error('Không thể hủy lịch. Vui lòng thử lại.');
-    }
   };
 
   const columns = [
@@ -199,27 +167,6 @@ const InterviewerInterviewSchedule = () => {
         const config = getStatusConfig(status);
         return <Tag color={config.color} icon={config.icon}>{config.label}</Tag>;
       },
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      fixed: 'right',
-      width: 160,
-      render: (_, record) => (
-        <Space size={4}>
-          {record.status !== 'CANCELLED' && record.status !== 'COMPLETED' && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<VideoCameraOutlined />}
-              onClick={() => window.open(record.meetingLink, '_blank')}
-              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-            >
-              Tham gia
-            </Button>
-          )}
-        </Space>
-      ),
     },
   ];
 
@@ -311,48 +258,9 @@ const InterviewerInterviewSchedule = () => {
             showSizeChanger: true,
             showTotal: (total) => `Tổng ${total} lịch`,
           }}
-          scroll={{ x: 1100 }}
+          scroll={{ x: 1000 }}
         />
       </Card>
-
-      <Modal
-        title="Đổi lịch phỏng vấn"
-        open={rescheduleModal}
-        onCancel={() => {
-          setRescheduleModal(false);
-          setSelectedInterview(null);
-          rescheduleForm.resetFields();
-        }}
-        onOk={() => rescheduleForm.submit()}
-        okText="Gửi yêu cầu"
-      >
-        {selectedInterview && (
-          <Form
-            form={rescheduleForm}
-            layout="vertical"
-            onFinish={handleReschedule}
-          >
-            <Text>
-              Bạn đang yêu cầu đổi lịch phỏng vấn với <strong>{selectedInterview.candidate}</strong> cho vị trí{' '}
-              <strong>{selectedInterview.position}</strong>.
-            </Text>
-            <Form.Item
-              name="newDate"
-              label="Chọn ngày mới"
-              rules={[{ required: true, message: 'Vui lòng chọn ngày mới' }]}
-              style={{ marginTop: 16 }}
-            >
-              <DatePicker style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item
-              name="reason"
-              label="Lý do (tùy chọn)"
-            >
-              <Input.TextArea rows={3} placeholder="Nhập lý do đổi lịch..." />
-            </Form.Item>
-          </Form>
-        )}
-      </Modal>
     </div>
   );
 };

@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form, DatePicker, Select, message, Row, Col, Descriptions, Empty } from 'antd';
-import { PlusOutlined, CalendarOutlined, VideoCameraOutlined } from '@ant-design/icons';
+import { Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form, DatePicker, Select, Input, message, Row, Col, Descriptions, Empty, Badge, Popconfirm, Divider } from 'antd';
+import { PlusOutlined, CalendarOutlined, VideoCameraOutlined, SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { interviewAPI, jobsAPI, applicationAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const InterviewSchedule = () => {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState(null);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [interviewers, setInterviewers] = useState([]);
@@ -23,6 +27,8 @@ const InterviewSchedule = () => {
   const [selectedJobDetail, setSelectedJobDetail] = useState(null);
   const [timeSlots, setTimeSlots] = useState([]);
   const [editingSlotId, setEditingSlotId] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const { applicationId } = useParams();
   const [searchParams] = useSearchParams();
@@ -226,6 +232,50 @@ const InterviewSchedule = () => {
     setEditingSlotId(null);
   };
 
+  const handleReschedule = async () => {
+    if (!editingSchedule || !rescheduleDate || !appId) {
+      message.error('Vui lòng chọn ngày giờ mới');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await interviewAPI.reschedule(appId, editingSchedule.id, rescheduleDate.toISOString());
+      message.success('Đổi lịch thành công!');
+      setIsRescheduleModalOpen(false);
+      setEditingSchedule(null);
+      setRescheduleDate(null);
+      fetchInterviews(appId);
+    } catch (error) {
+      console.error('Error rescheduling:', error);
+      message.error('Đổi lịch thất bại. Vui lòng thử lại.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancelSchedule = async (scheduleId) => {
+    if (!appId) {
+      message.error('Không tìm thấy thông tin ứng viên');
+      return;
+    }
+
+    try {
+      await interviewAPI.cancelSchedule(appId, scheduleId, 'Hủy bởi recruiter');
+      message.success('Hủy lịch thành công!');
+      fetchInterviews(appId);
+    } catch (error) {
+      console.error('Error canceling schedule:', error);
+      message.error('Hủy lịch thất bại. Vui lòng thử lại.');
+    }
+  };
+
+  const openRescheduleModal = (record) => {
+    setEditingSchedule(record);
+    setRescheduleDate(null);
+    setIsRescheduleModalOpen(true);
+  };
+
   const columns = [
     {
       title: 'Ứng viên',
@@ -256,6 +306,22 @@ const InterviewSchedule = () => {
       render: (names) => names?.map((name, idx) => <Tag key={idx}>{name}</Tag>) || '-',
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => {
+        const statusConfig = {
+          UPCOMING: { color: 'success', label: 'Sắp tới' },
+          PENDING: { color: 'warning', label: 'Chờ xác nhận' },
+          CONFIRMED: { color: 'processing', label: 'Đã xác nhận' },
+          COMPLETED: { color: 'default', label: 'Đã hoàn thành' },
+          CANCELLED: { color: 'error', label: 'Đã hủy' },
+        };
+        const config = statusConfig[status] || { color: 'default', label: status };
+        return <Tag color={config.color}>{config.label}</Tag>;
+      },
+    },
+    {
       title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
@@ -265,7 +331,25 @@ const InterviewSchedule = () => {
               Join
             </Button>
           )}
-          <Button>Reschedule</Button>
+          {record.status !== 'CANCELLED' && record.status !== 'COMPLETED' && (
+            <>
+              <Button icon={<EditOutlined />} onClick={() => openRescheduleModal(record)}>
+                Đổi lịch
+              </Button>
+              <Popconfirm
+                title="Xác nhận hủy lịch"
+                description="Bạn có chắc muốn hủy lịch phỏng vấn này?"
+                onConfirm={() => handleCancelSchedule(record.id)}
+                okText="Hủy lịch"
+                cancelText="Không"
+                okButtonProps={{ danger: true }}
+              >
+                <Button danger icon={<DeleteOutlined />}>
+                  Hủy
+                </Button>
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
     },
@@ -301,9 +385,34 @@ const InterviewSchedule = () => {
 
       {appId && (
         <Card className="main-card" bordered={false}>
+          <div className="table-toolbar">
+            <Input
+              placeholder="Tìm kiếm ứng viên, vị trí..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 260 }}
+              allowClear
+            />
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: 160 }}
+              placeholder="Trạng thái"
+            >
+              <Option value="all">Tất cả trạng thái</Option>
+              <Option value="UPCOMING">Sắp tới</Option>
+              <Option value="PENDING">Chờ xác nhận</Option>
+              <Option value="CONFIRMED">Đã xác nhận</Option>
+              <Option value="COMPLETED">Đã hoàn thành</Option>
+            </Select>
+            <Button icon={<ReloadOutlined />} onClick={() => fetchInterviews(appId)} loading={loading}>
+              Làm mới
+            </Button>
+          </div>
           <Table
             columns={columns}
-            dataSource={interviews}
+            dataSource={filteredData}
             rowKey="id"
             loading={loading}
             locale={{ emptyText: 'Chưa có lịch phỏng vấn nào' }}
@@ -522,6 +631,56 @@ const InterviewSchedule = () => {
             </Form>
           </Col>
         </Row>
+      </Modal>
+
+      {/* Modal Reschedule */}
+      <Modal
+        title="Đổi lịch phỏng vấn"
+        open={isRescheduleModalOpen}
+        onCancel={() => {
+          setIsRescheduleModalOpen(false);
+          setEditingSchedule(null);
+          setRescheduleDate(null);
+        }}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => {
+              setIsRescheduleModalOpen(false);
+              setEditingSchedule(null);
+              setRescheduleDate(null);
+            }}
+          >
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={submitting}
+            onClick={handleReschedule}
+          >
+            Xác nhận đổi lịch
+          </Button>,
+        ]}
+      >
+        {editingSchedule && (
+          <div>
+            <p><strong>Ứng viên:</strong> {editingSchedule.candidate}</p>
+            <p><strong>Lịch cũ:</strong> {editingSchedule.scheduledAt ? dayjs(editingSchedule.scheduledAt).format('DD/MM/YYYY - HH:mm') : 'N/A'}</p>
+            <Divider />
+            <Form.Item label="Chọn ngày giờ mới" required>
+              <DatePicker
+                showTime
+                format="DD/MM/YYYY HH:mm"
+                placeholder="Chọn ngày và giờ mới"
+                value={rescheduleDate}
+                onChange={setRescheduleDate}
+                disabledDate={(current) => current && current < dayjs().startOf('day')}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </div>
+        )}
       </Modal>
     </div>
   );

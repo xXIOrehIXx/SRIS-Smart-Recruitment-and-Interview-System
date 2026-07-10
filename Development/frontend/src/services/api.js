@@ -173,11 +173,11 @@ export const interviewAPI = {
   createSchedule: (applicationId, data) =>
     api.post(`/applications/${applicationId}/interview-schedules`, data),
 
-  reschedule: (scheduleId, newSlotId) =>
-    api.put(`/api/interview-schedules/${scheduleId}/reschedule`, { slotId: newSlotId }),
+  reschedule: (applicationId, scheduleId, newSlotId) =>
+    api.put(`/applications/${applicationId}/interview-schedules/${scheduleId}/reschedule`, { slotId: newSlotId }),
 
-  cancelSchedule: (scheduleId, reason) =>
-    api.post(`/api/interview-schedules/${scheduleId}/cancel`, { reason }),
+  cancelSchedule: (applicationId, scheduleId, reason) =>
+    api.post(`/applications/${applicationId}/interview-schedules/${scheduleId}/cancel`, { reason }),
 
   // Interviewer's schedules
   getMySchedules: () =>

@@ -21,10 +21,10 @@ import CandidateDetail from './pages/recruiter/CandidateDetail';
 import InterviewerDashboard from './pages/interviewer/Dashboard';
 import IncomingInterview from './pages/interviewer/IncomingInterview';
 import Grading from './pages/interviewer/Grading';
-import InterviewerInterviewSchedule from './pages/interviewer/InterviewSchedule';
+import InterviewerInterviewSchedule from './pages/interviewer/InterviewScheduleIntern';
 import InterviewerInterviewHistory from './pages/interviewer/InterviewHistory';
 import InterviewerInterviewDetail from './pages/interviewer/InterviewDetail';
-import InterviewSchedule from './pages/interview/InterviewSchedule';
+import InterviewScheduleRecruit from './pages/recruiter/InterviewScheduleRecruit';
 import DeptManagerDashboard from './pages/dept-manager/Dashboard';
 import DeptInterviewSchedule from './pages/dept-manager/InterviewSchedule';
 import DeptInterviewDetail from './pages/dept-manager/InterviewDetail';
@@ -89,7 +89,7 @@ const App = () => {
         <Route path="/recruiter/jobs/create" element={<CreateJob />} />
         <Route path="/recruiter/jobs/:id/candidates" element={<CandidatePipeline />} />
         <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
-        <Route path="/interviews/schedule" element={<InterviewSchedule />} />
+        <Route path="/interviews/schedule" element={<InterviewScheduleRecruit />} />
         <Route path="/criteria" element={<Criteria />} />
         <Route path="/mail-templates" element={<MailTemplates />} />
         <Route path="/offers" element={<OfferManagement />} />
