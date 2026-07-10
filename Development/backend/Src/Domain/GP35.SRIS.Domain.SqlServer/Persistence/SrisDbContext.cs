@@ -36,6 +36,7 @@ public class SrisDbContext : DbContext
     public DbSet<UserAuthToken> UserAuthTokens => Set<UserAuthToken>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
+    public DbSet<InterviewSlotPool> InterviewSlotPools => Set<InterviewSlotPool>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
     public DbSet<CvChunk> CvChunks => Set<CvChunk>();
@@ -130,6 +131,14 @@ public class SrisDbContext : DbContext
             e.ToTable("InterviewSchedule");
             e.HasKey(x => x.ScheduleId);
             e.Ignore(x => x.RoundName); // chưa có ở schema local
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<InterviewSlotPool>(e =>
+        {
+            e.ToTable("InterviewSlotPool");
+            e.HasKey(x => x.PoolId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

@@ -11,7 +11,7 @@ Quy ước tên gọi: Radar Chart = hình dạng mạnh/yếu theo trục tiêu
 - **MODULE QUIZ ĐÃ LOẠI HOÀN TOÀN KHỎI SCOPE — thầy hướng dẫn ĐÃ XÁC NHẬN (07/2026)** (cả quiz nhập tay lẫn AI gen — lý do & đạn Q&A: Section 3 OUT + Section 10). State machine còn 6 state, magic link còn 3 purpose. **Code quiz đã GỠ HẲN khỏi main (07/2026):** xóa toàn bộ entities/services/controllers/endpoint AI; migration `V012__drop_quiz.sql` drop 6 bảng quiz + siết CHECK còn 6 state/3 purpose; state machine (bỏ G1), email, trang status ứng viên đã cập nhật theo. KHÔNG demo, KHÔNG đưa vào tài liệu.
 - AI dùng Local AI + Vector (không OpenAI/Gemini).
 - Đã hoàn thành PoC chạy thật: Việc 2 (Local AI+Vector), Việc 3 (PDF extract), Việc 4 (pipeline LLM JSON — tính năng gốc đã loại, GIỮ pattern tái dùng), Việc 5 (State Machine). Chi tiết & bài học ở Section 14.
-- Thiết kế xong, chờ code: Đặt lịch phỏng vấn (Section 15). **Chấm CV theo tiêu chí (5.18) ĐÃ CODE end-to-end (07/2026 — Việc B4 phần code, xem 5.18 mục TRẠNG THÁI CODE + Section 14); còn phần ĐO ngưỡng/chunk (khung §16, P/R/F1) chưa làm.** Yêu cầu tuyển dụng (5.17) chờ chốt mô hình hóa (Việc B3).
+- Đặt lịch phỏng vấn (Section 15) **ĐÃ CODE 07/2026 — mô hình POOL khung dùng chung (thay luồng 1-1)**. Chấm CV theo tiêu chí (5.18) ĐÃ CODE end-to-end (07/2026 — Việc B4 phần code, xem 5.18 mục TRẠNG THÁI CODE + Section 14); còn phần ĐO ngưỡng/chunk (khung §16, P/R/F1) chưa làm.** Yêu cầu tuyển dụng (5.17) chờ chốt mô hình hóa (Việc B3).
 - Mô hình role: 4 role đăng nhập Portal — Admin, Recruiter, Interviewer, Department Manager; **một người gán được NHIỀU role** (công ty gia đình: 1 chủ giữ cả 4). Candidate là khách ẩn danh dùng magic link. Người quyết tuyển = Department Manager của job (Job.department_manager_id; để trống → Recruiter quyết). OfferDetail cho state OFFER; ứng viên tự nhận/từ chối qua magic link OFFER_RESPONSE. DB: nhóm bảng Quiz ĐÃ GỠ (V012); EvaluationCriteria ĐÃ MỞ RỘNG + thêm CvChunk/ApplicationCriterionMatch (V013 — 5.18); ERD mới (Việc B3) còn lại: thêm Yêu cầu tuyển dụng + vẽ lại sơ đồ. ERD vẽ kiểu chỉ thuộc tính + quan hệ bằng đường nối, không vẽ cột FK; GIỮ MagicLinkToken, KHÔNG vẽ ActivityLog + EmailLog; mọi bảng đều có company_id. Quan hệ Application → MagicLinkToken là 1-N, nhãn generates. Job có 2 FK tới User (department_manager_id, created_by) → 2 đường nối: decides hiring for + creates.
 - Phạm vi: tuyển cho MỌI vị trí, không chỉ IT (Charter/Persona nghiêng IT chỉ là ví dụ).
 - Tên đồ án: Smart Recruitment and Interview System (SRIS).
@@ -183,9 +183,9 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Khi trình bày/viết tài liệu: nói "quy trình 4 pha, chỉ tiến không lùi, có chốt cửa" — thuật ngữ state machine/guard chỉ dùng trong Q&A kỹ thuật.
 
 ### 5.9 Interview Scheduling — tóm tắt
-Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính năng đặt lịch duy nhất: Recruiter mở 1+ khung giờ + gán interviewer → magic link (purpose=SCHEDULE) cho ứng viên → ứng viên chọn/xác nhận khung → chốt, khóa khung còn lại, email xác nhận 2 bên + .ics.
-- Nhóm hay cá nhân = Recruiter quyết lúc đó, KHÔNG phải 2 mode kỹ thuật: pool slot dùng chung, first-come-first-served; PV nhóm/panel → cố ý mời nhiều ứng viên CÙNG khung.
-- Link đặt lịch RIÊNG, chỉ sinh sau khi card vào INTERVIEW + Recruiter mở khung. Chi tiết: Section 15.
+Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính năng đặt lịch duy nhất: Recruiter mở 1 POOL khung (gán interviewer từng khung) cho job + vòng → mời danh sách ứng viên → mỗi người 1 magic link (purpose=SCHEDULE) → ứng viên tự chọn khung → chốt khung đó (BOOKED), các khung khác GIỮ OPEN cho người sau, email xác nhận + .ics.
+- Nhóm hay cá nhân = Recruiter quyết lúc đó, KHÔNG phải 2 mode kỹ thuật: pool slot dùng chung, first-come-first-served; PV nhóm/panel → cố ý mời nhiều ứng viên CÙNG pool.
+- Link đặt lịch RIÊNG từng ứng viên nhưng trỏ về CÙNG pool, chỉ sinh sau khi card vào INTERVIEW + Recruiter mở pool + mời. Chi tiết: Section 15.
 
 ### 5.10 Cấu trúc Web — 2 site tách biệt
 - Career Site (công khai) — ứng viên, vào bằng /t/{slug} + magic link, KHÔNG đăng nhập.
@@ -430,7 +430,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 - [ ] Việc 0: spike verify EF Core + VectorDistance trên SQL Server 2025; họp nhóm chuyển EF Core; migrate PoC.
 - [ ] Việc 6: Email State Machine (cập nhật theo 6 state). · Việc 7: Multi-tenant RLS + Global Query Filter + test cô lập (5.2).
 - [ ] Việc 8: Cost Analysis (chi phí AI = 0đ; chi phí biên thêm 1 tenant ≈ 0; trade-off RAM local LLM). · Việc 9: cập nhật Business Overview Document (gộp vào B5).
-- [ ] Việc 10: Interview Scheduling (Section 15) + multi-round (5.12).
+- [x] Việc 10: Interview Scheduling (Section 15) + multi-round (5.12). **ĐÃ CODE 07/2026 — mô hình POOL khung dùng chung (mở pool → mời danh sách → first-come), thay luồng 1-1; cờ vàng/đỏ báo bận + chốt lịch tay.**
 - [ ] Việc 12a: Thư viện tiêu chí mẫu theo nhóm vị trí — GIỮ, phục vụ 5.18 (template tiêu chí cho công ty nhỏ không biết bắt đầu từ đâu); gộp thiết kế schema vào Việc B3.
 - [x] Việc 13: Talent Pool (đã code — hero, Section 3).
 - [ ] Deploy Local AI: embedding lên VPS/cloud; LLM chạy nền/batch hoặc model nhỏ, KHÔNG host 24/7 → Cost Analysis.
@@ -449,29 +449,30 @@ Kiến trúc chung: React → .NET (orchestration) → Python AI Service (sinh v
 
 ---
 
-## 15. ĐẶT LỊCH PHỎNG VẤN — CHI TIẾT KỸ THUẬT (thiết kế, chưa code)
+## 15. ĐẶT LỊCH PHỎNG VẤN — CHI TIẾT KỸ THUẬT (ĐÃ CODE 07/2026 — pool dùng chung)
 
 Bối cảnh: tự đặt lịch nội bộ, KHÔNG Google Calendar. Tách 2 bài toán: "chốt mốc thời gian" (nghiệp vụ lõi = IN) vs "đẩy lịch vào Google/Outlook" (OUT). MỘT tính năng đặt lịch duy nhất (Calendly thu nhỏ): xóa vòng email qua lại, tái dùng magic link, demo nổi bật.
-Nhóm hay cá nhân = Recruiter quyết, KHÔNG phải 2 mode: pool slot dùng chung, ứng viên tự chọn, first-come-first-served, slot đặt rồi ẩn; PV nhóm → mời nhiều ứng viên CÙNG khung.
+Mô hình lõi = POOL KHUNG DÙNG CHUNG: Recruiter mở 1 pool (job + vòng) 1 lần, mời DANH SÁCH ứng viên, ai chốt trước lấy trước, các khung khác giữ OPEN cho người sau. Cá nhân = pool mời 1 người (là trường hợp con); PV nhóm = mời nhiều người cùng pool. KHÔNG có luồng 1-1 riêng.
 
-### 15.1 Thứ tự thao tác: KÉO trước, TẠO sau (thủ công)
-Card kéo sang Interview TRƯỚC ("cửa quyết định con người") → mở khóa "Tạo Interview Request" → Recruiter chủ động bấm (KHÔNG popup ép). Trạng thái phụ: chưa có Schedule → PENDING → CONFIRMED.
+### 15.1 Thứ tự thao tác: KÉO trước, MỞ POOL + MỜI sau (thủ công)
+Card kéo sang Interview TRƯỚC ("cửa quyết định con người") → mở khóa "Mở pool khung" → Recruiter mở pool (nhiều khung, gán interviewer) rồi tick chọn ứng viên để MỜI (KHÔNG popup ép). Bản ghi per-ứng-viên (InterviewSchedule) tạo lúc MỜI: PENDING → CONFIRMED (chốt khung) / NO_SLOT_FITS (báo bận) / CANCELLED (hủy pool). Slot thuộc pool, KHÔNG thuộc từng ứng viên.
 
 ### 15.2 Token magic link
-Cùng cơ chế token, purpose SCHEDULE. Token 32 byte; lưu HASH; one-time + TTL; ràng buộc purpose; rate limit; đếm truy cập. (Pattern 5.1/5.13.)
+Cùng cơ chế token, purpose SCHEDULE, RIÊNG từng ứng viên nhưng trỏ về CÙNG pool. Token 32 byte; lưu HASH; one-time (đốt khi CHỐT / báo bận); TTL; ràng buộc purpose; đếm truy cập. (Pattern 5.1/5.13.) Đổi khung sau khi chốt = KHÔNG self-service — Recruiter xử lý tay (chốt tay / mở pool mới).
 
 ### 15.3 TTL + nhánh hết khung + so sánh Calendly
-- TTL link đặt lịch ~5 ngày, cấu hình. Lọc slot = token còn hạn AND slot tương lai AND OPEN.
-- Pool slot DÙNG CHUNG, first-come-first-served. Mỗi giờ thật chỉ đặt 1 lần → interviewer không trùng giờ. 3 ca: 1 ứng viên chọn trong vài khung · nhiều ứng viên chung pool · PV nhóm cố ý cùng khung.
-- "Tranh slot" là hành vi đúng: khóa lạc quan — UPDATE InterviewSlot SET status='BOOKED' WHERE slot_id=@s AND status='OPEN'; rowcount=0 → "khung vừa có người đặt, chọn khung khác". Ẩn slot theo kiểu load lại trang; real-time là SHOULD.
-- Nhánh hết khung / hết hạn: nút "Không khung nào phù hợp" → NO_SLOT_FITS → Recruiter mở vòng mới (token cũ chết).
+- TTL link đặt lịch ~5 ngày, cấu hình. Lọc slot = token còn hạn AND slot tương lai AND slot OPEN của pool.
+- Pool slot DÙNG CHUNG, first-come-first-served. Mỗi giờ thật chỉ đặt 1 lần → chống trùng giờ interviewer (kiểm giờ + interviewer BOOKED ở pool khác lúc chốt). 3 ca: 1 ứng viên chọn trong vài khung · nhiều ứng viên chung pool · PV nhóm cố ý cùng pool.
+- "Tranh slot" là hành vi đúng: khóa lạc quan — UPDATE InterviewSlot SET status='BOOKED', booked_application_id=@a WHERE slot_id=@s AND status='OPEN'; rowcount=0 → "khung vừa có người đặt, chọn khung khác". Chốt CHỈ khung đó, KHÔNG khóa khung anh em (đó là điểm khác luồng 1-1 cũ). Ẩn slot theo kiểu load lại trang; real-time là SHOULD.
+- Nhánh báo bận: nút "Không khung nào phù hợp" → schedule của ỨNG VIÊN ĐÓ = NO_SLOT_FITS + đốt token (pool + người khác KHÔNG ảnh hưởng). Đếm số lần báo bận suy CỜ nhắc Recruiter: 1 lần = vàng, ≥2 = đỏ ("nên gọi điện chốt tay"). KHÔNG auto-reject — chỉ để Recruiter nhìn thấy rồi tự quyết (mở pool vòng mới / gọi điện / reject tay).
+- Nhánh gọi điện: "chốt lịch tay" (manual-interview) tạo pool 1 khung (CLOSED, slot BOOKED) + schedule CONFIRMED cho ứng viên → có schedule để interviewer chấm điểm (không qua magic link).
 - So Calendly (khoảng trống đối thủ): Calendly phụ thuộc Google/Outlook API — chính phần SRIS cố ý OUT. SRIS = self-scheduling KHÔNG sync, thay bằng .ics. Số liệu (Calendly Blog, dẫn nguồn): Muck Rack tốn 80% thời gian xếp lại lịch, giảm time-to-hire 8 ngày; ~78% recruiter mất ứng viên vì xếp lịch chậm.
 
-### 15.4 Gợi ý Feature Tree — M9
-- MUST: Interview Request riêng từng ứng viên · magic link SCHEDULE · lọc slot · chốt + khóa + chống trùng · mời 1/nhiều ứng viên cùng khung · xử lý hết khung/hạn · trigger State Machine + email · màn Recruiter tạo request · trang ứng viên chọn slot · nút "Không khung phù hợp" · hiển thị giờ + trạng thái trên Kanban.
-- SHOULD: .ics đính kèm · reschedule/cancel thủ công · ô ghi chú gợi ý giờ.
-- OUT: Calendar 2-way sync · dò lịch rảnh · auto-suggest.
-- Bảng (kèm company_id): InterviewSchedule (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED) · InterviewSlot (OPEN/BOOKED/LOCKED). (Multi-round: round_number/InterviewRound — 5.12.)
+### 15.4 Feature Tree — M9 (trạng thái CODE)
+- ĐÃ CODE: mở pool (POST /api/jobs/{jobId}/interview-pools) · mời danh sách (POST /api/interview-pools/{poolId}/invitations, mỗi người 1 magic link SCHEDULE) · xem pool + cờ (GET .../interview-pools) · hủy pool (POST .../cancel) · chốt lịch tay (POST /api/applications/{id}/manual-interview) · trang ứng viên chọn/chốt/báo bận (/api/candidate/schedule) · chốt + booked_application_id + chống trùng giờ · cờ vàng/đỏ báo bận · trigger email (.ics khi CONFIRMED, best-effort) · guard KÉO-trước (chỉ mời khi ở INTERVIEW).
+- SHOULD (chưa/ một phần): reschedule = mở pool vòng mới (chưa có nút gộp) · real-time ẩn slot · ô ghi chú gợi ý giờ.
+- OUT: Calendar 2-way sync · dò lịch rảnh · auto-suggest · đổi khung self-service sau chốt.
+- Bảng (kèm company_id): **InterviewSlotPool** (OPEN/CLOSED/CANCELLED — 1 pool = job+round, sở hữu slot) · InterviewSchedule (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED — per-ứng-viên, thêm pool_id, dùng cho chấm điểm) · InterviewSlot (OPEN/BOOKED/LOCKED — thuộc pool_id, thêm booked_application_id). Multi-round = round_number trên pool/schedule (5.12), không thêm state.
 
 ---
 

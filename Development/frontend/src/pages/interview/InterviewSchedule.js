@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form, DatePicker, Select, message, Row, Col, Descriptions, Empty, Input } from 'antd';
-import { PlusOutlined, CalendarOutlined, VideoCameraOutlined, SearchOutlined } from '@ant-design/icons';
+import { Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form, DatePicker, Select, message, Row, Col, Descriptions, Empty } from 'antd';
+import { PlusOutlined, CalendarOutlined, VideoCameraOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { interviewAPI, jobsAPI, applicationAPI } from '../../services/api';
@@ -23,20 +23,16 @@ const InterviewSchedule = () => {
   const [selectedJobDetail, setSelectedJobDetail] = useState(null);
   const [timeSlots, setTimeSlots] = useState([]);
   const [editingSlotId, setEditingSlotId] = useState(null);
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
 
   const { applicationId } = useParams();
   const [searchParams] = useSearchParams();
   const appId = applicationId || searchParams.get('applicationId');
 
   useEffect(() => {
-    // Nếu có applicationId, chỉ load schedule của ứng viên đó
-    // Nếu không có, load tất cả schedules (cho recruiter)
     if (appId) {
       fetchInterviews(appId);
     } else {
-      fetchAllSchedules();
+      setLoading(false);
     }
     fetchInterviewers();
     fetchJobs();
@@ -59,53 +55,13 @@ const InterviewSchedule = () => {
     }
   };
 
-  const fetchAllSchedules = async () => {
-    setLoading(true);
-    try {
-      const response = await interviewAPI.getAllSchedules();
-      let data = response.data;
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        data = data.interviews || data.schedules || data.items || [];
-      }
-      data = data || [];
-
-      const normalized = Array.isArray(data)
-        ? data.map((item) => ({
-            id: item.scheduleId || item.id,
-            applicationId: item.applicationId,
-            candidate: item.candidateName || item.candidate || 'N/A',
-            position: item.positionTitle || item.jobTitle || item.position || 'N/A',
-            department: item.department || 'N/A',
-            scheduledAt: item.interviewDate || item.scheduledDate || item.date,
-            startTime: item.interviewTime || item.startTime,
-            endTime: item.endTime || item.interviewEndTime,
-            interviewerNames: item.interviewerNames || [],
-            meetingLink: item.meetingLink || item.meetingUrl || '',
-            status: item.status || 'PENDING',
-          }))
-        : [];
-      setInterviews(normalized);
-    } catch (error) {
-      console.error('Error fetching all schedules:', error);
-      setInterviews([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchInterviewers = async () => {
-    try {
-      const response = await fetch('/api/users?role=interviewer');
-      const data = await response.json();
-      setInterviewers(data || []);
-    } catch (error) {
-      console.error('Error fetching interviewers:', error);
-      setInterviewers([
-        { id: 1, name: 'Nguyễn Văn A', email: 'nguyenvana@company.com' },
-        { id: 2, name: 'Trần Thị B', email: 'tranthib@company.com' },
-        { id: 3, name: 'Lê Văn C', email: 'levanc@company.com' },
-      ]);
-    }
+    // Mock interviewers
+    setInterviewers([
+      { id: 1, name: 'Nguyễn Văn A', email: 'nguyenvana@company.com' },
+      { id: 2, name: 'Trần Thị B', email: 'tranthib@company.com' },
+      { id: 3, name: 'Lê Văn C', email: 'levanc@company.com' },
+    ]);
   };
 
   const fetchCandidates = async (jobId) => {
@@ -275,49 +231,29 @@ const InterviewSchedule = () => {
       title: 'Ứng viên',
       dataIndex: 'candidate',
       key: 'candidate',
-      render: (text, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      render: (text) => (
+        <div className="candidate-cell">
           <Avatar style={{ backgroundColor: '#5D8C3E' }}>{text ? text[0] : '?'}</Avatar>
-          <div>
-            <Text strong>{text || 'N/A'}</Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>{record.position}</Text>
-          </div>
+          <span style={{ fontWeight: 600 }}>{text || 'N/A'}</span>
         </div>
       ),
     },
     { title: 'Phòng ban', dataIndex: 'department', key: 'department' },
     {
-      title: 'Thời gian',
+      title: 'Date & Time',
       dataIndex: 'scheduledAt',
       key: 'scheduledAt',
-      render: (text, record) => (
+      render: (text) => (
         <span>
-          <CalendarOutlined /> {text ? dayjs(text).format('DD/MM/YYYY HH:mm') : 'N/A'}
-          {record.startTime && ` - ${record.startTime}`}
+          <CalendarOutlined /> {text ? dayjs(text).format('DD/MM/YYYY - HH:mm') : 'N/A'}
         </span>
       ),
     },
     {
-      title: 'Người phỏng vấn',
+      title: 'Interviewers',
       dataIndex: 'interviewerNames',
       key: 'interviewers',
-      render: (names) => names?.length > 0 ? names.map((name, idx) => <Tag key={idx}>{name}</Tag>) : '-',
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const statusConfig = {
-          PENDING: { color: 'gold', label: 'Chờ xác nhận' },
-          CONFIRMED: { color: 'green', label: 'Đã xác nhận' },
-          COMPLETED: { color: 'blue', label: 'Hoàn thành' },
-          CANCELLED: { color: 'red', label: 'Đã hủy' },
-        };
-        const config = statusConfig[status] || { color: 'default', label: status };
-        return <Tag color={config.color}>{config.label}</Tag>;
-      },
+      render: (names) => names?.map((name, idx) => <Tag key={idx}>{name}</Tag>) || '-',
     },
     {
       title: 'Thao tác',
@@ -326,10 +262,10 @@ const InterviewSchedule = () => {
         <Space>
           {record.meetingLink && (
             <Button type="primary" icon={<VideoCameraOutlined />} href={record.meetingLink} target="_blank">
-              Tham gia
+              Join
             </Button>
           )}
-          <Button>Đổi lịch</Button>
+          <Button>Reschedule</Button>
         </Space>
       ),
     },
@@ -352,10 +288,16 @@ const InterviewSchedule = () => {
           <Title level={3} className="page-title">Interview Schedule</Title>
           <Text type="secondary">Manage interview schedules</Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />}>
-          Schedule Interview
+        <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
+          Tạo lịch phỏng vấn
         </Button>
       </div>
+
+      {!appId && (
+        <Card className="main-card" bordered={false}>
+          <Empty description="Vui lòng chọn ứng viên từ trang chi tiết" />
+        </Card>
+      )}
 
       {appId && (
         <Card className="main-card" bordered={false}>
@@ -365,45 +307,6 @@ const InterviewSchedule = () => {
             rowKey="id"
             loading={loading}
             locale={{ emptyText: 'Chưa có lịch phỏng vấn nào' }}
-          />
-        </Card>
-      )}
-
-      {!appId && (
-        <Card className="main-card" bordered={false}>
-          <div style={{ marginBottom: 16, display: 'flex', gap: 12 }}>
-            <Input
-              placeholder="Tìm kiếm ứng viên, vị trí..."
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 260 }}
-              allowClear
-            />
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 160 }}
-              placeholder="Trạng thái"
-            >
-              <Select.Option value="all">Tất cả trạng thái</Select.Option>
-              <Select.Option value="PENDING">Chờ xác nhận</Select.Option>
-              <Select.Option value="CONFIRMED">Đã xác nhận</Select.Option>
-              <Select.Option value="COMPLETED">Hoàn thành</Select.Option>
-              <Select.Option value="CANCELLED">Đã hủy</Select.Option>
-            </Select>
-          </div>
-          <Table
-            columns={columns}
-            dataSource={filteredData}
-            rowKey="id"
-            loading={loading}
-            locale={{ emptyText: 'Chưa có lịch phỏng vấn nào' }}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} lịch`,
-            }}
           />
         </Card>
       )}
