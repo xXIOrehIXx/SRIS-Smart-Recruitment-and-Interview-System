@@ -26,7 +26,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { applicationAPI } from '../../services/api';
+import { applicationAPI, jobsAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -38,31 +38,103 @@ const InterviewerInterviewHistory = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  const getHistoryActionLabel = (action) => {
+    const labels = {
+      STATE_CHANGE: 'Thay đổi trạng thái',
+      CREATE: 'Tạo mới',
+      UPDATE: 'Cập nhật',
+      DELETE: 'Xóa',
+    };
+    return labels[action] || action || 'Không xác định';
+  };
+
+  const getHistoryStateLabel = (state) => {
+    const labels = {
+      NEW: 'Mới',
+      SCREENING: 'Sàng lọc',
+      QUIZ: 'Quiz',
+      INTERVIEW: 'Phỏng vấn',
+      OFFER: 'Offer',
+      HIRED: 'Đã tuyển',
+      REJECTED: 'Từ chối',
+      COMPLETED: 'Đã hoàn thành',
+      CANCELLED: 'Đã hủy',
+      MISSED: 'Bỏ lỡ',
+      PENDING: 'Chờ xử lý',
+    };
+    return labels[state] || state || 'Không xác định';
+  };
+
   const fetchHistory = async () => {
+    if (!selectedApplicationId) {
+      setHistory([]);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await applicationAPI.getHistory(0);
+      const response = await applicationAPI.getHistory(selectedApplicationId);
       const data = response.data || [];
 
-      const normalized = data.map((item) => ({
-        id: item.applicationId || item.id,
-        candidate: item.candidateName || item.candidate || 'N/A',
-        position: item.positionTitle || item.jobTitle || item.position || 'N/A',
-        department: item.department || 'N/A',
-        date: item.interviewDate || item.scheduledDate || item.date,
-        time: item.interviewTime || item.scheduledTime || item.time || '',
-        type: item.interviewType || item.type || 'N/A',
-        level: item.round || item.interviewRound || item.level || 1,
-        status: item.status || 'PENDING',
-        score: item.score ?? null,
-        maxScore: item.maxScore || 50,
-        recommendation: item.recommendation || null,
-        graded: item.graded ?? (item.score !== null && item.score !== undefined),
-        applicationId: item.applicationId || item.id,
-      }));
+      const normalized = data.map((item, index) => {
+        const isStateLog =
+          item &&
+          (item.logId !== undefined || item.action || item.fromState || item.toState || item.createdAt);
+
+        if (isStateLog) {
+          return {
+            id: item.logId || item.id || `${selectedApplicationId}-${index}`,
+            candidate: item.actorEmail || item.actor?.email || 'N/A',
+            position: item.detail || getHistoryStateLabel(item.toState) || 'N/A',
+            department: item.detail || 'N/A',
+            date: item.createdAt,
+            time: '',
+            type: getHistoryActionLabel(item.action),
+            level: 1,
+            status: item.toState || item.fromState || 'PENDING',
+            score: null,
+            maxScore: 50,
+            recommendation: null,
+            graded: false,
+            applicationId: selectedApplicationId || item.applicationId || item.id,
+            actorEmail: item.actorEmail || item.actor?.email || 'N/A',
+            fromState: item.fromState,
+            toState: item.toState,
+            detail: item.detail || '',
+            raw: item,
+          };
+        }
+
+        return {
+          id: item.applicationId || item.id || index,
+          candidate: item.candidateName || item.candidate || 'N/A',
+          position: item.positionTitle || item.jobTitle || item.position || 'N/A',
+          department: item.department || 'N/A',
+          date: item.interviewDate || item.scheduledDate || item.date,
+          time: item.interviewTime || item.scheduledTime || item.time || '',
+          type: item.interviewType || item.type || 'N/A',
+          level: item.round || item.interviewRound || item.level || 1,
+          status: item.status || 'PENDING',
+          score: item.score ?? null,
+          maxScore: item.maxScore || 50,
+          recommendation: item.recommendation || null,
+          graded: item.graded ?? (item.score !== null && item.score !== undefined),
+          applicationId: item.applicationId || item.id,
+          actorEmail: item.actorEmail || item.actor?.email || 'N/A',
+          fromState: item.fromState,
+          toState: item.toState,
+          detail: item.detail || '',
+          raw: item,
+        };
+      });
 
       setHistory(normalized);
     } catch (error) {
@@ -74,8 +146,68 @@ const InterviewerInterviewHistory = () => {
   };
 
   useEffect(() => {
-    fetchHistory();
+    fetchJobs();
   }, []);
+
+  useEffect(() => {
+    if (selectedJobId) {
+      fetchApplications(selectedJobId);
+    } else {
+      setApplications([]);
+      setSelectedApplicationId(null);
+    }
+  }, [selectedJobId]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [selectedApplicationId]);
+
+  const fetchJobs = async () => {
+    try {
+      const response = await jobsAPI.getAll();
+      const jobList = response.data || [];
+      setJobs(jobList);
+      const defaultJobId = jobList[0]?.jobId || jobList[0]?.id || null;
+      setSelectedJobId(defaultJobId);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+      message.error('Không thể tải danh sách công việc');
+    }
+  };
+
+  const fetchApplications = async (jobId) => {
+    if (!jobId) {
+      setApplications([]);
+      setSelectedApplicationId(null);
+      return;
+    }
+
+    try {
+      setApplicationsLoading(true);
+      const response = await applicationAPI.getAll(jobId);
+      const payload = response.data || {};
+      const apps = Array.isArray(payload) ? payload : payload.applications || [];
+      const normalized = apps.map((app) => ({
+        id: app.applicationId || app.id,
+        candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
+        position: app.positionTitle || app.jobTitle || app.position || app.job?.title || 'N/A',
+        status: app.currentState || app.status || 'N/A',
+      }));
+      setApplications(normalized);
+      if (normalized.length > 0) {
+        setSelectedApplicationId(normalized[0].id);
+      } else {
+        setSelectedApplicationId(null);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      message.error('Không thể tải danh sách ứng viên');
+      setApplications([]);
+      setSelectedApplicationId(null);
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -83,6 +215,13 @@ const InterviewerInterviewHistory = () => {
       CANCELLED: { color: 'error', label: 'Đã hủy', icon: <CloseCircleOutlined /> },
       MISSED: { color: 'warning', label: 'Bỏ lỡ', icon: <ClockCircleOutlined /> },
       PENDING: { color: 'processing', label: 'Chờ xử lý', icon: <ClockCircleOutlined /> },
+      NEW: { color: 'default', label: 'Mới' },
+      SCREENING: { color: 'purple', label: 'Sàng lọc' },
+      QUIZ: { color: 'cyan', label: 'Quiz' },
+      INTERVIEW: { color: 'blue', label: 'Phỏng vấn' },
+      OFFER: { color: 'green', label: 'Offer' },
+      HIRED: { color: 'success', label: 'Đã tuyển' },
+      REJECTED: { color: 'error', label: 'Từ chối' },
     };
     return configs[status] || { color: 'default', label: status };
   };
@@ -107,7 +246,7 @@ const InterviewerInterviewHistory = () => {
 
   const columns = [
     {
-      title: 'Ứng viên',
+      title: 'Người thực hiện',
       key: 'candidate',
       fixed: 'left',
       width: 240,
@@ -115,39 +254,19 @@ const InterviewerInterviewHistory = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
           <div>
-            <Text strong>{record.candidate}</Text>
+            <Text strong>{record.actorEmail || record.candidate}</Text>
             <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>{record.position}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>{record.position || record.detail || 'Không có mô tả'}</Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Phòng ban',
-      dataIndex: 'department',
-      key: 'department',
-      width: 120,
-    },
-    {
-      title: 'Ngày',
-      dataIndex: 'date',
-      key: 'date',
-      width: 120,
-      render: (date) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
-    },
-    {
-      title: 'Loại',
+      title: 'Hành động',
       dataIndex: 'type',
       key: 'type',
-      width: 110,
+      width: 170,
       render: (type) => <Tag color="blue">{type}</Tag>,
-    },
-    {
-      title: 'Vòng',
-      dataIndex: 'level',
-      key: 'level',
-      width: 80,
-      render: (level) => <Tag color="cyan">Vòng {level}</Tag>,
     },
     {
       title: 'Trạng thái',
@@ -160,61 +279,18 @@ const InterviewerInterviewHistory = () => {
       },
     },
     {
-      title: 'Điểm',
-      key: 'score',
-      width: 130,
-      render: (_, record) => (
-        <div>
-          {record.graded ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Text strong style={{ color: getScoreColor(record.score, record.maxScore), fontSize: 16 }}>
-                {record.score}
-              </Text>
-              <Text type="secondary">/ {record.maxScore}</Text>
-            </div>
-          ) : (
-            <Tag color="warning">Chưa chấm</Tag>
-          )}
-        </div>
-      ),
+      title: 'Thời gian',
+      dataIndex: 'date',
+      key: 'date',
+      width: 180,
+      render: (date) => (date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-'),
     },
     {
-      title: 'Đề xuất',
-      key: 'recommendation',
-      width: 150,
-      render: (_, record) => {
-        if (!record.graded) return <Text type="secondary">-</Text>;
-        const config = getRecommendationConfig(record.recommendation);
-        return <Tag style={{ background: `${config.color}15`, color: config.color, borderColor: config.color }}>{config.label}</Tag>;
-      },
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      fixed: 'right',
-      width: 140,
-      render: (_, record) => (
-        <Space size={4}>
-          {record.graded ? (
-            <Button
-              type="link"
-              size="small"
-              onClick={() => navigate(`/interviewer/interview/${record.applicationId || record.id}`)}
-            >
-              Xem lại
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              size="small"
-              onClick={() => navigate(`/interviewer/interview/${record.applicationId || record.id}`)}
-              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-            >
-              Chấm điểm
-            </Button>
-          )}
-        </Space>
-      ),
+      title: 'Chi tiết',
+      dataIndex: 'detail',
+      key: 'detail',
+      width: 300,
+      render: (detail) => <Text type="secondary">{detail || '-'}</Text>,
     },
   ];
 
@@ -222,7 +298,9 @@ const InterviewerInterviewHistory = () => {
     const matchesSearch =
       !searchText ||
       (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.position || '').toLowerCase().includes(searchText.toLowerCase());
+      (item.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.actorEmail || '').toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.detail || '').toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -288,6 +366,33 @@ const InterviewerInterviewHistory = () => {
       <Card className="main-card" bordered={false}>
         <div className="table-toolbar">
           <div className="toolbar-left">
+            <Select
+              value={selectedJobId}
+              onChange={(value) => setSelectedJobId(value)}
+              style={{ width: 260 }}
+              placeholder="Chọn công việc"
+              allowClear
+            >
+              {jobs.map((job) => (
+                <Option key={job.jobId || job.id} value={job.jobId || job.id}>
+                  {job.title || job.jobTitle || `Công việc #${job.jobId || job.id}`}
+                </Option>
+              ))}
+            </Select>
+            <Select
+              value={selectedApplicationId}
+              onChange={(value) => setSelectedApplicationId(value)}
+              style={{ width: 300 }}
+              placeholder="Chọn ứng dụng"
+              loading={applicationsLoading}
+              allowClear
+            >
+              {applications.map((app) => (
+                <Option key={app.id} value={app.id}>
+                  {app.candidateName} - {app.position}
+                </Option>
+              ))}
+            </Select>
             <Input
               placeholder="Tìm kiếm ứng viên, vị trí..."
               prefix={<SearchOutlined />}
@@ -305,6 +410,10 @@ const InterviewerInterviewHistory = () => {
               <Option value="COMPLETED">Đã hoàn thành</Option>
               <Option value="CANCELLED">Đã hủy</Option>
               <Option value="MISSED">Bỏ lỡ</Option>
+              <Option value="NEW">Mới</Option>
+              <Option value="SCREENING">Sàng lọc</Option>
+              <Option value="QUIZ">Quiz</Option>
+              <Option value="INTERVIEW">Phỏng vấn</Option>
             </Select>
           </div>
           <Text type="secondary">
