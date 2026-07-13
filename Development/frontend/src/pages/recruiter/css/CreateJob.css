@@ -1,15 +1,52 @@
 /* Create Job Page */
 .create-job-page {
+  position: relative;
   animation: fadeIn 0.3s ease;
+  padding-bottom: 120px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
 .page-title {
   margin: 0 0 4px 0 !important;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.wizard-shell {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.wizard-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+}
+
+.wizard-sidebar-card {
+  border-radius: 16px;
+  border: 1px solid #e7e7e6;
+  box-shadow: none;
+}
+
+.wizard-content {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .job-form {
@@ -17,14 +54,16 @@
 }
 
 .form-card {
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e7e7e6;
   margin-bottom: 20px;
+  box-shadow: none;
 }
 
 .form-card .section-title {
-  margin: 0 0 20px 0;
-  font-weight: 600;
+  margin: 0 0 16px 0;
+  font-weight: 700;
+  color: #1f2937;
 }
 
 .form-card .ant-form-item {
@@ -32,11 +71,10 @@
 }
 
 .form-card .ant-form-item-label > label {
-  font-weight: 500;
-  color: #4b4b4b;
+  font-weight: 600;
+  color: #4b5563;
 }
 
-/* Dynamic Lists */
 .dynamic-list {
   display: flex;
   flex-direction: column;
@@ -44,9 +82,9 @@
 }
 
 .dynamic-list label {
-  font-weight: 500;
-  color: #4b4b4b;
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 4px;
   display: block;
 }
 
@@ -66,7 +104,7 @@
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .remove-btn {
@@ -84,6 +122,49 @@
   border-color: #4a7230 !important;
 }
 
+.preview-card {
+  border-radius: 12px;
+  background: #f9fbf7;
+  border: 1px solid #e4eee0;
+  margin-top: 12px;
+}
+
+.preview-banner {
+  height: 120px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #5D8C3E 0%, #8bbf5f 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.preview-content {
+  padding-top: 12px;
+}
+
+.color-input {
+  padding: 4px !important;
+  height: 42px;
+}
+
+.wizard-footer {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #e7e7e6;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+}
+
 .publish-btn {
   background-color: #5D8C3E !important;
   border-color: #5D8C3E !important;
@@ -94,18 +175,19 @@
   border-color: #4a7230 !important;
 }
 
-/* Input styling */
 .ant-input,
 .ant-input-affix-wrapper,
 .ant-select-selector,
-.ant-picker {
+.ant-picker,
+.ant-input-number {
   border-radius: 8px !important;
 }
 
 .ant-input:hover,
 .ant-input-affix-wrapper:hover,
 .ant-select-selector:hover,
-.ant-picker:hover {
+.ant-picker:hover,
+.ant-input-number:hover {
   border-color: #5D8C3E !important;
 }
 
@@ -113,36 +195,16 @@
 .ant-input-focused,
 .ant-input-affix-wrapper-focused,
 .ant-select-focused .ant-select-selector,
-.ant-picker-focused {
-  border-color: #5D8C3E !important;
-  box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.2) !important;
-}
-
-/* InputNumber */
-.ant-input-number {
-  border-radius: 8px !important;
-}
-
-.ant-input-number:hover {
-  border-color: #5D8C3E !important;
-}
-
+.ant-picker-focused,
 .ant-input-number-focused {
   border-color: #5D8C3E !important;
   box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.2) !important;
 }
 
-/* Select */
 .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
   background-color: rgba(93, 140, 62, 0.1) !important;
 }
 
-/* DatePicker */
-.ant-picker {
-  border-radius: 8px !important;
-}
-
-/* Checkbox */
 .ant-checkbox-checked .ant-checkbox-inner {
   background-color: #5D8C3E !important;
   border-color: #5D8C3E !important;
@@ -153,28 +215,33 @@
   border-color: #5D8C3E !important;
 }
 
-.ant-checkbox-checked:hover .ant-checkbox-inner {
-  background-color: #4a7230 !important;
-  border-color: #4a7230 !important;
+@media (max-width: 992px) {
+  .wizard-shell {
+    flex-direction: column;
+  }
+
+  .wizard-sidebar {
+    width: 100%;
+    position: static;
+  }
 }
 
-/* Upload */
-.ant-upload-drag {
-  border-color: #d6d6d5 !important;
-  background-color: #fafafa !important;
-  border-radius: 12px !important;
-}
-
-.ant-upload-drag:hover {
-  border-color: #5D8C3E !important;
-}
-
-.ant-upload-drag-icon {
-  color: #5D8C3E !important;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .wizard-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .wizard-footer .ant-space {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .form-card {
     margin-bottom: 16px;
   }
