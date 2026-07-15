@@ -37,7 +37,7 @@ export const ROLE_ROUTES = {
   [ROLES.ADMIN]: '/admin/dashboard',
   [ROLES.RECRUITER]: '/recruiter/dashboard',
   [ROLES.INTERVIEWER]: '/interviewer/dashboard',
-  [ROLES.DEPARTMENT_MANAGER]: '/recruiter/dashboard',
+  [ROLES.DEPARTMENT_MANAGER]: '/dept/dashboard',
 };
 
 // Menu items theo vai trò

@@ -8,7 +8,7 @@ import Recruitment from './pages/recruitment/Recruitment';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
-import AdminDashboard from './pages/admin/Dashboard';
+import Dashboard from './pages/Dashboard';
 import SubAccountManagement from './pages/admin/SubAccountManagement';
 import CreateAccount from './pages/admin/CreateAccount';
 import AdminLayout from './layouts/AdminLayout';
@@ -18,14 +18,11 @@ import JobDetail from './pages/recruiter/JobDetail';
 import CreateJob from './pages/recruiter/CreateJob';
 import CandidatePipeline from './pages/recruiter/CandidatePipeline';
 import CandidateDetail from './pages/recruiter/CandidateDetail';
-import InterviewerDashboard from './pages/interviewer/Dashboard';
 import IncomingInterview from './pages/interviewer/IncomingInterview';
 import Grading from './pages/interviewer/Grading';
-import InterviewerInterviewSchedule from './pages/interviewer/InterviewScheduleIntern';
 import InterviewerInterviewHistory from './pages/interviewer/InterviewHistory';
 import InterviewerInterviewDetail from './pages/interviewer/InterviewDetail';
 import InterviewScheduleRecruit from './pages/recruiter/InterviewScheduleRecruit';
-import DeptManagerDashboard from './pages/dept-manager/Dashboard';
 import DeptInterviewSchedule from './pages/dept-manager/InterviewSchedule';
 import DeptInterviewDetail from './pages/dept-manager/InterviewDetail';
 import DeptRecruitmentRequests from './pages/dept-manager/RecruitmentRequests';
@@ -51,17 +48,14 @@ const App = () => {
 
   return (
     <Routes>
-      {/* ===== AUTH ROUTES ===== */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
 
-      {/* ===== CANDIDATE MAGIC LINK (Public) ===== */}
       <Route path="/candidate/offer-response" element={<CandidateResponse />} />
 
-      {/* ===== ADMIN ONLY ===== */}
       <Route
         element={
           <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
@@ -69,13 +63,12 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/sub-accounts" element={<SubAccountManagement />} />
         <Route path="/admin/create-account" element={<CreateAccount />} />
         <Route path="/admin/company-branding" element={<CompanyBranding />} />
       </Route>
 
-      {/* ===== RECRUITER ONLY ===== */}
       <Route
         element={
           <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
@@ -98,7 +91,6 @@ const App = () => {
         <Route path="/talent-pool" element={<TalentPool />} />
       </Route>
 
-      {/* ===== INTERVIEWER ONLY ===== */}
       <Route
         element={
           <ProtectedRoute allowedRoles={[ROLES.INTERVIEWER]}>
@@ -106,15 +98,13 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/interviewer/dashboard" element={<InterviewerDashboard />} />
+        <Route path="/interviewer/dashboard" element={<Dashboard />} />
         <Route path="/interviewer/incoming" element={<IncomingInterview />} />
-        <Route path="/interviewer/schedule" element={<InterviewerInterviewSchedule />} />
         <Route path="/interviewer/history" element={<InterviewerInterviewHistory />} />
         <Route path="/interviewer/interview/:id" element={<InterviewerInterviewDetail />} />
         <Route path="/interviewer/grading/:id" element={<Grading />} />
       </Route>
 
-      {/* ===== DEPARTMENT MANAGER ONLY ===== */}
       <Route
         element={
           <ProtectedRoute allowedRoles={[ROLES.DEPARTMENT_MANAGER]}>
@@ -122,7 +112,7 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/dept/dashboard" element={<DeptManagerDashboard />} />
+        <Route path="/dept/dashboard" element={<Dashboard />} />
         <Route path="/dept/requests" element={<DeptRecruitmentRequests />} />
         <Route path="/dept/interviews" element={<DeptInterviewSchedule />} />
         <Route path="/dept/interview/:id" element={<DeptInterviewDetail />} />
@@ -131,7 +121,6 @@ const App = () => {
         <Route path="/dept/create-request" element={<CreateRecruitmentRequest />} />
       </Route>
 
-      {/* ===== SHARED: All authenticated users ===== */}
       <Route
         element={
           <ProtectedRoute>
@@ -142,13 +131,9 @@ const App = () => {
         <Route path="/settings" element={<Settings />} />
       </Route>
 
-      {/* ===== HOME - PUBLIC ===== */}
       <Route path="/" element={<Home />} />
-
-      {/* ===== RECRUITMENT - PUBLIC ===== */}
       <Route path="/:slug/recruitment" element={<Recruitment />} />
 
-      {/* ===== FALLBACK ===== */}
       <Route
         path="*"
         element={
