@@ -63,13 +63,21 @@ const Recruitment = () => {
     }
   };
 
-  const fetchJobDetail = async (jobId) => {
+  const fetchJobDetail = async (job) => {
+    // Nếu job đã có đầy đủ thông tin, không cần gọi API
+    if (job.jdText || job.description || job.requirements) {
+      return job;
+    }
+    
     try {
+      const jobId = getJobId(job);
       const response = await jobsAPI.getPublicJob(jobId);
-      return response.data?.data || response.data;
+      // Backend có thể return data ở nhiều cấp khác nhau
+      const jobData = response.data?.data || response.data?.items?.[0] || response.data;
+      return jobData || job;
     } catch (error) {
       console.error('Error fetching job detail:', error);
-      return null;
+      return job; // Fallback về job ban đầu
     }
   };
 
@@ -95,9 +103,8 @@ const Recruitment = () => {
   }, [jobs, searchText, selectedDepartment]);
 
   const handleViewDetails = async (job) => {
-    const jobId = getJobId(job);
-    const jobDetail = await fetchJobDetail(jobId);
-    setSelectedJob(jobDetail || job);
+    const jobDetail = await fetchJobDetail(job);
+    setSelectedJob(jobDetail);
     setIsModalVisible(true);
   };
 
@@ -179,12 +186,64 @@ const Recruitment = () => {
   };
 
   const formatSalary = (job) => {
+    // Hỗ trợ nhiều trường salary
     if (job.salary) return job.salary;
+    if (job.salaryRange) return job.salaryRange;
     if (job.salaryMin && job.salaryMax) {
       const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
-      return `${format(job.salaryMin)} - ${format(job.salaryMax)}`;
+      return `${format(job.salaryMin)} - ${format(job.salaryMax)} VND`;
+    }
+    if (job.salaryMin) {
+      const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
+      return `Từ ${format(job.salaryMin)} VND`;
     }
     return 'Thỏa thuận';
+  };
+
+  // Hàm lấy mô tả công việc
+  const getJobDescription = (job) => {
+    return job.jdText || job.jobDescription || job.description || job.JobDescription || '';
+  };
+
+  // Hàm lấy yêu cầu
+  const getRequirements = (job) => {
+    if (job.requirements) {
+      if (Array.isArray(job.requirements)) return job.requirements;
+      if (typeof job.requirements === 'string') return job.requirements.split('\n').filter(r => r.trim());
+    }
+    if (job.JobRequirements) return job.JobRequirements;
+    return [];
+  };
+
+  // Hàm lấy quyền lợi
+  const getBenefits = (job) => {
+    if (job.benefits) {
+      if (Array.isArray(job.benefits)) return job.benefits;
+      if (typeof job.benefits === 'string') return job.benefits.split('\n').filter(b => b.trim());
+    }
+    if (job.JobBenefits) return job.JobBenefits;
+    return [];
+  };
+
+  // Hàm lấy kỹ năng
+  const getSkills = (job) => {
+    if (job.skills) {
+      if (Array.isArray(job.skills)) return job.skills;
+      if (typeof job.skills === 'string') return job.skills.split(',').map(s => s.trim()).filter(s => s);
+    }
+    if (job.requiredSkills) return job.requiredSkills;
+    if (job.Skills) return job.Skills;
+    return [];
+  };
+
+  // Hàm lấy deadline
+  const getDeadline = (job) => {
+    return job.deadline || job.expiresAt || job.expiredAt || job.expirationDate || null;
+  };
+
+  // Hàm lấy ngày tạo
+  const getCreatedDate = (job) => {
+    return job.createdAt || job.postedDate || job.createdDate || job.postedAt || null;
   };
 
   const formatDate = (date) => {
@@ -194,6 +253,10 @@ const Recruitment = () => {
 
   const renderJobCard = (job) => {
     const jobId = getJobId(job);
+    const skills = getSkills(job);
+    const deadline = getDeadline(job);
+    const description = getJobDescription(job);
+    
     return (
     <Card 
       className="job-card"
@@ -203,10 +266,14 @@ const Recruitment = () => {
     >
       <div className="job-card-header">
         <div className="job-title-section">
-          <Title level={5} className="job-title">{job.title}</Title>
+          <Title level={5} className="job-title">{job.title || job.Title || 'N/A'}</Title>
           <Space size="small">
             {job.department && <Tag color="blue" icon={<BankOutlined />}>{job.department}</Tag>}
-            {job.employmentType && <Tag color={getJobTypeColor(job.employmentType)}>{job.employmentType}</Tag>}
+            {(job.employmentType || job.jobType || job.type) && (
+              <Tag color={getJobTypeColor(job.employmentType || job.jobType || job.type)}>
+                {job.employmentType || job.jobType || job.type}
+              </Tag>
+            )}
             {job.experienceLevel && <Tag color={getExperienceColor(job.experienceLevel)}>{job.experienceLevel}</Tag>}
           </Space>
         </div>
@@ -218,21 +285,23 @@ const Recruitment = () => {
 
       <div className="job-card-body">
         <Paragraph ellipsis={{ rows: 2 }} className="job-description">
-          {job.jdText || job.description}
+          {description}
         </Paragraph>
 
         <Space size="middle" className="job-meta">
-          {job.location && <span><EnvironmentOutlined /> {job.location}</span>}
-          {job.deadline && <span><ClockCircleOutlined /> Hạn: {formatDate(job.deadline)}</span>}
-          {job.applicationCount && <span><UserOutlined /> {job.applicationCount} ứng viên</span>}
+          {(job.location || job.workLocation) && <span><EnvironmentOutlined /> {job.location || job.workLocation}</span>}
+          {deadline && <span><ClockCircleOutlined /> Hạn: {formatDate(deadline)}</span>}
+          {(job.applicationCount || job.applicantCount) && <span><UserOutlined /> {job.applicationCount || job.applicantCount} ứng viên</span>}
         </Space>
 
-        {job.skills && job.skills.length > 0 && (
+        {skills.length > 0 && (
           <div className="job-skills">
-            {job.skills.slice(0, 4).map((skill, idx) => (
-              <Tag key={idx} className="skill-tag">{skill}</Tag>
+            {skills.slice(0, 4).map((skill, idx) => (
+              <Tag key={idx} className="skill-tag">
+                {typeof skill === 'string' ? skill : skill.name || skill.skill || ''}
+              </Tag>
             ))}
-            {job.skills.length > 4 && <Tag>+{job.skills.length - 4}</Tag>}
+            {skills.length > 4 && <Tag>+{skills.length - 4}</Tag>}
           </div>
         )}
       </div>
@@ -273,14 +342,25 @@ const Recruitment = () => {
     if (!selectedJob) return null;
 
     const jobId = getJobId(selectedJob);
+    const description = getJobDescription(selectedJob);
+    const requirements = getRequirements(selectedJob);
+    const benefits = getBenefits(selectedJob);
+    const skills = getSkills(selectedJob);
+    const deadline = getDeadline(selectedJob);
+    const createdDate = getCreatedDate(selectedJob);
+
     return (
       <div className="job-detail">
         <div className="job-detail-header">
           <div className="job-detail-title">
-            <Title level={3}>{selectedJob.title}</Title>
+            <Title level={3}>{selectedJob.title || selectedJob.Title || 'N/A'}</Title>
             <Space size="middle">
               {selectedJob.department && <Tag color="blue" icon={<BankOutlined />}>{selectedJob.department}</Tag>}
-              {selectedJob.employmentType && <Tag color={getJobTypeColor(selectedJob.employmentType)}>{selectedJob.employmentType}</Tag>}
+              {(selectedJob.employmentType || selectedJob.jobType || selectedJob.type) && (
+                <Tag color={getJobTypeColor(selectedJob.employmentType || selectedJob.jobType || selectedJob.type)}>
+                  {selectedJob.employmentType || selectedJob.jobType || selectedJob.type}
+                </Tag>
+              )}
               {selectedJob.experienceLevel && <Tag color={getExperienceColor(selectedJob.experienceLevel)}>{selectedJob.experienceLevel}</Tag>}
             </Space>
           </div>
@@ -295,13 +375,6 @@ const Recruitment = () => {
               className={appliedJobs.includes(jobId) ? 'applied-btn' : 'apply-btn-large'}
             >
               {appliedJobs.includes(jobId) ? 'Đã ứng tuyển' : 'Apply ngay'}
-            </Button>
-            <Button 
-              icon={<SaveOutlined />}
-              size="large"
-              className="save-btn"
-            >
-              Lưu
             </Button>
           </div>
         </div>
@@ -325,7 +398,7 @@ const Recruitment = () => {
                   <EnvironmentOutlined className="meta-icon" />
                   <div>
                     <Text type="secondary">Địa điểm</Text>
-                    <div className="meta-value">{selectedJob.location || 'N/A'}</div>
+                    <div className="meta-value">{selectedJob.location || selectedJob.workLocation || 'N/A'}</div>
                   </div>
                 </Space>
               </Card>
@@ -336,7 +409,7 @@ const Recruitment = () => {
                   <ClockCircleOutlined className="meta-icon" />
                   <div>
                     <Text type="secondary">Hạn nộp</Text>
-                    <div className="meta-value">{formatDate(selectedJob.deadline)}</div>
+                    <div className="meta-value">{formatDate(deadline)}</div>
                   </div>
                 </Space>
               </Card>
@@ -347,7 +420,7 @@ const Recruitment = () => {
                   <UserOutlined className="meta-icon" />
                   <div>
                     <Text type="secondary">Ứng viên</Text>
-                    <div className="meta-value">{selectedJob.applicationCount || 0} người</div>
+                    <div className="meta-value">{selectedJob.applicationCount || selectedJob.applicantCount || 0} người</div>
                   </div>
                 </Space>
               </Card>
@@ -358,32 +431,36 @@ const Recruitment = () => {
         <Row gutter={[24, 24]}>
           <Col xs={24} lg={14}>
             <Card title="Mô tả công việc" variant={false} className="detail-card">
-              <Paragraph>{selectedJob.jdText || selectedJob.description}</Paragraph>
+              {description ? (
+                <Paragraph>{description}</Paragraph>
+              ) : (
+                <Text type="secondary">Chưa có mô tả công việc</Text>
+              )}
               
-              {selectedJob.requirements && selectedJob.requirements.length > 0 && (
+              {requirements.length > 0 && (
                 <>
                   <Divider orientation="left">Yêu cầu</Divider>
                   <List
-                    dataSource={selectedJob.requirements}
+                    dataSource={requirements}
                     renderItem={(req, index) => (
                       <List.Item className="requirement-item">
                         <CheckCircleOutlined className="check-icon" />
-                        <Text>{req}</Text>
+                        <Text>{typeof req === 'string' ? req : req.text || req.name || ''}</Text>
                       </List.Item>
                     )}
                   />
                 </>
               )}
 
-              {selectedJob.benefits && selectedJob.benefits.length > 0 && (
+              {benefits.length > 0 && (
                 <>
                   <Divider orientation="left">Quyền lợi</Divider>
                   <List
-                    dataSource={selectedJob.benefits}
+                    dataSource={benefits}
                     renderItem={(benefit) => (
                       <List.Item className="benefit-item">
                         <StarOutlined className="star-icon" />
-                        <Text>{benefit}</Text>
+                        <Text>{typeof benefit === 'string' ? benefit : benefit.text || benefit.name || ''}</Text>
                       </List.Item>
                     )}
                   />
@@ -393,11 +470,13 @@ const Recruitment = () => {
           </Col>
 
           <Col xs={24} lg={10}>
-            {selectedJob.skills && selectedJob.skills.length > 0 && (
+            {skills.length > 0 && (
               <Card title="Kỹ năng yêu cầu" variant={false} className="detail-card">
                 <div className="skills-container">
-                  {selectedJob.skills.map((skill, idx) => (
-                    <Tag key={idx} color="blue" className="skill-tag-large">{skill}</Tag>
+                  {skills.map((skill, idx) => (
+                    <Tag key={idx} color="blue" className="skill-tag-large">
+                      {typeof skill === 'string' ? skill : skill.name || skill.skill || ''}
+                    </Tag>
                   ))}
                 </div>
               </Card>
@@ -405,10 +484,11 @@ const Recruitment = () => {
 
             <Card title="Thông tin thêm" variant={false} className="detail-card" style={{ marginTop: 16 }}>
               <Descriptions column={1} size="small">
-                <Descriptions.Item label="Ngày đăng">{formatDate(selectedJob.createdAt || selectedJob.postedDate)}</Descriptions.Item>
+                <Descriptions.Item label="Ngày đăng">{formatDate(createdDate)}</Descriptions.Item>
                 <Descriptions.Item label="Phòng ban">{selectedJob.department || 'N/A'}</Descriptions.Item>
                 <Descriptions.Item label="Loại hình">{selectedJob.employmentType || selectedJob.jobType || selectedJob.type || 'N/A'}</Descriptions.Item>
                 <Descriptions.Item label="Kinh nghiệm">{selectedJob.experienceLevel || 'N/A'}</Descriptions.Item>
+                <Descriptions.Item label="Hình thức">{selectedJob.workMode || selectedJob.workingMode || 'N/A'}</Descriptions.Item>
               </Descriptions>
             </Card>
           </Col>

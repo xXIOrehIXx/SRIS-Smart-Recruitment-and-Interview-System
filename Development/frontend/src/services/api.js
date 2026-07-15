@@ -45,23 +45,23 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (email, password) => {
     console.log('authAPI.login:', { email, password }); // DEBUG
-    return api.post('/api/account/login', { email, password });
+    return api.post('/account/login', { email, password });
   },
 
   register: (data) =>
-    api.post('/api/account/register', data),
+    api.post('/account/register', data),
 
   forgotPassword: (email) =>
-    api.post('/api/account/forgot-password', { email }),
+    api.post('/account/forgot-password', { email }),
 
   resetPassword: (token, newPassword) =>
-    api.post('/api/account/reset-password', { token, newPassword }),
+    api.post('/account/reset-password', { token, newPassword }),
 
   refreshToken: () =>
-    api.post('/api/account/refresh-token'),
+    api.post('/account/refresh-token'),
 
   logout: () =>
-    api.post('/api/account/logout'),
+    api.post('/account/logout'),
 };
 
 // ==================== JOBS ====================
@@ -77,19 +77,19 @@ const publicApi = axios.create({
 
 export const jobsAPI = {
   getAll: (includeInactive = false) =>
-    api.get(`/api/jobs${includeInactive ? '?includeInactive=true' : ''}`),
+    api.get(`/jobs${includeInactive ? '?includeInactive=true' : ''}`),
 
   getById: (id) =>
-    api.get(`/api/jobs/${id}`),
+    api.get(`/jobs/${id}`),
 
   create: (data) =>
-    api.post('/api/jobs', data),
+    api.post('/jobs', data),
 
   update: (id, data) =>
-    api.put(`/api/jobs/${id}`, data),
+    api.put(`/jobs/${id}`, data),
 
   delete: (id) =>
-    api.delete(`/api/jobs/${id}`),
+    api.delete(`/jobs/${id}`),
 
   // Public: lấy tất cả job đang tuyển (dùng endpoint gốc /jobs)
   getPublicJobs: () =>
@@ -117,7 +117,7 @@ export const jobsAPI = {
 
 export const cvScoringAPI = {
   uploadCV: async (formData, onProgress) => {
-    const response = await api.post('/api/cv-scoring/upload', formData, {
+    const response = await api.post('/cv-scoring/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -127,223 +127,223 @@ export const cvScoringAPI = {
   },
 
   getRanking: (jobId) =>
-    api.get(`/api/cv-scoring/jobs/${jobId}/ranking`),
+    api.get(`/cv-scoring/jobs/${jobId}/ranking`),
 
   getCVScore: (cvId) =>
-    api.get(`/api/cv-scoring/cv/${cvId}?file-url=1`),
+    api.get(`/cv-scoring/cv/${cvId}?file-url=1`),
 };
 
 // ==================== APPLICATIONS ====================
 
 export const applicationAPI = {
   getAll: (jobId) =>
-    api.get(jobId ? `/api/jobs/${jobId}/applications` : '/api/applications'),
+    api.get(jobId ? `/jobs/${jobId}/applications` : '/applications'),
 
   getById: (id) =>
-    api.get(`/api/applications/${id}`),
+    api.get(`/applications/${id}`),
 
   transition: (id, toState) =>
-    api.post(`/api/applications/${id}/transition`, { toState }),
+    api.post(`/applications/${id}/transition`, { toState }),
 
   getHistory: (id) =>
-    api.get(`/api/applications/${id}/history`),
+    api.get(`/applications/${id}/history`),
 
   getNotes: (id) =>
-    api.get(`/api/applications/${id}/notes`),
+    api.get(`/applications/${id}/notes`),
 
   addNote: (id, content) =>
-    api.post(`/api/applications/${id}/notes`, { content }),
+    api.post(`/applications/${id}/notes`, { content }),
 
   createMagicLink: (id, purpose, expiresIn = 48) =>
-    api.post(`/api/applications/${id}/magic-links?purpose=${purpose}&expiresInHours=${expiresIn}`),
+    api.post(`/applications/${id}/magic-links?purpose=${purpose}&expiresInHours=${expiresIn}`),
 };
 
 // ==================== INTERVIEW SCHEDULING ====================
 
 export const interviewAPI = {
   getSchedules: (applicationId) =>
-    api.get(`/api/applications/${applicationId}/interview-schedules`),
+    api.get(`/applications/${applicationId}/interview-schedules`),
 
   getAllSchedules: (jobId) =>
-    api.get(jobId ? `/api/interview-schedules?jobId=${jobId}` : '/api/interview-schedules'),
+    api.get(jobId ? `/interview-schedules?jobId=${jobId}` : '/interview-schedules'),
 
   getInterviewPools: (jobId) =>
-    api.get(`/api/jobs/${jobId}/interview-pools`),
+    api.get(`/jobs/${jobId}/interview-pools`),
 
   createSchedule: (applicationId, data) =>
-    api.post(`/api/applications/${applicationId}/interview-schedules`, data),
+    api.post(`/applications/${applicationId}/interview-schedules`, data),
 
   reschedule: (applicationId, scheduleId, newSlotId) =>
-    api.put(`/api/applications/${applicationId}/interview-schedules/${scheduleId}/reschedule`, { slotId: newSlotId }),
+    api.put(`/applications/${applicationId}/interview-schedules/${scheduleId}/reschedule`, { slotId: newSlotId }),
 
   cancelSchedule: (applicationId, scheduleId, reason) =>
-    api.post(`/api/applications/${applicationId}/interview-schedules/${scheduleId}/cancel`, { reason }),
+    api.post(`/applications/${applicationId}/interview-schedules/${scheduleId}/cancel`, { reason }),
 
   // Interviewer's schedules
   getMySchedules: () =>
-    api.get('/api/me/interview-schedules'),
+    api.get('/me/interview-schedules'),
 
   // Grading APIs
   getMySheet: (scheduleId) =>
-    api.get(`/api/interview-schedules/${scheduleId}/my-sheet`),
+    api.get(`/interview-schedules/${scheduleId}/my-sheet`),
 
   updateMySheet: (scheduleId, data) =>
-    api.put(`/api/interview-schedules/${scheduleId}/my-sheet`, data),
+    api.put(`/interview-schedules/${scheduleId}/my-sheet`, data),
 
   submitMySheet: (scheduleId) =>
-    api.post(`/api/interview-schedules/${scheduleId}/my-sheet/submit`),
+    api.post(`/interview-schedules/${scheduleId}/my-sheet/submit`),
 
   getAggregate: (scheduleId) =>
-    api.get(`/api/interview-schedules/${scheduleId}/aggregate`),
+    api.get(`/interview-schedules/${scheduleId}/aggregate`),
 };
 
 // ==================== CANDIDATE (Magic Link) ====================
 
 export const candidateAPI = {
   getStatus: (token) =>
-    api.get(`/api/candidate/status?token=${token}`),
+    api.get(`/candidate/status?token=${token}`),
 
   getSchedule: (token) =>
-    api.get(`/api/candidate/schedule?token=${token}`),
+    api.get(`/candidate/schedule?token=${token}`),
 
   confirmSchedule: (token, slotId) =>
-    api.post('/api/candidate/schedule/confirm', { token, slotId }),
+    api.post('/candidate/schedule/confirm', { token, slotId }),
 
   noSlotAvailable: (token) =>
-    api.post('/api/candidate/schedule/no-slot', { token }),
+    api.post('/candidate/schedule/no-slot', { token }),
 
   getOffer: (token) =>
-    api.get(`/api/candidate/offer?token=${token}`),
+    api.get(`/candidate/offer?token=${token}`),
 
   respondToOffer: (token, accept) =>
-    api.post('/api/candidate/offer/respond', { token, accept }),
+    api.post('/candidate/offer/respond', { token, accept }),
 };
 
 // ==================== OFFER ====================
 
 export const offerAPI = {
   create: (applicationId, data) =>
-    api.post(`/api/applications/${applicationId}/offer`, data),
+    api.post(`/applications/${applicationId}/offer`, data),
 
   getByApplication: (applicationId) =>
-    api.get(`/api/applications/${applicationId}/offer`),
+    api.get(`/applications/${applicationId}/offer`),
 
   withdraw: (offerId) =>
-    api.post(`/api/offers/${offerId}/withdraw`),
+    api.post(`/offers/${offerId}/withdraw`),
 };
 
 // ==================== CRITERIA ====================
 
 export const criteriaAPI = {
   getTemplates: () =>
-    api.get('/api/criteria-templates'),
+    api.get('/criteria-templates'),
 
   getById: (templateId) =>
-    api.get(`/api/criteria-templates/${templateId}`),
+    api.get(`/criteria-templates/${templateId}`),
 
   createTemplate: (data) =>
-    api.post('/api/criteria-templates', data),
+    api.post('/criteria-templates', data),
 
   updateTemplate: (templateId, data) =>
-    api.put(`/api/criteria-templates/${templateId}`, data),
+    api.put(`/criteria-templates/${templateId}`, data),
 
   deleteTemplate: (templateId) =>
-    api.delete(`/api/criteria-templates/${templateId}`),
+    api.delete(`/criteria-templates/${templateId}`),
 
   getByJob: (jobId) =>
-    api.get(`/api/jobs/${jobId}/criteria`),
+    api.get(`/jobs/${jobId}/criteria`),
 
   addToJob: (jobId, data) =>
-    api.post(`/api/jobs/${jobId}/criteria`, data),
+    api.post(`/jobs/${jobId}/criteria`, data),
 
   updateJobCriteria: (criteriaId, data) =>
-    api.put(`/api/evaluation-criteria/${criteriaId}`, data),
+    api.put(`/evaluation-criteria/${criteriaId}`, data),
 
   removeFromJob: (criteriaId) =>
-    api.delete(`/api/evaluation-criteria/${criteriaId}`),
+    api.delete(`/evaluation-criteria/${criteriaId}`),
 };
 
 // ==================== MAIL TEMPLATES ====================
 
 export const mailTemplateAPI = {
   getAll: () =>
-    api.get('/api/email-templates'),
+    api.get('/email-templates'),
 
   getById: (templateId) =>
-    api.get(`/api/email-templates/${templateId}`),
+    api.get(`/email-templates/${templateId}`),
 
   create: (data) =>
-    api.post('/api/email-templates', data),
+    api.post('/email-templates', data),
 
   update: (templateId, data) =>
-    api.put(`/api/email-templates/${templateId}`, data),
+    api.put(`/email-templates/${templateId}`, data),
 
   delete: (templateId) =>
-    api.delete(`/api/email-templates/${templateId}`),
+    api.delete(`/email-templates/${templateId}`),
 };
 
 // ==================== DASHBOARD ====================
 
 export const dashboardAPI = {
   getOverview: (jobId) =>
-    api.get(`/api/dashboard/overview${jobId ? `?jobId=${jobId}` : ''}`),
+    api.get(`/dashboard/overview${jobId ? `?jobId=${jobId}` : ''}`),
 
   getKanban: (jobId) =>
-    api.get(`/api/dashboard/kanban${jobId ? `?jobId=${jobId}` : ''}`),
+    api.get(`/dashboard/kanban${jobId ? `?jobId=${jobId}` : ''}`),
 
   getFunnelData: (jobId) =>
-    api.get(`/api/dashboard/funnel?jobId=${jobId}`),
+    api.get(`/dashboard/funnel?jobId=${jobId}`),
 
   getSourceAnalytics: () =>
-    api.get('/api/dashboard/sources'),
+    api.get('/dashboard/sources'),
 };
 
 // ==================== TALENT POOL ====================
 
 export const talentPoolAPI = {
   getSuggestions: (jobId) =>
-    api.get(`/api/jobs/${jobId}/talent-pool`),
+    api.get(`/jobs/${jobId}/talent-pool`),
 
   getAll: () =>
-    api.get('/api/talent-pool'),
+    api.get('/talent-pool'),
 };
 
 // ==================== COMPANY ====================
 
 export const companyAPI = {
   get: () =>
-    api.get('/api/company'),
+    api.get('/company'),
 
   update: (data) =>
-    api.put('/api/company', data),
+    api.put('/company', data),
 
   updateBrand: (data) =>
-    api.put('/api/company/brand', data),
+    api.put('/company/brand', data),
 };
 
 // ==================== USERS / SUB-ACCOUNTS ====================
 
 export const usersAPI = {
   getAll: () =>
-    api.get('/api/users'),
+    api.get('/users'),
 
   getById: (id) =>
-    api.get(`/api/users/${id}`),
+    api.get(`/users/${id}`),
 
   create: (data) =>
-    api.post('/api/users', data),
+    api.post('/users', data),
 
   update: (id, data) =>
-    api.put(`/api/users/${id}`, data),
+    api.put(`/users/${id}`, data),
 
   delete: (id) =>
-    api.delete(`/api/users/${id}`),
+    api.delete(`/users/${id}`),
 
   changePassword: (id, oldPassword, newPassword) =>
-    api.post(`/api/users/${id}/change-password`, { oldPassword, newPassword }),
+    api.post(`/users/${id}/change-password`, { oldPassword, newPassword }),
 
   resetPassword: (userId, newPassword) =>
-    api.post(`/api/users/${userId}/reset-password`, { newPassword }),
+    api.post(`/users/${userId}/reset-password`, { newPassword }),
 };
 
 // ==================== PUBLIC CAREER SITE ====================
