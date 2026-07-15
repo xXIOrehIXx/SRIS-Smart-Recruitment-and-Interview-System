@@ -16,7 +16,7 @@ import {
 } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useNavigate } from 'react-router-dom';
-import { dashboardAPI } from '../../services/api';
+import { dashboardAPI, applicationAPI } from '../../services/api';
 import './css/Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -38,6 +38,9 @@ const STATE_LABELS = {
 };
 
 const KANBAN_STATES = ['NEW', 'INTERVIEW', 'OFFER'];
+
+// Forward-only state machine order (matches backend ApplicationStateMachine)
+const STATE_ORDER = ['NEW', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED'];
 
 const RecruiterDashboard = () => {
   const navigate = useNavigate();
@@ -95,13 +98,74 @@ const RecruiterDashboard = () => {
     fetchKanbanData();
   };
 
-  const handleDragEnd = (result) => {
+  /**
+   * Compute the intermediate transition states needed to move from `fromState` to `toState`.
+   * The backend is forward-only (one step at a time), so moving across multiple columns
+   * (e.g. NEW → INTERVIEW) requires transitioning through each intermediate state (NEW → SCREENING → INTERVIEW).
+   * Returns an array of target states in order, or null if the transition is invalid (backward).
+   */
+  const getTransitionSteps = (fromState, toState) => {
+    const fromIdx = STATE_ORDER.indexOf(fromState);
+    const toIdx = STATE_ORDER.indexOf(toState);
+    if (fromIdx === -1 || toIdx === -1 || toIdx <= fromIdx) return null;
+    return STATE_ORDER.slice(fromIdx + 1, toIdx + 1);
+  };
+
+  const handleDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
-    
+
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    message.info('Kéo thả chỉ để hiển thị. Để chuyển trạng thái, hãy sử dụng nút hành động trên card.');
+    const sourceState = source.droppableId;
+    const destState = destination.droppableId;
+    const applicationId = draggableId;
+
+    // Validate forward-only transition
+    const steps = getTransitionSteps(sourceState, destState);
+    if (!steps) {
+      message.warning('Chỉ được chuyển ứng viên theo chiều tiến (Applied → Interview → Offer).');
+      return;
+    }
+
+    // Save previous state for rollback
+    const previousKanbanData = JSON.parse(JSON.stringify(kanbanData));
+
+    // Optimistic update: move card between columns in local state
+    const newColumns = kanbanData.columns.map(col => ({ ...col, cards: [...(col.cards || [])] }));
+    const sourceCol = newColumns.find(col => col.state === sourceState);
+    const destCol = newColumns.find(col => col.state === destState);
+
+    if (!sourceCol || !destCol) return;
+
+    const cardIndex = sourceCol.cards.findIndex(c => String(c.applicationId) === String(applicationId));
+    if (cardIndex === -1) return;
+
+    const [movedCard] = sourceCol.cards.splice(cardIndex, 1);
+    destCol.cards.splice(destination.index, 0, movedCard);
+
+    // Update counts
+    sourceCol.count = sourceCol.cards.length;
+    destCol.count = destCol.cards.length;
+
+    setKanbanData({ ...kanbanData, columns: newColumns });
+
+    // Call backend API — execute each intermediate transition step sequentially
+    try {
+      for (const stepState of steps) {
+        await applicationAPI.transition(applicationId, stepState);
+      }
+      message.success(`Đã chuyển ứng viên sang ${STATE_LABELS[destState] || destState}`);
+      // Refresh to get accurate server state
+      fetchKanbanData();
+      fetchDashboardOverview();
+    } catch (error) {
+      console.error('Error transitioning application:', error);
+      const errorMsg = error.response?.data?.errorMessage || error.response?.data?.message || 'Không thể chuyển trạng thái ứng viên';
+      message.error(errorMsg);
+      // Rollback optimistic update
+      setKanbanData(previousKanbanData);
+    }
   };
 
   // Stats cards data

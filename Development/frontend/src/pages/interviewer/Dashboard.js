@@ -132,7 +132,7 @@ const InterviewerDashboard = () => {
 
   const handleGradeCandidate = (scheduleId, candidate) => {
     setCandidateModalOpen(false);
-    navigate(`/interviewer/grading/${scheduleId}`, {
+    navigate(`/interviewer/interview/${scheduleId}`, {
       state: { scheduleId, candidate }
     });
   };
@@ -354,7 +354,7 @@ const InterviewerDashboard = () => {
                       key="grade"
                       type="primary"
                       size="small"
-                      onClick={() => navigate(`/interviewer/grading/${item.id}`, { state: { candidate: item } })}
+                      onClick={() => navigate(`/interviewer/interview/${item.id}`, { state: { candidate: item } })}
                     >
                       Grade Now
                     </Button>,

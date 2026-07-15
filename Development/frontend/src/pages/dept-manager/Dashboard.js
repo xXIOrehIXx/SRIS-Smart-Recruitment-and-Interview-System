@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Typography, Statistic, Table, Tag, Avatar, Button, Space, Progress } from 'antd';
+import { Row, Col, Card, Typography, Statistic, Table, Tag, Avatar, Button, Space, Progress, Spin, message } from 'antd';
 import {
   TeamOutlined,
   FileTextOutlined,
@@ -11,6 +11,7 @@ import {
   AuditOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { dashboardAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -19,36 +20,25 @@ const MATCHA_GREEN = '#5D8C3E';
 
 const DeptManagerDashboard = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState(null);
 
-  const stats = [
-    {
-      title: 'Yêu Cầu Tuyển Dụng',
-      value: 12,
-      icon: <FileTextOutlined />,
-      color: '#5D8C3E',
-      onClick: () => navigate('/dept/requests'),
-    },
-    {
-      title: 'Chờ Phê Duyệt',
-      value: 5,
-      icon: <ClockCircleOutlined />,
-      color: '#faad14',
-      onClick: () => navigate('/dept/hiring-decision'),
-    },
-    {
-      title: 'Đã Phê Duyệt',
-      value: 7,
-      icon: <CheckCircleOutlined />,
-      color: '#52c41a',
-      onClick: () => navigate('/dept/hiring-decision'),
-    },
-    {
-      title: 'Ứng Viên Quan Tâm',
-      value: 34,
-      icon: <TeamOutlined />,
-      color: '#1890ff',
-    },
-  ];
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        const res = await dashboardAPI.getOverview();
+        setOverview(res.data);
+      } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu dashboard:', error);
+        message.error('Không thể tải dữ liệu tổng quan');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboard();
+  }, []);
 
   const pendingRequests = [
     {
@@ -69,24 +59,6 @@ const DeptManagerDashboard = () => {
       submittedDate: '07/07/2026',
       status: 'PENDING',
     },
-    {
-      id: 3,
-      title: 'DevOps Engineer',
-      department: 'Infrastructure',
-      positions: 1,
-      priority: 'High',
-      submittedDate: '06/07/2026',
-      status: 'PENDING',
-    },
-    {
-      id: 4,
-      title: 'Product Manager',
-      department: 'Product',
-      positions: 1,
-      priority: 'Medium',
-      submittedDate: '05/07/2026',
-      status: 'PENDING',
-    },
   ];
 
   const recentDecisions = [
@@ -103,13 +75,6 @@ const DeptManagerDashboard = () => {
       position: 'QA Engineer',
       action: 'APPROVED',
       date: '06/07/2026',
-    },
-    {
-      id: 3,
-      candidate: 'Lê Hoàng Nam',
-      position: 'Frontend Developer',
-      action: 'REJECTED',
-      date: '05/07/2026',
     },
   ];
 
@@ -218,6 +183,44 @@ const DeptManagerDashboard = () => {
     },
   ];
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      title: 'Tổng Hồ Sơ Ứng Tuyển',
+      value: overview?.summary?.totalApplications || 0,
+      icon: <FileTextOutlined />,
+      color: '#1890ff',
+      onClick: null,
+    },
+    {
+      title: 'Hồ Sơ Đang Chờ Xử Lý',
+      value: overview?.summary?.inPipeline || 0,
+      icon: <ClockCircleOutlined />,
+      color: '#faad14',
+      onClick: () => navigate('/dept/hiring-decision'),
+    },
+    {
+      title: 'Đã Tuyển Được',
+      value: overview?.summary?.hired || 0,
+      icon: <CheckCircleOutlined />,
+      color: '#52c41a',
+      onClick: null,
+    },
+    {
+      title: 'Tỉ Lệ Chuyển Đổi (%)',
+      value: overview?.summary?.conversionRatePct || 0,
+      icon: <RiseOutlined />,
+      color: '#722ed1',
+    },
+  ];
+
   return (
     <div className="dashboard-page dept-dashboard">
       <div className="page-header">
@@ -300,37 +303,26 @@ const DeptManagerDashboard = () => {
         <Col xs={24} lg={12}>
           <Card className="dashboard-card" bordered={false}>
             <div className="card-header">
-              <Title level={5}>Tiến Độ Tuyển Dụng Theo Phòng Ban</Title>
+              <Title level={5}>Tiến Độ Tuyển Dụng Theo Phễu (Trạng Thái)</Title>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text>Engineering</Text>
-                  <Text type="secondary">8/10 vị trí</Text>
-                </div>
-                <Progress percent={80} strokeColor={MATCHA_GREEN} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text>Design</Text>
-                  <Text type="secondary">3/5 vị trí</Text>
-                </div>
-                <Progress percent={60} strokeColor="#1890ff" />
-              </div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text>Product</Text>
-                  <Text type="secondary">2/3 vị trí</Text>
-                </div>
-                <Progress percent={67} strokeColor="#faad14" />
-              </div>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text>Infrastructure</Text>
-                  <Text type="secondary">1/4 vị trí</Text>
-                </div>
-                <Progress percent={25} strokeColor="#f5222d" />
-              </div>
+              {overview?.funnel?.filter(f => f.count > 0).map((stage, idx) => {
+                const percent = overview.summary.totalApplications > 0 ? (stage.count / overview.summary.totalApplications) * 100 : 0;
+                let color = MATCHA_GREEN;
+                if (stage.state === 'REJECTED') color = '#f5222d';
+                else if (stage.state === 'HIRED') color = '#52c41a';
+                else if (stage.state === 'NEW') color = '#1890ff';
+
+                return (
+                  <div key={idx}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text>{stage.state}</Text>
+                      <Text type="secondary">{stage.count} hồ sơ</Text>
+                    </div>
+                    <Progress percent={percent} showInfo={false} strokeColor={color} />
+                  </div>
+                );
+              })}
             </div>
           </Card>
         </Col>
@@ -338,27 +330,25 @@ const DeptManagerDashboard = () => {
         <Col xs={24} lg={12}>
           <Card className="dashboard-card" bordered={false}>
             <div className="card-header">
-              <Title level={5}>Hoạt Động Gần Đây</Title>
+              <Title level={5}>Lý Do Loại Ứng Viên Phổ Biến</Title>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                { text: 'Yêu cầu "Senior Frontend Developer" đã được gửi', time: '2 giờ trước', icon: <FileTextOutlined /> },
-                { text: 'Ứng viên Nguyễn Văn Minh được phê duyệt', time: '5 giờ trước', icon: <CheckCircleOutlined /> },
-                { text: 'Yêu cầu "UI/UX Designer" chờ duyệt', time: '1 ngày trước', icon: <ClockCircleOutlined /> },
-                { text: 'Yêu cầu "DevOps Engineer" được tạo mới', time: '2 ngày trước', icon: <AuditOutlined /> },
-              ].map((item, idx) => (
+              {overview?.rejectReasons?.slice(0, 5).map((reason, idx) => (
                 <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <Avatar
                     size={32}
-                    style={{ backgroundColor: `${MATCHA_GREEN}15`, color: MATCHA_GREEN, flexShrink: 0, marginTop: 2 }}
-                    icon={item.icon}
+                    style={{ backgroundColor: `#f5222d15`, color: '#f5222d', flexShrink: 0, marginTop: 2 }}
+                    icon={<CloseCircleOutlined />}
                   />
                   <div>
-                    <Text style={{ display: 'block' }}>{item.text}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>{item.time}</Text>
+                    <Text style={{ display: 'block' }}>{reason.label}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{reason.count} hồ sơ ({reason.percentage}%)</Text>
                   </div>
                 </div>
               ))}
+              {(!overview?.rejectReasons || overview.rejectReasons.length === 0) && (
+                <Text type="secondary">Chưa có dữ liệu</Text>
+              )}
             </div>
           </Card>
         </Col>

@@ -121,7 +121,7 @@ const IncomingInterview = () => {
 
   const handleGradeCandidate = (scheduleId, candidate) => {
     setCandidateModalOpen(false);
-    navigate(`/interviewer/grading/${scheduleId}`, {
+    navigate(`/interviewer/interview/${scheduleId}`, {
       state: { scheduleId, candidate }
     });
   };
