@@ -142,8 +142,8 @@ export const applicationAPI = {
   getById: (id) =>
     api.get(`/api/applications/${id}`),
 
-  transition: (id, transition) =>
-    api.post(`/api/applications/${id}/transition`, { transition }),
+  transition: (id, toState) =>
+    api.post(`/api/applications/${id}/transition`, { toState }),
 
   getHistory: (id) =>
     api.get(`/api/applications/${id}/history`),
