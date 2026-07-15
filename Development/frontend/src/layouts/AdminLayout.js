@@ -104,6 +104,7 @@ const AdminLayout = () => {
       [ROLES.ADMIN]: 'Quản trị viên',
       [ROLES.RECRUITER]: 'Nhà tuyển dụng',
       [ROLES.INTERVIEWER]: 'Người phỏng vấn',
+      [ROLES.DEPARTMENT_MANAGER]: 'Trưởng phòng',
     };
     return roleLabels[role] || role;
   };
