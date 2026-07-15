@@ -190,8 +190,8 @@ export const interviewAPI = {
   updateMySheet: (scheduleId, data) =>
     api.put(`/api/interview-schedules/${scheduleId}/my-sheet`, data),
 
-  submitMySheet: (scheduleId, data) =>
-    api.post(`/api/interview-schedules/${scheduleId}/my-sheet`, data),
+  submitMySheet: (scheduleId) =>
+    api.post(`/api/interview-schedules/${scheduleId}/my-sheet/submit`),
 
   getAggregate: (scheduleId) =>
     api.get(`/api/interview-schedules/${scheduleId}/aggregate`),

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Typography,
@@ -16,6 +16,7 @@ import {
   Statistic,
   message,
   Popconfirm,
+  Spin,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -29,100 +30,75 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { dashboardAPI, applicationAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
 
 const MATCHA_GREEN = '#5D8C3E';
 
 const HiringDecision = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [candidates, setCandidates] = useState([]);
+  
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [approveNote, setApproveNote] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
 
-  const hiringData = [
-    {
-      id: 1,
-      candidateName: 'Nguyễn Văn Minh',
-      candidateEmail: 'minhnv@email.com',
-      position: 'Senior Frontend Developer',
-      department: 'Engineering',
-      requestTitle: 'Senior Frontend Developer',
-      appliedDate: '2026-06-15',
-      interviewDate: '2026-06-28',
-      interviewScore: 85,
-      interviewerFeedback: 'Ứng viên có kinh nghiệm tốt với React, TypeScript. Kỹ năng giao tiếp tốt.',
-      status: 'PENDING',
-      avatar: null,
-    },
-    {
-      id: 2,
-      candidateName: 'Trần Thị Lan',
-      candidateEmail: 'lantt@email.com',
-      position: 'UI/UX Designer',
-      department: 'Design',
-      requestTitle: 'UI/UX Designer',
-      appliedDate: '2026-06-10',
-      interviewDate: '2026-06-25',
-      interviewScore: 78,
-      interviewerFeedback: 'Kỹ năng thiết kế tốt, hiểu biết về UX research. Cần cải thiện về hệ thống design.',
-      status: 'PENDING',
-      avatar: null,
-    },
-    {
-      id: 3,
-      candidateName: 'Lê Hoàng Nam',
-      candidateEmail: 'namlh@email.com',
-      position: 'Backend Developer',
-      department: 'Engineering',
-      requestTitle: 'Senior Frontend Developer',
-      appliedDate: '2026-06-08',
-      interviewDate: '2026-06-22',
-      interviewScore: 45,
-      interviewerFeedback: 'Kỹ năng kỹ thuật chưa đạt yêu cầu. Thiếu kinh nghiệm với hệ thống lớn.',
-      status: 'PENDING',
-      avatar: null,
-    },
-    {
-      id: 4,
-      candidateName: 'Phạm Thu Hà',
-      candidateEmail: 'hapt@email.com',
-      position: 'DevOps Engineer',
-      department: 'Infrastructure',
-      requestTitle: 'DevOps Engineer',
-      appliedDate: '2026-06-01',
-      interviewDate: '2026-06-20',
-      interviewScore: 72,
-      interviewerFeedback: 'Có kinh nghiệm với CI/CD, Docker, Kubernetes. Giao tiếp tốt.',
-      status: 'APPROVED',
-      avatar: null,
-    },
-    {
-      id: 5,
-      candidateName: 'Hoàng Đức Anh',
-      candidateEmail: 'anhhd@email.com',
-      position: 'Product Manager',
-      department: 'Product',
-      requestTitle: 'Product Manager',
-      appliedDate: '2026-05-28',
-      interviewDate: '2026-06-15',
-      interviewScore: 55,
-      interviewerFeedback: 'Kinh nghiệm quản lý sản phẩm còn hạn chế. Cần thêm thời gian phát triển.',
-      status: 'REJECTED',
-      avatar: null,
-    },
-  ];
+  const fetchCandidates = async () => {
+    try {
+      setLoading(true);
+      // Lấy danh sách từ Kanban, đặc biệt là cột OFFER
+      const res = await dashboardAPI.getKanban();
+      
+      const offerColumn = res.data.columns.find(c => c.state === 'OFFER');
+      
+      if (offerColumn) {
+        const formattedData = offerColumn.cards.map(c => ({
+          id: c.applicationId,
+          candidateName: c.candidateName,
+          candidateEmail: c.candidateEmail,
+          position: c.jobTitle,
+          department: 'N/A',
+          requestTitle: c.jobTitle,
+          appliedDate: c.appliedAt,
+          interviewScore: c.aiMatchScore, // Sử dụng tạm AiMatchScore hoặc fetch chi tiết
+          status: 'PENDING',
+          avatar: null,
+          candidateId: c.candidateId,
+          jobId: c.jobId,
+        }));
+        
+        setCandidates(formattedData);
+      } else {
+        setCandidates([]);
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách ứng viên:', error);
+      message.error('Không thể tải danh sách quyết định tuyển dụng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCandidates();
+  }, []);
 
   const getStatusTag = (status) => {
     const config = {
-      PENDING: { color: 'warning', label: 'Chờ duyệt', icon: <ClockCircleOutlined /> },
+      PENDING: { color: 'warning', label: 'Chờ duyệt (OFFER)', icon: <ClockCircleOutlined /> },
       APPROVED: { color: 'success', label: 'Đã duyệt', icon: <CheckCircleOutlined /> },
       REJECTED: { color: 'error', label: 'Từ chối', icon: <CloseCircleOutlined /> },
     };
@@ -131,6 +107,7 @@ const HiringDecision = () => {
   };
 
   const getScoreColor = (score) => {
+    if (!score) return '#999';
     if (score >= 70) return '#52c41a';
     if (score >= 50) return '#faad14';
     return '#f5222d';
@@ -154,57 +131,33 @@ const HiringDecision = () => {
       ),
     },
     {
-      title: 'Vị trí ứng tuyển',
+      title: 'Vị trí',
       dataIndex: 'position',
       key: 'position',
-      width: 180,
-      render: (text, record) => (
-        <div>
-          <Text strong>{text}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>{record.department}</Text>
-        </div>
-      ),
+      width: 150,
     },
     {
-      title: 'Yêu cầu tuyển dụng',
-      dataIndex: 'requestTitle',
-      key: 'requestTitle',
-      width: 180,
-      render: (text) => <Text>{text || '-'}</Text>,
+      title: 'Điểm',
+      key: 'score',
+      width: 100,
+      render: (_, record) => (
+        <Text strong style={{ color: getScoreColor(record.interviewScore) }}>
+          {record.interviewScore ? `${record.interviewScore}` : 'N/A'}
+        </Text>
+      ),
     },
     {
       title: 'Ngày ứng tuyển',
       dataIndex: 'appliedDate',
       key: 'appliedDate',
-      width: 130,
-      render: (date) => (
-        <span>
-          <CalendarOutlined style={{ marginRight: 4 }} />
-          {dayjs(date).format('DD/MM/YYYY')}
-        </span>
-      ),
-    },
-    {
-      title: 'Điểm phỏng vấn',
-      dataIndex: 'interviewScore',
-      key: 'interviewScore',
-      width: 140,
-      render: (score) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Statistic
-            value={score}
-            suffix="/ 100"
-            valueStyle={{ fontSize: 16, color: getScoreColor(score) }}
-          />
-        </div>
-      ),
+      width: 120,
+      render: (date) => dayjs(date).format('DD/MM/YYYY'),
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 130,
+      width: 120,
       render: (status) => getStatusTag(status),
     },
     {
@@ -221,47 +174,30 @@ const HiringDecision = () => {
               setSelectedRecord(record);
               setDetailModalOpen(true);
             }}
-          >
-            Chi tiết
-          </Button>
+          />
           {record.status === 'PENDING' && (
             <>
-              <Popconfirm
-                title="Phê duyệt ứng viên này?"
-                description="Hành động này sẽ chuyển ứng viên sang bước tiếp theo."
-                onConfirm={() => handleApprove(record.id)}
-                okText="Duyệt"
-                cancelText="Hủy"
+              <Button
+                type="primary"
+                size="small"
+                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                onClick={() => {
+                  setSelectedRecord(record);
+                  setApproveModalOpen(true);
+                }}
               >
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<CheckCircleOutlined />}
-                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-                >
-                  Duyệt
-                </Button>
-              </Popconfirm>
-              <Popconfirm
-                title="Từ chối ứng viên này?"
-                description="Hành động này sẽ từ chối ứng viên."
-                onConfirm={() => {
+                Duyệt
+              </Button>
+              <Button
+                danger
+                size="small"
+                onClick={() => {
                   setSelectedRecord(record);
                   setRejectModalOpen(true);
                 }}
-                okText="Từ chối"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
               >
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<CloseCircleOutlined />}
-                >
-                  Từ chối
-                </Button>
-              </Popconfirm>
+                Loại
+              </Button>
             </>
           )}
         </Space>
@@ -269,293 +205,225 @@ const HiringDecision = () => {
     },
   ];
 
-  const filteredData = hiringData.filter((item) => {
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    const matchesSearch =
-      !searchText ||
-      item.candidateName.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.position.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.department.toLowerCase().includes(searchText.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
-
-  const handleApprove = (id) => {
-    message.success('Đã phê duyệt ứng viên thành công!');
-    setApproveModalOpen(false);
+  const handleApprove = async () => {
+    try {
+      setActionLoading(true);
+      await applicationAPI.transition(selectedRecord.id, 'HIRED');
+      if (approveNote) {
+        await applicationAPI.addNote(selectedRecord.id, `[QUYẾT ĐỊNH TUYỂN DỤNG] Đồng ý tuyển: ${approveNote}`);
+      }
+      message.success(`Đã duyệt tuyển dụng cho ứng viên ${selectedRecord.candidateName}`);
+      setApproveModalOpen(false);
+      setApproveNote('');
+      fetchCandidates();
+    } catch (error) {
+      console.error(error);
+      message.error('Lỗi khi duyệt ứng viên');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleReject = () => {
-    if (!rejectReason.trim()) {
+  const handleReject = async () => {
+    if (!rejectReason) {
       message.error('Vui lòng nhập lý do từ chối');
       return;
     }
-    message.success('Đã từ chối ứng viên');
-    setRejectModalOpen(false);
-    setRejectReason('');
+    
+    try {
+      setActionLoading(true);
+      await applicationAPI.transition(selectedRecord.id, 'REJECTED');
+      await applicationAPI.addNote(selectedRecord.id, `[TỪ CHỐI TUYỂN DỤNG] Lý do: ${rejectReason}`);
+      
+      message.success(`Đã từ chối ứng viên ${selectedRecord.candidateName}`);
+      setRejectModalOpen(false);
+      setRejectReason('');
+      fetchCandidates();
+    } catch (error) {
+      console.error(error);
+      message.error('Lỗi khi từ chối ứng viên');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const statusStats = [
-    { label: 'Chờ duyệt', value: hiringData.filter((d) => d.status === 'PENDING').length, color: '#faad14' },
-    { label: 'Đã duyệt', value: hiringData.filter((d) => d.status === 'APPROVED').length, color: '#52c41a' },
-    { label: 'Từ chối', value: hiringData.filter((d) => d.status === 'REJECTED').length, color: '#f5222d' },
-  ];
+  const filteredData = candidates.filter((item) => {
+    const matchesSearch =
+      !searchText ||
+      item.candidateName.toLowerCase().includes(searchText.toLowerCase()) ||
+      item.position.toLowerCase().includes(searchText.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const pendingCount = candidates.filter((i) => i.status === 'PENDING').length;
 
   return (
-    <div className="hiring-decision-page">
+    <div className="dept-hiring-decision-page">
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">Quyết Định Tuyển Dụng</Title>
-          <Text type="secondary">Xem xét và phê duyệt ứng viên từ các vòng phỏng vấn</Text>
+          <Text type="secondary">Xét duyệt các ứng viên đã qua vòng phỏng vấn (Cột OFFER)</Text>
         </div>
-        <Button
-          type="primary"
-          icon={<CheckCircleOutlined />}
-          onClick={() => navigate('/dept/create-request')}
-          style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-        >
-          Tạo Yêu Cầu Tuyển Dụng
-        </Button>
       </div>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {statusStats.map((stat, idx) => (
-          <Col xs={12} sm={8} key={idx}>
-            <Card className="stat-card" bordered={false}>
-              <Statistic
-                title={stat.label}
-                value={stat.value}
-                valueStyle={{ color: stat.color, fontSize: 28, fontWeight: 700 }}
-              />
-            </Card>
-          </Col>
-        ))}
+      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Col xs={12} sm={8}>
+          <Card className="stat-card" bordered={false}>
+            <Statistic
+              title="Chờ duyệt"
+              value={pendingCount}
+              valueStyle={{ color: '#faad14' }}
+              prefix={<ClockCircleOutlined />}
+            />
+          </Card>
+        </Col>
       </Row>
 
       <Card className="main-card" bordered={false}>
         <div className="table-toolbar">
           <div className="toolbar-left">
             <Input
-              placeholder="Tìm kiếm ứng viên..."
+              placeholder="Tìm theo tên, vị trí..."
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 280 }}
+              style={{ width: 240 }}
               allowClear
             />
             <Select
               value={statusFilter}
               onChange={setStatusFilter}
-              style={{ width: 160 }}
-              options={[
-                { value: 'all', label: 'Tất cả trạng thái' },
-                { value: 'PENDING', label: 'Chờ duyệt' },
-                { value: 'APPROVED', label: 'Đã duyệt' },
-                { value: 'REJECTED', label: 'Từ chối' },
-              ]}
-            />
+              style={{ width: 150 }}
+            >
+              <Option value="all">Tất cả trạng thái</Option>
+              <Option value="PENDING">Chờ duyệt</Option>
+            </Select>
           </div>
-          <Text type="secondary">
-            {filteredData.length} ứng viên
-          </Text>
+          <Text type="secondary">{filteredData.length} ứng viên</Text>
         </div>
 
         <Table
           columns={columns}
           dataSource={filteredData}
           rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} ứng viên`,
-          }}
-          scroll={{ x: 1200 }}
+          loading={loading}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 1000 }}
         />
       </Card>
 
+      {/* Detail Modal */}
       <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
-            <span>Chi tiết ứng viên</span>
-          </div>
-        }
+        title="Chi Tiết Ứng Viên"
         open={detailModalOpen}
-        onCancel={() => {
-          setDetailModalOpen(false);
-          setSelectedRecord(null);
-        }}
-        footer={
-          selectedRecord?.status === 'PENDING' ? (
-            <Space>
-              <Button onClick={() => setDetailModalOpen(false)}>Đóng</Button>
-              <Button
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => {
-                  setDetailModalOpen(false);
-                  setRejectModalOpen(true);
-                }}
-              >
-                Từ chối
-              </Button>
-              <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-                onClick={() => {
-                  handleApprove(selectedRecord.id);
-                  setDetailModalOpen(false);
-                }}
-              >
-                Phê duyệt
-              </Button>
-            </Space>
-          ) : (
-            <Button onClick={() => setDetailModalOpen(false)}>Đóng</Button>
-          )
-        }
-        width={680}
+        onCancel={() => setDetailModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalOpen(false)}>
+            Đóng
+          </Button>,
+          selectedRecord?.status === 'PENDING' && (
+            <Button
+              key="reject"
+              danger
+              onClick={() => {
+                setDetailModalOpen(false);
+                setRejectModalOpen(true);
+              }}
+            >
+              Từ chối
+            </Button>
+          ),
+          selectedRecord?.status === 'PENDING' && (
+            <Button
+              key="approve"
+              type="primary"
+              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+              onClick={() => {
+                setDetailModalOpen(false);
+                setApproveModalOpen(true);
+              }}
+            >
+              Duyệt Tuyển
+            </Button>
+          ),
+        ]}
+        width={700}
       >
         {selectedRecord && (
-          <div>
-            <Descriptions column={2} bordered size="small" style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="Họ tên" span={2}>
-                <Text strong>{selectedRecord.candidateName}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">
-                {selectedRecord.candidateEmail}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">
-                {selectedRecord.candidateEmail?.split('@')[0] || 'Chưa cập nhật'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Vị trí ứng tuyển">
-                {selectedRecord.position}
-              </Descriptions.Item>
-              <Descriptions.Item label="Phòng ban">
-                {selectedRecord.department}
+          <div style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+              <Avatar size={64} style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
+              <div>
+                <Title level={4} style={{ margin: 0 }}>{selectedRecord.candidateName}</Title>
+                <Text type="secondary">{selectedRecord.candidateEmail}</Text>
+                <div style={{ marginTop: 8 }}>{getStatusTag(selectedRecord.status)}</div>
+              </div>
+            </div>
+
+            <Descriptions column={2} bordered size="small">
+              <Descriptions.Item label="Vị trí ứng tuyển" span={2}>
+                <Text strong>{selectedRecord.position}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Ngày ứng tuyển">
                 {dayjs(selectedRecord.appliedDate).format('DD/MM/YYYY')}
               </Descriptions.Item>
-              <Descriptions.Item label="Ngày phỏng vấn">
-                {dayjs(selectedRecord.interviewDate).format('DD/MM/YYYY')}
-              </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái" span={2}>
-                {getStatusTag(selectedRecord.status)}
+              <Descriptions.Item label="Điểm CV (AiMatch)">
+                <Text strong style={{ color: getScoreColor(selectedRecord.interviewScore) }}>
+                  {selectedRecord.interviewScore ? `${selectedRecord.interviewScore}` : 'N/A'}
+                </Text>
               </Descriptions.Item>
             </Descriptions>
-
-            <Card title="Điểm Phỏng Vấn" size="small" style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <Statistic
-                  title="Điểm tổng"
-                  value={selectedRecord.interviewScore}
-                  suffix="/ 100"
-                  valueStyle={{
-                    color: getScoreColor(selectedRecord.interviewScore),
-                    fontSize: 32,
-                    fontWeight: 700,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      height: 8,
-                      background: '#f0f0f0',
-                      borderRadius: 4,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${selectedRecord.interviewScore}%`,
-                        height: '100%',
-                        background: getScoreColor(selectedRecord.interviewScore),
-                        borderRadius: 4,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card title="Phản hồi từ Người phỏng vấn" size="small">
-              <Text>{selectedRecord.interviewerFeedback}</Text>
-            </Card>
           </div>
         )}
       </Modal>
 
+      {/* Approve Modal */}
       <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CloseCircleOutlined style={{ color: '#f5222d' }} />
-            <span>Từ chối ứng viên</span>
-          </div>
-        }
-        open={rejectModalOpen}
-        onCancel={() => {
-          setRejectModalOpen(false);
-          setRejectReason('');
-        }}
-        onOk={handleReject}
-        okText="Xác nhận từ chối"
-        okButtonProps={{ danger: true }}
-      >
-        {selectedRecord && (
-          <div>
-            <Text>
-              Bạn đang từ chối ứng viên <strong>{selectedRecord.candidateName}</strong> cho vị trí{' '}
-              <strong>{selectedRecord.position}</strong>.
-            </Text>
-            <div style={{ marginTop: 16 }}>
-              <Text strong>Lý do từ chối *</Text>
-              <TextArea
-                rows={4}
-                placeholder="Nhập lý do từ chối ứng viên..."
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                style={{ marginTop: 8 }}
-              />
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CheckCircleOutlined style={{ color: MATCHA_GREEN }} />
-            <span>Phê duyệt ứng viên</span>
-          </div>
-        }
+        title="Xác Nhận Tuyển Dụng"
         open={approveModalOpen}
-        onCancel={() => {
-          setApproveModalOpen(false);
-          setApproveNote('');
-        }}
         onOk={handleApprove}
-        okText="Xác nhận phê duyệt"
+        confirmLoading={actionLoading}
+        onCancel={() => setApproveModalOpen(false)}
+        okText="Duyệt"
+        cancelText="Hủy"
         okButtonProps={{ style: { background: MATCHA_GREEN, borderColor: MATCHA_GREEN } }}
       >
-        {selectedRecord && (
-          <div>
-            <Text>
-              Bạn đồng ý phê duyệt ứng viên <strong>{selectedRecord.candidateName}</strong> cho vị trí{' '}
-              <strong>{selectedRecord.position}</strong>.
-            </Text>
-            <div style={{ marginTop: 16 }}>
-              <Text strong>Ghi chú (tùy chọn)</Text>
-              <TextArea
-                rows={4}
-                placeholder="Nhập ghi chú nếu có..."
-                value={approveNote}
-                onChange={(e) => setApproveNote(e.target.value)}
-                style={{ marginTop: 8 }}
-              />
-            </div>
-          </div>
-        )}
+        <p>Bạn có chắc chắn muốn duyệt tuyển dụng ứng viên <strong>{selectedRecord?.candidateName}</strong>?</p>
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Ghi chú quyết định:</Text>
+          <TextArea
+            rows={3}
+            placeholder="Nhập ghi chú cho bộ phận HR..."
+            value={approveNote}
+            onChange={(e) => setApproveNote(e.target.value)}
+            style={{ marginTop: 8 }}
+          />
+        </div>
+      </Modal>
+
+      {/* Reject Modal */}
+      <Modal
+        title="Từ Chối Tuyển Dụng"
+        open={rejectModalOpen}
+        onOk={handleReject}
+        confirmLoading={actionLoading}
+        onCancel={() => setRejectModalOpen(false)}
+        okText="Từ chối"
+        okType="danger"
+        cancelText="Hủy"
+      >
+        <p>Từ chối ứng viên <strong>{selectedRecord?.candidateName}</strong>?</p>
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Lý do từ chối <span style={{ color: 'red' }}>*</span>:</Text>
+          <TextArea
+            rows={3}
+            placeholder="Nhập lý do từ chối (bắt buộc)..."
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            style={{ marginTop: 8 }}
+          />
+        </div>
       </Modal>
     </div>
   );

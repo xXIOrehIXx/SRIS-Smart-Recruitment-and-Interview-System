@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Row,
   Col,
@@ -13,6 +13,7 @@ import {
   message,
   Input,
   Rate,
+  Spin,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -28,6 +29,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { interviewAPI, applicationAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -38,44 +40,16 @@ const MATCHA_GREEN = '#5D8C3E';
 const InterviewerInterviewDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [schedule, setSchedule] = useState(null);
+  const [application, setApplication] = useState(null);
+  const [sheet, setSheet] = useState(null);
+
   const [feedback, setFeedback] = useState('');
   const [recommendation, setRecommendation] = useState(null);
-  const [ratings, setRatings] = useState({
-    technical: 0,
-    communication: 0,
-    problemSolving: 0,
-    cultureFit: 0,
-    attitude: 0,
-  });
-  const [loading, setLoading] = useState(false);
-
-  const interview = {
-    id: id || 1,
-    candidateName: 'Nguyễn Văn Minh',
-    candidateEmail: 'minhnv@email.com',
-    candidatePhone: '0912 345 678',
-    position: 'Senior Frontend Developer',
-    department: 'Engineering',
-    requestTitle: 'Senior Frontend Developer',
-    interviewType: 'Technical Interview',
-    scheduledDate: '2026-07-08',
-    scheduledTime: '14:00',
-    duration: 60,
-    meetingLink: 'https://meet.google.com/abc-defg-hij',
-    interviewLevel: 2,
-    totalLevel: 3,
-    status: 'COMPLETED',
-    interviewer: 'Bạn',
-    notes: 'Ứng viên có 5 năm kinh nghiệm với React và TypeScript. Đã làm việc tại các công ty công nghệ lớn.',
-  };
-
-  const criteria = [
-    { key: 'technical', label: 'Kỹ thuật', desc: 'Kiến thức về React, TypeScript, CSS' },
-    { key: 'communication', label: 'Giao tiếp', desc: 'Khả năng trình bày ý tưởng' },
-    { key: 'problemSolving', label: 'Giải quyết vấn đề', desc: 'Tư duy logic, cách tiếp cận bài toán' },
-    { key: 'cultureFit', label: 'Phù hợp văn hóa', desc: 'Phù hợp với văn hóa công ty' },
-    { key: 'attitude', label: 'Thái độ', desc: 'Tinh thần học hỏi, trách nhiệm' },
-  ];
+  const [ratings, setRatings] = useState({});
 
   const recommendationOptions = [
     { key: 'STRONG_HIRE', label: 'Trúng tuyển mạnh', color: '#52c41a' },
@@ -84,46 +58,158 @@ const InterviewerInterviewDetail = () => {
     { key: 'NO_HIRE', label: 'Không trúng tuyển', color: '#f5222d' },
   ];
 
-  const handleRatingChange = (key, value) => {
-    setRatings({ ...ratings, [key]: value });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // 1. Get my schedules to find the application ID and basic info
+        const schedulesRes = await interviewAPI.getMySchedules();
+        const currentSchedule = schedulesRes.data.find(s => s.scheduleId === Number(id));
+        
+        if (!currentSchedule) {
+          message.error('Không tìm thấy lịch phỏng vấn hoặc bạn không có quyền truy cập');
+          navigate('/interviewer/schedule');
+          return;
+        }
+        setSchedule(currentSchedule);
+
+        // 2. Get application details
+        const appRes = await applicationAPI.getById(currentSchedule.applicationId);
+        setApplication(appRes.data);
+
+        // 3. Get scoring sheet
+        const sheetRes = await interviewAPI.getMySheet(currentSchedule.scheduleId);
+        setSheet(sheetRes.data);
+
+        // Initialize ratings from existing sheet
+        if (sheetRes.data && sheetRes.data.criteria) {
+          const initialRatings = {};
+          sheetRes.data.criteria.forEach(c => {
+            // Convert backend score back to 5-star rating (assuming score is proportional to maxScore)
+            const starValue = c.myScore != null && c.maxScore > 0 
+              ? Math.round((c.myScore / c.maxScore) * 5) 
+              : 0;
+            initialRatings[c.criteriaId] = starValue;
+          });
+          setRatings(initialRatings);
+        }
+      } catch (error) {
+        console.error('Error fetching interview details:', error);
+        message.error('Lỗi khi tải thông tin phỏng vấn');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, navigate]);
+
+  const handleRatingChange = (criteriaId, value) => {
+    setRatings({ ...ratings, [criteriaId]: value });
   };
 
   const getTotalScore = () => {
-    const total = Object.values(ratings).reduce((sum, val) => sum + val, 0);
-    return total;
+    if (!sheet) return 0;
+    let total = 0;
+    sheet.criteria.forEach(c => {
+      const stars = ratings[c.criteriaId] || 0;
+      total += (stars / 5) * c.maxScore;
+    });
+    return Math.round(total * 10) / 10;
   };
 
-  const getMaxScore = () => criteria.length * 5;
+  const getMaxScore = () => {
+    if (!sheet) return 0;
+    return sheet.criteria.reduce((sum, c) => sum + c.maxScore, 0);
+  };
 
   const getScoreColor = (score) => {
-    const percent = (score / getMaxScore()) * 100;
+    const max = getMaxScore();
+    if (max === 0) return '#999';
+    const percent = (score / max) * 100;
     if (percent >= 80) return '#52c41a';
     if (percent >= 60) return '#faad14';
     return '#f5222d';
   };
 
+  const prepareDraftData = () => {
+    const items = sheet.criteria.map(c => {
+      const stars = ratings[c.criteriaId] || 0;
+      const score = (stars / 5) * c.maxScore;
+      return {
+        criteriaId: c.criteriaId,
+        score: score > 0 ? score : null,
+        note: null // Currently no per-criteria note in UI
+      };
+    });
+    return { items };
+  };
+
   const handleSave = async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    message.success('Đã lưu đánh giá thành công!');
-    setLoading(false);
+    try {
+      setSubmitting(true);
+      const data = prepareDraftData();
+      await interviewAPI.updateMySheet(schedule.scheduleId, data);
+      
+      // Save overall feedback as a note if provided
+      if (feedback || recommendation) {
+        const noteContent = `[Đánh giá tổng quan]
+Đề xuất: ${recommendationOptions.find(o => o.key === recommendation)?.label || 'Chưa chọn'}
+Nhận xét: ${feedback || 'Không có'}`;
+        await applicationAPI.addNote(schedule.applicationId, noteContent);
+      }
+      
+      message.success('Đã lưu nháp đánh giá thành công!');
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      message.error('Lỗi khi lưu nháp');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = async () => {
-    if (getTotalScore() === 0) {
-      message.error('Vui lòng đánh giá ít nhất một tiêu chí');
+    const isAllRated = sheet.criteria.every(c => ratings[c.criteriaId] > 0);
+    if (!isAllRated) {
+      message.error('Vui lòng đánh giá tất cả các tiêu chí trước khi nộp');
       return;
     }
-    if (!recommendation) {
-      message.error('Vui lòng chọn đề xuất');
-      return;
+    
+    try {
+      setSubmitting(true);
+      // First save draft to ensure backend has the latest scores
+      const data = prepareDraftData();
+      await interviewAPI.updateMySheet(schedule.scheduleId, data);
+      
+      // Save overall feedback
+      if (feedback || recommendation) {
+        const noteContent = `[Đánh giá tổng quan]
+Đề xuất: ${recommendationOptions.find(o => o.key === recommendation)?.label || 'Chưa chọn'}
+Nhận xét: ${feedback || 'Không có'}`;
+        await applicationAPI.addNote(schedule.applicationId, noteContent);
+      }
+
+      // Then submit
+      await interviewAPI.submitMySheet(schedule.scheduleId);
+      message.success('Đã gửi phiếu chấm thành công!');
+      navigate('/interviewer/schedule'); // Or history
+    } catch (error) {
+      console.error('Error submitting sheet:', error);
+      message.error('Lỗi khi nộp phiếu chấm (có thể bạn chưa đánh giá đủ tiêu chí)');
+    } finally {
+      setSubmitting(false);
     }
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    message.success('Đã gửi đánh giá thành công!');
-    setLoading(false);
-    navigate('/interviewer/history');
   };
+
+  if (loading || !schedule || !application || !sheet) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  const isSubmitted = sheet.myStatus === 'SUBMITTED';
 
   return (
     <div className="interview-detail-page">
@@ -137,7 +223,7 @@ const InterviewerInterviewDetail = () => {
           <div>
             <Title level={3} className="page-title">Chi Tiết Phỏng Vấn</Title>
             <Text type="secondary">
-              ID: #{interview.id} • {dayjs(interview.scheduledDate).format('DD/MM/YYYY')} lúc {interview.scheduledTime}
+              Mã Lịch: #{schedule.scheduleId} • Vòng {schedule.roundNumber} • {schedule.status}
             </Text>
           </div>
         </div>
@@ -154,78 +240,73 @@ const InterviewerInterviewDetail = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
               <Avatar size={64} style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
               <div>
-                <Title level={4} style={{ margin: 0 }}>{interview.candidateName}</Title>
-                <Text type="secondary">{interview.candidateEmail}</Text>
-                <br />
-                <Text type="secondary">{interview.candidatePhone}</Text>
+                <Title level={4} style={{ margin: 0 }}>{application.candidateName}</Title>
+                <Text type="secondary">{application.candidateEmail}</Text>
+                {application.candidatePhone && (
+                  <>
+                    <br />
+                    <Text type="secondary">{application.candidatePhone}</Text>
+                  </>
+                )}
               </div>
               <Tag
-                color={interview.status === 'COMPLETED' ? 'success' : 'processing'}
+                color={schedule.status === 'COMPLETED' ? 'success' : (schedule.status === 'CANCELLED' ? 'error' : 'processing')}
                 style={{ marginLeft: 'auto' }}
               >
-                {interview.status === 'COMPLETED' ? 'Đã hoàn thành' : 'Sắp tới'}
+                {schedule.status === 'COMPLETED' ? 'Đã hoàn thành' : (schedule.status === 'SCHEDULED' ? 'Đã lên lịch' : schedule.status)}
               </Tag>
             </div>
 
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Vị trí ứng tuyển" span={2}>
-                <Text strong>{interview.position}</Text>
-                <Text type="secondary" style={{ marginLeft: 8 }}>• {interview.department}</Text>
+                <Text strong>{application.jobTitle}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Yêu cầu tuyển dụng">
-                {interview.requestTitle}
+              <Descriptions.Item label="Trạng thái hồ sơ">
+                {application.currentState}
               </Descriptions.Item>
               <Descriptions.Item label="Vòng phỏng vấn">
-                Vòng {interview.interviewLevel} / {interview.totalLevel}
-              </Descriptions.Item>
-              <Descriptions.Item label="Loại phỏng vấn">
-                {interview.interviewType}
-              </Descriptions.Item>
-              <Descriptions.Item label="Thời lượng">
-                {interview.duration} phút
+                Vòng {schedule.roundNumber}
               </Descriptions.Item>
             </Descriptions>
-
-            <Divider />
-
-            <Title level={5}>
-              <TeamOutlined style={{ marginRight: 8 }} />
-              Thông tin bổ sung
-            </Title>
-            <Text>{interview.notes}</Text>
           </Card>
 
           <Card className="main-card" bordered={false} style={{ marginBottom: 20 }}>
             <Title level={5}>
               <FileTextOutlined style={{ marginRight: 8 }} />
               Đánh Giá Phỏng Vấn
+              {isSubmitted && <Tag color="success" style={{ marginLeft: 12 }}>Đã nộp</Tag>}
             </Title>
 
             <div style={{ marginTop: 20 }}>
-              {criteria.map((c) => (
-                <div
-                  key={c.key}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 0',
-                    borderBottom: '1px solid #f0f0f0',
-                  }}
-                >
-                  <div>
-                    <Text strong>{c.label}</Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: 12 }}>{c.desc}</Text>
+              {sheet.criteria.length === 0 ? (
+                <Text type="secondary">Không có tiêu chí đánh giá nào cho vòng này.</Text>
+              ) : (
+                sheet.criteria.map((c) => (
+                  <div
+                    key={c.criteriaId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 0',
+                      borderBottom: '1px solid #f0f0f0',
+                    }}
+                  >
+                    <div>
+                      <Text strong>{c.name}</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>Trọng số: {c.weight} | Tối đa: {c.maxScore}đ</Text>
+                    </div>
+                    <Rate
+                      count={5}
+                      value={ratings[c.criteriaId] || 0}
+                      onChange={(value) => handleRatingChange(c.criteriaId, value)}
+                      disabled={isSubmitted || submitting}
+                      style={{ fontSize: 20 }}
+                    />
                   </div>
-                  <Rate
-                    count={5}
-                    value={ratings[c.key]}
-                    onChange={(value) => handleRatingChange(c.key, value)}
-                    style={{ fontSize: 20 }}
-                  />
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             <div
@@ -239,60 +320,66 @@ const InterviewerInterviewDetail = () => {
                 borderRadius: 8,
               }}
             >
-              <Text strong>Điểm tổng:</Text>
+              <Text strong>Điểm tổng (ước tính):</Text>
               <Text strong style={{ fontSize: 24, color: getScoreColor(getTotalScore()) }}>
                 {getTotalScore()} / {getMaxScore()}
               </Text>
             </div>
           </Card>
 
-          <Card className="main-card" bordered={false} style={{ marginBottom: 20 }}>
-            <Title level={5}>Nhận Xét Chung</Title>
-            <TextArea
-              rows={4}
-              placeholder="Nhập nhận xét chi tiết về ứng viên..."
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              style={{ marginBottom: 20 }}
-            />
+          {!isSubmitted && (
+            <>
+              <Card className="main-card" bordered={false} style={{ marginBottom: 20 }}>
+                <Title level={5}>Nhận Xét Chung (Lưu vào ghi chú nội bộ)</Title>
+                <TextArea
+                  rows={4}
+                  placeholder="Nhập nhận xét chi tiết về ứng viên..."
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  style={{ marginBottom: 20 }}
+                  disabled={submitting}
+                />
 
-            <Title level={5}>Đề Xuất</Title>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {recommendationOptions.map((opt) => (
+                <Title level={5}>Đề Xuất</Title>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  {recommendationOptions.map((opt) => (
+                    <Button
+                      key={opt.key}
+                      type={recommendation === opt.key ? 'primary' : 'default'}
+                      onClick={() => setRecommendation(opt.key)}
+                      disabled={submitting}
+                      style={
+                        recommendation === opt.key
+                          ? { background: opt.color, borderColor: opt.color, color: '#fff' }
+                          : {}
+                      }
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+              </Card>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                 <Button
-                  key={opt.key}
-                  type={recommendation === opt.key ? 'primary' : 'default'}
-                  onClick={() => setRecommendation(opt.key)}
-                  style={
-                    recommendation === opt.key
-                      ? { background: opt.color, borderColor: opt.color }
-                      : {}
-                  }
+                  icon={<SaveOutlined />}
+                  onClick={handleSave}
+                  loading={submitting}
                 >
-                  {opt.label}
+                  Lưu nháp
                 </Button>
-              ))}
-            </div>
-          </Card>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <Button
-              icon={<SaveOutlined />}
-              onClick={handleSave}
-              loading={loading}
-            >
-              Lưu nháp
-            </Button>
-            <Button
-              type="primary"
-              icon={<SendOutlined />}
-              onClick={handleSubmit}
-              loading={loading}
-              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-            >
-              Gửi đánh giá
-            </Button>
-          </div>
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={handleSubmit}
+                  loading={submitting}
+                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                >
+                  Gửi đánh giá
+                </Button>
+              </div>
+            </>
+          )}
         </Col>
 
         <Col xs={24} lg={8}>
@@ -302,14 +389,10 @@ const InterviewerInterviewDetail = () => {
               Thông tin lịch
             </Title>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CalendarOutlined style={{ color: MATCHA_GREEN }} />
-                <Text>{dayjs(interview.scheduledDate).format('dddd, DD/MM/YYYY')}</Text>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClockCircleOutlined style={{ color: MATCHA_GREEN }} />
-                <Text>{interview.scheduledTime} ({interview.duration} phút)</Text>
-              </div>
+              <Text type="secondary">
+                Lịch chi tiết (ngày giờ, phòng họp) chỉ có thể xem từ phía Recruiter/Dept Manager do API cho Interviewer hiện tại chỉ cung cấp mã lịch và trạng thái. 
+                Bạn có thể xem lịch trên Google Calendar của bạn.
+              </Text>
             </div>
           </Card>
 
