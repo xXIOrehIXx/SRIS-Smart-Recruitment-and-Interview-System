@@ -49,7 +49,15 @@ const JobDetail = () => {
     try {
       setLoading(true);
       const response = await applicationAPI.getAll(jobId);
-      setApplications(response.data || []);
+      const payload = response.data;
+      const list = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.items)
+        ? payload.items
+        : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+      setApplications(list);
     } catch (error) {
       console.error('Error fetching applications:', error);
       message.error('Không thể tải danh sách ứng viên');
