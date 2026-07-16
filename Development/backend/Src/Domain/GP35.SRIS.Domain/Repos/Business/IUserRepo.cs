@@ -9,6 +9,17 @@ public interface IUserRepo : IBaseRepo<Guid, User>
     /// <summary>Toàn bộ user của công ty hiện tại (Admin quản lý tài khoản). Mới nhất trước.</summary>
     Task<IReadOnlyList<User>> GetListByCompanyAsync(long companyId);
 
+    /// <summary>
+    /// Lấy user có role chứa tên role chỉ định trong công ty hiện tại (dùng cho Recruiter chọn
+    /// interviewer khi tạo pool lịch phỏng vấn — không qua Admin).
+    /// </summary>
+    Task<IReadOnlyList<User>> GetListByRoleAsync(long companyId, string role);
+
+    /// <summary>
+    /// Lấy tên + email nhiều user theo id (dùng để hiển thị panel interviewer — không fetch cả User).
+    /// </summary>
+    Task<IReadOnlyList<User>> GetNamesByIdsAsync(long companyId, IReadOnlyList<long> userIds);
+
     /// <summary>1 user theo id (lọc theo company). Null nếu không thuộc company.</summary>
     Task<User?> GetByIdAsync(long companyId, long userId);
 

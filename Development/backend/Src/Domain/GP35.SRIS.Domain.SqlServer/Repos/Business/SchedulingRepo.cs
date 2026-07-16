@@ -28,7 +28,9 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         _db.InterviewSlotPools.Add(pool);
         await _db.SaveChangesAsync();
 
-        foreach (var s in slots)
+        var slotList = slots.ToList();
+        var allPanel = new List<InterviewSlotInterviewer>();
+        foreach (var s in slotList)
         {
             s.CompanyId = companyId;
             s.PoolId = pool.PoolId;
@@ -36,6 +38,26 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             _db.InterviewSlots.Add(s);
         }
         await _db.SaveChangesAsync();
+
+        // Panel interviewer — tạo SAU khi slot có slot_id (FK).
+        foreach (var s in slotList)
+        {
+            foreach (var iid in s.InterviewerIds ?? new List<long>())
+            {
+                allPanel.Add(new InterviewSlotInterviewer
+                {
+                    SlotId = s.SlotId,
+                    CompanyId = companyId,
+                    InterviewerId = iid,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+        if (allPanel.Count > 0)
+        {
+            _db.InterviewSlotInterviewers.AddRange(allPanel);
+            await _db.SaveChangesAsync();
+        }
 
         await tx.CommitAsync();
         return pool.PoolId;
@@ -61,6 +83,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         {
             var slots = await _db.InterviewSlots
                 .AsNoTracking()
+                .Include(x => x.Interviewers)
                 .Where(x => x.PoolId == pool.PoolId)
                 .OrderBy(x => x.StartTime)
                 .ToListAsync();
@@ -72,7 +95,10 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
     public async Task<IReadOnlyList<InterviewSlot>> GetSlotsByPoolAsync(
         long companyId, long poolId, bool onlyOpenFuture)
     {
-        var q = _db.InterviewSlots.AsNoTracking().Where(x => x.PoolId == poolId);
+        var q = _db.InterviewSlots
+            .AsNoTracking()
+            .Include(x => x.Interviewers)
+            .Where(x => x.PoolId == poolId);
         if (onlyOpenFuture)
         {
             var now = DateTime.UtcNow;
@@ -85,6 +111,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
     {
         return await _db.InterviewSlots
             .AsNoTracking()
+            .Include(x => x.Interviewers)
             .FirstOrDefaultAsync(x => x.SlotId == slotId);
     }
 
@@ -232,12 +259,37 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
     public async Task<bool> IsInterviewerBookedAtAsync(
         long companyId, long interviewerId, DateTime startTime, long excludeSlotId)
     {
-        return await _db.InterviewSlots
+        // Có slot nào BOOKED đúng giờ mà interviewer này nằm trong panel không?
+        return await _db.InterviewSlotInterviewers
             .AsNoTracking()
-            .AnyAsync(x => x.InterviewerId == interviewerId
-                && x.StartTime == startTime
-                && x.Status == InterviewSlotStatus.Booked
-                && x.SlotId != excludeSlotId);
+            .AnyAsync(si =>
+                si.InterviewerId == interviewerId &&
+                _db.InterviewSlots.Any(s =>
+                    s.SlotId == si.SlotId &&
+                    s.SlotId != excludeSlotId &&
+                    s.StartTime == startTime &&
+                    s.Status == InterviewSlotStatus.Booked));
+    }
+
+    /// <summary>
+    /// Check cả panel 1 lúc: trả về interviewer_id đầu tiên trong panel đã có lịch BOOKED đúng giờ
+    /// (slot khác). Trả null nếu cả panel rảnh. Dùng khi ứng viên chốt khung.
+    /// </summary>
+    public async Task<long?> FindBusyInterviewerAsync(
+        long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime, long excludeSlotId)
+    {
+        if (interviewerIds.Count == 0) return null;
+        return await _db.InterviewSlotInterviewers
+            .AsNoTracking()
+            .Where(si =>
+                interviewerIds.Contains(si.InterviewerId) &&
+                _db.InterviewSlots.Any(s =>
+                    s.SlotId == si.SlotId &&
+                    s.SlotId != excludeSlotId &&
+                    s.StartTime == startTime &&
+                    s.Status == InterviewSlotStatus.Booked))
+            .Select(si => si.InterviewerId)
+            .FirstOrDefaultAsync();
     }
 
     public async Task SetScheduleStatusAsync(long companyId, long scheduleId, string status)
@@ -250,7 +302,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
     }
 
     public async Task<long> ManualConfirmAsync(
-        long companyId, long jobId, long applicationId, long interviewerId,
+        long companyId, long jobId, long applicationId, IReadOnlyList<long> interviewerIds,
         DateTime startTime, int roundNumber, long? createdBy)
     {
         await using var tx = await _db.Database.BeginTransactionAsync();
@@ -271,12 +323,23 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         {
             CompanyId = companyId,
             PoolId = pool.PoolId,
-            InterviewerId = interviewerId,
             StartTime = startTime,
             Status = InterviewSlotStatus.Booked,
             BookedApplicationId = applicationId
         };
         _db.InterviewSlots.Add(slot);
+        await _db.SaveChangesAsync();
+
+        foreach (var iid in interviewerIds)
+        {
+            _db.InterviewSlotInterviewers.Add(new InterviewSlotInterviewer
+            {
+                SlotId = slot.SlotId,
+                CompanyId = companyId,
+                InterviewerId = iid,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
         await _db.SaveChangesAsync();
 
         var schedule = new InterviewSchedule
@@ -302,7 +365,8 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         var query =
             from s in _db.InterviewSchedules.AsNoTracking()
             join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
-            where s.ScheduleId == scheduleId && sl.InterviewerId == interviewerId
+            join si in _db.InterviewSlotInterviewers.AsNoTracking() on sl.SlotId equals si.SlotId
+            where s.ScheduleId == scheduleId && si.InterviewerId == interviewerId
             select s.ScheduleId;
         return await query.AnyAsync();
     }
@@ -313,7 +377,8 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         var query =
             from s in _db.InterviewSchedules.AsNoTracking()
             join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
-            where sl.InterviewerId == interviewerId
+            join si in _db.InterviewSlotInterviewers.AsNoTracking() on sl.SlotId equals si.SlotId
+            where si.InterviewerId == interviewerId
             orderby s.ScheduleId descending
             select s;
         return await query.ToListAsync();

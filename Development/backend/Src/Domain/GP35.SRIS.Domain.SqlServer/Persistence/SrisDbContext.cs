@@ -38,6 +38,7 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
     public DbSet<InterviewSlotPool> InterviewSlotPools => Set<InterviewSlotPool>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
+    public DbSet<InterviewSlotInterviewer> InterviewSlotInterviewers => Set<InterviewSlotInterviewer>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
     public DbSet<CvChunk> CvChunks => Set<CvChunk>();
     public DbSet<ApplicationCriterionMatch> ApplicationCriterionMatches => Set<ApplicationCriterionMatch>();
@@ -150,6 +151,18 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.EndTime);     // chưa có ở schema local
             e.Ignore(x => x.Location);
             e.Ignore(x => x.MeetingLink);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+            e.HasMany(x => x.Interviewers)
+                .WithOne()
+                .HasForeignKey(x => x.SlotId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<InterviewSlotInterviewer>(e =>
+        {
+            e.ToTable("InterviewSlotInterviewer");
+            e.HasKey(x => new { x.SlotId, x.InterviewerId });
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
