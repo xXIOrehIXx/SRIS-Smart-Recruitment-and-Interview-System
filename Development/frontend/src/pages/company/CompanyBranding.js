@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, Switch, Upload, Space, message, Row, Col, Divider, Avatar, ColorPicker } from 'antd';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Card, Typography, Form, Input, Button, Switch, Upload, Space, message, Row, Col, Divider, Avatar, ColorPicker, Tag } from 'antd';
 import {
   SaveOutlined, UploadOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined,
-  GlobalOutlined, FileTextOutlined, InstagramOutlined, LinkedinOutlined, FacebookOutlined
+  GlobalOutlined, FileTextOutlined, InstagramOutlined, LinkedinOutlined, FacebookOutlined,
+  RestOutlined, CheckCircleOutlined
 } from '@ant-design/icons';
 import { companyAPI } from '../../services/api';
 import './css/CompanyBranding.css';
@@ -11,6 +12,60 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const MATCHA_GREEN = '#5D8C3E';
+const DRAFT_KEY = 'company_branding_draft';
+
+// Auto-save hook for page-level forms
+const usePageDraft = (storageKey) => {
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftTime, setDraftTime] = useState(null);
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(storageKey);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && parsed.values && Object.keys(parsed.values).length > 0) {
+          setHasDraft(true);
+          setDraftTime(parsed.savedAt ? new Date(parsed.savedAt) : null);
+        }
+      } catch (e) {
+        localStorage.removeItem(storageKey);
+      }
+    }
+  }, [storageKey]);
+
+  const saveDraft = useCallback((values) => {
+    if (values) {
+      const draft = {
+        values,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem(storageKey, JSON.stringify(draft));
+      setHasDraft(true);
+      setDraftTime(new Date());
+    }
+  }, [storageKey]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(storageKey);
+    setHasDraft(false);
+    setDraftTime(null);
+  }, [storageKey]);
+
+  const getDraft = useCallback(() => {
+    const savedDraft = localStorage.getItem(storageKey);
+    if (savedDraft) {
+      try {
+        return JSON.parse(savedDraft).values || null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }, [storageKey]);
+
+  return { hasDraft, draftTime, saveDraft, clearDraft, getDraft };
+};
 
 const CompanyBranding = () => {
   const [loading, setLoading] = useState(true);
@@ -19,10 +74,49 @@ const CompanyBranding = () => {
   const [brandForm] = Form.useForm();
   const [company, setCompany] = useState(null);
   const [logo, setLogo] = useState(null);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const draftTimeoutRef = useRef(null);
+
+  // Draft auto-save hook
+  const { hasDraft, draftTime, saveDraft, clearDraft, getDraft } = usePageDraft(DRAFT_KEY);
 
   useEffect(() => {
     fetchCompany();
   }, []);
+
+  // Check for draft on load
+  useEffect(() => {
+    if (hasDraft) {
+      setShowDraftBanner(true);
+    }
+  }, [hasDraft]);
+
+  // Auto-save when form values change
+  const handleDraftAutoSave = useCallback((changedValues, allValues) => {
+    if (draftTimeoutRef.current) {
+      clearTimeout(draftTimeoutRef.current);
+    }
+    draftTimeoutRef.current = setTimeout(() => {
+      saveDraft(allValues);
+    }, 1500);
+  }, [saveDraft]);
+
+  // Restore draft
+  const handleRestoreDraft = () => {
+    const savedValues = getDraft();
+    if (savedValues) {
+      form.setFieldsValue(savedValues);
+      message.success('Đã khôi phục dữ liệu đã lưu tạm');
+    }
+    setShowDraftBanner(false);
+  };
+
+  // Discard draft
+  const handleDiscardDraft = () => {
+    clearDraft();
+    message.info('Đã xóa dữ liệu tạm');
+    setShowDraftBanner(false);
+  };
 
   const fetchCompany = async () => {
     try {
@@ -58,6 +152,7 @@ const CompanyBranding = () => {
       setSaving(true);
       await companyAPI.update(values);
       message.success('Lưu thông tin công ty thành công!');
+      clearDraft(); // Clear draft after successful save
       fetchCompany();
     } catch (error) {
       console.error('Error saving company:', error);
@@ -83,6 +178,34 @@ const CompanyBranding = () => {
 
   return (
     <div className="company-branding-page">
+      {showDraftBanner && (
+        <div style={{ 
+          background: '#fffbe6', 
+          border: '1px solid #ffe58f', 
+          borderRadius: 8, 
+          padding: '12px 16px', 
+          marginBottom: 16,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <Text strong style={{ color: '#ad6800' }}>
+              <SaveOutlined style={{ marginRight: 8 }} />
+              Dữ liệu đã được lưu tạm {draftTime && `lúc ${draftTime.toLocaleTimeString('vi-VN')}`}
+            </Text>
+          </div>
+          <Space>
+            <Button size="small" onClick={handleDiscardDraft} icon={<RestOutlined />}>
+              Bỏ qua
+            </Button>
+            <Button size="small" type="primary" onClick={handleRestoreDraft} icon={<CheckCircleOutlined />} style={{ background: '#faad14', borderColor: '#faad14' }}>
+              Khôi phục
+            </Button>
+          </Space>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">Thương Hiệu Công Ty</Title>
@@ -106,6 +229,7 @@ const CompanyBranding = () => {
               form={form}
               layout="vertical"
               onFinish={handleSaveProfile}
+              onValuesChange={handleDraftAutoSave}
             >
               <Row gutter={16}>
                 <Col xs={24} md={12}>
