@@ -38,6 +38,7 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSchedule> InterviewSchedules => Set<InterviewSchedule>();
     public DbSet<InterviewSlotPool> InterviewSlotPools => Set<InterviewSlotPool>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
+    public DbSet<InterviewSlotInterviewer> InterviewSlotInterviewers => Set<InterviewSlotInterviewer>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
     public DbSet<CvChunk> CvChunks => Set<CvChunk>();
     public DbSet<ApplicationCriterionMatch> ApplicationCriterionMatches => Set<ApplicationCriterionMatch>();
@@ -47,6 +48,8 @@ public class SrisDbContext : DbContext
     public DbSet<OfferDetail> OfferDetails => Set<OfferDetail>();
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
+    public DbSet<JobRequirement> JobRequirements => Set<JobRequirement>();
+    public DbSet<JobBenefit> JobBenefits => Set<JobBenefit>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -71,12 +74,10 @@ public class SrisDbContext : DbContext
             e.ToTable("Job");
             e.HasKey(x => x.JobId);
             e.Ignore(x => x.Embedding); // VECTOR(1024) -> xử lý bằng raw SQL
-            e.Ignore(x => x.Department);
-            e.Ignore(x => x.Location);
-            e.Ignore(x => x.EmploymentType);
             e.Ignore(x => x.Quantity);
             e.Ignore(x => x.CvScoreThreshold);
             e.Ignore(x => x.ClosedAt);
+            // V020: JobRequirement / JobBenefit (2 bảng 1-N) thêm sau.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -150,6 +151,18 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.EndTime);     // chưa có ở schema local
             e.Ignore(x => x.Location);
             e.Ignore(x => x.MeetingLink);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+            e.HasMany(x => x.Interviewers)
+                .WithOne()
+                .HasForeignKey(x => x.SlotId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<InterviewSlotInterviewer>(e =>
+        {
+            e.ToTable("InterviewSlotInterviewer");
+            e.HasKey(x => new { x.SlotId, x.InterviewerId });
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -240,6 +253,22 @@ public class SrisDbContext : DbContext
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             // KHÔNG Global Query Filter: tra pre-auth theo hash (như Company). Cô lập không cần —
             // token hash toàn cục unique, tìm ra là biết company_id + user_id.
+        });
+
+        b.Entity<JobRequirement>(e =>
+        {
+            e.ToTable("JobRequirement");
+            e.HasKey(x => x.RequirementId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<JobBenefit>(e =>
+        {
+            e.ToTable("JobBenefit");
+            e.HasKey(x => x.BenefitId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
         b.Entity<Company>(e =>

@@ -51,6 +51,12 @@ const Recruitment = () => {
 
   const fetchJobs = async () => {
     try {
+      if (!slug) {
+        console.error('fetchJobs: thiếu slug — URL phải có dạng /{slug}/recruitment');
+        message.error('URL không hợp lệ: thiếu slug công ty. Vui lòng dùng /{slug}/recruitment.');
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       const response = await jobsAPI.getPublicJobsBySlug(slug);
       const jobList = response.data?.data || response.data || [];
@@ -71,10 +77,15 @@ const Recruitment = () => {
     
     try {
       const jobId = getJobId(job);
-      const response = await jobsAPI.getPublicJob(jobId);
-      // Backend có thể return data ở nhiều cấp khác nhau
-      const jobData = response.data?.data || response.data?.items?.[0] || response.data;
-      return jobData || job;
+      if (slug) {
+        const response = await jobsAPI.getPublicJobBySlug(slug, jobId);
+        const jobData = response.data?.data || response.data;
+        return jobData || job;
+      } else {
+        const response = await jobsAPI.getPublicJob(jobId);
+        const jobData = response.data?.data || response.data?.items?.[0] || response.data;
+        return jobData || job;
+      }
     } catch (error) {
       console.error('Error fetching job detail:', error);
       return job; // Fallback về job ban đầu
@@ -189,13 +200,14 @@ const Recruitment = () => {
     // Hỗ trợ nhiều trường salary
     if (job.salary) return job.salary;
     if (job.salaryRange) return job.salaryRange;
+    const currency = job.currency ? ` ${job.currency}` : '';
     if (job.salaryMin && job.salaryMax) {
       const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
-      return `${format(job.salaryMin)} - ${format(job.salaryMax)} VND`;
+      return `${format(job.salaryMin)} - ${format(job.salaryMax)}${currency}`;
     }
     if (job.salaryMin) {
       const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
-      return `Từ ${format(job.salaryMin)} VND`;
+      return `Từ ${format(job.salaryMin)}${currency}`;
     }
     return 'Thỏa thuận';
   };

@@ -49,14 +49,16 @@ const CreateJob = () => {
         form.setFieldsValue({
           title: job.title,
           department: job.department,
-          type: job.jobType,
+          type: job.employmentType || job.jobType,
+          experienceLevel: job.experienceLevel,
+          quantity: job.quantity,
           location: job.location || job.workLocation,
           workMode: job.workMode,
-          description: job.description,
+          description: job.jdText || job.description,
           salaryMin: job.salaryMin,
           salaryMax: job.salaryMax,
           currency: job.currency || 'VND',
-          expiresAt: job.expiresAt,
+          expiresAt: job.deadline || job.expiresAt,
         });
         
         // Set requirements and benefits if available
@@ -107,14 +109,16 @@ const CreateJob = () => {
     return {
       title: values.title,
       department: values.department,
-      jobType: values.type,
+      employmentType: values.type,
+      experienceLevel: values.experienceLevel,
+      quantity: values.quantity,
       location: values.location,
       workMode: values.workMode,
-      description: values.description,
+      jdText: values.description,
       salaryMin: values.salaryMin,
       salaryMax: values.salaryMax,
       currency: values.currency || 'VND',
-      expiresAt: values.expiresAt,
+      deadline: values.expiresAt,
       requirements: requirements.filter(r => r.trim() !== ''),
       benefits: benefits.filter(b => b.trim() !== ''),
       isPublished: false,
@@ -240,6 +244,48 @@ const CreateJob = () => {
                       <Select.Option value="Contract">Hợp đồng</Select.Option>
                       <Select.Option value="Internship">Thực tập</Select.Option>
                     </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="experienceLevel"
+                    label="Kinh Nghiệm Yêu Cầu"
+                  >
+                    <Select placeholder="Chọn mức kinh nghiệm" size="large" allowClear>
+                      <Select.Option value="Fresher">Fresher (Mới ra trường)</Select.Option>
+                      <Select.Option value="1+">1+ năm</Select.Option>
+                      <Select.Option value="2+">2+ năm</Select.Option>
+                      <Select.Option value="3+">3+ năm</Select.Option>
+                      <Select.Option value="5+">5+ năm</Select.Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col xs={24} md={8}>
+                  <Form.Item
+                    name="quantity"
+                    label="Số Lượng Tuyển"
+                  >
+                    <InputNumber
+                      size="large"
+                      style={{ width: '100%' }}
+                      min={1}
+                      max={999}
+                      placeholder="VD: 3"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={16}>
+                  <Form.Item
+                    name="skillTags"
+                    label="Kỹ Năng (phân cách bằng dấu phẩy)"
+                  >
+                    <Input
+                      placeholder="VD: React, Node.js, TypeScript"
+                      size="large"
+                    />
                   </Form.Item>
                 </Col>
               </Row>

@@ -69,6 +69,14 @@
   margin-bottom: 20px;
 }
 
+.job-skills-section {
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .candidates-table .ant-table-thead > tr > th {
   background-color: #f9faf9;
 }

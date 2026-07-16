@@ -170,6 +170,27 @@ export const interviewAPI = {
   getInterviewPools: (jobId) =>
     api.get(`/jobs/${jobId}/interview-pools`),
 
+  // Alias rõ ràng hơn — Pool theo job (Section 15 flow)
+  getPoolsByJob: (jobId) =>
+    api.get(`/jobs/${jobId}/interview-pools`),
+
+  createPool: (jobId, data) =>
+    api.post(`/jobs/${jobId}/interview-pools`, data),
+
+  inviteToPool: (poolId, data) =>
+    api.post(`/interview-pools/${poolId}/invitations`, data),
+
+  cancelPool: (poolId, data) =>
+    api.post(`/interview-pools/${poolId}/cancel`, data),
+
+  // Chốt lịch TAY qua nhánh gọi điện (recruiter không cần pool/magic link)
+  manualConfirm: (applicationId, data) =>
+    api.post(`/applications/${applicationId}/manual-interview`, data),
+
+  // Lấy danh sách interviewer (user có role chứa "Interviewer") để Recruiter chọn khi tạo pool
+  getInterviewers: () =>
+    api.get('/interview-pools/interviewers'),
+
   createSchedule: (applicationId, data) =>
     api.post(`/applications/${applicationId}/interview-schedules`, data),
 
