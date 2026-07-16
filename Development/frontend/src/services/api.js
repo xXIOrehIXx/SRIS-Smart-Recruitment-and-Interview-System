@@ -350,9 +350,11 @@ export const usersAPI = {
 
 export const publicCareerAPI = {
   // Nộp CV cho một job (multipart/form-data)
+  // Timeout cao hơn vì backend cần: upload MinIO + bóc text PDF + gọi AI embed
   apply: (slug, jobId, formData) =>
-    api.post(`/public/${slug}/jobs/${jobId}/apply`, formData, {
+    publicApi.post(`/public/${slug}/jobs/${jobId}/apply`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000, // 120s — đủ cho lần đầu Ollama load model
     }),
 };
 
