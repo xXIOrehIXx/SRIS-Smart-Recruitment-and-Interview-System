@@ -131,6 +131,9 @@ export const cvScoringAPI = {
 
   getCVScore: (cvId) =>
     api.get(`/cv-scoring/cv/${cvId}?file-url=1`),
+
+  getFileUrl: (cvId) =>
+    api.get(`/cv-scoring/cv/${cvId}/file-url`),
 };
 
 // ==================== APPLICATIONS ====================

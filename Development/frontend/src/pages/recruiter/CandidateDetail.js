@@ -17,7 +17,7 @@ import {
   IdcardOutlined,
   GlobalOutlined,
 } from '@ant-design/icons';
-import { applicationAPI, interviewAPI, jobsAPI } from '../../services/api';
+import { applicationAPI, interviewAPI, jobsAPI, cvScoringAPI } from '../../services/api';
 import './css/CandidateDetail.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -83,6 +83,7 @@ const CandidateDetail = () => {
   const [application, setApplication] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [cvUrlLoading, setCvUrlLoading] = useState(false);
 
   useEffect(() => {
     if (applicationId) fetchApplication();
@@ -139,6 +140,25 @@ const CandidateDetail = () => {
       setSchedules([]);
     } finally {
       setSchedulesLoading(false);
+    }
+  };
+
+  const handleViewCV = async () => {
+    if (!application?.cvId) return;
+    try {
+      setCvUrlLoading(true);
+      const res = await cvScoringAPI.getFileUrl(application.cvId);
+      const url = res.data?.url || res.data?.data || res.data;
+      if (typeof url === 'string' && url.startsWith('http')) {
+        window.open(url, '_blank');
+      } else {
+        message.error('Không lấy được đường dẫn file CV hợp lệ.');
+      }
+    } catch (error) {
+      console.error('Error fetching CV URL:', error);
+      message.error('Lỗi khi lấy file CV.');
+    } finally {
+      setCvUrlLoading(false);
     }
   };
 
@@ -240,9 +260,17 @@ const CandidateDetail = () => {
                 <div style={{ marginTop: 12 }}>
                   {cvParseInfo && <Tag color={cvParseInfo.color}>Parse: {cvParseInfo.label}</Tag>}
                 </div>
-                <Paragraph type="secondary" style={{ marginTop: 16, marginBottom: 0 }}>
-                  Tính năng xem/tải file CV trực tiếp sẽ được bổ sung khi backend expose URL.
-                </Paragraph>
+                <div style={{ marginTop: 16 }}>
+                  <Button
+                    type="primary"
+                    icon={<FileSearchOutlined />}
+                    disabled={!application?.cvId}
+                    loading={cvUrlLoading}
+                    onClick={handleViewCV}
+                  >
+                    Xem file CV
+                  </Button>
+                </div>
               </div>
             </Col>
             <Col xs={24} md={14}>
