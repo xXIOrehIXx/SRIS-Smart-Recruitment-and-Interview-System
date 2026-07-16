@@ -30,6 +30,7 @@ import HiringDecision from './pages/dept-manager/HiringDecision';
 import CreateRecruitmentRequest from './pages/dept-manager/CreateRecruitmentRequest';
 import OfferManagement from './pages/offer/OfferManagement';
 import CandidateResponse from './pages/candidate/CandidateResponse';
+import Schedule from './pages/candidate/Schedule';
 import Analytics from './pages/analytics/Analytics';
 import CVScoring from './pages/analytics/CVScoring';
 import TalentPool from './pages/talent-pool/TalentPool';
@@ -55,6 +56,7 @@ const App = () => {
       </Route>
 
       <Route path="/candidate/offer-response" element={<CandidateResponse />} />
+      <Route path="/schedule" element={<Schedule />} />
 
       <Route
         element={

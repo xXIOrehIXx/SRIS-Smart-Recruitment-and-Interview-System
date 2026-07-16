@@ -1,6 +1,7 @@
 using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.CareerSite;
 using GP35.SRIS.Application.Contracts.Services.Ai;
+using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
@@ -18,10 +19,14 @@ namespace GP35.SRIS.Application.Services.CandidatePortal;
 public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteService
 {
     private const string OpenStatus = "Open";
+    private const string StatusPurpose = "STATUS";
+    private const int StatusLinkTtlDays = 30;
 
     private readonly ICompanyRepo _companyRepo;
     private readonly IJobRepo _jobRepo;
     private readonly ICvScoringService _cvScoring;
+    private readonly IMagicLinkService _magicLink;
+    private readonly INotificationService _notification;
     private readonly ILogger _logger;
 
     public CareerSiteService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -29,6 +34,8 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
         _cvScoring = serviceProvider.GetRequiredService<ICvScoringService>();
+        _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
+        _notification = serviceProvider.GetRequiredService<INotificationService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<CareerSiteService>();
     }
 
@@ -84,12 +91,27 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
             throw Bad(result.Reason
                 ?? "Không đọc được nội dung CV (có thể là PDF scan ảnh). Vui lòng nộp PDF có chữ.");
 
+        var applicationId = result.ApplicationId ?? 0;
+
+        // Phát magic link STATUS để ứng viên theo dõi trạng thái
+        try
+        {
+            var issued = await _magicLink.IssueAsync(companyId, applicationId, StatusPurpose, TimeSpan.FromDays(StatusLinkTtlDays));
+            // Gửi email xác nhận kèm link xem trạng thái
+            await _notification.SendMagicLinkAsync(companyId, applicationId, StatusPurpose, issued.RawToken, issued.ExpiresAt);
+        }
+        catch (Exception ex)
+        {
+            // Best-effort: lỗi gửi mail không ảnh hưởng đến việc nộp đơn
+            _logger.Warning(ex, "CareerSite: không gửi được email xác nhận cho app={AppId}", applicationId);
+        }
+
         _logger.Information("CareerSite: ứng viên nộp CV app={AppId} job={JobId} (điểm ẩn với ứng viên).",
-            result.ApplicationId, jobId);
+            applicationId, jobId);
 
         return new PublicApplyResultDto
         {
-            ApplicationId = result.ApplicationId ?? 0
+            ApplicationId = applicationId
         };
     }
 
