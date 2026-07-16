@@ -1,241 +1,318 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Typography, Avatar, Tag, Button, Tabs, Timeline, Progress, Space, Divider, Spin, message } from 'antd';
-import { 
-  ArrowLeftOutlined, 
-  MailOutlined, 
-  PhoneOutlined, 
+import {
+  Row, Col, Card, Typography, Avatar, Tag, Button, Tabs, Timeline, Progress, Space,
+  Divider, Spin, message, Descriptions, Empty, Skeleton,
+} from 'antd';
+import {
+  ArrowLeftOutlined,
+  MailOutlined,
+  PhoneOutlined,
   CalendarOutlined,
   FileTextOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  UserOutlined,
+  TrophyOutlined,
+  FileSearchOutlined,
+  IdcardOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
-import { applicationAPI, interviewAPI } from '../../services/api';
+import { applicationAPI, interviewAPI, jobsAPI } from '../../services/api';
 import './css/CandidateDetail.css';
 
 const { Title, Text, Paragraph } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+const STATE_LABEL = {
+  NEW:       { label: 'Hồ sơ mới',   color: 'blue'    },
+  PENDING:   { label: 'Đang xử lý', color: 'gold'    },
+  SCREENING: { label: 'Sàng lọc',    color: 'purple'  },
+  INTERVIEW: { label: 'Phỏng vấn',   color: 'orange'  },
+  OFFER:     { label: 'Đề nghị',     color: 'cyan'    },
+  HIRED:     { label: 'Đã tuyển',    color: 'green'   },
+  REJECTED:  { label: 'Từ chối',     color: 'red'     },
+  WITHDRAWN: { label: 'Rút lui',     color: 'default' },
+};
+
+const CV_PARSE_LABEL = {
+  PENDING:  { label: 'Đang xử lý', color: 'gold'   },
+  PARSED:   { label: 'Đã parse',   color: 'green'  },
+  FAILED:   { label: 'Lỗi parse',  color: 'red'    },
+  SKIPPED:  { label: 'Bỏ qua',     color: 'default'},
+};
+
+const INTERVIEW_STATUS = {
+  SCHEDULED: { label: 'Đã lên lịch', color: 'blue' },
+  DONE:      { label: 'Hoàn thành',  color: 'green'},
+  CANCELLED: { label: 'Đã hủy',     color: 'red'   },
+};
+
+const ROUND_LABEL = {
+  SCREENING: 'Sàng lọc',
+  TECHNICAL: 'Kỹ thuật',
+  HR:        'HR',
+  CULTURE:   'Văn hóa',
+  FINAL:     'Cuối cùng',
+};
+
+const safe = (v, fb = 'N/A') => {
+  if (v === null || v === undefined) return fb;
+  if (typeof v === 'object') return fb;
+  return String(v);
+};
+
+const fmtDate = (d) => {
+  if (!d) return 'N/A';
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return 'N/A';
+  return dt.toLocaleDateString('vi-VN');
+};
+
+const fmtDateTime = (d) => {
+  if (!d) return 'N/A';
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return 'N/A';
+  return `${dt.toLocaleDateString('vi-VN')} ${dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 const CandidateDetail = () => {
   const { id: applicationId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState(null);
-  const [interviews, setInterviews] = useState([]);
-  const [notes, setNotes] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
 
   useEffect(() => {
-    if (applicationId) {
-      fetchApplicationDetails();
-    }
+    if (applicationId) fetchApplication();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applicationId]);
 
-  const fetchApplicationDetails = async () => {
+  const fetchApplication = async () => {
+    if (!applicationId || applicationId === '??' || applicationId === 'undefined') {
+      message.error('ID ứng viên không hợp lệ');
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
-      
-      const [appRes, historyRes, notesRes] = await Promise.all([
-        applicationAPI.getById(applicationId),
-        applicationAPI.getHistory(applicationId),
-        applicationAPI.getNotes(applicationId)
-      ]);
-
-      setApplication(appRes.data);
-      setInterviews(historyRes.data || []);
-      setNotes(notesRes.data || []);
+      const res = await applicationAPI.getById(applicationId);
+      console.log('[CandidateDetail] application raw:', res.data);
+      setApplication(res.data || null);
+      const jobId = res?.data?.jobId;
+      if (jobId) fetchSchedules(jobId);
     } catch (error) {
-      console.error('Error fetching application details:', error);
-      message.error('Không thể tải thông tin ứng viên');
+      console.error('Error fetching application:', error);
+      const status = error?.response?.status;
+      const apiMsg = error?.response?.data?.message || error?.response?.data?.error || error?.message;
+      message.error(
+        status
+          ? `Không thể tải hồ sơ (HTTP ${status}${apiMsg ? `: ${apiMsg}` : ''})`
+          : `Không thể tải hồ sơ: ${apiMsg || 'Lỗi không xác định'}`
+      );
+      setApplication(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
+  const fetchSchedules = async (jobId) => {
+    try {
+      setSchedulesLoading(true);
+      const res = await interviewAPI.getAllSchedules(jobId);
+      const data = res?.data;
+      const list = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
+      // Backend chưa có endpoint riêng cho application → lấy toàn bộ của job, filter phía client theo applicationId/candidateId
+      const filtered = list.filter((s) => {
+        const sAppId = s.applicationId ?? s.ApplicationId;
+        const sCandId = s.candidateId ?? s.CandidateId;
+        const appId = application?.applicationId ?? applicationId;
+        const candId = application?.candidateId;
+        if (sAppId && appId && Number(sAppId) === Number(appId)) return true;
+        if (sCandId && candId && Number(sCandId) === Number(candId)) return true;
+        return false;
+      });
+      setSchedules(filtered);
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+      setSchedules([]);
+    } finally {
+      setSchedulesLoading(false);
+    }
   };
 
-  const getStageLabel = (stage) => {
-    const labels = {
-      'Applied': 'Đã Ứng Tuyển',
-      'Screening': 'Sàng Lọc',
-      'Interview': 'Phỏng Vấn',
-      'Offer': 'Offer',
-      'Hired': 'Đã Tuyển',
-      'Rejected': 'Từ Chối'
-    };
-    return labels[stage] || stage || 'N/A';
+  const refreshAll = async () => {
+    await fetchApplication();
   };
 
-  const getStageColor = (stage) => {
-    const colors = {
-      'Applied': 'blue',
-      'Screening': 'purple',
-      'Interview': 'orange',
-      'Offer': 'green',
-      'Hired': 'success',
-      'Rejected': 'red'
-    };
-    return colors[stage] || 'default';
-  };
+  // ====== DERIVED ======
+  const stateInfo = useMemo(() => {
+    const s = typeof application?.currentState === 'string' ? application.currentState.toUpperCase() : '';
+    return STATE_LABEL[s] || { label: s || 'N/A', color: 'default' };
+  }, [application]);
 
-  const candidate = application?.candidate || application || {};
+  const cvParseInfo = useMemo(() => {
+    const p = typeof application?.cvParseStatus === 'string' ? application.cvParseStatus.toUpperCase() : '';
+    return CV_PARSE_LABEL[p] || null;
+  }, [application]);
 
+  const aiScore = useMemo(() => {
+    if (application?.aiMatchScore === null || application?.aiMatchScore === undefined) return null;
+    const n = Number(application.aiMatchScore);
+    return Number.isFinite(n) ? Math.round(n) : null;
+  }, [application]);
+
+  const criteriaScore = useMemo(() => {
+    if (application?.criteriaScore === null || application?.criteriaScore === undefined) return null;
+    const n = Number(application.criteriaScore);
+    return Number.isFinite(n) ? Math.round(n) : null;
+  }, [application]);
+
+  const initial = useMemo(() => {
+    const n = safe(application?.candidateName, 'U');
+    return (n[0] || 'U').toUpperCase();
+  }, [application]);
+
+  // ====== TABS ======
   const tabItems = [
     {
-      key: 'profile',
-      label: 'Hồ Sơ',
+      key: 'overview',
+      label: 'Tổng Quan',
       children: (
-        <div className="profile-tab">
-          <Row gutter={[24, 24]}>
-            <Col xs={24} lg={16}>
-              <Card className="info-card" bordered={false}>
-                <Title level={5}>Giới Thiệu</Title>
-                <Paragraph>
-                  {candidate.bio || candidate.about || 'Chưa có thông tin giới thiệu.'}
-                </Paragraph>
-                
-                <Divider />
-                
-                <Title level={5}>Kinh Nghiệm Làm Việc</Title>
-                {candidate.experience?.length > 0 ? (
-                  candidate.experience.map((exp, index) => (
-                    <div key={index} className="experience-item">
-                      <h4>{exp.position || exp.title}</h4>
-                      <Text type="secondary">{exp.company} • {exp.startDate} - {exp.endDate || 'Hiện tại'}</Text>
-                      <p>{exp.description}</p>
-                    </div>
-                  ))
-                ) : (
-                  <Text type="secondary">Chưa có thông tin kinh nghiệm</Text>
-                )}
-                
-                <Divider />
-                
-                <Title level={5}>Học Vấn</Title>
-                {candidate.education?.length > 0 ? (
-                  candidate.education.map((edu, index) => (
-                    <div key={index} className="education-item">
-                      <h4>{edu.degree}</h4>
-                      <Text type="secondary">{edu.school} • {edu.year}</Text>
-                    </div>
-                  ))
-                ) : (
-                  <Text type="secondary">Chưa có thông tin học vấn</Text>
-                )}
-              </Card>
-            </Col>
-            <Col xs={24} lg={8}>
-              <Card className="info-card" bordered={false}>
-                <Title level={5}>Kỹ Năng</Title>
-                <div className="skills-list">
-                  {candidate.skills?.length > 0 ? (
-                    candidate.skills.map((skill, index) => (
-                      <Tag key={index} color="green">{skill}</Tag>
-                    ))
-                  ) : (
-                    <Text type="secondary">Chưa có kỹ năng</Text>
-                  )}
-                </div>
-              </Card>
-            </Col>
-          </Row>
+        <div className="overview-tab">
+          <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label={<span><UserOutlined /> Họ và tên</span>}>
+              {safe(application?.candidateName)}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><MailOutlined /> Email</span>}>
+              {application?.candidateEmail ? (
+                <a href={`mailto:${application.candidateEmail}`}>{application.candidateEmail}</a>
+              ) : 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><PhoneOutlined /> Số điện thoại</span>}>
+              {safe(application?.candidatePhone)}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><GlobalOutlined /> Nguồn ứng viên</span>}>
+              {safe(application?.candidateSource)}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><IdcardOutlined /> Tin tuyển dụng</span>}>
+              {safe(application?.jobTitle, '')}
+              {application?.jobId ? ` (#${application.jobId})` : ''}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><CalendarOutlined /> Ngày ứng tuyển</span>}>
+              {fmtDateTime(application?.appliedAt)}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><CalendarOutlined /> Cập nhật pha gần nhất</span>}>
+              {fmtDateTime(application?.stageUpdatedAt)}
+            </Descriptions.Item>
+            <Descriptions.Item label={<span><FileTextOutlined /> Trạng thái CV</span>}>
+              {cvParseInfo
+                ? <Tag color={cvParseInfo.color}>{cvParseInfo.label}</Tag>
+                : 'Chưa rõ'}
+            </Descriptions.Item>
+            {application?.rejectReason && (
+              <Descriptions.Item label="Lý do từ chối">
+                <Text type="danger">{application.rejectReason}</Text>
+              </Descriptions.Item>
+            )}
+          </Descriptions>
         </div>
       ),
     },
     {
-      key: 'resume',
+      key: 'cv',
       label: 'CV',
       children: (
-        <Card className="resume-card" bordered={false}>
-          {candidate.cvUrl ? (
-            <div className="resume-preview">
-              <FileTextOutlined style={{ fontSize: 48, color: MATCHA_GREEN }} />
-              <Title level={4}>{candidate.cvFileName || 'Resume'}</Title>
-              <Button 
-                type="primary" 
-                icon={<FileTextOutlined />}
-                href={candidate.cvUrl}
-                target="_blank"
-              >
-                Tải CV
-              </Button>
-            </div>
-          ) : (
-            <div className="resume-preview">
-              <FileTextOutlined style={{ fontSize: 48, color: '#ccc' }} />
-              <Text type="secondary">Chưa có CV</Text>
-            </div>
-          )}
+        <Card className="cv-card" bordered={false}>
+          <Row gutter={[24, 24]}>
+            <Col xs={24} md={10}>
+              <div className="cv-preview">
+                <FileTextOutlined
+                  style={{ fontSize: 56, color: application?.cvId ? MATCHA_GREEN : '#ccc' }}
+                />
+                <Title level={5} style={{ marginTop: 12, marginBottom: 4 }}>
+                  {safe(application?.cvFileName, 'Chưa có CV')}
+                </Title>
+                <Text type="secondary">
+                  CV ID: {application?.cvId ? `#${application.cvId}` : 'N/A'}
+                </Text>
+                <div style={{ marginTop: 12 }}>
+                  {cvParseInfo && <Tag color={cvParseInfo.color}>Parse: {cvParseInfo.label}</Tag>}
+                </div>
+                <Paragraph type="secondary" style={{ marginTop: 16, marginBottom: 0 }}>
+                  Tính năng xem/tải file CV trực tiếp sẽ được bổ sung khi backend expose URL.
+                </Paragraph>
+              </div>
+            </Col>
+            <Col xs={24} md={14}>
+              <Title level={5}>Điểm Số</Title>
+              <Space direction="vertical" size={20} style={{ width: '100%' }}>
+                <div>
+                  <Text type="secondary">Điểm AI Match (CV ↔ JD)</Text>
+                  {aiScore === null ? (
+                    <div style={{ marginTop: 6 }}><Text type="secondary">Chưa chấm</Text></div>
+                  ) : (
+                    <Progress percent={aiScore} strokeColor={MATCHA_GREEN} format={(p) => `${p}/100`} />
+                  )}
+                </div>
+                <div>
+                  <Text type="secondary">Điểm theo tiêu chí</Text>
+                  {criteriaScore === null ? (
+                    <div style={{ marginTop: 6 }}><Text type="secondary">Chưa chấm (job chưa có tiêu chí hoặc chưa chấm)</Text></div>
+                  ) : (
+                    <Progress percent={criteriaScore} strokeColor="#722ed1" format={(p) => `${p}/100`} />
+                  )}
+                </div>
+              </Space>
+            </Col>
+          </Row>
         </Card>
       ),
     },
     {
       key: 'interviews',
-      label: 'Lịch Phỏng Vấn',
-      children: (
-        <Card className="interviews-card" bordered={false}>
-          {interviews.length > 0 ? (
-            <Timeline
-              items={interviews.map((interview, index) => ({
-                color: interview.status === 'completed' ? 'green' : 'blue',
-                children: (
-                  <div className="timeline-item">
-                    <div className="timeline-header">
-                      <span className="interview-type">{interview.type || interview.interviewType}</span>
-                      <Tag color={interview.status === 'completed' ? 'success' : 'processing'}>
-                        {interview.status === 'completed' ? 'Hoàn thành' : 'Sắp tới'}
-                      </Tag>
-                    </div>
-                    <Text type="secondary" className="interview-date">
-                      <CalendarOutlined /> {formatDate(interview.date || interview.scheduledAt)}
-                    </Text>
-                    {interview.score && (
-                      <div className="interview-score">
-                        <span>Điểm: {interview.score}</span>
-                        <Progress percent={interview.score} size="small" strokeColor={MATCHA_GREEN} />
-                      </div>
-                    )}
+      label: `Phỏng Vấn (${schedules.length})`,
+      children: schedulesLoading ? (
+        <Skeleton active />
+      ) : schedules.length === 0 ? (
+        <Empty description="Chưa có lịch phỏng vấn cho ứng viên này" />
+      ) : (
+        <Timeline
+          items={schedules.map((s) => {
+            const st = typeof s.status === 'string' ? s.status.toUpperCase() : '';
+            const cfg = INTERVIEW_STATUS[st] || { label: st || 'N/A', color: 'default' };
+            const round = typeof s.roundType === 'string' ? s.roundType.toUpperCase() : '';
+            const when = s.scheduledAt || s.startAt || s.date;
+            return {
+              color: cfg.color === 'green' ? 'green' : cfg.color === 'red' ? 'red' : 'blue',
+              children: (
+                <div className="timeline-item">
+                  <div className="timeline-header">
+                    <span className="interview-type">
+                      {ROUND_LABEL[round] || s.roundType || 'Phỏng vấn'}
+                    </span>
+                    <Tag color={cfg.color}>{cfg.label}</Tag>
                   </div>
-                ),
-              }))}
-            />
-          ) : (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <Text type="secondary">Chưa có lịch phỏng vấn</Text>
-            </div>
-          )}
-        </Card>
-      ),
-    },
-    {
-      key: 'notes',
-      label: 'Ghi Chú',
-      children: (
-        <Card className="notes-card" bordered={false}>
-          {notes.length > 0 ? (
-            notes.map((note, index) => (
-              <div key={index} className="note-item">
-                <div className="note-header">
-                  <Avatar size={32} style={{ backgroundColor: MATCHA_GREEN }}>
-                    {(note.authorName || note.author || 'N')[0]}
-                  </Avatar>
-                  <div className="note-meta">
-                    <span className="note-author">{note.authorName || note.author}</span>
-                    <span className="note-date">{formatDate(note.createdAt || note.date)}</span>
-                  </div>
+                  <Text type="secondary">
+                    <CalendarOutlined /> {fmtDateTime(when)}
+                  </Text>
+                  {s.location && (
+                    <div><Text type="secondary">Địa điểm: {safe(s.location)}</Text></div>
+                  )}
+                  {s.interviewerName && (
+                    <div><Text type="secondary">Người phỏng vấn: {safe(s.interviewerName)}</Text></div>
+                  )}
+                  {s.notes && (
+                    <Paragraph type="secondary" style={{ marginTop: 6, marginBottom: 0 }}>
+                      {safe(s.notes)}
+                    </Paragraph>
+                  )}
                 </div>
-                <p className="note-content">{note.content || note.note}</p>
-              </div>
-            ))
-          ) : (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <Text type="secondary">Chưa có ghi chú</Text>
-            </div>
-          )}
-        </Card>
+              ),
+            };
+          })}
+        />
       ),
     },
   ];
@@ -248,43 +325,54 @@ const CandidateDetail = () => {
     );
   }
 
+  if (!application) {
+    return (
+      <div style={{ padding: 32 }}>
+        <Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>Quay Lại</Button>
+        <Empty description="Không tìm thấy hồ sơ ứng viên" style={{ marginTop: 48 }} />
+      </div>
+    );
+  }
+
   return (
     <div className="candidate-detail-page">
       <div className="page-header">
-        <Button 
-          onClick={() => navigate(-1)} 
+        <Button
+          onClick={() => navigate(-1)}
           className="back-btn"
           icon={<ArrowLeftOutlined />}
         >
           Quay Lại
         </Button>
-        <Button 
-          icon={<ReloadOutlined />} 
-          onClick={fetchApplicationDetails}
-          loading={loading}
-        >
+        <Button icon={<ReloadOutlined />} onClick={refreshAll} loading={loading}>
           Làm Mới
         </Button>
       </div>
 
       <Row gutter={[24, 24]}>
+        {/* ====== LEFT: PROFILE ====== */}
         <Col xs={24} lg={8}>
           <Card className="profile-card" bordered={false}>
             <div className="profile-header">
               <Avatar size={100} style={{ backgroundColor: MATCHA_GREEN, fontSize: 40 }}>
-                {(candidate.fullName || candidate.name || 'N')[0]}
+                {initial}
               </Avatar>
-              <Title level={3} className="profile-name">{candidate.fullName || candidate.name || 'N/A'}</Title>
-              <Text type="secondary">{application?.jobTitle || candidate.position || 'N/A'}</Text>
-              
+              <Title level={3} className="profile-name">
+                {safe(application.candidateName)}
+              </Title>
+              <Text type="secondary">
+                {safe(application.jobTitle, 'Chưa rõ tin tuyển dụng')}
+              </Text>
+
               <div className="profile-tags">
-                <Tag color={getStageColor(application?.state)}>
-                  {getStageLabel(application?.state)}
-                </Tag>
-                {(application?.cvScore || candidate.score) && (
-                  <Tag color={(application?.cvScore || candidate.score) >= 80 ? 'success' : 'warning'}>
-                    Điểm: {application?.cvScore || candidate.score}%
+                <Tag color={stateInfo.color}>{stateInfo.label}</Tag>
+                {aiScore !== null && (
+                  <Tag color={aiScore >= 80 ? 'success' : aiScore >= 60 ? 'warning' : 'default'}>
+                    AI: {aiScore}
                   </Tag>
+                )}
+                {criteriaScore !== null && (
+                  <Tag color="purple">Tiêu chí: {criteriaScore}</Tag>
                 )}
               </div>
             </div>
@@ -294,31 +382,64 @@ const CandidateDetail = () => {
             <div className="profile-contact">
               <div className="contact-item">
                 <MailOutlined />
-                <span>{candidate.email || 'N/A'}</span>
+                {application.candidateEmail ? (
+                  <a href={`mailto:${application.candidateEmail}`}>{application.candidateEmail}</a>
+                ) : <span>N/A</span>}
               </div>
-              {candidate.phone && (
+              {application.candidatePhone && (
                 <div className="contact-item">
                   <PhoneOutlined />
-                  <span>{candidate.phone}</span>
+                  <span>{application.candidatePhone}</span>
+                </div>
+              )}
+              {application.candidateSource && (
+                <div className="contact-item">
+                  <GlobalOutlined />
+                  <span>{application.candidateSource}</span>
                 </div>
               )}
               <div className="contact-item">
                 <CalendarOutlined />
-                <span>Ứng tuyển: {formatDate(application?.appliedAt || candidate.appliedDate)}</span>
+                <span>Ứng tuyển: {fmtDate(application.appliedAt)}</span>
               </div>
+              {application?.jobId && (
+                <div className="contact-item">
+                  <FileSearchOutlined />
+                  <a onClick={() => navigate(`/recruiter/jobs/${application.jobId}`)} style={{ cursor: 'pointer' }}>
+                    Xem tin tuyển dụng
+                  </a>
+                </div>
+              )}
             </div>
 
             <Divider />
 
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Button block icon={<MailOutlined />}>Gửi Email</Button>
-              <Button block icon={<CalendarOutlined />} type="primary" className="schedule-btn">
+              <Button block icon={<MailOutlined />} disabled={!application.candidateEmail}>
+                Gửi Email
+              </Button>
+              <Button
+                block
+                icon={<CalendarOutlined />}
+                type="primary"
+                className="schedule-btn"
+                onClick={() => application?.jobId && navigate(`/recruiter/jobs/${application.jobId}/candidates`)}
+              >
                 Lên Lịch Phỏng Vấn
               </Button>
             </Space>
+
+            {application?.rejectReason && (
+              <>
+                <Divider />
+                <Title level={5}>Lý do từ chối</Title>
+                <Text type="danger">{application.rejectReason}</Text>
+              </>
+            )}
           </Card>
         </Col>
 
+        {/* ====== RIGHT: TABS ====== */}
         <Col xs={24} lg={16}>
           <Card className="content-card" bordered={false}>
             <Tabs items={tabItems} />
