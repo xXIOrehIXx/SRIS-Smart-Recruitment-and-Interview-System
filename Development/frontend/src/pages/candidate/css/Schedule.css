@@ -1,0 +1,234 @@
+.schedule-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8faf6 0%, #f0f4eb 100%);
+}
+
+.schedule-layout .sch-header {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e7e7e6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.sch-header .header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.sch-header .header-logo span {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+.sch-content {
+  padding: 40px 24px;
+}
+
+.sch-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.sch-hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.sch-hero-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5D8C3E, #7ab356);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 36px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(93, 140, 62, 0.3);
+}
+
+.sch-hero-title {
+  color: #1a1a1a !important;
+  margin-bottom: 12px !important;
+  font-size: 28px !important;
+}
+
+.sch-hero-subtitle {
+  color: #6b6b6b;
+  font-size: 16px;
+  max-width: 560px;
+  margin: 0 auto !important;
+}
+
+.sch-info-alert {
+  margin-bottom: 24px;
+  border-radius: 12px;
+}
+
+.sch-info .ant-descriptions-item-label {
+  color: #8c8c8b;
+  font-size: 13px;
+}
+
+.sch-info .ant-descriptions-item-content {
+  font-size: 14px;
+}
+
+.sch-slots-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  border: none;
+  overflow: hidden;
+}
+
+.sch-slots-card .ant-card-body {
+  padding: 0;
+}
+
+.sch-slots-header {
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #f8faf6, #f0f4eb);
+  border-bottom: 1px solid #e7e7e6;
+}
+
+.sch-slots-group {
+  display: block;
+}
+
+.sch-slots-list {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sch-slot-card {
+  border: 2px solid #e7e7e6 !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease;
+}
+
+.sch-slot-card:hover {
+  border-color: #5D8C3E !important;
+  box-shadow: 0 2px 12px rgba(93, 140, 62, 0.15);
+}
+
+.sch-slot-card.selected {
+  border-color: #5D8C3E !important;
+  background: linear-gradient(135deg, #f8faf6, #f0f4eb);
+}
+
+.sch-slot-card .ant-card-body {
+  padding: 16px;
+}
+
+.sch-slot-card .ant-radio-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+.sch-slot-content {
+  margin-left: 8px;
+  flex: 1;
+}
+
+.sch-slot-date {
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.sch-slot-time {
+  color: #5D8C3E;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.sch-slot-interviewer {
+  color: #8c8c8b;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.sch-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sch-confirm-btn {
+  height: 48px;
+  background: linear-gradient(135deg, #5D8C3E, #7ab356) !important;
+  border-color: #5D8C3E !important;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 10px;
+}
+
+.sch-confirm-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4a7832, #6aa344) !important;
+  border-color: #4a7832 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(93, 140, 62, 0.4);
+}
+
+.sch-confirm-btn:disabled {
+  background: #d9d9d9 !important;
+  border-color: #d9d9d9 !important;
+}
+
+.sch-no-slot-btn {
+  height: 44px;
+  font-weight: 500;
+  border-radius: 10px;
+}
+
+.sch-footer-note {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.sch-footer {
+  text-align: center;
+  border-top: 1px solid #e7e7e6;
+  background: transparent;
+  padding: 20px;
+}
+
+@media (max-width: 600px) {
+  .sch-hero-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+
+  .sch-hero-title {
+    font-size: 22px !important;
+  }
+
+  .sch-slots-header {
+    padding: 20px;
+  }
+
+  .sch-slots-list {
+    padding: 16px 20px;
+  }
+}

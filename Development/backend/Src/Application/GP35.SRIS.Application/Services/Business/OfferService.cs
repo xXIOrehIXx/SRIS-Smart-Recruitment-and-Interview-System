@@ -24,6 +24,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
     private readonly IOfferRepo _offerRepo;
     private readonly IApplicationStateService _stateService;
     private readonly IMagicLinkService _magicLink;
+    private readonly INotificationService _notification;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly ILogger _logger;
 
@@ -34,6 +35,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
         _offerRepo = serviceProvider.GetRequiredService<IOfferRepo>();
         _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
+        _notification = serviceProvider.GetRequiredService<INotificationService>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<OfferService>();
     }
@@ -75,6 +77,17 @@ public class OfferService : BaseService<OfferService>, IOfferService
 
         // Phát magic link OFFER_RESPONSE cho ứng viên (token gốc chỉ có ở đây — gửi qua email).
         var issued = await _magicLink.IssueAsync(companyId, applicationId, Purpose, TimeSpan.FromDays(ttlDays));
+
+        // Gửi email cho ứng viên với magic link
+        try
+        {
+            await _notification.SendMagicLinkAsync(companyId, applicationId, Purpose, issued.RawToken, issued.ExpiresAt);
+        }
+        catch (Exception ex)
+        {
+            // Best-effort: lỗi gửi mail không ảnh hưởng đến việc tạo offer
+            _logger.Warning(ex, "Offer: không gửi được email OFFER_RESPONSE cho app={AppId}", applicationId);
+        }
 
         await _activityLogRepo.InsertAsync(companyId, new ActivityLog
         {
