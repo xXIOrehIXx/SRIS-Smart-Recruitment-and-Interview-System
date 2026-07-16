@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card, Typography, Button, Table, Tag, Modal, Form, Input, Select,
   Slider, Space, message, Popconfirm, Tooltip, Row, Col, Descriptions,
-  Divider, Tabs, Empty, InputNumber
+  Divider, Tabs, Empty, InputNumber, Badge
 } from 'antd';
 import {
   PlusOutlined, CheckSquareOutlined, EditOutlined, DeleteOutlined,
   ReloadOutlined, CopyOutlined, CheckCircleOutlined, StarOutlined,
-  EyeOutlined, SearchOutlined
+  EyeOutlined, SearchOutlined, SaveOutlined, RestOutlined
 } from '@ant-design/icons';
 import { criteriaAPI, jobsAPI } from '../../services/api';
 import './css/Criteria.css';
@@ -15,6 +15,58 @@ import './css/Criteria.css';
 const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
+const DRAFT_KEY = 'criteria_template_draft';
+
+// Auto-save hook
+const useDraftSave = (storageKey) => {
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftTime, setDraftTime] = useState(null);
+  const draftTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(storageKey);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && parsed.values && Object.keys(parsed.values).length > 0) {
+          setHasDraft(true);
+          setDraftTime(parsed.savedAt ? new Date(parsed.savedAt) : null);
+        }
+      } catch (e) {
+        localStorage.removeItem(storageKey);
+      }
+    }
+  }, [storageKey]);
+
+  const saveDraft = useCallback((values) => {
+    if (values) {
+      const draft = { values, savedAt: new Date().toISOString() };
+      localStorage.setItem(storageKey, JSON.stringify(draft));
+      setHasDraft(true);
+      setDraftTime(new Date());
+    }
+  }, [storageKey]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(storageKey);
+    setHasDraft(false);
+    setDraftTime(null);
+  }, [storageKey]);
+
+  const getDraft = useCallback(() => {
+    const savedDraft = localStorage.getItem(storageKey);
+    if (savedDraft) {
+      try {
+        return JSON.parse(savedDraft).values || null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }, [storageKey]);
+
+  return { hasDraft, draftTime, saveDraft, clearDraft, getDraft };
+};
 
 const Criteria = () => {
   const [loading, setLoading] = useState(false);
@@ -32,16 +84,43 @@ const Criteria = () => {
   const [editConfirmModalOpen, setEditConfirmModalOpen] = useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const draftTimeoutRef = useRef(null);
 
   const [form] = Form.useForm();
   const [assignForm] = Form.useForm();
   const [editForm] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
 
+  // Draft auto-save
+  const { hasDraft, draftTime, saveDraft, clearDraft, getDraft } = useDraftSave(DRAFT_KEY);
+
   useEffect(() => {
     fetchTemplates();
     fetchJobs();
+    if (hasDraft) setShowDraftBanner(true);
   }, []);
+
+  // Auto-save handler
+  const handleDraftAutoSave = useCallback((changedValues, allValues) => {
+    if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
+    draftTimeoutRef.current = setTimeout(() => saveDraft(allValues), 1500);
+  }, [saveDraft]);
+
+  const handleRestoreDraft = () => {
+    const savedValues = getDraft();
+    if (savedValues) {
+      form.setFieldsValue(savedValues);
+      message.success('Đã khôi phục dữ liệu đã lưu tạm');
+    }
+    setShowDraftBanner(false);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    message.info('Đã xóa dữ liệu tạm');
+    setShowDraftBanner(false);
+  };
 
   useEffect(() => {
     if (selectedJob) {
@@ -182,6 +261,7 @@ const Criteria = () => {
       await criteriaAPI.createTemplate(values);
       message.success('Tạo template tiêu chí thành công!');
       setCreateModalOpen(false);
+      clearDraft(); // Clear draft after success
       form.resetFields();
       fetchTemplates();
     } catch (error) {
@@ -437,6 +517,30 @@ const Criteria = () => {
 
   return (
     <div className="criteria-page">
+      {showDraftBanner && (
+        <div style={{
+          background: '#fffbe6',
+          border: '1px solid #ffe58f',
+          borderRadius: 8,
+          padding: '12px 16px',
+          marginBottom: 16,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <Text strong style={{ color: '#ad6800' }}>
+              <SaveOutlined style={{ marginRight: 8 }} />
+              Dữ liệu đã được lưu tạm {draftTime && `lúc ${draftTime.toLocaleTimeString('vi-VN')}`}
+            </Text>
+          </div>
+          <Space>
+            <Button size="small" onClick={handleDiscardDraft} icon={<RestOutlined />}>Bỏ qua</Button>
+            <Button size="small" type="primary" onClick={handleRestoreDraft} icon={<CheckCircleOutlined />} style={{ background: '#faad14', borderColor: '#faad14' }}>Khôi phục</Button>
+          </Space>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">Tiêu Chí Đánh Giá</Title>
@@ -464,12 +568,32 @@ const Criteria = () => {
           </div>
         }
         open={createModalOpen}
-        onCancel={() => { setCreateModalOpen(false); form.resetFields(); }}
+        onCancel={() => { setCreateModalOpen(false); /* keep draft */ }}
         footer={null}
         width={500}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleCreateTemplate} style={{ marginTop: 20 }}>
+        {hasDraft && (
+          <div style={{
+            background: '#fffbe6',
+            border: '1px solid #ffe58f',
+            borderRadius: 6,
+            padding: '8px 12px',
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              <SaveOutlined style={{ color: '#faad14', marginRight: 6 }} />
+              Có dữ liệu được lưu tạm
+            </Text>
+            <Space size={4}>
+              <Button size="small" onClick={handleDiscardDraft}>Xóa</Button>
+              <Button size="small" type="primary" onClick={handleRestoreDraft}>Khôi phục</Button>
+            </Space>
+          </div>
+        )}
+        <Form form={form} layout="vertical" onFinish={handleCreateTemplate} onValuesChange={handleDraftAutoSave} style={{ marginTop: 16 }}>
           <Form.Item
             label="Tên template"
             name="name"
@@ -487,7 +611,7 @@ const Criteria = () => {
             </Space>
           </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setCreateModalOpen(false)}>Hủy</Button>
+            <Button onClick={() => { clearDraft(); setCreateModalOpen(false); form.resetFields(); }}>Hủy</Button>
             <Button
               type="primary"
               htmlType="submit"

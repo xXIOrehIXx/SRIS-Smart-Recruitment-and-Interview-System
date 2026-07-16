@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card, Typography, Button, Table, Tag, Modal, Form, Input, Select,
   Space, message, Tooltip, Row, Col, Statistic, Descriptions,
-  InputNumber, Divider
+  InputNumber, Divider, Popconfirm, Badge
 } from 'antd';
 import {
   PlusOutlined, MailOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
-  ReloadOutlined, CopyOutlined, FileTextOutlined, SearchOutlined
+  ReloadOutlined, CopyOutlined, FileTextOutlined, SearchOutlined,
+  SaveOutlined, RestOutlined
 } from '@ant-design/icons';
 import { mailTemplateAPI } from '../../services/api';
 import './css/MailTemplates.css';
@@ -15,12 +16,63 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const MATCHA_GREEN = '#5D8C3E';
+const DRAFT_KEY = 'mail_template_draft';
+
+// Custom hook for draft auto-save
+const useDraftSave = (storageKey) => {
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftData, setDraftData] = useState(null);
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(storageKey);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && Object.keys(parsed).length > 0) {
+          setHasDraft(true);
+          setDraftData(parsed);
+        }
+      } catch (e) {
+        localStorage.removeItem(storageKey);
+      }
+    }
+  }, [storageKey]);
+
+  const saveDraft = useCallback((values) => {
+    if (values) {
+      localStorage.setItem(storageKey, JSON.stringify(values));
+      setHasDraft(true);
+      setDraftData(values);
+    }
+  }, [storageKey]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(storageKey);
+    setHasDraft(false);
+    setDraftData(null);
+  }, [storageKey]);
+
+  const getDraft = useCallback(() => {
+    const savedDraft = localStorage.getItem(storageKey);
+    if (savedDraft) {
+      try {
+        return JSON.parse(savedDraft);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }, [storageKey]);
+
+  return { hasDraft, draftData, saveDraft, clearDraft, getDraft };
+};
 
 const MailTemplates = () => {
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
 
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -33,11 +85,47 @@ const MailTemplates = () => {
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
 
+  // Draft auto-save hook
+  const { hasDraft, draftData, saveDraft, clearDraft, getDraft } = useDraftSave(DRAFT_KEY);
+  const draftTimeoutRef = useRef(null);
+
   const previewData = { candidateName: 'Nguyễn Văn A', jobTitle: 'Frontend Developer', companyName: 'SRIS' };
 
   useEffect(() => {
+    // Check for draft on mount
+    if (hasDraft) {
+      setShowDraftModal(true);
+    }
     fetchTemplates();
   }, []);
+
+  // Auto-save draft when form values change
+  const handleDraftAutoSave = useCallback((changedValues, allValues) => {
+    if (draftTimeoutRef.current) {
+      clearTimeout(draftTimeoutRef.current);
+    }
+    draftTimeoutRef.current = setTimeout(() => {
+      saveDraft(allValues);
+    }, 1000);
+  }, [saveDraft]);
+
+  // Restore draft into form
+  const handleRestoreDraft = () => {
+    const savedValues = getDraft();
+    if (savedValues) {
+      form.setFieldsValue(savedValues);
+      message.success('Đã khôi phục dữ liệu đã lưu tạm');
+    }
+    setShowDraftModal(false);
+  };
+
+  // Discard draft and start fresh
+  const handleDiscardDraft = () => {
+    clearDraft();
+    form.resetFields();
+    message.info('Đã xóa dữ liệu tạm. Bắt đầu nhập mới.');
+    setShowDraftModal(false);
+  };
 
   const fetchTemplates = async () => {
     try {
@@ -143,6 +231,7 @@ const MailTemplates = () => {
       await mailTemplateAPI.create(values);
       message.success('Tạo mẫu email thành công!');
       setCreateModalOpen(false);
+      clearDraft(); // Clear draft after successful submission
       form.resetFields();
       fetchTemplates();
     } catch (error) {
@@ -155,6 +244,7 @@ const MailTemplates = () => {
 
   // Duplicate
   const handleDuplicate = (record) => {
+    clearDraft(); // Clear old draft when duplicating
     form.setFieldsValue({
       name: `${record.name} (Copy)`,
       subject: record.subject,
@@ -278,11 +368,11 @@ const MailTemplates = () => {
           </Button>
           <Button
             type="primary"
-            icon={<PlusOutlined />}
+            icon={hasDraft ? <SaveOutlined /> : <PlusOutlined />}
             onClick={() => setCreateModalOpen(true)}
             style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
           >
-            Tạo Mẫu Mới
+            Tạo Mẫu Mới {hasDraft && <Badge status="warning" />}
           </Button>
         </Space>
       </div>
@@ -342,13 +432,43 @@ const MailTemplates = () => {
         open={createModalOpen}
         onCancel={() => {
           setCreateModalOpen(false);
-          form.resetFields();
+          // Don't clear form - keep draft
         }}
         footer={null}
         width={640}
-        destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleCreate} style={{ marginTop: 20 }}>
+        {hasDraft && (
+          <div style={{ 
+            background: '#fffbe6', 
+            border: '1px solid #ffe58f', 
+            borderRadius: 6, 
+            padding: '10px 12px', 
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <Text type="secondary">
+              <SaveOutlined style={{ color: '#faad14', marginRight: 8 }} />
+              Có dữ liệu được lưu tạm
+            </Text>
+            <Space>
+              <Button size="small" onClick={handleDiscardDraft} icon={<RestOutlined />}>
+                Xóa
+              </Button>
+              <Button size="small" type="primary" onClick={handleRestoreDraft} icon={<SaveOutlined />}>
+                Khôi phục
+              </Button>
+            </Space>
+          </div>
+        )}
+        <Form 
+          form={form} 
+          layout="vertical" 
+          onFinish={handleCreate} 
+          onValuesChange={handleDraftAutoSave}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             label="Tên mẫu"
             name="name"
@@ -397,7 +517,15 @@ const MailTemplates = () => {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setCreateModalOpen(false)}>Hủy</Button>
+            <Button 
+              onClick={() => {
+                clearDraft();
+                setCreateModalOpen(false);
+                form.resetFields();
+              }}
+            >
+              Hủy
+            </Button>
             <Button
               type="primary"
               htmlType="submit"
