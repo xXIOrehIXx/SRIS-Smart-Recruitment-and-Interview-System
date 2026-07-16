@@ -26,6 +26,20 @@ public class Job : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHasCompany
     public string? Location { get; set; }
     [Column("employment_type")]
     public string? EmploymentType { get; set; }
+    [Column("work_mode")]
+    public string? WorkMode { get; set; }
+    [Column("experience_level")]
+    public string? ExperienceLevel { get; set; }
+    [Column("salary_min")]
+    public decimal? SalaryMin { get; set; }
+    [Column("salary_max")]
+    public decimal? SalaryMax { get; set; }
+    [Column("currency")]
+    public string? Currency { get; set; }
+    [Column("deadline")]
+    public DateTime? Deadline { get; set; }
+    [Column("skill_tags")]
+    public string? SkillTags { get; set; }
     [Column("quantity")]
     public int Quantity { get; set; }
     [Column("cv_score_threshold")]

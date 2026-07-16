@@ -29,9 +29,29 @@ public interface IJobRepo : IBaseRepo<long, Job>
     Task<int> UpdateAsync(long companyId, long jobId, string title, string? jdText,
         long? departmentManagerId, string status, bool jdChanged);
 
+    /// <summary>
+    /// V020: Cập nhật Job đầy đủ field (department, location, salary, deadline...).
+    /// jdChanged=true -> NULL embedding. Trả số dòng.
+    /// </summary>
+    Task<int> UpdateExtendedAsync(long companyId, long jobId, Job job, bool jdChanged);
+
     /// <summary>API CÔNG KHAI: Lấy tất cả job đang tuyển (Status = 'Open').</summary>
     Task<IEnumerable<Job>> GetPublicOpenJobsAsync();
 
     /// <summary>API CÔNG KHAI: Lấy 1 job đang tuyển theo id.</summary>
     Task<Job?> GetPublicOpenJobAsync(long jobId);
+
+    /* ===== V020: yêu cầu + quyền lợi (1-N) ===== */
+
+    /// <summary>Lấy danh sách yêu cầu theo thứ tự ordinal.</summary>
+    Task<IReadOnlyList<JobRequirement>> GetRequirementsAsync(long companyId, long jobId);
+
+    /// <summary>Lấy danh sách quyền lợi theo thứ tự ordinal.</summary>
+    Task<IReadOnlyList<JobBenefit>> GetBenefitsAsync(long companyId, long jobId);
+
+    /// <summary>Xóa toàn bộ yêu cầu cũ rồi chèn lại theo danh sách mới (transaction).</summary>
+    Task ReplaceRequirementsAsync(long companyId, long jobId, IReadOnlyList<string> contents);
+
+    /// <summary>Xóa toàn bộ quyền lợi cũ rồi chèn lại theo danh sách mới (transaction).</summary>
+    Task ReplaceBenefitsAsync(long companyId, long jobId, IReadOnlyList<string> contents);
 }

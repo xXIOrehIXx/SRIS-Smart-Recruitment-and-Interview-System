@@ -51,6 +51,12 @@ const Recruitment = () => {
 
   const fetchJobs = async () => {
     try {
+      if (!slug) {
+        console.error('fetchJobs: thiếu slug — URL phải có dạng /{slug}/recruitment');
+        message.error('URL không hợp lệ: thiếu slug công ty. Vui lòng dùng /{slug}/recruitment.');
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       const response = await jobsAPI.getPublicJobsBySlug(slug);
       const jobList = response.data?.data || response.data || [];
@@ -65,7 +71,11 @@ const Recruitment = () => {
 
   const fetchJobDetail = async (jobId) => {
     try {
-      const response = await jobsAPI.getPublicJob(jobId);
+      if (!slug) {
+        console.error('fetchJobDetail: thiếu slug — kiểm tra URL phải có dạng /{slug}/recruitment');
+        return null;
+      }
+      const response = await jobsAPI.getPublicJobBySlug(slug, jobId);
       return response.data?.data || response.data;
     } catch (error) {
       console.error('Error fetching job detail:', error);
@@ -180,9 +190,14 @@ const Recruitment = () => {
 
   const formatSalary = (job) => {
     if (job.salary) return job.salary;
+    const currency = job.currency ? ` ${job.currency}` : '';
     if (job.salaryMin && job.salaryMax) {
       const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
-      return `${format(job.salaryMin)} - ${format(job.salaryMax)}`;
+      return `${format(job.salaryMin)} - ${format(job.salaryMax)}${currency}`;
+    }
+    if (job.salaryMin) {
+      const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
+      return `Từ ${format(job.salaryMin)}${currency}`;
     }
     return 'Thỏa thuận';
   };
@@ -295,13 +310,6 @@ const Recruitment = () => {
               className={appliedJobs.includes(jobId) ? 'applied-btn' : 'apply-btn-large'}
             >
               {appliedJobs.includes(jobId) ? 'Đã ứng tuyển' : 'Apply ngay'}
-            </Button>
-            <Button 
-              icon={<SaveOutlined />}
-              size="large"
-              className="save-btn"
-            >
-              Lưu
             </Button>
           </div>
         </div>
