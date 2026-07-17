@@ -50,7 +50,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5D8C3E, #7ab356);
+  background: linear-gradient(135deg, #5d8c3e, #7ab356);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,8 +136,8 @@
 .accept-btn {
   flex: 1;
   height: 48px;
-  background: linear-gradient(135deg, #5D8C3E, #7ab356) !important;
-  border-color: #5D8C3E !important;
+  background: linear-gradient(135deg, #5d8c3e, #7ab356) !important;
+  border-color: #5d8c3e !important;
   font-weight: 600;
   font-size: 15px;
   border-radius: 10px;

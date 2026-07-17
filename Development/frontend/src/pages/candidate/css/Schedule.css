@@ -50,7 +50,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5D8C3E, #7ab356);
+  background: linear-gradient(135deg, #5d8c3e, #7ab356);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -122,12 +122,12 @@
 }
 
 .sch-slot-card:hover {
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
   box-shadow: 0 2px 12px rgba(93, 140, 62, 0.15);
 }
 
 .sch-slot-card.selected {
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
   background: linear-gradient(135deg, #f8faf6, #f0f4eb);
 }
 
@@ -154,7 +154,7 @@
 }
 
 .sch-slot-time {
-  color: #5D8C3E;
+  color: #5d8c3e;
   font-weight: 500;
   font-size: 14px;
 }
@@ -174,8 +174,8 @@
 
 .sch-confirm-btn {
   height: 48px;
-  background: linear-gradient(135deg, #5D8C3E, #7ab356) !important;
-  border-color: #5D8C3E !important;
+  background: linear-gradient(135deg, #5d8c3e, #7ab356) !important;
+  border-color: #5d8c3e !important;
   font-weight: 600;
   font-size: 15px;
   border-radius: 10px;

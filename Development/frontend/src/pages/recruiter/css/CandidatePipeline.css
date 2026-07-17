@@ -117,7 +117,7 @@
 }
 
 .candidate-card:hover {
-  border-color: #5D8C3E;
+  border-color: #5d8c3e;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
@@ -137,7 +137,7 @@
 }
 
 .card-menu-btn:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
   background-color: #f4f8f2;
 }
 
@@ -168,7 +168,7 @@
 }
 
 .meta-item.score {
-  color: #5D8C3E;
+  color: #5d8c3e;
   font-weight: 500;
 }
 
@@ -192,7 +192,7 @@
 }
 
 .card-footer .ant-btn:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 /* Candidate Modal */
@@ -241,8 +241,8 @@
 }
 
 .tab-btn.active {
-  color: #5D8C3E;
-  border-bottom: 2px solid #5D8C3E;
+  color: #5d8c3e;
+  border-bottom: 2px solid #5d8c3e;
 }
 
 .detail-content {
@@ -271,7 +271,7 @@
 }
 
 .info-item .anticon {
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .detail-actions {
@@ -284,8 +284,8 @@
 }
 
 .move-btn {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 /* Responsive */

@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@300;400;500;600;700;800&display=swap");
 
 :root {
   /* Matcha Color Palette */
@@ -6,8 +7,8 @@
   --matcha-200: #e3eddd;
   --matcha-300: #c8d9bc;
   --matcha-400: #a8c392;
-  --matcha-500: #7BA55C;
-  --matcha-600: #5D8C3E;
+  --matcha-500: #7ba55c;
+  --matcha-600: #5d8c3e;
   --matcha-700: #4a7230;
   --matcha-800: #3d5f28;
   --matcha-900: #2d4620;
@@ -34,9 +35,12 @@
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -51,7 +55,12 @@ html {
 }
 
 body {
-  font-family: 'Inter', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "Inter",
+    "Nunito",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   background-color: var(--gray-100);
   color: var(--gray-800);
   line-height: 1.6;
@@ -70,17 +79,33 @@ a:hover {
 }
 
 /* Utility Classes */
-.text-matcha { color: var(--matcha-600); }
-.text-matcha-light { color: var(--matcha-400); }
-.text-matcha-dark { color: var(--matcha-800); }
-
-.bg-matcha { background-color: var(--matcha-600); }
-.bg-matcha-light { background-color: var(--matcha-100); }
-.bg-matcha-gradient {
-  background: linear-gradient(135deg, var(--matcha-600) 0%, var(--matcha-500) 100%);
+.text-matcha {
+  color: var(--matcha-600);
+}
+.text-matcha-light {
+  color: var(--matcha-400);
+}
+.text-matcha-dark {
+  color: var(--matcha-800);
 }
 
-.bg-white { background-color: var(--white); }
+.bg-matcha {
+  background-color: var(--matcha-600);
+}
+.bg-matcha-light {
+  background-color: var(--matcha-100);
+}
+.bg-matcha-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--matcha-600) 0%,
+    var(--matcha-500) 100%
+  );
+}
+
+.bg-white {
+  background-color: var(--white);
+}
 
 /* Ant Design Overrides */
 .ant-layout {
@@ -135,7 +160,9 @@ a:hover {
 .page-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 300ms ease, transform 300ms ease;
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
 }
 
 .page-exit {
@@ -169,24 +196,33 @@ a:hover {
 
 /* Animation Classes */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .animate-fade-in {
