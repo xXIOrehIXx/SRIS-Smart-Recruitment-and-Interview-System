@@ -9,95 +9,31 @@ import {
   Form,
   Input,
   Select,
-  Slider,
   Space,
   message,
   Popconfirm,
   Tooltip,
-  Row,
-  Col,
-  Descriptions,
   Divider,
   Tabs,
-  Empty,
   InputNumber,
-  Badge,
 } from "antd";
 import {
   PlusOutlined,
-  CheckSquareOutlined,
-  EditOutlined,
   DeleteOutlined,
-  ReloadOutlined,
-  CopyOutlined,
-  CheckCircleOutlined,
-  StarOutlined,
+  EditOutlined,
   EyeOutlined,
-  SearchOutlined,
+  ReloadOutlined,
   SaveOutlined,
   RestOutlined,
+  CheckCircleOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { criteriaAPI, jobsAPI } from "../../services/api";
 import "./css/Criteria.css";
 
 const { Title, Text } = Typography;
-
 const MATCHA_GREEN = "#5D8C3E";
 const DRAFT_KEY = "criteria_template_draft";
-
-// Auto-save hook
-const useDraftSave = (storageKey) => {
-  const [hasDraft, setHasDraft] = useState(false);
-  const [draftTime, setDraftTime] = useState(null);
-  const draftTimeoutRef = useRef(null);
-
-  useEffect(() => {
-    const savedDraft = localStorage.getItem(storageKey);
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed && parsed.values && Object.keys(parsed.values).length > 0) {
-          setHasDraft(true);
-          setDraftTime(parsed.savedAt ? new Date(parsed.savedAt) : null);
-        }
-      } catch (e) {
-        localStorage.removeItem(storageKey);
-      }
-    }
-  }, [storageKey]);
-
-  const saveDraft = useCallback(
-    (values) => {
-      if (values) {
-        const draft = { values, savedAt: new Date().toISOString() };
-        localStorage.setItem(storageKey, JSON.stringify(draft));
-        setHasDraft(true);
-        setDraftTime(new Date());
-      }
-    },
-    [storageKey],
-  );
-
-  const clearDraft = useCallback(() => {
-    localStorage.removeItem(storageKey);
-    setHasDraft(false);
-    setDraftTime(null);
-  }, [storageKey]);
-
-  const getDraft = useCallback(() => {
-    const savedDraft = localStorage.getItem(storageKey);
-    if (savedDraft) {
-      try {
-        return JSON.parse(savedDraft).values || null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }, [storageKey]);
-
-  return { hasDraft, draftTime, saveDraft, clearDraft, getDraft };
-};
 
 const Criteria = () => {
   const [loading, setLoading] = useState(false);
@@ -117,15 +53,57 @@ const Criteria = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const draftTimeoutRef = useRef(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [form] = Form.useForm();
   const [assignForm] = Form.useForm();
   const [editForm] = Form.useForm();
-  const [submitting, setSubmitting] = useState(false);
 
   // Draft auto-save
-  const { hasDraft, draftTime, saveDraft, clearDraft, getDraft } =
-    useDraftSave(DRAFT_KEY);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftTime, setDraftTime] = useState(null);
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && parsed.values && Object.keys(parsed.values).length > 0) {
+          setHasDraft(true);
+          setDraftTime(parsed.savedAt ? new Date(parsed.savedAt) : null);
+        }
+      } catch (e) {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    }
+  }, []);
+
+  const saveDraft = useCallback((values) => {
+    if (values) {
+      const draft = { values, savedAt: new Date().toISOString() };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      setHasDraft(true);
+      setDraftTime(new Date());
+    }
+  }, []);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+    setDraftTime(null);
+  }, []);
+
+  const getDraft = useCallback(() => {
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        return JSON.parse(savedDraft).values || null;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }, []);
 
   useEffect(() => {
     fetchTemplates();
@@ -133,7 +111,6 @@ const Criteria = () => {
     if (hasDraft) setShowDraftBanner(true);
   }, []);
 
-  // Auto-save handler
   const handleDraftAutoSave = useCallback(
     (changedValues, allValues) => {
       if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
@@ -158,11 +135,8 @@ const Criteria = () => {
   };
 
   useEffect(() => {
-    if (selectedJob) {
-      fetchJobCriteria(selectedJob);
-    } else {
-      setJobCriteria([]);
-    }
+    if (selectedJob) fetchJobCriteria(selectedJob);
+    else setJobCriteria([]);
   }, [selectedJob]);
 
   const fetchJobs = async () => {
@@ -179,13 +153,19 @@ const Criteria = () => {
       setLoading(true);
       const response = await criteriaAPI.getTemplates();
       let data = response.data || [];
-      if (!Array.isArray(data) && data.items) {
-        data = data.items;
-      }
-      setTemplates(Array.isArray(data) ? data : []);
+      // Map templateId -> id for AntD Table rowKey compatibility
+      const mapped = Array.isArray(data)
+        ? data.map((t) => ({
+            ...t,
+            id: t.templateId,
+            items: t.items || [],
+            active: t.active !== undefined ? t.active : t.active,
+          }))
+        : [];
+      setTemplates(mapped);
     } catch (error) {
       console.error("Error fetching templates:", error);
-      message.error("Không thể tải danh sách tiêu chí");
+      message.error("Không thể tải danh sách khuôn tiêu chí");
       setTemplates([]);
     } finally {
       setLoading(false);
@@ -196,9 +176,7 @@ const Criteria = () => {
     try {
       const response = await criteriaAPI.getByJob(jobId);
       let data = response.data || [];
-      if (!Array.isArray(data)) {
-        data = data.criteria || [];
-      }
+      if (!Array.isArray(data)) data = data.criteria || [];
       setJobCriteria(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching job criteria:", error);
@@ -206,17 +184,17 @@ const Criteria = () => {
     }
   };
 
-  // View detail
+  // View detail — BE trả: templateId, name, description, active, items:[{itemId, name, weight, maxScore, displayOrder}]
   const handleViewDetail = async (record) => {
     try {
-      const response = await criteriaAPI.getById(record.id);
+      const response = await criteriaAPI.getById(record.templateId);
       const data = response.data || record;
       setSelectedTemplate({
-        id: data.id,
+        templateId: data.templateId,
         name: data.name,
         description: data.description,
-        isActive: data.isActive,
-        criteria: data.criteria || [],
+        active: data.active,
+        items: data.items || [],
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       });
@@ -224,37 +202,51 @@ const Criteria = () => {
     } catch (error) {
       console.error("Error fetching template detail:", error);
       setSelectedTemplate({
-        id: record.id,
+        templateId: record.templateId,
         name: record.name,
         description: record.description,
-        isActive: record.isActive,
-        criteria: record.criteria || [],
+        active: record.active,
+        items: record.items || [],
       });
       setDetailModalOpen(true);
     }
   };
 
-  // Edit flow
+  // Edit click — map items sang form field name
   const handleEditClick = (record) => {
     setSelectedTemplate(record);
     editForm.setFieldsValue({
       name: record.name,
       description: record.description,
-      isActive: record.isActive,
+      active: record.active !== false,
+      items: (record.items || []).map((it) => ({
+        name: it.name,
+        weight: it.weight || 1,
+        maxScore: it.maxScore || 10,
+      })),
     });
     setEditModalOpen(true);
   };
 
-  const handleEditConfirm = () => {
-    setEditConfirmModalOpen(true);
-  };
+  const handleEditConfirm = () => setEditConfirmModalOpen(true);
 
+  // Update template — DTO: CriteriaTemplateUpdateDto { name, description, active, items }
   const handleUpdateTemplate = async () => {
     try {
       setSubmitting(true);
       const values = editForm.getFieldsValue();
-      await criteriaAPI.updateTemplate(selectedTemplate.id, values);
-      message.success("Cập nhật template thành công!");
+      const payload = {
+        name: values.name,
+        description: values.description,
+        active: values.active !== false,
+        items: (values.items || []).map((it, idx) => ({
+          name: it.name,
+          weight: it.weight || 1,
+          maxScore: it.maxScore || 10,
+        })),
+      };
+      await criteriaAPI.updateTemplate(selectedTemplate.templateId, payload);
+      message.success("Cập nhật khuôn tiêu chí thành công!");
       setEditModalOpen(false);
       setEditConfirmModalOpen(false);
       editForm.resetFields();
@@ -262,13 +254,13 @@ const Criteria = () => {
       fetchTemplates();
     } catch (error) {
       console.error("Error updating template:", error);
-      message.error("Không thể cập nhật template");
+      message.error("Không thể cập nhật khuôn tiêu chí");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Delete flow
+  // Delete — soft delete (deactivate)
   const handleDeleteClick = (record) => {
     setSelectedTemplate(record);
     setDeleteConfirmModalOpen(true);
@@ -277,47 +269,68 @@ const Criteria = () => {
   const handleDeleteTemplate = async () => {
     try {
       setSubmitting(true);
-      await criteriaAPI.deleteTemplate(selectedTemplate.id);
-      message.success("Xóa template thành công!");
+      await criteriaAPI.deleteTemplate(selectedTemplate.templateId);
+      message.success("Xóa khuôn tiêu chí thành công!");
       setDeleteConfirmModalOpen(false);
       setSelectedTemplate(null);
       fetchTemplates();
     } catch (error) {
       console.error("Error deleting template:", error);
-      message.error("Không thể xóa template");
+      message.error("Không thể xóa khuôn tiêu chí");
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Create template — DTO: CriteriaTemplateInputDto { name, description, items }
   const handleCreateTemplate = async (values) => {
     try {
       setSubmitting(true);
-      await criteriaAPI.createTemplate(values);
-      message.success("Tạo template tiêu chí thành công!");
+      const payload = {
+        name: values.name,
+        description: values.description,
+        items: (values.items || []).map((it) => ({
+          name: it.name,
+          weight: it.weight || 1,
+          maxScore: it.maxScore || 10,
+        })),
+      };
+      await criteriaAPI.createTemplate(payload);
+      message.success("Tạo khuôn tiêu chí thành công!");
       setCreateModalOpen(false);
-      clearDraft(); // Clear draft after success
+      clearDraft();
       form.resetFields();
       fetchTemplates();
     } catch (error) {
       console.error("Error creating template:", error);
-      message.error("Không thể tạo template");
+      const errMsg =
+        error.response?.data?.errorMessage ||
+        error.response?.data?.DevMsg ||
+        error.response?.data?.message ||
+        "Không thể tạo khuôn tiêu chí";
+      message.error(errMsg);
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Assign template to job — POST /criteria-templates/{templateId}/apply/{jobId}
   const handleAssignToJob = async (values) => {
     try {
       setSubmitting(true);
-      await criteriaAPI.addToJob(selectedJob, values);
-      message.success("Gán tiêu chí thành công!");
+      await criteriaAPI.applyToJob(values.templateId, selectedJob);
+      message.success("Áp dụng khuôn tiêu chí vào vị trí thành công!");
       setAssignModalOpen(false);
       assignForm.resetFields();
       fetchJobCriteria(selectedJob);
     } catch (error) {
-      console.error("Error assigning criteria:", error);
-      message.error("Không thể gán tiêu chí");
+      console.error("Error assigning template:", error);
+      const errMsg =
+        error.response?.data?.errorMessage ||
+        error.response?.data?.DevMsg ||
+        error.response?.data?.message ||
+        "Không thể áp dụng khuôn tiêu chí";
+      message.error(errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -334,9 +347,10 @@ const Criteria = () => {
     }
   };
 
+  // Table columns — templates list (CriteriaTemplateSummaryDto: templateId, name, description, active, itemCount)
   const templateColumns = [
     {
-      title: "Tên template",
+      title: "Tên khuôn",
       key: "name",
       render: (_, record) => (
         <div>
@@ -349,10 +363,10 @@ const Criteria = () => {
     },
     {
       title: "Số tiêu chí",
-      key: "criteriaCount",
+      key: "itemCount",
       width: 120,
       render: (_, record) => (
-        <Tag color="blue">{record.criteria?.length || 0} tiêu chí</Tag>
+        <Tag color="blue">{record.itemCount || record.items?.length || 0} tiêu chí</Tag>
       ),
     },
     {
@@ -360,15 +374,15 @@ const Criteria = () => {
       key: "status",
       width: 120,
       render: (_, record) => (
-        <Tag color={record.isActive !== false ? "success" : "default"}>
-          {record.isActive !== false ? "Hoạt động" : "Tắt"}
+        <Tag color={record.active !== false ? "success" : "default"}>
+          {record.active !== false ? "Hoạt động" : "Tắt"}
         </Tag>
       ),
     },
     {
       title: "Thao tác",
       key: "actions",
-      width: 200,
+      width: 160,
       render: (_, record) => (
         <Space size={4}>
           <Tooltip title="Xem chi tiết">
@@ -401,15 +415,14 @@ const Criteria = () => {
     },
   ];
 
+  // Table columns — job criteria (CriteriaDto: criteriaId, jobId, name, weight, maxScore, active)
   const jobCriteriaColumns = [
     {
       title: "Tiêu chí",
       key: "name",
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 600 }}>
-            {record.name || record.criterionName}
-          </div>
+          <div style={{ fontWeight: 600 }}>{record.name}</div>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {record.description}
           </Text>
@@ -422,16 +435,12 @@ const Criteria = () => {
       width: 160,
       render: (_, record) => (
         <div>
-          <Slider
-            value={record.weight || 1}
-            min={1}
-            max={10}
-            disabled
-            style={{ marginBottom: 4 }}
-          />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Trọng số: {record.weight || 1}
-          </Text>
+          <Space direction="vertical" size={0}>
+            <Text strong>{record.weight || 1}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              / 10
+            </Text>
+          </Space>
         </div>
       ),
     },
@@ -440,7 +449,7 @@ const Criteria = () => {
       dataIndex: "maxScore",
       key: "maxScore",
       width: 100,
-      render: (score) => <Text strong>{score || 100}</Text>,
+      render: (score) => <Text strong>{score || 10}</Text>,
     },
     {
       title: "Mô tả",
@@ -456,7 +465,7 @@ const Criteria = () => {
       render: (_, record) => (
         <Popconfirm
           title="Xóa tiêu chí này?"
-          onConfirm={() => handleRemoveFromJob(record.id)}
+          onConfirm={() => handleRemoveFromJob(record.criteriaId)}
           okText="Xóa"
           cancelText="Hủy"
           okButtonProps={{ danger: true }}
@@ -469,7 +478,6 @@ const Criteria = () => {
     },
   ];
 
-  // Filter templates by search
   const filteredTemplates = templates.filter(
     (t) =>
       !searchText ||
@@ -482,21 +490,14 @@ const Criteria = () => {
       key: "templates",
       label: (
         <span>
-          <CheckSquareOutlined /> Template tiêu chí
+          <CheckCircleOutlined /> Khuôn tiêu chí
         </span>
       ),
       children: (
         <>
-          <div
-            style={{
-              marginBottom: 16,
-              display: "flex",
-              gap: 12,
-              justifyContent: "flex-end",
-            }}
-          >
+          <div style={{ marginBottom: 16, display: "flex", gap: 12, justifyContent: "flex-end" }}>
             <Input
-              placeholder="Tìm kiếm template..."
+              placeholder="Tìm kiếm khuôn..."
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -509,16 +510,16 @@ const Criteria = () => {
               onClick={() => setCreateModalOpen(true)}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
             >
-              Tạo Template Mới
+              Tạo khuôn mới
             </Button>
           </div>
           <Table
             columns={templateColumns}
             dataSource={filteredTemplates}
-            rowKey="id"
+            rowKey="templateId"
             loading={loading}
             pagination={{ pageSize: 10 }}
-            locale={{ emptyText: "Chưa có template tiêu chí nào" }}
+            locale={{ emptyText: "Chưa có khuôn tiêu chí nào" }}
           />
         </>
       ),
@@ -527,33 +528,26 @@ const Criteria = () => {
       key: "job-criteria",
       label: (
         <span>
-          <StarOutlined /> Tiêu chí theo vị trí
+          <CheckCircleOutlined /> Tiêu chí theo vị trí
         </span>
       ),
       children: (
         <>
-          <div
-            style={{
-              marginBottom: 16,
-              display: "flex",
-              gap: 12,
-              alignItems: "center",
-            }}
-          >
+          <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
             <Select
               placeholder="Chọn vị trí"
               value={selectedJob}
               onChange={(val) => setSelectedJob(val)}
               style={{ width: 280 }}
               showSearch
+              allowClear
               filterOption={(input, option) =>
                 (option.label || "").toLowerCase().includes(input.toLowerCase())
               }
               options={jobs.map((job) => ({
-                value: job.id || job.jobId,
+                value: job.jobId || job.id,
                 label: job.title,
               }))}
-              allowClear
             />
             {selectedJob && (
               <Button
@@ -562,7 +556,7 @@ const Criteria = () => {
                 onClick={() => setAssignModalOpen(true)}
                 style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
               >
-                Gán tiêu chí
+                Áp khuôn tiêu chí
               </Button>
             )}
           </div>
@@ -570,12 +564,12 @@ const Criteria = () => {
             <Table
               columns={jobCriteriaColumns}
               dataSource={jobCriteria}
-              rowKey="id"
+              rowKey="criteriaId"
               pagination={{ pageSize: 10 }}
               locale={{ emptyText: "Chưa có tiêu chí nào cho vị trí này" }}
             />
           ) : (
-            <div style={{ textAlign: "center", padding: 40, color: "#8c8c8b" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "#8c8c8c" }}>
               Vui lòng chọn vị trí để xem tiêu chí
             </div>
           )}
@@ -586,6 +580,7 @@ const Criteria = () => {
 
   return (
     <div className="criteria-page">
+      {/* Draft banner */}
       {showDraftBanner && (
         <div
           style={{
@@ -607,11 +602,7 @@ const Criteria = () => {
             </Text>
           </div>
           <Space>
-            <Button
-              size="small"
-              onClick={handleDiscardDraft}
-              icon={<RestOutlined />}
-            >
+            <Button size="small" onClick={handleDiscardDraft} icon={<RestOutlined />}>
               Bỏ qua
             </Button>
             <Button
@@ -627,13 +618,14 @@ const Criteria = () => {
         </div>
       )}
 
+      {/* Page header */}
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">
             Tiêu Chí Đánh Giá
           </Title>
           <Text type="secondary">
-            Quản lý template và gán tiêu chí đánh giá cho vị trí tuyển dụng
+            Quản lý khuôn tiêu chí và áp dụng cho vị trí tuyển dụng
           </Text>
         </div>
         <Button
@@ -652,20 +644,19 @@ const Criteria = () => {
         <Tabs items={tabItems} />
       </Card>
 
-      {/* Modal Tạo Template */}
+      {/* ===== Modal Tạo Khuôn ===== */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <PlusOutlined style={{ color: MATCHA_GREEN }} />
-            Tạo template tiêu chí mới
+            Tạo khuôn tiêu chí mới
           </div>
         }
         open={createModalOpen}
-        onCancel={() => {
-          setCreateModalOpen(false); /* keep draft */
-        }}
+        onCancel={() => setCreateModalOpen(false)}
         footer={null}
-        width={500}
+        width={600}
+        destroyOnClose
       >
         {hasDraft && (
           <div
@@ -702,27 +693,87 @@ const Criteria = () => {
           style={{ marginTop: 16 }}
         >
           <Form.Item
-            label="Tên template"
+            label="Tên khuôn"
             name="name"
-            rules={[{ required: true, message: "Vui lòng nhập tên template" }]}
+            rules={[{ required: true, message: "Vui lòng nhập tên khuôn" }]}
           >
-            <Input placeholder="VD: Template phỏng vấn kỹ thuật" />
+            <Input placeholder="VD: Khung phỏng vấn kỹ thuật" />
           </Form.Item>
           <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={2} placeholder="Mô tả ngắn về template..." />
+            <Input.TextArea rows={2} placeholder="Mô tả ngắn về khuôn tiêu chí..." />
           </Form.Item>
-          <Form.Item
-            label="Trạng thái"
-            name="isActive"
-            initialValue={true}
-            valuePropName="checked"
-          >
-            <Space>
-              <CheckCircleOutlined style={{ color: "#52c41a" }} />
-              <Text>Hoạt động</Text>
-            </Space>
-          </Form.Item>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+
+          <Divider orientation="left" plain style={{ fontSize: 13 }}>
+            Danh sách tiêu chí
+          </Divider>
+
+          <Form.List name="items" initialValue={[{ name: "", weight: 1, maxScore: 10 }]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }, index) => (
+                  <div
+                    key={key}
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "flex-start",
+                      marginBottom: 8,
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      borderRadius: 8,
+                      border: "1px solid #f0f0f0",
+                    }}
+                  >
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      style={{ flex: 2, marginBottom: 0 }}
+                      rules={[{ required: true, message: "Tên tiêu chí" }]}
+                    >
+                      <Input placeholder="Tên tiêu chí (VD: Kiến thức chuyên môn)" />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "weight"]}
+                      initialValue={1}
+                      style={{ flex: 1, marginBottom: 0 }}
+                    >
+                      <InputNumber min={1} max={10} placeholder="Trọng số" style={{ width: "100%" }} />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "maxScore"]}
+                      initialValue={10}
+                      style={{ flex: 1, marginBottom: 0 }}
+                    >
+                      <InputNumber min={1} max={100} placeholder="Điểm tối đa" style={{ width: "100%" }} />
+                    </Form.Item>
+                    {fields.length > 1 && (
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => remove(name)}
+                        style={{ marginTop: 2 }}
+                      />
+                    )}
+                  </div>
+                ))}
+                <Form.Item style={{ marginBottom: 0 }}>
+                  <Button
+                    type="dashed"
+                    onClick={() => add({ name: "", weight: 1, maxScore: 10 })}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Thêm tiêu chí
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
             <Button
               onClick={() => {
                 clearDraft();
@@ -738,18 +789,18 @@ const Criteria = () => {
               loading={submitting}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
             >
-              Tạo template
+              Tạo khuôn
             </Button>
           </div>
         </Form>
       </Modal>
 
-      {/* Modal Xem Chi Tiết */}
+      {/* ===== Modal Chi tiết ===== */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <EyeOutlined style={{ color: MATCHA_GREEN }} />
-            Chi tiết template
+            Chi tiết khuôn tiêu chí
           </div>
         }
         open={detailModalOpen}
@@ -774,69 +825,80 @@ const Criteria = () => {
       >
         {selectedTemplate && (
           <>
-            <Descriptions
-              column={1}
-              bordered
-              size="small"
-              style={{ marginTop: 16 }}
-            >
-              <Descriptions.Item label="Tên template">
-                <Text strong>{selectedTemplate.name}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Mô tả">
-                {selectedTemplate.description || "-"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">
+            <div style={{ marginTop: 16 }}>
+              <div style={{ marginBottom: 8 }}>
+                <Text strong style={{ fontSize: 15 }}>{selectedTemplate.name}</Text>
                 <Tag
-                  color={
-                    selectedTemplate.isActive !== false ? "success" : "default"
-                  }
+                  color={selectedTemplate.active !== false ? "success" : "default"}
+                  style={{ marginLeft: 8 }}
                 >
-                  {selectedTemplate.isActive !== false ? "Hoạt động" : "Tắt"}
+                  {selectedTemplate.active !== false ? "Hoạt động" : "Tắt"}
                 </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Số tiêu chí">
-                {selectedTemplate.criteria?.length || 0} tiêu chí
-              </Descriptions.Item>
-              {selectedTemplate.createdAt && (
-                <Descriptions.Item label="Ngày tạo">
-                  {new Date(selectedTemplate.createdAt).toLocaleString("vi-VN")}
-                </Descriptions.Item>
+              </div>
+              {selectedTemplate.description && (
+                <Text type="secondary">{selectedTemplate.description}</Text>
               )}
-              {selectedTemplate.updatedAt && (
-                <Descriptions.Item label="Cập nhật lần cuối">
-                  {new Date(selectedTemplate.updatedAt).toLocaleString("vi-VN")}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
+            </div>
 
-            {selectedTemplate.criteria &&
-              selectedTemplate.criteria.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <Text strong>Danh sách tiêu chí:</Text>
-                  <ul style={{ paddingLeft: 20, marginTop: 8 }}>
-                    {selectedTemplate.criteria.map((c, idx) => (
-                      <li key={idx}>
-                        <Text>{c.name || c.criterionName}</Text>
+            <Divider />
+
+            <Text strong>Danh sách tiêu chí ({selectedTemplate.items?.length || 0})</Text>
+            {selectedTemplate.items && selectedTemplate.items.length > 0 ? (
+              <div style={{ marginTop: 12 }}>
+                {selectedTemplate.items
+                  .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+                  .map((item, idx) => (
+                    <div
+                      key={item.itemId || idx}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "8px 12px",
+                        background: idx % 2 === 0 ? "#fafafa" : "#fff",
+                        borderRadius: 6,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <div>
+                        <Text strong>{item.name}</Text>
+                      </div>
+                      <Space size={16}>
                         <Text type="secondary">
-                          {" "}
-                          - Điểm tối đa: {c.maxScore || 100}
+                          Trọng số: <Text strong>{item.weight || 1}</Text>
                         </Text>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                        <Text type="secondary">
+                          Điểm tối đa: <Text strong>{item.maxScore || 10}</Text>
+                        </Text>
+                      </Space>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: 20, color: "#bfbfbf" }}>
+                Chưa có tiêu chí nào
+              </div>
+            )}
+
+            {(selectedTemplate.createdAt || selectedTemplate.updatedAt) && (
+              <div style={{ marginTop: 16 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {selectedTemplate.createdAt && `Tạo: ${new Date(selectedTemplate.createdAt).toLocaleString("vi-VN")}`}
+                  {selectedTemplate.createdAt && selectedTemplate.updatedAt && " · "}
+                  {selectedTemplate.updatedAt && `Cập nhật: ${new Date(selectedTemplate.updatedAt).toLocaleString("vi-VN")}`}
+                </Text>
+              </div>
+            )}
           </>
         )}
       </Modal>
 
-      {/* Modal Chỉnh sửa */}
+      {/* ===== Modal Chỉnh sửa ===== */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <EditOutlined style={{ color: MATCHA_GREEN }} />
-            Chỉnh sửa template
+            Chỉnh sửa khuôn tiêu chí
           </div>
         }
         open={editModalOpen}
@@ -857,30 +919,98 @@ const Criteria = () => {
             Lưu thay đổi
           </Button>,
         ]}
-        width={500}
+        width={600}
         destroyOnClose
       >
         <Form form={editForm} layout="vertical" style={{ marginTop: 20 }}>
           <Form.Item
-            label="Tên template"
+            label="Tên khuôn"
             name="name"
-            rules={[{ required: true, message: "Vui lòng nhập tên template" }]}
+            rules={[{ required: true, message: "Vui lòng nhập tên khuôn" }]}
           >
             <Input />
           </Form.Item>
           <Form.Item label="Mô tả" name="description">
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item label="Trạng thái" name="isActive" valuePropName="checked">
+          <Form.Item label="Trạng thái" name="active" valuePropName="checked" initialValue={true}>
             <Space>
               <CheckCircleOutlined style={{ color: "#52c41a" }} />
               <Text>Hoạt động</Text>
             </Space>
           </Form.Item>
+
+          <Divider orientation="left" plain style={{ fontSize: 13 }}>
+            Danh sách tiêu chí
+          </Divider>
+
+          <Form.List name="items">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <div
+                    key={key}
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "flex-start",
+                      marginBottom: 8,
+                      padding: "8px 12px",
+                      background: "#fafafa",
+                      borderRadius: 8,
+                      border: "1px solid #f0f0f0",
+                    }}
+                  >
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      style={{ flex: 2, marginBottom: 0 }}
+                      rules={[{ required: true, message: "Tên tiêu chí" }]}
+                    >
+                      <Input placeholder="Tên tiêu chí" />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "weight"]}
+                      style={{ flex: 1, marginBottom: 0 }}
+                    >
+                      <InputNumber min={1} max={10} placeholder="Trọng số" style={{ width: "100%" }} />
+                    </Form.Item>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "maxScore"]}
+                      style={{ flex: 1, marginBottom: 0 }}
+                    >
+                      <InputNumber min={1} max={100} placeholder="Điểm tối đa" style={{ width: "100%" }} />
+                    </Form.Item>
+                    {fields.length > 1 && (
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => remove(name)}
+                        style={{ marginTop: 2 }}
+                      />
+                    )}
+                  </div>
+                ))}
+                <Form.Item style={{ marginBottom: 0 }}>
+                  <Button
+                    type="dashed"
+                    onClick={() => add({ name: "", weight: 1, maxScore: 10 })}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Thêm tiêu chí
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
         </Form>
       </Modal>
 
-      {/* Modal Xác nhận Chỉnh sửa */}
+      {/* ===== Modal Xác nhận chỉnh sửa ===== */}
       <Modal
         title="Xác nhận chỉnh sửa"
         open={editConfirmModalOpen}
@@ -891,14 +1021,14 @@ const Criteria = () => {
         okButtonProps={{ loading: submitting }}
       >
         <p>
-          Bạn có chắc chắn muốn chỉnh sửa template "{selectedTemplate?.name}"
-          không?
+          Bạn có chắc chắn muốn lưu thay đổi cho khuôn "
+          <strong>{selectedTemplate?.name}</strong>"?
         </p>
       </Modal>
 
-      {/* Modal Xác nhận Xóa */}
+      {/* ===== Modal Xác nhận xóa ===== */}
       <Modal
-        title="Xác nhận xóa template"
+        title="Xác nhận xóa khuôn tiêu chí"
         open={deleteConfirmModalOpen}
         onCancel={() => setDeleteConfirmModalOpen(false)}
         footer={[
@@ -917,10 +1047,8 @@ const Criteria = () => {
         ]}
       >
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <DeleteOutlined
-            style={{ fontSize: 48, color: "#ff4d4f", marginBottom: 16 }}
-          />
-          <p>Bạn có chắc chắn muốn xóa template này không?</p>
+          <DeleteOutlined style={{ fontSize: 48, color: "#ff4d4f", marginBottom: 16 }} />
+          <p>Bạn có chắc chắn muốn xóa khuôn tiêu chí này không?</p>
           {selectedTemplate && (
             <div
               style={{
@@ -928,6 +1056,7 @@ const Criteria = () => {
                 padding: 12,
                 borderRadius: 8,
                 marginTop: 16,
+                textAlign: "left",
               }}
             >
               <p>
@@ -944,12 +1073,12 @@ const Criteria = () => {
         </div>
       </Modal>
 
-      {/* Modal Gán tiêu chí cho vị trí */}
+      {/* ===== Modal Áp khuôn tiêu chí vào vị trí ===== */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <PlusOutlined style={{ color: MATCHA_GREEN }} />
-            Gán tiêu chí cho vị trí
+            Áp khuôn tiêu chí vào vị trí
           </div>
         }
         open={assignModalOpen}
@@ -958,7 +1087,7 @@ const Criteria = () => {
           assignForm.resetFields();
         }}
         footer={null}
-        width={520}
+        width={480}
         destroyOnClose
       >
         <Form
@@ -968,23 +1097,20 @@ const Criteria = () => {
           style={{ marginTop: 20 }}
         >
           <Form.Item
-            label="Chọn tiêu chí từ template"
+            label="Chọn khuôn tiêu chí"
             name="templateId"
-            rules={[{ required: true, message: "Vui lòng chọn template" }]}
+            rules={[{ required: true, message: "Vui lòng chọn khuôn tiêu chí" }]}
           >
             <Select
-              placeholder="-- Chọn template --"
+              placeholder="-- Chọn khuôn --"
               showSearch
               options={templates
-                .filter((t) => t.isActive !== false)
+                .filter((t) => t.active !== false)
                 .map((t) => ({
-                  value: t.id,
-                  label: `${t.name} (${t.criteria?.length || 0} tiêu chí)`,
+                  value: t.templateId,
+                  label: `${t.name} (${t.itemCount || t.items?.length || 0} tiêu chí)`,
                 }))}
             />
-          </Form.Item>
-          <Form.Item label="Trọng số mặc định" name="weight" initialValue={5}>
-            <Slider min={1} max={10} marks={{ 1: "1", 5: "5", 10: "10" }} />
           </Form.Item>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
             <Button onClick={() => setAssignModalOpen(false)}>Hủy</Button>
@@ -994,7 +1120,7 @@ const Criteria = () => {
               loading={submitting}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
             >
-              Gán tiêu chí
+              Áp dụng
             </Button>
           </div>
         </Form>

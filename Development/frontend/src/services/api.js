@@ -241,25 +241,35 @@ export const offerAPI = {
 // ==================== CRITERIA ====================
 
 export const criteriaAPI = {
+  // GET /api/criteria-templates → CriteriaTemplateSummaryDto[] (templateId, name, description, active, itemCount)
   getTemplates: () => api.get("/criteria-templates"),
 
+  // GET /api/criteria-templates/{templateId} → CriteriaTemplateDto (templateId, name, description, active, items[])
   getById: (templateId) => api.get(`/criteria-templates/${templateId}`),
 
+  // POST /api/criteria-templates → CriteriaTemplateInputDto { name, description, items }
   createTemplate: (data) => api.post("/criteria-templates", data),
 
+  // PUT /api/criteria-templates/{templateId} → CriteriaTemplateUpdateDto { name, description, active, items }
   updateTemplate: (templateId, data) =>
     api.put(`/criteria-templates/${templateId}`, data),
 
+  // DELETE /api/criteria-templates/{templateId} → deactivate (soft delete)
   deleteTemplate: (templateId) =>
     api.delete(`/criteria-templates/${templateId}`),
 
+  // POST /api/criteria-templates/{templateId}/apply/{jobId}
+  applyToJob: (templateId, jobId) =>
+    api.post(`/criteria-templates/${templateId}/apply/${jobId}`),
+
+  // GET /api/jobs/{jobId}/criteria → CriteriaDto[]
   getByJob: (jobId) => api.get(`/jobs/${jobId}/criteria`),
 
-  addToJob: (jobId, data) => api.post(`/jobs/${jobId}/criteria`, data),
-
+  // PUT /api/evaluation-criteria/{criteriaId}
   updateJobCriteria: (criteriaId, data) =>
     api.put(`/evaluation-criteria/${criteriaId}`, data),
 
+  // DELETE /api/evaluation-criteria/{criteriaId}
   removeFromJob: (criteriaId) =>
     api.delete(`/evaluation-criteria/${criteriaId}`),
 };
