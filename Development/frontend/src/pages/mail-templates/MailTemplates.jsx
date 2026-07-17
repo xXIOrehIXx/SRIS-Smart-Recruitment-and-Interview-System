@@ -184,14 +184,14 @@ const MailTemplates = () => {
   // View detail
   const handleViewDetail = async (record) => {
     try {
-      const response = await mailTemplateAPI.getById(record.id);
+      const response = await mailTemplateAPI.getById(record.templateId || record.id);
       const data = response.data || record;
       setSelectedTemplate({
-        id: data.id,
+        id: data.templateId,
         name: data.name,
         subject: data.subject,
-        category: data.category,
-        content: data.content,
+        type: data.type,
+        body: data.body,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       });
@@ -209,8 +209,8 @@ const MailTemplates = () => {
     editForm.setFieldsValue({
       name: record.name,
       subject: record.subject,
-      category: record.category,
-      content: record.content,
+      type: record.type,
+      body: record.body,
     });
     setEditModalOpen(true);
   };
@@ -223,7 +223,8 @@ const MailTemplates = () => {
     try {
       setSubmitting(true);
       const values = editForm.getFieldsValue();
-      await mailTemplateAPI.update(selectedTemplate.id, values);
+      const payload = { ...values, isActive: true };
+      await mailTemplateAPI.update(selectedTemplate.templateId || selectedTemplate.id, payload);
       message.success("Cập nhật mẫu email thành công!");
       setEditModalOpen(false);
       setEditConfirmModalOpen(false);
@@ -232,7 +233,12 @@ const MailTemplates = () => {
       fetchTemplates();
     } catch (error) {
       console.error("Error updating template:", error);
-      message.error("Không thể cập nhật mẫu email");
+      const errMsg =
+        error.response?.data?.errorMessage ||
+        error.response?.data?.DevMsg ||
+        error.response?.data?.message ||
+        "Không thể cập nhật mẫu email";
+      message.error(errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -247,7 +253,7 @@ const MailTemplates = () => {
   const handleDelete = async () => {
     try {
       setSubmitting(true);
-      await mailTemplateAPI.delete(selectedTemplate.id);
+      await mailTemplateAPI.delete(selectedTemplate.templateId || selectedTemplate.id);
       message.success("Xóa mẫu email thành công!");
       setDeleteConfirmModalOpen(false);
       setSelectedTemplate(null);
@@ -260,11 +266,13 @@ const MailTemplates = () => {
     }
   };
 
-  // Create
+  // Create — Form.Item đã đặt name="type"/"body" khớp DTO EmailTemplateUpsertDto,
+  // nên gửi thẳng `values` lên BE. isActive luôn true.
   const handleCreate = async (values) => {
     try {
       setSubmitting(true);
-      await mailTemplateAPI.create(values);
+      const payload = { ...values, isActive: true };
+      await mailTemplateAPI.create(payload);
       message.success("Tạo mẫu email thành công!");
       setCreateModalOpen(false);
       clearDraft(); // Clear draft after successful submission
@@ -272,7 +280,12 @@ const MailTemplates = () => {
       fetchTemplates();
     } catch (error) {
       console.error("Error creating template:", error);
-      message.error("Không thể tạo mẫu email");
+      const errMsg =
+        error.response?.data?.errorMessage ||
+        error.response?.data?.DevMsg ||
+        error.response?.data?.message ||
+        "Không thể tạo mẫu email";
+      message.error(errMsg);
     } finally {
       setSubmitting(false);
     }
@@ -282,16 +295,23 @@ const MailTemplates = () => {
   const handleDuplicate = (record) => {
     clearDraft(); // Clear old draft when duplicating
     form.setFieldsValue({
-      name: `${record.name} (Copy)`,
+      name: `${record.name || ""} (Copy)`,
       subject: record.subject,
-      category: record.category,
-      content: record.content,
+      type: record.type,
+      body: record.body,
     });
     setCreateModalOpen(true);
   };
 
-  const renderPreview = (content) => {
-    let preview = content || "";
+  const filteredTemplates = templates.filter(
+    (t) =>
+      !searchText ||
+      (t.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (t.subject || "").toLowerCase().includes(searchText.toLowerCase()),
+  );
+
+  const renderPreview = (body) => {
+    let preview = body || "";
     Object.entries(previewData).forEach(([key, value]) => {
       preview = preview.replace(new RegExp(`{{${key}}}`, "g"), value);
     });
@@ -299,20 +319,25 @@ const MailTemplates = () => {
   };
 
   const templateCategories = [
-    { value: "INTERVIEW_INVITATION", label: "Mời phỏng vấn", color: "blue" },
-    { value: "OFFER_LETTER", label: "Gửi offer", color: "green" },
+    { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
+    { value: "OFFER_RESPONSE", label: "Phản hồi offer", color: "green" },
+    { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
+    { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
     {
-      value: "APPLICATION_RECEIVED",
-      label: "Xác nhận nhận đơn",
-      color: "cyan",
+      value: "HIRED",
+      label: "Thông báo nhận việc",
+      color: "gold",
     },
-    { value: "REJECTION", label: "Thông báo từ chối", color: "red" },
     {
-      value: "INTERVIEW_REMINDER",
-      label: "Nhắc lịch phỏng vấn",
+      value: "INTERVIEW_CONFIRMED",
+      label: "Xác nhận lịch phỏng vấn",
       color: "orange",
     },
-    { value: "GENERAL", label: "Chung", color: "default" },
+    {
+      value: "INTERVIEW_CANCELLED",
+      label: "Hủy lịch phỏng vấn",
+      color: "volcano",
+    },
   ];
 
   const getCategoryTag = (category) => {
@@ -335,15 +360,15 @@ const MailTemplates = () => {
     },
     {
       title: "Loại",
-      dataIndex: "category",
-      key: "category",
+      dataIndex: "type",
+      key: "type",
       width: 180,
       render: (category) => getCategoryTag(category),
       filters: templateCategories.map((c) => ({
         text: c.label,
         value: c.value,
       })),
-      onFilter: (value, record) => record.category === value,
+      onFilter: (value, record) => record.type === value,
     },
     {
       title: "Ngày tạo",
@@ -398,14 +423,6 @@ const MailTemplates = () => {
     },
   ];
 
-  // Filter templates by search
-  const filteredTemplates = templates.filter(
-    (t) =>
-      !searchText ||
-      (t.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
-      (t.subject || "").toLowerCase().includes(searchText.toLowerCase()),
-  );
-
   return (
     <div className="mail-templates-page">
       <div className="page-header">
@@ -437,7 +454,7 @@ const MailTemplates = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {templateCategories.slice(0, 4).map((cat, idx) => {
           const count = templates.filter(
-            (t) => t.category === cat.value,
+            (t) => t.type === cat.value,
           ).length;
           return (
             <Col xs={12} sm={6} key={idx}>
@@ -482,7 +499,7 @@ const MailTemplates = () => {
         <Table
           columns={columns}
           dataSource={filteredTemplates}
-          rowKey="id"
+          rowKey="templateId"
           loading={loading}
           pagination={{
             pageSize: 10,
@@ -573,7 +590,7 @@ const MailTemplates = () => {
             <Col span={12}>
               <Form.Item
                 label="Loại mẫu"
-                name="category"
+                name="type"
                 rules={[{ required: true, message: "Vui lòng chọn loại mẫu" }]}
               >
                 <Select placeholder="-- Chọn loại --">
@@ -589,7 +606,7 @@ const MailTemplates = () => {
 
           <Form.Item
             label="Nội dung email"
-            name="content"
+            name="body"
             rules={[{ required: true, message: "Vui lòng nhập nội dung" }]}
           >
             <TextArea rows={12} placeholder="Nhập nội dung email..." />
@@ -676,7 +693,7 @@ const MailTemplates = () => {
                 {selectedTemplate.subject}
               </Descriptions.Item>
               <Descriptions.Item label="Loại">
-                {getCategoryTag(selectedTemplate.category)}
+                {getCategoryTag(selectedTemplate.type)}
               </Descriptions.Item>
               {selectedTemplate.createdAt && (
                 <Descriptions.Item label="Ngày tạo">
@@ -722,7 +739,7 @@ const MailTemplates = () => {
                   color: "#4a4a4a",
                 }}
               >
-                {renderPreview(selectedTemplate.content)}
+                {renderPreview(selectedTemplate.body)}
               </div>
             </div>
           </>
@@ -780,7 +797,7 @@ const MailTemplates = () => {
             <Col span={12}>
               <Form.Item
                 label="Loại mẫu"
-                name="category"
+                name="type"
                 rules={[{ required: true, message: "Vui lòng chọn loại mẫu" }]}
               >
                 <Select placeholder="-- Chọn loại --">
@@ -796,7 +813,7 @@ const MailTemplates = () => {
 
           <Form.Item
             label="Nội dung email"
-            name="content"
+            name="body"
             rules={[{ required: true, message: "Vui lòng nhập nội dung" }]}
           >
             <TextArea rows={10} placeholder="Nhập nội dung email..." />
@@ -869,7 +886,7 @@ const MailTemplates = () => {
               </p>
               <p>
                 <strong>Loại:</strong>{" "}
-                {getCategoryTag(selectedTemplate.category)}
+                {getCategoryTag(selectedTemplate.type)}
               </p>
             </div>
           )}

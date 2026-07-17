@@ -11,7 +11,6 @@ import {
   message,
   Select,
   Tooltip,
-  Progress,
 } from "antd";
 import {
   FileTextOutlined,
@@ -423,53 +422,6 @@ const RecruiterDashboard = () => {
         ))}
       </Row>
 
-      {/* Pipeline Overview */}
-      {dashboardData?.funnel && dashboardData.funnel.length > 0 && (
-        <Card
-          className="dashboard-card pipeline-card"
-          bordered={false}
-          style={{ marginBottom: 20 }}
-        >
-          <div className="card-header">
-            <Title level={5}>Phễu Tuyển Dụng</Title>
-          </div>
-          <Row gutter={16}>
-            {dashboardData.funnel
-              .filter((item) => KANBAN_STATES.includes(item.state))
-              .map((item, index) => (
-                <Col xs={24} sm={12} md={6} key={index}>
-                  <div className="funnel-item">
-                    <div
-                      className="funnel-value"
-                      style={{
-                        color: STATE_COLORS[item.state] || MATCHA_GREEN,
-                      }}
-                    >
-                      {item.count}
-                    </div>
-                    <div className="funnel-label">
-                      {STATE_LABELS[item.state] || item.state}
-                    </div>
-                    <Progress
-                      percent={
-                        dashboardData.summary.totalApplications > 0
-                          ? (item.count /
-                              dashboardData.summary.totalApplications) *
-                            100
-                          : 0
-                      }
-                      showInfo={false}
-                      strokeColor={STATE_COLORS[item.state] || MATCHA_GREEN}
-                      trailColor="#f0f0f0"
-                      size="small"
-                    />
-                  </div>
-                </Col>
-              ))}
-          </Row>
-        </Card>
-      )}
-
       {/* Kanban Board */}
       <Card className="dashboard-card kanban-card" bordered={false}>
         <div className="card-header">
@@ -567,61 +519,7 @@ const RecruiterDashboard = () => {
           )}
       </Card>
 
-      {/* Quick Actions */}
-      <Row gutter={[20, 20]} className="quick-actions-row">
-        <Col xs={24}>
-          <Card className="dashboard-card quick-actions-card" bordered={false}>
-            <div className="card-header">
-              <Title level={5}>Thao Tác Nhanh</Title>
-            </div>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12} md={6}>
-                <div
-                  className="quick-action-item"
-                  onClick={() => navigate("/recruiter/jobs/create")}
-                >
-                  <div
-                    className="action-icon"
-                    style={{ backgroundColor: MATCHA_LIGHT }}
-                  >
-                    <FileTextOutlined style={{ color: MATCHA_GREEN }} />
-                  </div>
-                  <span>Đăng Tin Mới</span>
-                </div>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <div
-                  className="quick-action-item"
-                  onClick={() => navigate("/recruiter/jobs")}
-                >
-                  <div
-                    className="action-icon"
-                    style={{ backgroundColor: "rgba(24, 144, 255, 0.1)" }}
-                  >
-                    <TeamOutlined style={{ color: "#1890ff" }} />
-                  </div>
-                  <span>Xem Ứng Viên</span>
-                </div>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <div
-                  className="quick-action-item"
-                  onClick={() => navigate("/interviews/schedule")}
-                >
-                  <div
-                    className="action-icon"
-                    style={{ backgroundColor: "rgba(250, 173, 20, 0.1)" }}
-                  >
-                    <CalendarOutlined style={{ color: "#faad14" }} />
-                  </div>
-                  <span>Lên Lịch Phỏng Vấn</span>
-                </div>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-      </Row>
-    </div>
+      </div>
   );
 };
 
