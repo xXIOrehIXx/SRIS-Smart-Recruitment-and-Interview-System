@@ -16,4 +16,7 @@ public interface IUserManageService : IBaseService
 
     /// <summary>Vô hiệu tài khoản (soft — Status "Disabled"; không xóa cứng để giữ audit/lịch sử chấm).</summary>
     Task DisableAsync(long companyId, long userId);
+
+    /// <summary>Danh sách user Active rút gọn cho dropdown chọn người; role null = mọi role.</summary>
+    Task<IReadOnlyList<UserOptionDto>> GetOptionsAsync(long companyId, string? role);
 }

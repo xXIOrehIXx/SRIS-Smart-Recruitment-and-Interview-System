@@ -38,3 +38,15 @@ public class UserPasswordDto
 {
     public string NewPassword { get; set; } = null!;
 }
+
+/// <summary>
+/// Item gọn cho dropdown chọn người (gán interviewer vào khung, chọn DM cho job) —
+/// Recruiter/DM gọi được, không lộ Status/LastLoginAt như bảng quản trị của Admin.
+/// </summary>
+public class UserOptionDto
+{
+    public long UserId { get; set; }
+    public string Email { get; set; } = null!;
+    public string? FullName { get; set; }
+    public string Role { get; set; } = null!;
+}

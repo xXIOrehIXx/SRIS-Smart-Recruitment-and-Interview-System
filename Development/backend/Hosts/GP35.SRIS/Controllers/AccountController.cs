@@ -67,6 +67,22 @@ namespace GP35.SRIS
     [HttpPost("logout")]
     public IActionResult Logout() => Ok(new { message = "Đã đăng xuất." });
 
+    /// <summary>Hồ sơ người đang đăng nhập (FE dùng route theo role sau khi login/refresh).</summary>
+    [Authorize]
+    [HttpGet("me")]
+    public IActionResult Me()
+    {
+      var ctx = HttpContext.RequestServices.GetRequiredService<GP35.SRIS.Domain.Shared.Context.IContextData>();
+      return Ok(new
+      {
+        userId = ctx.UserId,
+        email = ctx.Email,
+        fullName = ctx.FullName,
+        role = ctx.Role,
+        companyId = ctx.CompanyId
+      });
+    }
+
     [AllowAnonymous]
     [HttpPost("ComputeHash")]
     public IActionResult ComputeHash([FromBody] HashRequest request)

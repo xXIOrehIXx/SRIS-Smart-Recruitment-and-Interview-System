@@ -1,6 +1,10 @@
 # SRIS Backend — API Endpoint Map (cho Frontend)
 
-> Cập nhật: 2026-07-05. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
+> ⚠️ **QUY TẮC CHO BACKEND:** thêm / sửa / xóa bất kỳ endpoint nào thì PHẢI cập nhật file này
+> ngay trong cùng commit (thêm dòng vào đúng section, đánh dấu **MỚI dd/mm** hoặc **ĐỔI dd/mm**,
+> sửa dòng "Cập nhật:" bên dưới). Đây là nguồn duy nhất FE dựa vào — file lệch code là FE gọi sai API.
+
+> Cập nhật: 2026-07-17. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
 > Tất cả path đã có tiền tố `/api`. **KHÔNG** thêm `/api` lần hai ở FE (bug cũ trong `api.js`).
 >
 > **Auth:** gửi `Authorization: Bearer <accessToken>`. Token hết hạn → gọi `POST /api/Account/refresh-token`.
@@ -20,6 +24,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | POST | `/api/Account/reset-password` | Anon | body `{ token, newPassword }` |
 | POST | `/api/Account/refresh-token` | Anon | body `{ refreshToken }` → cặp token mới (xoay vòng) |
 | POST | `/api/Account/logout` | *auth | JWT stateless — FE tự xóa token; endpoint chỉ để thống nhất |
+| GET | `/api/Account/me` | *auth | **MỚI 17/07** — hồ sơ người đang đăng nhập `{ userId, email, fullName, role, companyId }`. FE gọi sau login/refresh để route theo role |
 
 ## 2. Quản lý người dùng — `users` (Admin)
 | Method | Path | Role | Ghi chú |
@@ -30,6 +35,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | PUT | `/api/users/{userId}` | Adm | cập nhật hồ sơ + role + status |
 | POST | `/api/users/{userId}/reset-password` | Adm | admin đặt lại mật khẩu user |
 | DELETE | `/api/users/{userId}` | Adm | vô hiệu hóa (soft, status=Disabled) |
+| GET | `/api/users/options?role=…` | Rec/DM | **MỚI 17/07** — dropdown chọn người (list rút gọn user Active). `?role=Interviewer` khi gán người chấm vào khung PV; `?role=DepartmentManager` khi chọn DM cho job; bỏ trống = tất cả. **Kết quả LUÔN kèm user Admin** kể cả khi lọc role (Admin làm được mọi việc — công ty 1 người tự gán mình được), FE cứ render thẳng list, không cần lọc lại |
 
 ## 3. Công ty / thương hiệu — `Company`
 | Method | Path | Role | Ghi chú |
@@ -37,6 +43,9 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | GET | `/api/Company` | *auth | thông tin công ty hiện tại |
 | PUT | `/api/Company` | Adm | cập nhật chung |
 | PUT | `/api/Company/brand` | Adm | logo/màu/brand cho Career Site |
+| GET | `/api/Company/smtp` | Adm | cấu hình SMTP riêng của công ty (mật khẩu bị che) |
+| PUT | `/api/Company/smtp` | Adm | cập nhật SMTP (email đi từ tên miền công ty) |
+| POST | `/api/Company/smtp/test` | Adm | gửi email thử — body `{ toEmail }` |
 
 ## 4. Tin tuyển dụng — `Jobs` (Rec/Adm)
 | Method | Path | Role | Ghi chú |
@@ -100,13 +109,18 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | POST | `/api/applications/{applicationId}/notes` | Rec/Itv/DM | thêm ghi chú nội bộ |
 | GET | `/api/applications/{applicationId}/notes` | Rec/Itv/DM | list ghi chú |
 
-## 12. Lịch phỏng vấn — `interview-schedules` (Rec)
+## 12. Đặt lịch phỏng vấn — POOL khung dùng chung (Rec)
+> **ĐỔI MÔ HÌNH 07/2026:** không còn tạo lịch 1-1 per-ứng-viên. Recruiter mở 1 POOL khung cho job+vòng,
+> mời DANH SÁCH ứng viên (mỗi người 1 magic link SCHEDULE), ai chốt trước lấy khung trước.
+> Điều kiện mời: card đã ở pha Phỏng vấn (KÉO trước, MỜI sau).
+
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| POST | `/api/applications/{applicationId}/interview-schedules` | Rec | tạo lịch (round_number = đa vòng) |
-| GET | `/api/applications/{applicationId}/interview-schedules` | Rec | list lịch của hồ sơ |
-| PUT | `/api/applications/{applicationId}/interview-schedules/{scheduleId}/reschedule` | Rec | đổi lịch |
-| POST | `/api/applications/{applicationId}/interview-schedules/{scheduleId}/cancel` | Rec | hủy |
+| POST | `/api/jobs/{jobId}/interview-pools` | Rec | mở pool. body `{ roundNumber?, slots: [{ interviewerId, startTime }] }` |
+| GET | `/api/jobs/{jobId}/interview-pools` | Rec | mọi pool của job kèm khung + ứng viên đã mời + cờ vàng/đỏ báo bận (nhắc gọi điện) |
+| POST | `/api/interview-pools/{poolId}/invitations` | Rec | mời ứng viên — body `{ applicationIds: [...] }`; BE tự phát magic link + gửi email |
+| POST | `/api/interview-pools/{poolId}/cancel` | Rec | hủy pool — body `{ reason? }`; khóa khung, hủy invite chờ, email báo người đã chốt |
+| POST | `/api/applications/{applicationId}/manual-interview` | Rec | chốt lịch TAY (nhánh gọi điện) — body `{ interviewerId, startTime, roundNumber? }` → trả `{ scheduleId }` |
 
 ## 13. Chấm phỏng vấn — `InterviewScoring`
 | Method | Path | Role | Ghi chú |
@@ -140,7 +154,8 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 ## 17. Dashboard — `dashboard` (Rec/DM/Adm)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| GET | `/api/dashboard/overview` | Rec/DM/Adm | funnel, time-to-hire, offer acceptance, reject/source breakdown |
+| GET | `/api/dashboard/overview` | Rec/DM/Adm | funnel, time-to-hire, offer acceptance, reject/source breakdown. `?jobId=` lọc theo 1 job |
+| GET | `/api/dashboard/kanban` | Rec/DM/Adm | Kanban board pipeline. `?jobId=` lọc theo 1 job |
 
 ## 18. Candidate (magic link, không đăng nhập) — `Anon`
 | Method | Path | Purpose | Ghi chú |
@@ -163,8 +178,10 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 ---
 
 ## Ghi chú cho FE
-- **Luồng chính Recruiter:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → upload CV (§7) → xem ranking (§7) → mở hồ sơ (§9) → xem chấm theo tiêu chí (§5 criteria-matches) → transition qua các pha (§10) → phát magic link (§15) → tạo lịch PV (§12) → xem tổng hợp điểm (§13) → tạo offer (§14).
+- **Luồng chính Recruiter:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → upload CV (§7) → xem ranking (§7) → mở hồ sơ (§9) → xem chấm theo tiêu chí (§5 criteria-matches) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → tạo offer (§14) → phát magic link OFFER_RESPONSE (§15).
+- **Chọn người trong form:** gán interviewer vào khung / chọn DM cho job → `GET /api/users/options?role=…` (§2) — KHÔNG dùng `GET /api/users` (Admin-only).
 - **Luồng Interviewer:** chỉ §13.
 - **Luồng Admin:** §2 (users) + §3 (company) + §17 (dashboard).
 - **Luồng Candidate:** chỉ §18/§19 qua magic link — không có tài khoản.
+- **Trang Đăng ký (self-signup):** khách mua tự đăng ký — form 3 trường bắt buộc `{ companyName, adminEmail, adminPassword }` → `POST /api/Account/register` → nhận thẳng `{ accessToken, refreshToken, companyId }` (đã đăng nhập, khỏi gọi Login) → redirect vào Portal. Slug URL công khai BE tự sinh từ tên công ty (trùng thì tự thêm hậu tố); muốn tự chọn thì gửi thêm `slug`.
 - Board hồ sơ (§9) trả **4 pha** hiển thị, không phơi 6 state nội bộ.
