@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Cấu hình base URL - đổi thành URL thật khi deploy
-const BASE_URL = process.env.REACT_APP_API_URL || '';
+const BASE_URL = import.meta.env.VITE_APP_API_URL || '';
 
 // Tạo axios instance
 const api = axios.create({
