@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Card,
   Typography,
@@ -13,7 +13,7 @@ import {
   Col,
   Statistic,
   Badge,
-} from 'antd';
+} from "antd";
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -21,229 +21,262 @@ import {
   UserOutlined,
   TeamOutlined,
   VideoCameraOutlined,
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import '../Dashboard.css';
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import "../Dashboard.css";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const MATCHA_GREEN = '#5D8C3E';
+const MATCHA_GREEN = "#5D8C3E";
 
 const DeptInterviewSchedule = () => {
   const navigate = useNavigate();
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
 
   const interviews = [
     {
       id: 1,
-      candidate: 'Nguyễn Văn Minh',
-      position: 'Senior Frontend Developer',
-      department: 'Engineering',
-      requestTitle: 'Senior Frontend Developer',
-      date: '2026-07-08',
-      time: '14:00',
-      endTime: '15:00',
+      candidate: "Nguyễn Văn Minh",
+      position: "Senior Frontend Developer",
+      department: "Engineering",
+      requestTitle: "Senior Frontend Developer",
+      date: "2026-07-08",
+      time: "14:00",
+      endTime: "15:00",
       duration: 60,
-      type: 'Technical',
+      type: "Technical",
       level: 2,
-      interviewers: ['Trần Văn A', 'Lê Thị B'],
-      status: 'SCHEDULED',
-      meetingLink: 'https://meet.google.com/abc-defg-hij',
+      interviewers: ["Trần Văn A", "Lê Thị B"],
+      status: "SCHEDULED",
+      meetingLink: "https://meet.google.com/abc-defg-hij",
     },
     {
       id: 2,
-      candidate: 'Trần Thị Lan',
-      position: 'UI/UX Designer',
-      department: 'Design',
-      requestTitle: 'UI/UX Designer',
-      date: '2026-07-08',
-      time: '16:00',
-      endTime: '17:00',
+      candidate: "Trần Thị Lan",
+      position: "UI/UX Designer",
+      department: "Design",
+      requestTitle: "UI/UX Designer",
+      date: "2026-07-08",
+      time: "16:00",
+      endTime: "17:00",
       duration: 60,
-      type: 'HR',
+      type: "HR",
       level: 1,
-      interviewers: ['Phạm Văn C'],
-      status: 'SCHEDULED',
-      meetingLink: 'https://meet.google.com/xyz-uvwx-rst',
+      interviewers: ["Phạm Văn C"],
+      status: "SCHEDULED",
+      meetingLink: "https://meet.google.com/xyz-uvwx-rst",
     },
     {
       id: 3,
-      candidate: 'Lê Hoàng Nam',
-      position: 'Backend Developer',
-      department: 'Engineering',
-      requestTitle: 'Senior Frontend Developer',
-      date: '2026-07-09',
-      time: '09:00',
-      endTime: '10:30',
+      candidate: "Lê Hoàng Nam",
+      position: "Backend Developer",
+      department: "Engineering",
+      requestTitle: "Senior Frontend Developer",
+      date: "2026-07-09",
+      time: "09:00",
+      endTime: "10:30",
       duration: 90,
-      type: 'Technical',
+      type: "Technical",
       level: 2,
-      interviewers: ['Hoàng Văn D', 'Nguyễn Thị E'],
-      status: 'PENDING',
-      meetingLink: 'https://meet.google.com/pqr-stuv-wxy',
+      interviewers: ["Hoàng Văn D", "Nguyễn Thị E"],
+      status: "PENDING",
+      meetingLink: "https://meet.google.com/pqr-stuv-wxy",
     },
     {
       id: 4,
-      candidate: 'Phạm Thu Hà',
-      position: 'QA Engineer',
-      department: 'QA',
-      requestTitle: 'QA Engineer',
-      date: '2026-07-09',
-      time: '11:00',
-      endTime: '12:00',
+      candidate: "Phạm Thu Hà",
+      position: "QA Engineer",
+      department: "QA",
+      requestTitle: "QA Engineer",
+      date: "2026-07-09",
+      time: "11:00",
+      endTime: "12:00",
       duration: 60,
-      type: 'Culture',
+      type: "Culture",
       level: 1,
-      interviewers: ['Vũ Văn F'],
-      status: 'SCHEDULED',
-      meetingLink: 'https://meet.google.com/mno-pqrs-tuv',
+      interviewers: ["Vũ Văn F"],
+      status: "SCHEDULED",
+      meetingLink: "https://meet.google.com/mno-pqrs-tuv",
     },
     {
       id: 5,
-      candidate: 'Hoàng Đức Anh',
-      position: 'Product Manager',
-      department: 'Product',
-      requestTitle: 'Product Manager',
-      date: '2026-07-10',
-      time: '14:00',
-      endTime: '15:00',
+      candidate: "Hoàng Đức Anh",
+      position: "Product Manager",
+      department: "Product",
+      requestTitle: "Product Manager",
+      date: "2026-07-10",
+      time: "14:00",
+      endTime: "15:00",
       duration: 60,
-      type: 'Technical',
+      type: "Technical",
       level: 3,
-      interviewers: ['Đặng Văn G', 'Bùi Thị H'],
-      status: 'COMPLETED',
+      interviewers: ["Đặng Văn G", "Bùi Thị H"],
+      status: "COMPLETED",
       meetingLink: null,
     },
     {
       id: 6,
-      candidate: 'Đỗ Minh Tuấn',
-      position: 'Data Analyst',
-      department: 'Data',
-      requestTitle: 'Data Analyst',
-      date: '2026-07-11',
-      time: '10:00',
-      endTime: '11:00',
+      candidate: "Đỗ Minh Tuấn",
+      position: "Data Analyst",
+      department: "Data",
+      requestTitle: "Data Analyst",
+      date: "2026-07-11",
+      time: "10:00",
+      endTime: "11:00",
       duration: 60,
-      type: 'HR',
+      type: "HR",
       level: 1,
-      interviewers: ['Lý Văn I'],
-      status: 'PENDING',
+      interviewers: ["Lý Văn I"],
+      status: "PENDING",
       meetingLink: null,
     },
   ];
 
-  const departments = ['Engineering', 'Design', 'QA', 'Product', 'Data', 'Marketing', 'Sales'];
+  const departments = [
+    "Engineering",
+    "Design",
+    "QA",
+    "Product",
+    "Data",
+    "Marketing",
+    "Sales",
+  ];
 
   const getStatusConfig = (status) => {
     const configs = {
-      SCHEDULED: { color: 'success', label: 'Đã lên lịch', icon: <CalendarOutlined /> },
-      PENDING: { color: 'warning', label: 'Chờ xác nhận', icon: <ClockCircleOutlined /> },
-      COMPLETED: { color: 'default', label: 'Đã hoàn thành', icon: <VideoCameraOutlined /> },
-      CANCELLED: { color: 'error', label: 'Đã hủy' },
+      SCHEDULED: {
+        color: "success",
+        label: "Đã lên lịch",
+        icon: <CalendarOutlined />,
+      },
+      PENDING: {
+        color: "warning",
+        label: "Chờ xác nhận",
+        icon: <ClockCircleOutlined />,
+      },
+      COMPLETED: {
+        color: "default",
+        label: "Đã hoàn thành",
+        icon: <VideoCameraOutlined />,
+      },
+      CANCELLED: { color: "error", label: "Đã hủy" },
     };
-    return configs[status] || { color: 'default', label: status };
+    return configs[status] || { color: "default", label: status };
   };
 
   const getTypeColor = (type) => {
     const colors = {
-      Technical: 'blue',
-      HR: 'green',
-      Culture: 'purple',
+      Technical: "blue",
+      HR: "green",
+      Culture: "purple",
     };
-    return colors[type] || 'default';
+    return colors[type] || "default";
   };
 
   const columns = [
     {
-      title: 'Ứng viên',
-      key: 'candidate',
-      fixed: 'left',
+      title: "Ứng viên",
+      key: "candidate",
+      fixed: "left",
       width: 240,
       render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Avatar
+            style={{ backgroundColor: MATCHA_GREEN }}
+            icon={<UserOutlined />}
+          />
           <div>
             <Text strong>{record.candidate}</Text>
             <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>{record.position}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.position}
+            </Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Phòng ban',
-      dataIndex: 'department',
-      key: 'department',
+      title: "Phòng ban",
+      dataIndex: "department",
+      key: "department",
       width: 120,
     },
     {
-      title: 'Yêu cầu TD',
-      dataIndex: 'requestTitle',
-      key: 'requestTitle',
+      title: "Yêu cầu TD",
+      dataIndex: "requestTitle",
+      key: "requestTitle",
       width: 160,
-      render: (text) => <Text type="secondary">{text || '-'}</Text>,
+      render: (text) => <Text type="secondary">{text || "-"}</Text>,
     },
     {
-      title: 'Ngày & Giờ',
-      key: 'datetime',
+      title: "Ngày & Giờ",
+      key: "datetime",
       width: 180,
       render: (_, record) => (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <CalendarOutlined style={{ color: MATCHA_GREEN }} />
-            <Text>{dayjs(record.date).format('DD/MM/YYYY')}</Text>
+            <Text>{dayjs(record.date).format("DD/MM/YYYY")}</Text>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ClockCircleOutlined style={{ color: '#faad14' }} />
-            <Text>{record.time} - {record.endTime}</Text>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <ClockCircleOutlined style={{ color: "#faad14" }} />
+            <Text>
+              {record.time} - {record.endTime}
+            </Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Loại',
-      dataIndex: 'type',
-      key: 'type',
+      title: "Loại",
+      dataIndex: "type",
+      key: "type",
       width: 110,
       render: (type) => <Tag color={getTypeColor(type)}>{type}</Tag>,
     },
     {
-      title: 'Vòng',
-      dataIndex: 'level',
-      key: 'level',
+      title: "Vòng",
+      dataIndex: "level",
+      key: "level",
       width: 80,
       render: (level) => <Tag color="cyan">Vòng {level}</Tag>,
     },
     {
-      title: 'Người phỏng vấn',
-      key: 'interviewers',
+      title: "Người phỏng vấn",
+      key: "interviewers",
       width: 180,
       render: (_, record) => (
         <div>
           {record.interviewers.map((name, idx) => (
-            <Tag key={idx} style={{ marginBottom: 2 }}>{name}</Tag>
+            <Tag key={idx} style={{ marginBottom: 2 }}>
+              {name}
+            </Tag>
           ))}
         </div>
       ),
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
       width: 140,
       render: (status) => {
         const config = getStatusConfig(status);
-        return <Tag color={config.color} icon={config.icon}>{config.label}</Tag>;
+        return (
+          <Tag color={config.color} icon={config.icon}>
+            {config.label}
+          </Tag>
+        );
       },
     },
     {
-      title: 'Thao tác',
-      key: 'actions',
-      fixed: 'right',
+      title: "Thao tác",
+      key: "actions",
+      fixed: "right",
       width: 140,
       render: (_, record) => (
         <Space size={4}>
@@ -260,7 +293,7 @@ const DeptInterviewSchedule = () => {
               size="small"
               icon={<VideoCameraOutlined />}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-              onClick={() => window.open(record.meetingLink, '_blank')}
+              onClick={() => window.open(record.meetingLink, "_blank")}
             >
               Tham gia
             </Button>
@@ -276,28 +309,43 @@ const DeptInterviewSchedule = () => {
       item.candidate.toLowerCase().includes(searchText.toLowerCase()) ||
       item.position.toLowerCase().includes(searchText.toLowerCase()) ||
       item.department.toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    const matchesDept = departmentFilter === 'all' || item.department === departmentFilter;
+    const matchesStatus =
+      statusFilter === "all" || item.status === statusFilter;
+    const matchesDept =
+      departmentFilter === "all" || item.department === departmentFilter;
     return matchesSearch && matchesStatus && matchesDept;
   });
 
-  const scheduledCount = interviews.filter((i) => i.status === 'SCHEDULED').length;
-  const pendingCount = interviews.filter((i) => i.status === 'PENDING').length;
-  const completedCount = interviews.filter((i) => i.status === 'COMPLETED').length;
+  const scheduledCount = interviews.filter(
+    (i) => i.status === "SCHEDULED",
+  ).length;
+  const pendingCount = interviews.filter((i) => i.status === "PENDING").length;
+  const completedCount = interviews.filter(
+    (i) => i.status === "COMPLETED",
+  ).length;
 
   return (
     <div className="dept-interview-schedule-page">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Lịch Phỏng Vấn</Title>
+          <Title level={3} className="page-title">
+            Lịch Phỏng Vấn
+          </Title>
           <Text type="secondary">Quản lý lịch phỏng vấn theo phòng ban</Text>
         </div>
         <Space>
-          <Badge count={scheduledCount} style={{ backgroundColor: MATCHA_GREEN }}>
-            <Button icon={<CalendarOutlined />}>Đã lên lịch: {scheduledCount}</Button>
+          <Badge
+            count={scheduledCount}
+            style={{ backgroundColor: MATCHA_GREEN }}
+          >
+            <Button icon={<CalendarOutlined />}>
+              Đã lên lịch: {scheduledCount}
+            </Button>
           </Badge>
-          <Badge count={pendingCount} style={{ backgroundColor: '#faad14' }}>
-            <Button icon={<ClockCircleOutlined />}>Chờ xác nhận: {pendingCount}</Button>
+          <Badge count={pendingCount} style={{ backgroundColor: "#faad14" }}>
+            <Button icon={<ClockCircleOutlined />}>
+              Chờ xác nhận: {pendingCount}
+            </Button>
           </Badge>
         </Space>
       </div>
@@ -305,14 +353,18 @@ const DeptInterviewSchedule = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={12} sm={6}>
           <Card className="stat-card" bordered={false}>
-            <Statistic title="Tổng lịch" value={interviews.length} prefix={<CalendarOutlined />} />
+            <Statistic
+              title="Tổng lịch"
+              value={interviews.length}
+              prefix={<CalendarOutlined />}
+            />
           </Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card className="stat-card" bordered={false}>
             <Statistic
               title="Hôm nay"
-              value={interviews.filter((i) => i.date === '2026-07-08').length}
+              value={interviews.filter((i) => i.date === "2026-07-08").length}
               valueStyle={{ color: MATCHA_GREEN }}
             />
           </Card>
@@ -346,7 +398,11 @@ const DeptInterviewSchedule = () => {
               style={{ width: 150 }}
             >
               <Option value="all">Tất cả phòng ban</Option>
-              {departments.map((d) => <Option key={d} value={d}>{d}</Option>)}
+              {departments.map((d) => (
+                <Option key={d} value={d}>
+                  {d}
+                </Option>
+              ))}
             </Select>
             <Select
               value={statusFilter}

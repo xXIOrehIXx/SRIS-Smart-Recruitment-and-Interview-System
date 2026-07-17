@@ -1,18 +1,43 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, Typography, Form, Input, Button, Switch, Upload, Space, message, Row, Col, Divider, Avatar, ColorPicker, Tag } from 'antd';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  SaveOutlined, UploadOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined,
-  GlobalOutlined, FileTextOutlined, InstagramOutlined, LinkedinOutlined, FacebookOutlined,
-  RestOutlined, CheckCircleOutlined
-} from '@ant-design/icons';
-import { companyAPI } from '../../services/api';
-import './css/CompanyBranding.css';
+  Card,
+  Typography,
+  Form,
+  Input,
+  Button,
+  Switch,
+  Upload,
+  Space,
+  message,
+  Row,
+  Col,
+  Divider,
+  Avatar,
+  ColorPicker,
+  Tag,
+} from "antd";
+import {
+  SaveOutlined,
+  UploadOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  EnvironmentOutlined,
+  GlobalOutlined,
+  FileTextOutlined,
+  InstagramOutlined,
+  LinkedinOutlined,
+  FacebookOutlined,
+  RestOutlined,
+  CheckCircleOutlined,
+} from "@ant-design/icons";
+import { companyAPI } from "../../services/api";
+import "./css/CompanyBranding.css";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const MATCHA_GREEN = '#5D8C3E';
-const DRAFT_KEY = 'company_branding_draft';
+const MATCHA_GREEN = "#5D8C3E";
+const DRAFT_KEY = "company_branding_draft";
 
 // Auto-save hook for page-level forms
 const usePageDraft = (storageKey) => {
@@ -34,17 +59,20 @@ const usePageDraft = (storageKey) => {
     }
   }, [storageKey]);
 
-  const saveDraft = useCallback((values) => {
-    if (values) {
-      const draft = {
-        values,
-        savedAt: new Date().toISOString()
-      };
-      localStorage.setItem(storageKey, JSON.stringify(draft));
-      setHasDraft(true);
-      setDraftTime(new Date());
-    }
-  }, [storageKey]);
+  const saveDraft = useCallback(
+    (values) => {
+      if (values) {
+        const draft = {
+          values,
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(storageKey, JSON.stringify(draft));
+        setHasDraft(true);
+        setDraftTime(new Date());
+      }
+    },
+    [storageKey],
+  );
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(storageKey);
@@ -78,7 +106,8 @@ const CompanyBranding = () => {
   const draftTimeoutRef = useRef(null);
 
   // Draft auto-save hook
-  const { hasDraft, draftTime, saveDraft, clearDraft, getDraft } = usePageDraft(DRAFT_KEY);
+  const { hasDraft, draftTime, saveDraft, clearDraft, getDraft } =
+    usePageDraft(DRAFT_KEY);
 
   useEffect(() => {
     fetchCompany();
@@ -92,21 +121,24 @@ const CompanyBranding = () => {
   }, [hasDraft]);
 
   // Auto-save when form values change
-  const handleDraftAutoSave = useCallback((changedValues, allValues) => {
-    if (draftTimeoutRef.current) {
-      clearTimeout(draftTimeoutRef.current);
-    }
-    draftTimeoutRef.current = setTimeout(() => {
-      saveDraft(allValues);
-    }, 1500);
-  }, [saveDraft]);
+  const handleDraftAutoSave = useCallback(
+    (changedValues, allValues) => {
+      if (draftTimeoutRef.current) {
+        clearTimeout(draftTimeoutRef.current);
+      }
+      draftTimeoutRef.current = setTimeout(() => {
+        saveDraft(allValues);
+      }, 1500);
+    },
+    [saveDraft],
+  );
 
   // Restore draft
   const handleRestoreDraft = () => {
     const savedValues = getDraft();
     if (savedValues) {
       form.setFieldsValue(savedValues);
-      message.success('Đã khôi phục dữ liệu đã lưu tạm');
+      message.success("Đã khôi phục dữ liệu đã lưu tạm");
     }
     setShowDraftBanner(false);
   };
@@ -114,7 +146,7 @@ const CompanyBranding = () => {
   // Discard draft
   const handleDiscardDraft = () => {
     clearDraft();
-    message.info('Đã xóa dữ liệu tạm');
+    message.info("Đã xóa dữ liệu tạm");
     setShowDraftBanner(false);
   };
 
@@ -137,11 +169,11 @@ const CompanyBranding = () => {
       });
       brandForm.setFieldsValue({
         primaryColor: data.brandColors?.primary || MATCHA_GREEN,
-        secondaryColor: data.brandColors?.secondary || '#7ab356',
+        secondaryColor: data.brandColors?.secondary || "#7ab356",
       });
     } catch (error) {
-      console.error('Error fetching company:', error);
-      message.error('Không thể tải thông tin công ty');
+      console.error("Error fetching company:", error);
+      message.error("Không thể tải thông tin công ty");
     } finally {
       setLoading(false);
     }
@@ -151,12 +183,12 @@ const CompanyBranding = () => {
     try {
       setSaving(true);
       await companyAPI.update(values);
-      message.success('Lưu thông tin công ty thành công!');
+      message.success("Lưu thông tin công ty thành công!");
       clearDraft(); // Clear draft after successful save
       fetchCompany();
     } catch (error) {
-      console.error('Error saving company:', error);
-      message.error('Không thể lưu thông tin công ty');
+      console.error("Error saving company:", error);
+      message.error("Không thể lưu thông tin công ty");
     } finally {
       setSaving(false);
     }
@@ -166,11 +198,11 @@ const CompanyBranding = () => {
     try {
       setSaving(true);
       await companyAPI.updateBrand(values);
-      message.success('Lưu thương hiệu thành công!');
+      message.success("Lưu thương hiệu thành công!");
       fetchCompany();
     } catch (error) {
-      console.error('Error saving brand:', error);
-      message.error('Không thể lưu thương hiệu');
+      console.error("Error saving brand:", error);
+      message.error("Không thể lưu thương hiệu");
     } finally {
       setSaving(false);
     }
@@ -179,27 +211,40 @@ const CompanyBranding = () => {
   return (
     <div className="company-branding-page">
       {showDraftBanner && (
-        <div style={{ 
-          background: '#fffbe6', 
-          border: '1px solid #ffe58f', 
-          borderRadius: 8, 
-          padding: '12px 16px', 
-          marginBottom: 16,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
+        <div
+          style={{
+            background: "#fffbe6",
+            border: "1px solid #ffe58f",
+            borderRadius: 8,
+            padding: "12px 16px",
+            marginBottom: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <div>
-            <Text strong style={{ color: '#ad6800' }}>
+            <Text strong style={{ color: "#ad6800" }}>
               <SaveOutlined style={{ marginRight: 8 }} />
-              Dữ liệu đã được lưu tạm {draftTime && `lúc ${draftTime.toLocaleTimeString('vi-VN')}`}
+              Dữ liệu đã được lưu tạm{" "}
+              {draftTime && `lúc ${draftTime.toLocaleTimeString("vi-VN")}`}
             </Text>
           </div>
           <Space>
-            <Button size="small" onClick={handleDiscardDraft} icon={<RestOutlined />}>
+            <Button
+              size="small"
+              onClick={handleDiscardDraft}
+              icon={<RestOutlined />}
+            >
               Bỏ qua
             </Button>
-            <Button size="small" type="primary" onClick={handleRestoreDraft} icon={<CheckCircleOutlined />} style={{ background: '#faad14', borderColor: '#faad14' }}>
+            <Button
+              size="small"
+              type="primary"
+              onClick={handleRestoreDraft}
+              icon={<CheckCircleOutlined />}
+              style={{ background: "#faad14", borderColor: "#faad14" }}
+            >
               Khôi phục
             </Button>
           </Space>
@@ -208,8 +253,12 @@ const CompanyBranding = () => {
 
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Thương Hiệu Công Ty</Title>
-          <Text type="secondary">Quản lý hình ảnh và thông tin thương hiệu công ty</Text>
+          <Title level={3} className="page-title">
+            Thương Hiệu Công Ty
+          </Title>
+          <Text type="secondary">
+            Quản lý hình ảnh và thông tin thương hiệu công ty
+          </Text>
         </div>
       </div>
 
@@ -233,8 +282,18 @@ const CompanyBranding = () => {
             >
               <Row gutter={16}>
                 <Col xs={24} md={12}>
-                  <Form.Item label="Tên công ty" name="name" rules={[{ required: true, message: 'Vui lòng nhập tên công ty' }]}>
-                    <Input placeholder="VD: SRIS Corp" size="large" prefix={<FileTextOutlined />} />
+                  <Form.Item
+                    label="Tên công ty"
+                    name="name"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập tên công ty" },
+                    ]}
+                  >
+                    <Input
+                      placeholder="VD: SRIS Corp"
+                      size="large"
+                      prefix={<FileTextOutlined />}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -246,25 +305,45 @@ const CompanyBranding = () => {
 
               <Row gutter={16}>
                 <Col xs={24} md={12}>
-                  <Form.Item label="Email liên hệ" name="email" rules={[{ type: 'email', message: 'Email không hợp lệ' }]}>
-                    <Input placeholder="contact@company.com" size="large" prefix={<MailOutlined />} />
+                  <Form.Item
+                    label="Email liên hệ"
+                    name="email"
+                    rules={[{ type: "email", message: "Email không hợp lệ" }]}
+                  >
+                    <Input
+                      placeholder="contact@company.com"
+                      size="large"
+                      prefix={<MailOutlined />}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item label="Số điện thoại" name="phone">
-                    <Input placeholder="+84 123 456 789" size="large" prefix={<PhoneOutlined />} />
+                    <Input
+                      placeholder="+84 123 456 789"
+                      size="large"
+                      prefix={<PhoneOutlined />}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
 
               <Form.Item label="Địa chỉ" name="address">
-                <Input placeholder="123 Nguyễn Huệ, Quận 1, TP.HCM" size="large" prefix={<EnvironmentOutlined />} />
+                <Input
+                  placeholder="123 Nguyễn Huệ, Quận 1, TP.HCM"
+                  size="large"
+                  prefix={<EnvironmentOutlined />}
+                />
               </Form.Item>
 
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item label="Website" name="website">
-                    <Input placeholder="https://company.com" size="large" prefix={<GlobalOutlined />} />
+                    <Input
+                      placeholder="https://company.com"
+                      size="large"
+                      prefix={<GlobalOutlined />}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={6}>
@@ -280,7 +359,12 @@ const CompanyBranding = () => {
               </Row>
 
               <Form.Item label="Mô tả công ty" name="description">
-                <TextArea rows={4} placeholder="Giới thiệu ngắn về công ty..." maxLength={1000} showCount />
+                <TextArea
+                  rows={4}
+                  placeholder="Giới thiệu ngắn về công ty..."
+                  maxLength={1000}
+                  showCount
+                />
               </Form.Item>
 
               <Button
@@ -288,7 +372,12 @@ const CompanyBranding = () => {
                 htmlType="submit"
                 loading={saving}
                 icon={<SaveOutlined />}
-                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN, height: 44, paddingInline: 32 }}
+                style={{
+                  background: MATCHA_GREEN,
+                  borderColor: MATCHA_GREEN,
+                  height: 44,
+                  paddingInline: 32,
+                }}
               >
                 Lưu thông tin
               </Button>
@@ -309,17 +398,41 @@ const CompanyBranding = () => {
             <Form layout="vertical">
               <Row gutter={16}>
                 <Col xs={24} md={8}>
-                  <Form.Item label={<span><FacebookOutlined style={{ marginRight: 8 }} />Facebook</span>} name="facebook">
+                  <Form.Item
+                    label={
+                      <span>
+                        <FacebookOutlined style={{ marginRight: 8 }} />
+                        Facebook
+                      </span>
+                    }
+                    name="facebook"
+                  >
                     <Input placeholder="facebook.com/company" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item label={<span><InstagramOutlined style={{ marginRight: 8 }} />Instagram</span>} name="instagram">
+                  <Form.Item
+                    label={
+                      <span>
+                        <InstagramOutlined style={{ marginRight: 8 }} />
+                        Instagram
+                      </span>
+                    }
+                    name="instagram"
+                  >
                     <Input placeholder="@company" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>
-                  <Form.Item label={<span><LinkedinOutlined style={{ marginRight: 8 }} />LinkedIn</span>} name="linkedin">
+                  <Form.Item
+                    label={
+                      <span>
+                        <LinkedinOutlined style={{ marginRight: 8 }} />
+                        LinkedIn
+                      </span>
+                    }
+                    name="linkedin"
+                  >
                     <Input placeholder="linkedin.com/company" />
                   </Form.Item>
                 </Col>
@@ -339,22 +452,22 @@ const CompanyBranding = () => {
             className="main-card"
             bordered={false}
           >
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: "center" }}>
               <Avatar
                 size={160}
                 src={company?.logo || logo}
                 style={{
-                  background: `linear-gradient(135deg, ${company?.brandColors?.primary || MATCHA_GREEN}, ${company?.brandColors?.secondary || '#7ab356'})`,
+                  background: `linear-gradient(135deg, ${company?.brandColors?.primary || MATCHA_GREEN}, ${company?.brandColors?.secondary || "#7ab356"})`,
                   marginBottom: 16,
-                  fontSize: 64
+                  fontSize: 64,
                 }}
                 icon={<FileTextOutlined />}
               />
               <Upload
                 showUploadList={false}
                 beforeUpload={(file) => {
-                  if (!file.type.startsWith('image/')) {
-                    message.error('Chỉ chấp nhận file hình ảnh!');
+                  if (!file.type.startsWith("image/")) {
+                    message.error("Chỉ chấp nhận file hình ảnh!");
                     return Upload.LIST_IGNORE;
                   }
                   const reader = new FileReader();
@@ -363,9 +476,11 @@ const CompanyBranding = () => {
                   return false;
                 }}
               >
-                <Button icon={<UploadOutlined />} style={{ marginBottom: 8 }}>Tải lên Logo</Button>
+                <Button icon={<UploadOutlined />} style={{ marginBottom: 8 }}>
+                  Tải lên Logo
+                </Button>
               </Upload>
-              <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+              <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
                 PNG, JPG, SVG (tối đa 5MB, khuyến nghị 512x512px)
               </Text>
             </div>
@@ -387,7 +502,9 @@ const CompanyBranding = () => {
                 <Col span={12}>
                   <Form.Item label="Màu chính" name="primaryColor">
                     <ColorPicker
-                      defaultValue={company?.brandColors?.primary || MATCHA_GREEN}
+                      defaultValue={
+                        company?.brandColors?.primary || MATCHA_GREEN
+                      }
                       showText
                       size="large"
                     />
@@ -396,7 +513,9 @@ const CompanyBranding = () => {
                 <Col span={12}>
                   <Form.Item label="Màu phụ" name="secondaryColor">
                     <ColorPicker
-                      defaultValue={company?.brandColors?.secondary || '#7ab356'}
+                      defaultValue={
+                        company?.brandColors?.secondary || "#7ab356"
+                      }
                       showText
                       size="large"
                     />
@@ -404,17 +523,19 @@ const CompanyBranding = () => {
                 </Col>
               </Row>
 
-              <div style={{
-                background: `linear-gradient(135deg, ${company?.brandColors?.primary || MATCHA_GREEN}, ${company?.brandColors?.secondary || '#7ab356'})`,
-                height: 60,
-                borderRadius: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 700,
-                marginBottom: 16
-              }}>
+              <div
+                style={{
+                  background: `linear-gradient(135deg, ${company?.brandColors?.primary || MATCHA_GREEN}, ${company?.brandColors?.secondary || "#7ab356"})`,
+                  height: 60,
+                  borderRadius: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontWeight: 700,
+                  marginBottom: 16,
+                }}
+              >
                 Xem trước thương hiệu
               </div>
 

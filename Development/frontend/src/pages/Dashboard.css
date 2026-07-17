@@ -22,8 +22,8 @@
 }
 
 .header-actions .ant-btn-primary {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 .stats-row {
@@ -36,7 +36,7 @@
 }
 
 .stat-card:hover {
-  border-color: #5D8C3E;
+  border-color: #5d8c3e;
   box-shadow: 0 8px 20px rgba(93, 140, 62, 0.1) !important;
 }
 
@@ -110,7 +110,7 @@
 }
 
 .card-header .ant-btn-link {
-  color: #5D8C3E;
+  color: #5d8c3e;
   padding: 0;
 }
 
@@ -144,8 +144,8 @@
 }
 
 .join-btn {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 /* Tables */
@@ -225,8 +225,8 @@
 
 .save-btn {
   margin-top: 24px;
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 .settings-tabs .ant-tabs-tab {
@@ -254,7 +254,7 @@
 .score-value {
   font-size: 32px;
   font-weight: 700;
-  color: #5D8C3E;
+  color: #5d8c3e;
   display: block;
 }
 
@@ -284,15 +284,15 @@
 
 .criteria-score {
   font-weight: 600;
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .criteria-list .ant-slider-track {
-  background-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
 }
 
 .criteria-list .ant-slider-handle::after {
-  box-shadow: 0 0 0 2px #5D8C3E !important;
+  box-shadow: 0 0 0 2px #5d8c3e !important;
 }
 
 .feedback-section {
@@ -320,8 +320,8 @@
 }
 
 .recommend-btn.hire {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
   color: white !important;
 }
 
@@ -345,8 +345,8 @@
 }
 
 .submit-btn {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 .sidebar-card {

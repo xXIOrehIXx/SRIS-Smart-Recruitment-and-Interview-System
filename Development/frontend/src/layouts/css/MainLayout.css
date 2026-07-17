@@ -79,7 +79,7 @@
 
 .main-menu .ant-menu-item-selected {
   background-color: rgba(93, 140, 62, 0.1) !important;
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .main-menu .ant-menu-item-selected::after {
@@ -146,7 +146,7 @@
 }
 
 .collapse-btn:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
   background-color: #f4f8f2;
 }
 
@@ -184,7 +184,7 @@
 }
 
 .header-icon-btn:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
   background-color: #f4f8f2;
 }
 

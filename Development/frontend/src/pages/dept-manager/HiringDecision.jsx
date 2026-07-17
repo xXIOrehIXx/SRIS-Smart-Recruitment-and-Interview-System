@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -17,7 +17,7 @@ import {
   message,
   Popconfirm,
   Spin,
-} from 'antd';
+} from "antd";
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -27,66 +27,66 @@ import {
   UserOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import { dashboardAPI, applicationAPI } from '../../services/api';
-import '../Dashboard.css';
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import { dashboardAPI, applicationAPI } from "../../services/api";
+import "../Dashboard.css";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
-const MATCHA_GREEN = '#5D8C3E';
+const MATCHA_GREEN = "#5D8C3E";
 
 const HiringDecision = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState([]);
-  
+
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  
+
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [approveNote, setApproveNote] = useState('');
+  const [rejectReason, setRejectReason] = useState("");
+  const [approveNote, setApproveNote] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchText, setSearchText] = useState('');
+
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchText, setSearchText] = useState("");
 
   const fetchCandidates = async () => {
     try {
       setLoading(true);
       // Lấy danh sách từ Kanban, đặc biệt là cột OFFER
       const res = await dashboardAPI.getKanban();
-      
-      const offerColumn = res.data.columns.find(c => c.state === 'OFFER');
-      
+
+      const offerColumn = res.data.columns.find((c) => c.state === "OFFER");
+
       if (offerColumn) {
-        const formattedData = offerColumn.cards.map(c => ({
+        const formattedData = offerColumn.cards.map((c) => ({
           id: c.applicationId,
           candidateName: c.candidateName,
           candidateEmail: c.candidateEmail,
           position: c.jobTitle,
-          department: 'N/A',
+          department: "N/A",
           requestTitle: c.jobTitle,
           appliedDate: c.appliedAt,
           interviewScore: c.aiMatchScore, // Sử dụng tạm AiMatchScore hoặc fetch chi tiết
-          status: 'PENDING',
+          status: "PENDING",
           avatar: null,
           candidateId: c.candidateId,
           jobId: c.jobId,
         }));
-        
+
         setCandidates(formattedData);
       } else {
         setCandidates([]);
       }
     } catch (error) {
-      console.error('Lỗi khi tải danh sách ứng viên:', error);
-      message.error('Không thể tải danh sách quyết định tuyển dụng');
+      console.error("Lỗi khi tải danh sách ứng viên:", error);
+      message.error("Không thể tải danh sách quyết định tuyển dụng");
     } finally {
       setLoading(false);
     }
@@ -98,72 +98,93 @@ const HiringDecision = () => {
 
   const getStatusTag = (status) => {
     const config = {
-      PENDING: { color: 'warning', label: 'Chờ duyệt (OFFER)', icon: <ClockCircleOutlined /> },
-      APPROVED: { color: 'success', label: 'Đã duyệt', icon: <CheckCircleOutlined /> },
-      REJECTED: { color: 'error', label: 'Từ chối', icon: <CloseCircleOutlined /> },
+      PENDING: {
+        color: "warning",
+        label: "Chờ duyệt (OFFER)",
+        icon: <ClockCircleOutlined />,
+      },
+      APPROVED: {
+        color: "success",
+        label: "Đã duyệt",
+        icon: <CheckCircleOutlined />,
+      },
+      REJECTED: {
+        color: "error",
+        label: "Từ chối",
+        icon: <CloseCircleOutlined />,
+      },
     };
-    const c = config[status] || { color: 'default', label: status };
-    return <Tag color={c.color} icon={c.icon}>{c.label}</Tag>;
+    const c = config[status] || { color: "default", label: status };
+    return (
+      <Tag color={c.color} icon={c.icon}>
+        {c.label}
+      </Tag>
+    );
   };
 
   const getScoreColor = (score) => {
-    if (!score) return '#999';
-    if (score >= 70) return '#52c41a';
-    if (score >= 50) return '#faad14';
-    return '#f5222d';
+    if (!score) return "#999";
+    if (score >= 70) return "#52c41a";
+    if (score >= 50) return "#faad14";
+    return "#f5222d";
   };
 
   const columns = [
     {
-      title: 'Ứng viên',
-      key: 'candidate',
-      fixed: 'left',
+      title: "Ứng viên",
+      key: "candidate",
+      fixed: "left",
       width: 220,
       render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Avatar
+            style={{ backgroundColor: MATCHA_GREEN }}
+            icon={<UserOutlined />}
+          />
           <div>
             <Text strong>{record.candidateName}</Text>
             <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>{record.candidateEmail}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.candidateEmail}
+            </Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Vị trí',
-      dataIndex: 'position',
-      key: 'position',
+      title: "Vị trí",
+      dataIndex: "position",
+      key: "position",
       width: 150,
     },
     {
-      title: 'Điểm',
-      key: 'score',
+      title: "Điểm",
+      key: "score",
       width: 100,
       render: (_, record) => (
         <Text strong style={{ color: getScoreColor(record.interviewScore) }}>
-          {record.interviewScore ? `${record.interviewScore}` : 'N/A'}
+          {record.interviewScore ? `${record.interviewScore}` : "N/A"}
         </Text>
       ),
     },
     {
-      title: 'Ngày ứng tuyển',
-      dataIndex: 'appliedDate',
-      key: 'appliedDate',
+      title: "Ngày ứng tuyển",
+      dataIndex: "appliedDate",
+      key: "appliedDate",
       width: 120,
-      render: (date) => dayjs(date).format('DD/MM/YYYY'),
+      render: (date) => dayjs(date).format("DD/MM/YYYY"),
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
       width: 120,
       render: (status) => getStatusTag(status),
     },
     {
-      title: 'Thao tác',
-      key: 'actions',
-      fixed: 'right',
+      title: "Thao tác",
+      key: "actions",
+      fixed: "right",
       width: 200,
       render: (_, record) => (
         <Space size={4}>
@@ -175,7 +196,7 @@ const HiringDecision = () => {
               setDetailModalOpen(true);
             }}
           />
-          {record.status === 'PENDING' && (
+          {record.status === "PENDING" && (
             <>
               <Button
                 type="primary"
@@ -208,17 +229,22 @@ const HiringDecision = () => {
   const handleApprove = async () => {
     try {
       setActionLoading(true);
-      await applicationAPI.transition(selectedRecord.id, 'HIRED');
+      await applicationAPI.transition(selectedRecord.id, "HIRED");
       if (approveNote) {
-        await applicationAPI.addNote(selectedRecord.id, `[QUYẾT ĐỊNH TUYỂN DỤNG] Đồng ý tuyển: ${approveNote}`);
+        await applicationAPI.addNote(
+          selectedRecord.id,
+          `[QUYẾT ĐỊNH TUYỂN DỤNG] Đồng ý tuyển: ${approveNote}`,
+        );
       }
-      message.success(`Đã duyệt tuyển dụng cho ứng viên ${selectedRecord.candidateName}`);
+      message.success(
+        `Đã duyệt tuyển dụng cho ứng viên ${selectedRecord.candidateName}`,
+      );
       setApproveModalOpen(false);
-      setApproveNote('');
+      setApproveNote("");
       fetchCandidates();
     } catch (error) {
       console.error(error);
-      message.error('Lỗi khi duyệt ứng viên');
+      message.error("Lỗi khi duyệt ứng viên");
     } finally {
       setActionLoading(false);
     }
@@ -226,22 +252,25 @@ const HiringDecision = () => {
 
   const handleReject = async () => {
     if (!rejectReason) {
-      message.error('Vui lòng nhập lý do từ chối');
+      message.error("Vui lòng nhập lý do từ chối");
       return;
     }
-    
+
     try {
       setActionLoading(true);
-      await applicationAPI.transition(selectedRecord.id, 'REJECTED');
-      await applicationAPI.addNote(selectedRecord.id, `[TỪ CHỐI TUYỂN DỤNG] Lý do: ${rejectReason}`);
-      
+      await applicationAPI.transition(selectedRecord.id, "REJECTED");
+      await applicationAPI.addNote(
+        selectedRecord.id,
+        `[TỪ CHỐI TUYỂN DỤNG] Lý do: ${rejectReason}`,
+      );
+
       message.success(`Đã từ chối ứng viên ${selectedRecord.candidateName}`);
       setRejectModalOpen(false);
-      setRejectReason('');
+      setRejectReason("");
       fetchCandidates();
     } catch (error) {
       console.error(error);
-      message.error('Lỗi khi từ chối ứng viên');
+      message.error("Lỗi khi từ chối ứng viên");
     } finally {
       setActionLoading(false);
     }
@@ -252,18 +281,23 @@ const HiringDecision = () => {
       !searchText ||
       item.candidateName.toLowerCase().includes(searchText.toLowerCase()) ||
       item.position.toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = candidates.filter((i) => i.status === 'PENDING').length;
+  const pendingCount = candidates.filter((i) => i.status === "PENDING").length;
 
   return (
     <div className="dept-hiring-decision-page">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Quyết Định Tuyển Dụng</Title>
-          <Text type="secondary">Xét duyệt các ứng viên đã qua vòng phỏng vấn (Cột OFFER)</Text>
+          <Title level={3} className="page-title">
+            Quyết Định Tuyển Dụng
+          </Title>
+          <Text type="secondary">
+            Xét duyệt các ứng viên đã qua vòng phỏng vấn (Cột OFFER)
+          </Text>
         </div>
       </div>
 
@@ -273,7 +307,7 @@ const HiringDecision = () => {
             <Statistic
               title="Chờ duyệt"
               value={pendingCount}
-              valueStyle={{ color: '#faad14' }}
+              valueStyle={{ color: "#faad14" }}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
@@ -322,7 +356,7 @@ const HiringDecision = () => {
           <Button key="close" onClick={() => setDetailModalOpen(false)}>
             Đóng
           </Button>,
-          selectedRecord?.status === 'PENDING' && (
+          selectedRecord?.status === "PENDING" && (
             <Button
               key="reject"
               danger
@@ -334,7 +368,7 @@ const HiringDecision = () => {
               Từ chối
             </Button>
           ),
-          selectedRecord?.status === 'PENDING' && (
+          selectedRecord?.status === "PENDING" && (
             <Button
               key="approve"
               type="primary"
@@ -352,12 +386,20 @@ const HiringDecision = () => {
       >
         {selectedRecord && (
           <div style={{ marginTop: 20 }}>
-            <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
-              <Avatar size={64} style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
+            <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+              <Avatar
+                size={64}
+                style={{ backgroundColor: MATCHA_GREEN }}
+                icon={<UserOutlined />}
+              />
               <div>
-                <Title level={4} style={{ margin: 0 }}>{selectedRecord.candidateName}</Title>
+                <Title level={4} style={{ margin: 0 }}>
+                  {selectedRecord.candidateName}
+                </Title>
                 <Text type="secondary">{selectedRecord.candidateEmail}</Text>
-                <div style={{ marginTop: 8 }}>{getStatusTag(selectedRecord.status)}</div>
+                <div style={{ marginTop: 8 }}>
+                  {getStatusTag(selectedRecord.status)}
+                </div>
               </div>
             </div>
 
@@ -366,11 +408,18 @@ const HiringDecision = () => {
                 <Text strong>{selectedRecord.position}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Ngày ứng tuyển">
-                {dayjs(selectedRecord.appliedDate).format('DD/MM/YYYY')}
+                {dayjs(selectedRecord.appliedDate).format("DD/MM/YYYY")}
               </Descriptions.Item>
               <Descriptions.Item label="Điểm CV (AiMatch)">
-                <Text strong style={{ color: getScoreColor(selectedRecord.interviewScore) }}>
-                  {selectedRecord.interviewScore ? `${selectedRecord.interviewScore}` : 'N/A'}
+                <Text
+                  strong
+                  style={{
+                    color: getScoreColor(selectedRecord.interviewScore),
+                  }}
+                >
+                  {selectedRecord.interviewScore
+                    ? `${selectedRecord.interviewScore}`
+                    : "N/A"}
                 </Text>
               </Descriptions.Item>
             </Descriptions>
@@ -387,9 +436,14 @@ const HiringDecision = () => {
         onCancel={() => setApproveModalOpen(false)}
         okText="Duyệt"
         cancelText="Hủy"
-        okButtonProps={{ style: { background: MATCHA_GREEN, borderColor: MATCHA_GREEN } }}
+        okButtonProps={{
+          style: { background: MATCHA_GREEN, borderColor: MATCHA_GREEN },
+        }}
       >
-        <p>Bạn có chắc chắn muốn duyệt tuyển dụng ứng viên <strong>{selectedRecord?.candidateName}</strong>?</p>
+        <p>
+          Bạn có chắc chắn muốn duyệt tuyển dụng ứng viên{" "}
+          <strong>{selectedRecord?.candidateName}</strong>?
+        </p>
         <div style={{ marginTop: 16 }}>
           <Text strong>Ghi chú quyết định:</Text>
           <TextArea
@@ -413,9 +467,13 @@ const HiringDecision = () => {
         okType="danger"
         cancelText="Hủy"
       >
-        <p>Từ chối ứng viên <strong>{selectedRecord?.candidateName}</strong>?</p>
+        <p>
+          Từ chối ứng viên <strong>{selectedRecord?.candidateName}</strong>?
+        </p>
         <div style={{ marginTop: 16 }}>
-          <Text strong>Lý do từ chối <span style={{ color: 'red' }}>*</span>:</Text>
+          <Text strong>
+            Lý do từ chối <span style={{ color: "red" }}>*</span>:
+          </Text>
           <TextArea
             rows={3}
             placeholder="Nhập lý do từ chối (bắt buộc)..."

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -15,7 +15,7 @@ import {
   message,
   Row,
   Badge,
-} from 'antd';
+} from "antd";
 import {
   VideoCameraOutlined,
   SearchOutlined,
@@ -26,23 +26,23 @@ import {
   EditOutlined,
   PlusOutlined,
   ReloadOutlined,
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import { interviewAPI } from '../../services/api';
-import '../Dashboard.css';
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import { interviewAPI } from "../../services/api";
+import "../Dashboard.css";
 
 const { Title, Text } = Typography;
 
-const MATCHA_GREEN = '#5D8C3E';
+const MATCHA_GREEN = "#5D8C3E";
 
 const IncomingInterview = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [interviews, setInterviews] = useState([]);
-  const [searchText, setSearchText] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchText, setSearchText] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Modal states
   const [candidateModalOpen, setCandidateModalOpen] = useState(false);
@@ -60,7 +60,7 @@ const IncomingInterview = () => {
       const response = await interviewAPI.getMySchedules();
 
       let data = response.data;
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
+      if (data && typeof data === "object" && !Array.isArray(data)) {
         data = data.interviews || data.schedules || data.items || [];
       }
       data = data || [];
@@ -69,28 +69,34 @@ const IncomingInterview = () => {
         ? data.map((item) => ({
             id: item.scheduleId || item.id,
             applicationId: item.applicationId,
-            candidate: item.candidateName || item.candidate || 'N/A',
-            position: item.positionTitle || item.jobTitle || item.position || 'N/A',
+            candidate: item.candidateName || item.candidate || "N/A",
+            position:
+              item.positionTitle || item.jobTitle || item.position || "N/A",
             jobId: item.jobId,
-            department: item.department || 'N/A',
+            department: item.department || "N/A",
             date: item.interviewDate || item.scheduledDate || item.date,
             time: item.interviewTime || item.startTime || item.time,
             endTime: item.endTime || item.interviewEndTime,
             duration: item.duration || 60,
-            type: item.interviewType || item.type || 'Technical',
+            type: item.interviewType || item.type || "Technical",
             level: item.round || item.interviewRound || item.level || 1,
-            status: item.status || 'UPCOMING',
-            meetingLink: item.meetingLink || item.meetingUrl || '',
+            status: item.status || "UPCOMING",
+            meetingLink: item.meetingLink || item.meetingUrl || "",
           }))
         : [];
 
       // Filter only upcoming/pending interviews
-      setInterviews(normalized.filter(i =>
-        i.status === 'UPCOMING' || i.status === 'CONFIRMED' || i.status === 'PENDING'
-      ));
+      setInterviews(
+        normalized.filter(
+          (i) =>
+            i.status === "UPCOMING" ||
+            i.status === "CONFIRMED" ||
+            i.status === "PENDING",
+        ),
+      );
     } catch (error) {
-      console.error('Error fetching interviews:', error);
-      message.error('Không thể tải danh sách phỏng vấn');
+      console.error("Error fetching interviews:", error);
+      message.error("Không thể tải danh sách phỏng vấn");
     } finally {
       setLoading(false);
     }
@@ -106,7 +112,7 @@ const IncomingInterview = () => {
       }
       setCandidates(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching candidates:', error);
+      console.error("Error fetching candidates:", error);
       setCandidates([]);
     } finally {
       setLoadingCandidates(false);
@@ -122,85 +128,97 @@ const IncomingInterview = () => {
   const handleGradeCandidate = (scheduleId, candidate) => {
     setCandidateModalOpen(false);
     navigate(`/interviewer/interview/${scheduleId}`, {
-      state: { scheduleId, candidate }
+      state: { scheduleId, candidate },
     });
   };
 
   const getTypeColor = (type) => {
     const colors = {
-      Technical: 'blue',
-      HR: 'green',
-      Culture: 'purple',
+      Technical: "blue",
+      HR: "green",
+      Culture: "purple",
     };
-    return colors[type] || 'default';
+    return colors[type] || "default";
   };
 
   const getStatusConfig = (status) => {
     const configs = {
-      UPCOMING: { color: 'success', label: 'Sắp tới' },
-      PENDING: { color: 'warning', label: 'Chờ xác nhận' },
-      CONFIRMED: { color: 'processing', label: 'Đã xác nhận' },
+      UPCOMING: { color: "success", label: "Sắp tới" },
+      PENDING: { color: "warning", label: "Chờ xác nhận" },
+      CONFIRMED: { color: "processing", label: "Đã xác nhận" },
     };
-    return configs[status] || { color: 'default', label: status };
+    return configs[status] || { color: "default", label: status };
   };
 
   const candidateColumns = [
     {
-      title: 'Ứng viên',
-      key: 'candidate',
+      title: "Ứng viên",
+      key: "candidate",
       render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Avatar
+            style={{ backgroundColor: MATCHA_GREEN }}
+            icon={<UserOutlined />}
+          />
           <div>
-            <Text strong>{record.candidateName || record.candidate || record.name || 'N/A'}</Text>
+            <Text strong>
+              {record.candidateName || record.candidate || record.name || "N/A"}
+            </Text>
             <br />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.position || record.jobTitle || 'N/A'}
+              {record.position || record.jobTitle || "N/A"}
             </Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Trạng thái',
-      key: 'status',
+      title: "Trạng thái",
+      key: "status",
       width: 120,
       render: (_, record) => {
-        const isGraded = record.hasGraded || record.isGraded || record.score !== null;
-        return isGraded
-          ? <Tag color="success">Đã chấm</Tag>
-          : <Tag color="warning">Chưa chấm</Tag>;
+        const isGraded =
+          record.hasGraded || record.isGraded || record.score !== null;
+        return isGraded ? (
+          <Tag color="success">Đã chấm</Tag>
+        ) : (
+          <Tag color="warning">Chưa chấm</Tag>
+        );
       },
     },
     {
-      title: 'Điểm',
-      key: 'score',
+      title: "Điểm",
+      key: "score",
       width: 100,
-      render: (_, record) => (
-        record.score !== undefined && record.score !== null
-          ? <Text strong style={{ color: MATCHA_GREEN }}>{record.score}/{record.maxScore || 100}</Text>
-          : <Text type="secondary">-</Text>
-      ),
+      render: (_, record) =>
+        record.score !== undefined && record.score !== null ? (
+          <Text strong style={{ color: MATCHA_GREEN }}>
+            {record.score}/{record.maxScore || 100}
+          </Text>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
     },
     {
-      title: 'Thao tác',
-      key: 'actions',
+      title: "Thao tác",
+      key: "actions",
       width: 130,
       render: (_, record) => {
-        const isGraded = record.hasGraded || record.isGraded || record.score !== null;
+        const isGraded =
+          record.hasGraded || record.isGraded || record.score !== null;
         return (
           <Button
-            type={isGraded ? 'default' : 'primary'}
+            type={isGraded ? "default" : "primary"}
             size="small"
             icon={isGraded ? <EditOutlined /> : <PlusOutlined />}
             onClick={() => handleGradeCandidate(selectedSchedule?.id, record)}
             style={{
               background: isGraded ? undefined : MATCHA_GREEN,
               borderColor: isGraded ? MATCHA_GREEN : undefined,
-              color: isGraded ? MATCHA_GREEN : '#fff',
+              color: isGraded ? MATCHA_GREEN : "#fff",
             }}
           >
-            {isGraded ? 'Sửa' : 'Chấm điểm'}
+            {isGraded ? "Sửa" : "Chấm điểm"}
           </Button>
         );
       },
@@ -209,59 +227,67 @@ const IncomingInterview = () => {
 
   const columns = [
     {
-      title: 'Ứng viên',
-      key: 'candidate',
+      title: "Ứng viên",
+      key: "candidate",
       render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar style={{ backgroundColor: MATCHA_GREEN }}>{record.candidate[0]}</Avatar>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Avatar style={{ backgroundColor: MATCHA_GREEN }}>
+            {record.candidate[0]}
+          </Avatar>
           <div>
             <Text strong>{record.candidate}</Text>
             <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>{record.position}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.position}
+            </Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Ngày & Giờ',
-      key: 'datetime',
+      title: "Ngày & Giờ",
+      key: "datetime",
       render: (_, record) => (
         <div>
           <div>
             <CalendarOutlined style={{ marginRight: 4, color: MATCHA_GREEN }} />
-            <Text>{record.date ? dayjs(record.date).format('DD/MM/YYYY') : '-'}</Text>
+            <Text>
+              {record.date ? dayjs(record.date).format("DD/MM/YYYY") : "-"}
+            </Text>
           </div>
           <div>
-            <ClockCircleOutlined style={{ marginRight: 4, color: '#faad14' }} />
-            <Text type="secondary">{record.time || '-'} - {record.endTime || '-'}</Text>
+            <ClockCircleOutlined style={{ marginRight: 4, color: "#faad14" }} />
+            <Text type="secondary">
+              {record.time || "-"} - {record.endTime || "-"}
+            </Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Loại',
-      dataIndex: 'type',
-      key: 'type',
+      title: "Loại",
+      dataIndex: "type",
+      key: "type",
       render: (type) => <Tag color={getTypeColor(type)}>{type}</Tag>,
     },
     {
-      title: 'Vòng',
-      dataIndex: 'level',
-      key: 'level',
+      title: "Vòng",
+      dataIndex: "level",
+      key: "level",
       render: (level) => <Tag color="cyan">Vòng {level}</Tag>,
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
       render: (status) => {
         const config = getStatusConfig(status);
         return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
     {
-      title: 'Thao tác',
-      key: 'actions',
+      title: "Thao tác",
+      key: "actions",
       render: (_, record) => (
         <Space size={4}>
           <Button
@@ -277,7 +303,7 @@ const IncomingInterview = () => {
             type="default"
             size="small"
             icon={<VideoCameraOutlined />}
-            onClick={() => window.open(record.meetingLink, '_blank')}
+            onClick={() => window.open(record.meetingLink, "_blank")}
           >
             Join
           </Button>
@@ -289,10 +315,11 @@ const IncomingInterview = () => {
   const filteredData = interviews.filter((item) => {
     const matchesSearch =
       !searchText ||
-      (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.position || '').toLowerCase().includes(searchText.toLowerCase());
-    const matchesType = typeFilter === 'all' || item.type === typeFilter;
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+      (item.candidate || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.position || "").toLowerCase().includes(searchText.toLowerCase());
+    const matchesType = typeFilter === "all" || item.type === typeFilter;
+    const matchesStatus =
+      statusFilter === "all" || item.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -300,27 +327,39 @@ const IncomingInterview = () => {
     <div className="interviewer-dashboard">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Incoming Interviews</Title>
+          <Title level={3} className="page-title">
+            Incoming Interviews
+          </Title>
           <Text type="secondary">Your scheduled interviews</Text>
         </div>
         <Space>
-          <Badge count={interviews.length} style={{ backgroundColor: MATCHA_GREEN }}>
+          <Badge
+            count={interviews.length}
+            style={{ backgroundColor: MATCHA_GREEN }}
+          >
             <Button
               type="default"
               icon={<CalendarOutlined />}
-              onClick={() => navigate('/interviewer/schedule')}
+              onClick={() => navigate("/interviewer/schedule")}
             >
               Xem Lịch Phỏng Vấn
             </Button>
           </Badge>
-          <Button icon={<ReloadOutlined />} onClick={fetchInterviews} loading={loading}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchInterviews}
+            loading={loading}
+          >
             Làm mới
           </Button>
         </Space>
       </div>
 
       <Card className="main-card" bordered={false}>
-        <div className="toolbar" style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <div
+          className="toolbar"
+          style={{ display: "flex", gap: 12, marginBottom: 16 }}
+        >
           <Input
             placeholder="Tìm kiếm..."
             prefix={<SearchOutlined />}
@@ -369,7 +408,7 @@ const IncomingInterview = () => {
       {/* Modal Danh Sách Ứng Viên */}
       <Modal
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <TeamOutlined style={{ color: MATCHA_GREEN }} />
             Danh sách ứng viên phỏng vấn
           </div>
@@ -385,7 +424,16 @@ const IncomingInterview = () => {
       >
         {selectedSchedule && (
           <div style={{ marginTop: 16 }}>
-            <Descriptions column={3} size="small" style={{ marginBottom: 16, background: '#f5f5f5', padding: 12, borderRadius: 8 }}>
+            <Descriptions
+              column={3}
+              size="small"
+              style={{
+                marginBottom: 16,
+                background: "#f5f5f5",
+                padding: 12,
+                borderRadius: 8,
+              }}
+            >
               <Descriptions.Item label="Buổi PV">
                 <Text strong>{selectedSchedule.candidate}</Text>
               </Descriptions.Item>
@@ -393,13 +441,18 @@ const IncomingInterview = () => {
                 {selectedSchedule.position}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày">
-                {selectedSchedule.date ? dayjs(selectedSchedule.date).format('DD/MM/YYYY') : '-'}
+                {selectedSchedule.date
+                  ? dayjs(selectedSchedule.date).format("DD/MM/YYYY")
+                  : "-"}
               </Descriptions.Item>
               <Descriptions.Item label="Giờ">
-                {selectedSchedule.time || '-'} - {selectedSchedule.endTime || '-'}
+                {selectedSchedule.time || "-"} -{" "}
+                {selectedSchedule.endTime || "-"}
               </Descriptions.Item>
               <Descriptions.Item label="Loại">
-                <Tag color={getTypeColor(selectedSchedule.type)}>{selectedSchedule.type}</Tag>
+                <Tag color={getTypeColor(selectedSchedule.type)}>
+                  {selectedSchedule.type}
+                </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Vòng">
                 <Tag color="cyan">Vòng {selectedSchedule.level}</Tag>
@@ -409,11 +462,11 @@ const IncomingInterview = () => {
             <Divider orientation="left">Danh sách cần chấm điểm</Divider>
 
             {loadingCandidates ? (
-              <div style={{ textAlign: 'center', padding: 40 }}>
+              <div style={{ textAlign: "center", padding: 40 }}>
                 Đang tải...
               </div>
             ) : candidates.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+              <div style={{ textAlign: "center", padding: 40, color: "#999" }}>
                 <UserOutlined style={{ fontSize: 48, marginBottom: 16 }} />
                 <p>Chưa có ứng viên nào trong buổi phỏng vấn này</p>
               </div>

@@ -26,12 +26,16 @@
     "start": "vite --port 3000",
     "dev": "vite --port 3000",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
+      "react-app/jest",
+      "plugin:storybook/recommended"
     ]
   },
   "browserslist": {
@@ -47,7 +51,17 @@
     ]
   },
   "devDependencies": {
+    "@storybook/react-vite": "^10.5.2",
     "@vitejs/plugin-react": "^6.0.3",
+    "eslint-plugin-storybook": "^10.5.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "3.9.5",
+    "prop-types": "^15.8.1",
+    "storybook": "^10.5.2",
     "vite": "^8.1.5"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   }
 }

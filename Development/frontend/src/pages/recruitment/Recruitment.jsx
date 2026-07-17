@@ -1,11 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, Typography, Card, Row, Col, Button, Modal, Descriptions, Tag, Space, List, Divider, message, Input, Select, Statistic, Spin, Form, Upload } from 'antd';
-import { 
-  SearchOutlined, 
-  EnvironmentOutlined, 
-  BankOutlined, 
-  ClockCircleOutlined, 
-  DollarOutlined, 
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Layout,
+  Typography,
+  Card,
+  Row,
+  Col,
+  Button,
+  Modal,
+  Descriptions,
+  Tag,
+  Space,
+  List,
+  Divider,
+  message,
+  Input,
+  Select,
+  Statistic,
+  Spin,
+  Form,
+  Upload,
+} from "antd";
+import {
+  SearchOutlined,
+  EnvironmentOutlined,
+  BankOutlined,
+  ClockCircleOutlined,
+  DollarOutlined,
   FileTextOutlined,
   UserOutlined,
   SaveOutlined,
@@ -15,12 +35,12 @@ import {
   CloseOutlined,
   ExclamationCircleOutlined,
   UploadOutlined,
-  InboxOutlined
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import { jobsAPI, publicCareerAPI } from '../../services/api';
-import './Recruitment.css';
-import { useCompany } from '../../hooks/useCompany';
+  InboxOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import { jobsAPI, publicCareerAPI } from "../../services/api";
+import "./Recruitment.css";
+import { useCompany } from "../../hooks/useCompany";
 
 const { Dragger } = Upload;
 
@@ -35,8 +55,8 @@ const Recruitment = () => {
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [searchText, setSearchText] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [applyModalVisible, setApplyModalVisible] = useState(false);
   const [applyingJob, setApplyingJob] = useState(null);
@@ -47,13 +67,17 @@ const Recruitment = () => {
     fetchJobs();
   }, []);
 
-  const { slug }= useCompany();
+  const { slug } = useCompany();
 
   const fetchJobs = async () => {
     try {
       if (!slug) {
-        console.error('fetchJobs: thiếu slug — URL phải có dạng /{slug}/recruitment');
-        message.error('URL không hợp lệ: thiếu slug công ty. Vui lòng dùng /{slug}/recruitment.');
+        console.error(
+          "fetchJobs: thiếu slug — URL phải có dạng /{slug}/recruitment",
+        );
+        message.error(
+          "URL không hợp lệ: thiếu slug công ty. Vui lòng dùng /{slug}/recruitment.",
+        );
         setLoading(false);
         return;
       }
@@ -62,8 +86,8 @@ const Recruitment = () => {
       const jobList = response.data?.data || response.data || [];
       setJobs(jobList);
     } catch (error) {
-      console.error('Error fetching jobs:', error);
-      message.error('Không thể tải danh sách tin tuyển dụng');
+      console.error("Error fetching jobs:", error);
+      message.error("Không thể tải danh sách tin tuyển dụng");
     } finally {
       setLoading(false);
     }
@@ -74,7 +98,7 @@ const Recruitment = () => {
     if (job.jdText || job.description || job.requirements) {
       return job;
     }
-    
+
     try {
       const jobId = getJobId(job);
       if (slug) {
@@ -83,11 +107,12 @@ const Recruitment = () => {
         return jobData || job;
       } else {
         const response = await jobsAPI.getPublicJob(jobId);
-        const jobData = response.data?.data || response.data?.items?.[0] || response.data;
+        const jobData =
+          response.data?.data || response.data?.items?.[0] || response.data;
         return jobData || job;
       }
     } catch (error) {
-      console.error('Error fetching job detail:', error);
+      console.error("Error fetching job detail:", error);
       return job; // Fallback về job ban đầu
     }
   };
@@ -97,18 +122,25 @@ const Recruitment = () => {
 
   // Lấy danh sách departments duy nhất
   const departments = useMemo(() => {
-    const depts = [...new Set(jobs.map(job => job.department).filter(Boolean))];
+    const depts = [
+      ...new Set(jobs.map((job) => job.department).filter(Boolean)),
+    ];
     return depts.sort();
   }, [jobs]);
 
   // Lọc jobs theo search và department
   const filteredJobs = useMemo(() => {
-    return jobs.filter(job => {
-      const matchesSearch = 
-        (job.title || '').toLowerCase().includes(searchText.toLowerCase()) ||
-        (job.jdText || job.description || '').toLowerCase().includes(searchText.toLowerCase()) ||
-        (job.skills || []).some(skill => (skill || '').toLowerCase().includes(searchText.toLowerCase()));
-      const matchesDepartment = selectedDepartment === 'all' || job.department === selectedDepartment;
+    return jobs.filter((job) => {
+      const matchesSearch =
+        (job.title || "").toLowerCase().includes(searchText.toLowerCase()) ||
+        (job.jdText || job.description || "")
+          .toLowerCase()
+          .includes(searchText.toLowerCase()) ||
+        (job.skills || []).some((skill) =>
+          (skill || "").toLowerCase().includes(searchText.toLowerCase()),
+        );
+      const matchesDepartment =
+        selectedDepartment === "all" || job.department === selectedDepartment;
       return matchesSearch && matchesDepartment;
     });
   }, [jobs, searchText, selectedDepartment]);
@@ -127,7 +159,7 @@ const Recruitment = () => {
   const handleApply = (job) => {
     const jobId = getJobId(job);
     if (appliedJobs.includes(jobId)) {
-      message.info('Bạn đã ứng tuyển vị trí này rồi');
+      message.info("Bạn đã ứng tuyển vị trí này rồi");
       return;
     }
     setApplyingJob(job);
@@ -137,24 +169,24 @@ const Recruitment = () => {
   const handleSubmitApplication = async () => {
     try {
       const values = await applyForm.validateFields();
-      
+
       if (!file) {
-        message.error('Vui lòng upload CV (file PDF)');
+        message.error("Vui lòng upload CV (file PDF)");
         return;
       }
 
       setApplyingJob({ ...applyingJob, submitting: true });
-      
+
       const formData = new FormData();
-      formData.append('candidateName', values.candidateName);
-      formData.append('candidateEmail', values.candidateEmail);
-      formData.append('candidatePhone', values.candidatePhone);
-      formData.append('file', file);
+      formData.append("candidateName", values.candidateName);
+      formData.append("candidateEmail", values.candidateEmail);
+      formData.append("candidatePhone", values.candidatePhone);
+      formData.append("file", file);
 
       const jobId = getJobId(applyingJob);
       await publicCareerAPI.apply(slug, jobId, formData);
-      
-      message.success('Nộp CV thành công!');
+
+      message.success("Nộp CV thành công!");
       setAppliedJobs([...appliedJobs, jobId]);
       setApplyModalVisible(false);
       applyForm.resetFields();
@@ -163,10 +195,10 @@ const Recruitment = () => {
       if (error.errorFields) {
         return; // Form validation failed
       }
-      console.error('Error submitting application:', error);
-      message.error('Không thể nộp CV. Vui lòng thử lại.');
+      console.error("Error submitting application:", error);
+      message.error("Không thể nộp CV. Vui lòng thử lại.");
     } finally {
-      setApplyingJob(prev => prev?.submitting ? null : prev);
+      setApplyingJob((prev) => (prev?.submitting ? null : prev));
     }
   };
 
@@ -179,49 +211,62 @@ const Recruitment = () => {
 
   const getJobTypeColor = (type) => {
     switch (type) {
-      case 'Full-time': return 'green';
-      case 'Part-time': return 'blue';
-      case 'Contract': return 'orange';
-      case 'Remote': return 'purple';
-      case 'Internship': return 'cyan';
-      default: return 'default';
+      case "Full-time":
+        return "green";
+      case "Part-time":
+        return "blue";
+      case "Contract":
+        return "orange";
+      case "Remote":
+        return "purple";
+      case "Internship":
+        return "cyan";
+      default:
+        return "default";
     }
   };
 
   const getExperienceColor = (exp) => {
-    if (!exp) return 'default';
-    if (exp.includes('5+')) return 'red';
-    if (exp.includes('3+')) return 'orange';
-    if (exp.includes('2+')) return 'blue';
-    return 'green';
+    if (!exp) return "default";
+    if (exp.includes("5+")) return "red";
+    if (exp.includes("3+")) return "orange";
+    if (exp.includes("2+")) return "blue";
+    return "green";
   };
 
   const formatSalary = (job) => {
     // Hỗ trợ nhiều trường salary
     if (job.salary) return job.salary;
     if (job.salaryRange) return job.salaryRange;
-    const currency = job.currency ? ` ${job.currency}` : '';
+    const currency = job.currency ? ` ${job.currency}` : "";
     if (job.salaryMin && job.salaryMax) {
-      const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
+      const format = (n) => new Intl.NumberFormat("vi-VN").format(n);
       return `${format(job.salaryMin)} - ${format(job.salaryMax)}${currency}`;
     }
     if (job.salaryMin) {
-      const format = (n) => new Intl.NumberFormat('vi-VN').format(n);
+      const format = (n) => new Intl.NumberFormat("vi-VN").format(n);
       return `Từ ${format(job.salaryMin)}${currency}`;
     }
-    return 'Thỏa thuận';
+    return "Thỏa thuận";
   };
 
   // Hàm lấy mô tả công việc
   const getJobDescription = (job) => {
-    return job.jdText || job.jobDescription || job.description || job.JobDescription || '';
+    return (
+      job.jdText ||
+      job.jobDescription ||
+      job.description ||
+      job.JobDescription ||
+      ""
+    );
   };
 
   // Hàm lấy yêu cầu
   const getRequirements = (job) => {
     if (job.requirements) {
       if (Array.isArray(job.requirements)) return job.requirements;
-      if (typeof job.requirements === 'string') return job.requirements.split('\n').filter(r => r.trim());
+      if (typeof job.requirements === "string")
+        return job.requirements.split("\n").filter((r) => r.trim());
     }
     if (job.JobRequirements) return job.JobRequirements;
     return [];
@@ -231,7 +276,8 @@ const Recruitment = () => {
   const getBenefits = (job) => {
     if (job.benefits) {
       if (Array.isArray(job.benefits)) return job.benefits;
-      if (typeof job.benefits === 'string') return job.benefits.split('\n').filter(b => b.trim());
+      if (typeof job.benefits === "string")
+        return job.benefits.split("\n").filter((b) => b.trim());
     }
     if (job.JobBenefits) return job.JobBenefits;
     return [];
@@ -241,7 +287,11 @@ const Recruitment = () => {
   const getSkills = (job) => {
     if (job.skills) {
       if (Array.isArray(job.skills)) return job.skills;
-      if (typeof job.skills === 'string') return job.skills.split(',').map(s => s.trim()).filter(s => s);
+      if (typeof job.skills === "string")
+        return job.skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s);
     }
     if (job.requiredSkills) return job.requiredSkills;
     if (job.Skills) return job.Skills;
@@ -250,17 +300,25 @@ const Recruitment = () => {
 
   // Hàm lấy deadline
   const getDeadline = (job) => {
-    return job.deadline || job.expiresAt || job.expiredAt || job.expirationDate || null;
+    return (
+      job.deadline ||
+      job.expiresAt ||
+      job.expiredAt ||
+      job.expirationDate ||
+      null
+    );
   };
 
   // Hàm lấy ngày tạo
   const getCreatedDate = (job) => {
-    return job.createdAt || job.postedDate || job.createdDate || job.postedAt || null;
+    return (
+      job.createdAt || job.postedDate || job.createdDate || job.postedAt || null
+    );
   };
 
   const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('vi-VN');
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("vi-VN");
   };
 
   const renderJobCard = (job) => {
@@ -268,85 +326,118 @@ const Recruitment = () => {
     const skills = getSkills(job);
     const deadline = getDeadline(job);
     const description = getJobDescription(job);
-    
+
     return (
-    <Card 
-      className="job-card"
-      variant={false}
-      hoverable
-      onClick={() => handleViewDetails(job)}
-    >
-      <div className="job-card-header">
-        <div className="job-title-section">
-          <Title level={5} className="job-title">{job.title || job.Title || 'N/A'}</Title>
-          <Space size="small">
-            {job.department && <Tag color="blue" icon={<BankOutlined />}>{job.department}</Tag>}
-            {(job.employmentType || job.jobType || job.type) && (
-              <Tag color={getJobTypeColor(job.employmentType || job.jobType || job.type)}>
-                {job.employmentType || job.jobType || job.type}
-              </Tag>
+      <Card
+        className="job-card"
+        variant={false}
+        hoverable
+        onClick={() => handleViewDetails(job)}
+      >
+        <div className="job-card-header">
+          <div className="job-title-section">
+            <Title level={5} className="job-title">
+              {job.title || job.Title || "N/A"}
+            </Title>
+            <Space size="small">
+              {job.department && (
+                <Tag color="blue" icon={<BankOutlined />}>
+                  {job.department}
+                </Tag>
+              )}
+              {(job.employmentType || job.jobType || job.type) && (
+                <Tag
+                  color={getJobTypeColor(
+                    job.employmentType || job.jobType || job.type,
+                  )}
+                >
+                  {job.employmentType || job.jobType || job.type}
+                </Tag>
+              )}
+              {job.experienceLevel && (
+                <Tag color={getExperienceColor(job.experienceLevel)}>
+                  {job.experienceLevel}
+                </Tag>
+              )}
+            </Space>
+          </div>
+          <div className="job-salary">
+            <DollarOutlined className="salary-icon" />
+            <Text strong className="salary-text">
+              {formatSalary(job)}
+            </Text>
+          </div>
+        </div>
+
+        <div className="job-card-body">
+          <Paragraph ellipsis={{ rows: 2 }} className="job-description">
+            {description}
+          </Paragraph>
+
+          <Space size="middle" className="job-meta">
+            {(job.location || job.workLocation) && (
+              <span>
+                <EnvironmentOutlined /> {job.location || job.workLocation}
+              </span>
             )}
-            {job.experienceLevel && <Tag color={getExperienceColor(job.experienceLevel)}>{job.experienceLevel}</Tag>}
+            {deadline && (
+              <span>
+                <ClockCircleOutlined /> Hạn: {formatDate(deadline)}
+              </span>
+            )}
+            {(job.applicationCount || job.applicantCount) && (
+              <span>
+                <UserOutlined /> {job.applicationCount || job.applicantCount}{" "}
+                ứng viên
+              </span>
+            )}
+          </Space>
+
+          {skills.length > 0 && (
+            <div className="job-skills">
+              {skills.slice(0, 4).map((skill, idx) => (
+                <Tag key={idx} className="skill-tag">
+                  {typeof skill === "string"
+                    ? skill
+                    : skill.name || skill.skill || ""}
+                </Tag>
+              ))}
+              {skills.length > 4 && <Tag>+{skills.length - 4}</Tag>}
+            </div>
+          )}
+        </div>
+
+        <Divider style={{ margin: "12px 0" }} />
+
+        <div className="job-card-footer">
+          <Space>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleApply(job);
+              }}
+              disabled={appliedJobs.includes(jobId)}
+              loading={applyingJob === jobId}
+              className={
+                appliedJobs.includes(jobId) ? "applied-btn" : "apply-btn"
+              }
+            >
+              {appliedJobs.includes(jobId) ? "Đã ứng tuyển" : "Apply ngay"}
+            </Button>
+            <Button
+              icon={<FileTextOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewDetails(job);
+              }}
+            >
+              Chi tiết
+            </Button>
           </Space>
         </div>
-        <div className="job-salary">
-          <DollarOutlined className="salary-icon" />
-          <Text strong className="salary-text">{formatSalary(job)}</Text>
-        </div>
-      </div>
-
-      <div className="job-card-body">
-        <Paragraph ellipsis={{ rows: 2 }} className="job-description">
-          {description}
-        </Paragraph>
-
-        <Space size="middle" className="job-meta">
-          {(job.location || job.workLocation) && <span><EnvironmentOutlined /> {job.location || job.workLocation}</span>}
-          {deadline && <span><ClockCircleOutlined /> Hạn: {formatDate(deadline)}</span>}
-          {(job.applicationCount || job.applicantCount) && <span><UserOutlined /> {job.applicationCount || job.applicantCount} ứng viên</span>}
-        </Space>
-
-        {skills.length > 0 && (
-          <div className="job-skills">
-            {skills.slice(0, 4).map((skill, idx) => (
-              <Tag key={idx} className="skill-tag">
-                {typeof skill === 'string' ? skill : skill.name || skill.skill || ''}
-              </Tag>
-            ))}
-            {skills.length > 4 && <Tag>+{skills.length - 4}</Tag>}
-          </div>
-        )}
-      </div>
-
-      <Divider style={{ margin: '12px 0' }} />
-
-      <div className="job-card-footer">
-        <Space>
-          <Button 
-            type="primary" 
-            icon={<SendOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleApply(job);
-            }}
-            disabled={appliedJobs.includes(jobId)}
-            loading={applyingJob === jobId}
-            className={appliedJobs.includes(jobId) ? 'applied-btn' : 'apply-btn'}
-          >
-            {appliedJobs.includes(jobId) ? 'Đã ứng tuyển' : 'Apply ngay'}
-          </Button>
-          <Button 
-            icon={<FileTextOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleViewDetails(job);
-            }}
-          >
-            Chi tiết
-          </Button>
-        </Space>
-      </div>
-    </Card>
+      </Card>
     );
   };
 
@@ -365,28 +456,50 @@ const Recruitment = () => {
       <div className="job-detail">
         <div className="job-detail-header">
           <div className="job-detail-title">
-            <Title level={3}>{selectedJob.title || selectedJob.Title || 'N/A'}</Title>
+            <Title level={3}>
+              {selectedJob.title || selectedJob.Title || "N/A"}
+            </Title>
             <Space size="middle">
-              {selectedJob.department && <Tag color="blue" icon={<BankOutlined />}>{selectedJob.department}</Tag>}
-              {(selectedJob.employmentType || selectedJob.jobType || selectedJob.type) && (
-                <Tag color={getJobTypeColor(selectedJob.employmentType || selectedJob.jobType || selectedJob.type)}>
-                  {selectedJob.employmentType || selectedJob.jobType || selectedJob.type}
+              {selectedJob.department && (
+                <Tag color="blue" icon={<BankOutlined />}>
+                  {selectedJob.department}
                 </Tag>
               )}
-              {selectedJob.experienceLevel && <Tag color={getExperienceColor(selectedJob.experienceLevel)}>{selectedJob.experienceLevel}</Tag>}
+              {(selectedJob.employmentType ||
+                selectedJob.jobType ||
+                selectedJob.type) && (
+                <Tag
+                  color={getJobTypeColor(
+                    selectedJob.employmentType ||
+                      selectedJob.jobType ||
+                      selectedJob.type,
+                  )}
+                >
+                  {selectedJob.employmentType ||
+                    selectedJob.jobType ||
+                    selectedJob.type}
+                </Tag>
+              )}
+              {selectedJob.experienceLevel && (
+                <Tag color={getExperienceColor(selectedJob.experienceLevel)}>
+                  {selectedJob.experienceLevel}
+                </Tag>
+              )}
             </Space>
           </div>
           <div className="job-detail-actions">
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               size="large"
               icon={<SendOutlined />}
               onClick={() => handleApply(selectedJob)}
               disabled={appliedJobs.includes(jobId)}
               loading={applyingJob === jobId}
-              className={appliedJobs.includes(jobId) ? 'applied-btn' : 'apply-btn-large'}
+              className={
+                appliedJobs.includes(jobId) ? "applied-btn" : "apply-btn-large"
+              }
             >
-              {appliedJobs.includes(jobId) ? 'Đã ứng tuyển' : 'Apply ngay'}
+              {appliedJobs.includes(jobId) ? "Đã ứng tuyển" : "Apply ngay"}
             </Button>
           </div>
         </div>
@@ -399,7 +512,9 @@ const Recruitment = () => {
                   <DollarOutlined className="meta-icon" />
                   <div>
                     <Text type="secondary">Mức lương</Text>
-                    <div className="meta-value">{formatSalary(selectedJob)}</div>
+                    <div className="meta-value">
+                      {formatSalary(selectedJob)}
+                    </div>
                   </div>
                 </Space>
               </Card>
@@ -410,7 +525,11 @@ const Recruitment = () => {
                   <EnvironmentOutlined className="meta-icon" />
                   <div>
                     <Text type="secondary">Địa điểm</Text>
-                    <div className="meta-value">{selectedJob.location || selectedJob.workLocation || 'N/A'}</div>
+                    <div className="meta-value">
+                      {selectedJob.location ||
+                        selectedJob.workLocation ||
+                        "N/A"}
+                    </div>
                   </div>
                 </Space>
               </Card>
@@ -432,7 +551,12 @@ const Recruitment = () => {
                   <UserOutlined className="meta-icon" />
                   <div>
                     <Text type="secondary">Ứng viên</Text>
-                    <div className="meta-value">{selectedJob.applicationCount || selectedJob.applicantCount || 0} người</div>
+                    <div className="meta-value">
+                      {selectedJob.applicationCount ||
+                        selectedJob.applicantCount ||
+                        0}{" "}
+                      người
+                    </div>
                   </div>
                 </Space>
               </Card>
@@ -442,13 +566,17 @@ const Recruitment = () => {
 
         <Row gutter={[24, 24]}>
           <Col xs={24} lg={14}>
-            <Card title="Mô tả công việc" variant={false} className="detail-card">
+            <Card
+              title="Mô tả công việc"
+              variant={false}
+              className="detail-card"
+            >
               {description ? (
                 <Paragraph>{description}</Paragraph>
               ) : (
                 <Text type="secondary">Chưa có mô tả công việc</Text>
               )}
-              
+
               {requirements.length > 0 && (
                 <>
                   <Divider orientation="left">Yêu cầu</Divider>
@@ -457,7 +585,11 @@ const Recruitment = () => {
                     renderItem={(req, index) => (
                       <List.Item className="requirement-item">
                         <CheckCircleOutlined className="check-icon" />
-                        <Text>{typeof req === 'string' ? req : req.text || req.name || ''}</Text>
+                        <Text>
+                          {typeof req === "string"
+                            ? req
+                            : req.text || req.name || ""}
+                        </Text>
                       </List.Item>
                     )}
                   />
@@ -472,7 +604,11 @@ const Recruitment = () => {
                     renderItem={(benefit) => (
                       <List.Item className="benefit-item">
                         <StarOutlined className="star-icon" />
-                        <Text>{typeof benefit === 'string' ? benefit : benefit.text || benefit.name || ''}</Text>
+                        <Text>
+                          {typeof benefit === "string"
+                            ? benefit
+                            : benefit.text || benefit.name || ""}
+                        </Text>
                       </List.Item>
                     )}
                   />
@@ -483,24 +619,48 @@ const Recruitment = () => {
 
           <Col xs={24} lg={10}>
             {skills.length > 0 && (
-              <Card title="Kỹ năng yêu cầu" variant={false} className="detail-card">
+              <Card
+                title="Kỹ năng yêu cầu"
+                variant={false}
+                className="detail-card"
+              >
                 <div className="skills-container">
                   {skills.map((skill, idx) => (
                     <Tag key={idx} color="blue" className="skill-tag-large">
-                      {typeof skill === 'string' ? skill : skill.name || skill.skill || ''}
+                      {typeof skill === "string"
+                        ? skill
+                        : skill.name || skill.skill || ""}
                     </Tag>
                   ))}
                 </div>
               </Card>
             )}
 
-            <Card title="Thông tin thêm" variant={false} className="detail-card" style={{ marginTop: 16 }}>
+            <Card
+              title="Thông tin thêm"
+              variant={false}
+              className="detail-card"
+              style={{ marginTop: 16 }}
+            >
               <Descriptions column={1} size="small">
-                <Descriptions.Item label="Ngày đăng">{formatDate(createdDate)}</Descriptions.Item>
-                <Descriptions.Item label="Phòng ban">{selectedJob.department || 'N/A'}</Descriptions.Item>
-                <Descriptions.Item label="Loại hình">{selectedJob.employmentType || selectedJob.jobType || selectedJob.type || 'N/A'}</Descriptions.Item>
-                <Descriptions.Item label="Kinh nghiệm">{selectedJob.experienceLevel || 'N/A'}</Descriptions.Item>
-                <Descriptions.Item label="Hình thức">{selectedJob.workMode || selectedJob.workingMode || 'N/A'}</Descriptions.Item>
+                <Descriptions.Item label="Ngày đăng">
+                  {formatDate(createdDate)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Phòng ban">
+                  {selectedJob.department || "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Loại hình">
+                  {selectedJob.employmentType ||
+                    selectedJob.jobType ||
+                    selectedJob.type ||
+                    "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Kinh nghiệm">
+                  {selectedJob.experienceLevel || "N/A"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Hình thức">
+                  {selectedJob.workMode || selectedJob.workingMode || "N/A"}
+                </Descriptions.Item>
               </Descriptions>
             </Card>
           </Col>
@@ -513,17 +673,44 @@ const Recruitment = () => {
     return (
       <Layout className="recruitment-layout">
         <Header className="recruitment-page-header">
-          <div className="header-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+          <div
+            className="header-logo"
+            onClick={() => navigate("/")}
+            style={{ cursor: "pointer" }}
+          >
             <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill="#5D8C3E"/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <rect width="48" height="48" rx="12" fill="#5D8C3E" />
+              <path
+                d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
+                stroke="white"
+                strokeWidth="2"
+              />
+              <path
+                d="M20 22L24 26L28 22"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M24 18V26"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
             <span>SRIS</span>
           </div>
         </Header>
-        <Content className="recruitment-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Content
+          className="recruitment-content"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "60vh",
+          }}
+        >
           <Spin size="large" />
         </Content>
       </Layout>
@@ -533,12 +720,31 @@ const Recruitment = () => {
   return (
     <Layout className="recruitment-layout">
       <Header className="recruitment-page-header">
-        <div className="header-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+        <div
+          className="header-logo"
+          onClick={() => navigate("/")}
+          style={{ cursor: "pointer" }}
+        >
           <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill="#5D8C3E"/>
-            <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2"/>
-            <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M24 18V26" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            <rect width="48" height="48" rx="12" fill="#5D8C3E" />
+            <path
+              d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
+              stroke="white"
+              strokeWidth="2"
+            />
+            <path
+              d="M20 22L24 26L28 22"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M24 18V26"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
           <span>SRIS</span>
         </div>
@@ -549,8 +755,21 @@ const Recruitment = () => {
           <a href="#customers">Customers</a>
         </div>
         <div className="header-actions">
-          <Button type="text" className="login-btn" onClick={() => navigate('/login')}>Log in</Button>
-          <Button type="primary" shape="round" className="demo-btn" onClick={() => navigate('/register')}>Book a demo</Button>
+          <Button
+            type="text"
+            className="login-btn"
+            onClick={() => navigate("/login")}
+          >
+            Log in
+          </Button>
+          <Button
+            type="primary"
+            shape="round"
+            className="demo-btn"
+            onClick={() => navigate("/register")}
+          >
+            Book a demo
+          </Button>
         </div>
       </Header>
 
@@ -561,20 +780,33 @@ const Recruitment = () => {
               Cơ Hội Nghề Nghiệp
             </Title>
             <Paragraph className="page-subtitle">
-              Khám phá các vị trí tuyển dụng phù hợp với bạn. Chúng tôi luôn tìm kiếm những tài năng xuất sắc!
+              Khám phá các vị trí tuyển dụng phù hợp với bạn. Chúng tôi luôn tìm
+              kiếm những tài năng xuất sắc!
             </Paragraph>
           </div>
           <div className="header-stats">
             <Card className="stat-card" variant={false}>
-              <Statistic title="Vị trí đang tuyển" value={jobs.length} suffix="việc" />
+              <Statistic
+                title="Vị trí đang tuyển"
+                value={jobs.length}
+                suffix="việc"
+              />
             </Card>
             <Card className="stat-card" variant={false}>
-              <Statistic title="Phòng ban" value={departments.length} suffix="bộ phận" />
+              <Statistic
+                title="Phòng ban"
+                value={departments.length}
+                suffix="bộ phận"
+              />
             </Card>
           </div>
         </div>
 
-        <Card className="filters-card" variant={false} style={{ marginBottom: 24 }}>
+        <Card
+          className="filters-card"
+          variant={false}
+          style={{ marginBottom: 24 }}
+        >
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} md={12} lg={10}>
               <Search
@@ -584,7 +816,7 @@ const Recruitment = () => {
                 prefix={<SearchOutlined />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               />
             </Col>
             <Col xs={24} md={12} lg={8}>
@@ -593,17 +825,20 @@ const Recruitment = () => {
                 value={selectedDepartment}
                 onChange={setSelectedDepartment}
                 placeholder="Chọn phòng ban"
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               >
                 <Option value="all">Tất cả phòng ban</Option>
-                {departments.map(dept => (
-                  <Option key={dept} value={dept}>{dept}</Option>
+                {departments.map((dept) => (
+                  <Option key={dept} value={dept}>
+                    {dept}
+                  </Option>
                 ))}
               </Select>
             </Col>
             <Col xs={24} lg={6}>
               <Text type="secondary">
-                Tìm thấy <Text strong>{filteredJobs.length}</Text> vị trí phù hợp
+                Tìm thấy <Text strong>{filteredJobs.length}</Text> vị trí phù
+                hợp
               </Text>
             </Col>
           </Row>
@@ -611,7 +846,7 @@ const Recruitment = () => {
 
         {filteredJobs.length > 0 ? (
           <Row gutter={[24, 24]}>
-            {filteredJobs.map(job => (
+            {filteredJobs.map((job) => (
               <Col xs={24} md={12} xl={8} key={getJobId(job)}>
                 {renderJobCard(job)}
               </Col>
@@ -619,11 +854,16 @@ const Recruitment = () => {
           </Row>
         ) : (
           <Card variant={false} className="no-results">
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <SearchOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
-              <Title level={4} type="secondary">Không tìm thấy vị trí phù hợp</Title>
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <SearchOutlined
+                style={{ fontSize: 64, color: "#d9d9d9", marginBottom: 16 }}
+              />
+              <Title level={4} type="secondary">
+                Không tìm thấy vị trí phù hợp
+              </Title>
               <Paragraph type="secondary">
-                Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc để xem thêm cơ hội nghề nghiệp.
+                Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc để xem thêm cơ hội
+                nghề nghiệp.
               </Paragraph>
             </div>
           </Card>
@@ -650,9 +890,9 @@ const Recruitment = () => {
             <Button key="cancel" onClick={handleCancelApply}>
               Hủy
             </Button>,
-            <Button 
-              key="submit" 
-              type="primary" 
+            <Button
+              key="submit"
+              type="primary"
               loading={applyingJob?.submitting}
               onClick={handleSubmitApplication}
             >
@@ -665,7 +905,7 @@ const Recruitment = () => {
             <Form.Item
               label="Họ và tên"
               name="candidateName"
-              rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
+              rules={[{ required: true, message: "Vui lòng nhập họ và tên!" }]}
             >
               <Input placeholder="Nhập họ và tên của bạn" size="large" />
             </Form.Item>
@@ -674,8 +914,8 @@ const Recruitment = () => {
               label="Email"
               name="candidateEmail"
               rules={[
-                { required: true, message: 'Vui lòng nhập email!' },
-                { type: 'email', message: 'Email không hợp lệ!' }
+                { required: true, message: "Vui lòng nhập email!" },
+                { type: "email", message: "Email không hợp lệ!" },
               ]}
             >
               <Input placeholder="Nhập email của bạn" size="large" />
@@ -685,8 +925,11 @@ const Recruitment = () => {
               label="Số điện thoại"
               name="candidatePhone"
               rules={[
-                { required: true, message: 'Vui lòng nhập số điện thoại!' },
-                { pattern: /^[0-9]{9,11}$/, message: 'Số điện thoại không hợp lệ!' }
+                { required: true, message: "Vui lòng nhập số điện thoại!" },
+                {
+                  pattern: /^[0-9]{9,11}$/,
+                  message: "Số điện thoại không hợp lệ!",
+                },
               ]}
             >
               <Input placeholder="Nhập số điện thoại của bạn" size="large" />
@@ -698,8 +941,8 @@ const Recruitment = () => {
                 maxCount={1}
                 accept=".pdf"
                 beforeUpload={(f) => {
-                  if (!f.name.endsWith('.pdf')) {
-                    message.error('Chỉ chấp nhận file PDF!');
+                  if (!f.name.endsWith(".pdf")) {
+                    message.error("Chỉ chấp nhận file PDF!");
                     return Upload.LIST_IGNORE;
                   }
                   setFile(f);
@@ -711,8 +954,12 @@ const Recruitment = () => {
                 <p className="ant-upload-drag-icon">
                   <InboxOutlined />
                 </p>
-                <p className="ant-upload-text">Click hoặc kéo file vào đây để upload</p>
-                <p className="ant-upload-hint">Chỉ chấp nhận file PDF, dung lượng tối đa 20MB</p>
+                <p className="ant-upload-text">
+                  Click hoặc kéo file vào đây để upload
+                </p>
+                <p className="ant-upload-hint">
+                  Chỉ chấp nhận file PDF, dung lượng tối đa 20MB
+                </p>
               </Dragger>
             </Form.Item>
           </Form>
@@ -723,10 +970,25 @@ const Recruitment = () => {
         <div className="footer-inner">
           <div className="footer-brand">
             <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill="#5D8C3E"/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <rect width="48" height="48" rx="12" fill="#5D8C3E" />
+              <path
+                d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
+                stroke="white"
+                strokeWidth="2"
+              />
+              <path
+                d="M20 22L24 26L28 22"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M24 18V26"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
             <span>SRIS</span>
           </div>

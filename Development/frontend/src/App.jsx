@@ -1,44 +1,44 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import AuthLayout from './layouts/AuthLayout';
-import ProtectedRoute from './components/ProtectedRoute';
-import { useAuth, ROLES } from './contexts/AuthContext';
-import Home from './pages/Home';
-import Recruitment from './pages/recruitment/Recruitment';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import Dashboard from './pages/Dashboard';
-import SubAccountManagement from './pages/admin/SubAccountManagement';
-import CreateAccount from './pages/admin/CreateAccount';
-import AdminLayout from './layouts/AdminLayout';
-import RecruiterDashboard from './pages/recruiter/Dashboard';
-import JobManagement from './pages/recruiter/JobManagement';
-import JobDetail from './pages/recruiter/JobDetail';
-import CreateJob from './pages/recruiter/CreateJob';
-import CandidatePipeline from './pages/recruiter/CandidatePipeline';
-import CandidateDetail from './pages/recruiter/CandidateDetail';
-import IncomingInterview from './pages/interviewer/IncomingInterview';
-import Grading from './pages/interviewer/Grading';
-import InterviewerInterviewHistory from './pages/interviewer/InterviewHistory';
-import InterviewerInterviewDetail from './pages/interviewer/InterviewDetail';
-import InterviewScheduleRecruit from './pages/recruiter/InterviewScheduleRecruit';
-import DeptInterviewSchedule from './pages/dept-manager/InterviewSchedule';
-import DeptInterviewDetail from './pages/dept-manager/InterviewDetail';
-import DeptRecruitmentRequests from './pages/dept-manager/RecruitmentRequests';
-import HiringDecision from './pages/dept-manager/HiringDecision';
-import CreateRecruitmentRequest from './pages/dept-manager/CreateRecruitmentRequest';
-import OfferManagement from './pages/offer/OfferManagement';
-import CandidateResponse from './pages/candidate/CandidateResponse';
-import Schedule from './pages/candidate/Schedule';
-import Analytics from './pages/analytics/Analytics';
-import CVScoring from './pages/analytics/CVScoring';
-import TalentPool from './pages/talent-pool/TalentPool';
-import MailTemplates from './pages/mail-templates/MailTemplates';
-import Criteria from './pages/criteria/Criteria';
-import CompanyBranding from './pages/company/CompanyBranding';
-import Settings from './pages/Settings';
-import './App.css';
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import AuthLayout from "./layouts/AuthLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth, ROLES } from "./contexts/AuthContext";
+import Home from "./pages/Home";
+import Recruitment from "./pages/recruitment/Recruitment";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import Dashboard from "./pages/Dashboard";
+import SubAccountManagement from "./pages/admin/SubAccountManagement";
+import CreateAccount from "./pages/admin/CreateAccount";
+import AdminLayout from "./layouts/AdminLayout";
+import RecruiterDashboard from "./pages/recruiter/Dashboard";
+import JobManagement from "./pages/recruiter/JobManagement";
+import JobDetail from "./pages/recruiter/JobDetail";
+import CreateJob from "./pages/recruiter/CreateJob";
+import CandidatePipeline from "./pages/recruiter/CandidatePipeline";
+import CandidateDetail from "./pages/recruiter/CandidateDetail";
+import IncomingInterview from "./pages/interviewer/IncomingInterview";
+import Grading from "./pages/interviewer/Grading";
+import InterviewerInterviewHistory from "./pages/interviewer/InterviewHistory";
+import InterviewerInterviewDetail from "./pages/interviewer/InterviewDetail";
+import InterviewScheduleRecruit from "./pages/recruiter/InterviewScheduleRecruit";
+import DeptInterviewSchedule from "./pages/dept-manager/InterviewSchedule";
+import DeptInterviewDetail from "./pages/dept-manager/InterviewDetail";
+import DeptRecruitmentRequests from "./pages/dept-manager/RecruitmentRequests";
+import HiringDecision from "./pages/dept-manager/HiringDecision";
+import CreateRecruitmentRequest from "./pages/dept-manager/CreateRecruitmentRequest";
+import OfferManagement from "./pages/offer/OfferManagement";
+import CandidateResponse from "./pages/candidate/CandidateResponse";
+import Schedule from "./pages/candidate/Schedule";
+import Analytics from "./pages/analytics/Analytics";
+import CVScoring from "./pages/analytics/CVScoring";
+import TalentPool from "./pages/talent-pool/TalentPool";
+import MailTemplates from "./pages/mail-templates/MailTemplates";
+import Criteria from "./pages/criteria/Criteria";
+import CompanyBranding from "./pages/company/CompanyBranding";
+import Settings from "./pages/Settings";
+import "./App.css";
 
 const App = () => {
   const { isAuthenticated, loading, user, getDashboardRoute } = useAuth();
@@ -82,9 +82,15 @@ const App = () => {
         <Route path="/recruiter/jobs" element={<JobManagement />} />
         <Route path="/recruiter/jobs/:id" element={<JobDetail />} />
         <Route path="/recruiter/jobs/create" element={<CreateJob />} />
-        <Route path="/recruiter/jobs/:id/candidates" element={<CandidatePipeline />} />
+        <Route
+          path="/recruiter/jobs/:id/candidates"
+          element={<CandidatePipeline />}
+        />
         <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
-        <Route path="/interviews/schedule" element={<InterviewScheduleRecruit />} />
+        <Route
+          path="/interviews/schedule"
+          element={<InterviewScheduleRecruit />}
+        />
         <Route path="/criteria" element={<Criteria />} />
         <Route path="/mail-templates" element={<MailTemplates />} />
         <Route path="/offers" element={<OfferManagement />} />
@@ -102,8 +108,14 @@ const App = () => {
       >
         <Route path="/interviewer/dashboard" element={<Dashboard />} />
         <Route path="/interviewer/incoming" element={<IncomingInterview />} />
-        <Route path="/interviewer/history" element={<InterviewerInterviewHistory />} />
-        <Route path="/interviewer/interview/:id" element={<InterviewerInterviewDetail />} />
+        <Route
+          path="/interviewer/history"
+          element={<InterviewerInterviewHistory />}
+        />
+        <Route
+          path="/interviewer/interview/:id"
+          element={<InterviewerInterviewDetail />}
+        />
         <Route path="/interviewer/grading/:id" element={<Grading />} />
       </Route>
 
@@ -120,7 +132,10 @@ const App = () => {
         <Route path="/dept/interview/:id" element={<DeptInterviewDetail />} />
         <Route path="/dept/hiring-decision" element={<HiringDecision />} />
         <Route path="/dept/hiring-decision/:id" element={<HiringDecision />} />
-        <Route path="/dept/create-request" element={<CreateRecruitmentRequest />} />
+        <Route
+          path="/dept/create-request"
+          element={<CreateRecruitmentRequest />}
+        />
       </Route>
 
       <Route
@@ -140,7 +155,10 @@ const App = () => {
         path="*"
         element={
           isAuthenticated ? (
-            <Navigate to={user ? getDashboardRoute() : '/recruiter/dashboard'} replace />
+            <Navigate
+              to={user ? getDashboardRoute() : "/recruiter/dashboard"}
+              replace
+            />
           ) : (
             <Navigate to="/login" replace />
           )

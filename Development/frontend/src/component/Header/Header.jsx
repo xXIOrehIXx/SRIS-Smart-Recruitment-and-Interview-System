@@ -1,6 +1,6 @@
-import React from 'react';
-import './Header.css';
-import Button from '../Button/Button';
+import React from "react";
+import "./Header.css";
+import Button from "../Button/Button";
 
 const Header = () => {
   return (
@@ -10,14 +10,24 @@ const Header = () => {
       </div>
       <nav className="header-nav">
         <ul>
-          <li><a href="#product">Product</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-          <li><a href="#resources">Resources</a></li>
-          <li><a href="#customers">Customers</a></li>
+          <li>
+            <a href="#product">Product</a>
+          </li>
+          <li>
+            <a href="#pricing">Pricing</a>
+          </li>
+          <li>
+            <a href="#resources">Resources</a>
+          </li>
+          <li>
+            <a href="#customers">Customers</a>
+          </li>
         </ul>
       </nav>
       <div className="header-actions">
-        <a href="#login" className="login-link">Log in</a>
+        <a href="#login" className="login-link">
+          Log in
+        </a>
         <Button type="primary">Book a demo</Button>
       </div>
     </header>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Card,
   Typography,
@@ -18,7 +18,7 @@ import {
   Radio,
   Slider,
   Tag,
-} from 'antd';
+} from "antd";
 import {
   SaveOutlined,
   SendOutlined,
@@ -29,66 +29,66 @@ import {
   CalendarOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import '../Dashboard.css';
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import "../Dashboard.css";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
-const MATCHA_GREEN = '#5D8C3E';
+const MATCHA_GREEN = "#5D8C3E";
 
 const CreateRecruitmentRequest = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [submitType, setSubmitType] = useState('draft');
+  const [submitType, setSubmitType] = useState("draft");
   const [skills, setSkills] = useState([]);
-  const [skillInput, setSkillInput] = useState('');
+  const [skillInput, setSkillInput] = useState("");
 
   const departments = [
-    'Engineering',
-    'Design',
-    'Product',
-    'Marketing',
-    'Sales',
-    'Human Resources',
-    'Finance',
-    'Infrastructure',
-    'Customer Support',
-    'Operations',
+    "Engineering",
+    "Design",
+    "Product",
+    "Marketing",
+    "Sales",
+    "Human Resources",
+    "Finance",
+    "Infrastructure",
+    "Customer Support",
+    "Operations",
   ];
 
   const employmentTypes = [
-    { value: 'FULL_TIME', label: 'Toàn thời gian' },
-    { value: 'PART_TIME', label: 'Bán thời gian' },
-    { value: 'CONTRACT', label: 'Hợp đồng' },
-    { value: 'INTERNSHIP', label: 'Thực tập' },
-    { value: 'REMOTE', label: 'Làm việc từ xa' },
+    { value: "FULL_TIME", label: "Toàn thời gian" },
+    { value: "PART_TIME", label: "Bán thời gian" },
+    { value: "CONTRACT", label: "Hợp đồng" },
+    { value: "INTERNSHIP", label: "Thực tập" },
+    { value: "REMOTE", label: "Làm việc từ xa" },
   ];
 
   const experienceLevels = [
-    { value: 'Fresher', label: 'Fresher (0-1 năm)' },
-    { value: 'Junior', label: 'Junior (1-2 năm)' },
-    { value: 'Mid', label: 'Mid-level (2-4 năm)' },
-    { value: 'Senior', label: 'Senior (4-7 năm)' },
-    { value: 'Lead', label: 'Lead/Principal (7+ năm)' },
-    { value: 'Manager', label: 'Manager/Director' },
+    { value: "Fresher", label: "Fresher (0-1 năm)" },
+    { value: "Junior", label: "Junior (1-2 năm)" },
+    { value: "Mid", label: "Mid-level (2-4 năm)" },
+    { value: "Senior", label: "Senior (4-7 năm)" },
+    { value: "Lead", label: "Lead/Principal (7+ năm)" },
+    { value: "Manager", label: "Manager/Director" },
   ];
 
   const priorityOptions = [
-    { value: 'Low', label: 'Thấp', color: '#52c41a' },
-    { value: 'Medium', label: 'Trung bình', color: '#faad14' },
-    { value: 'High', label: 'Cao', color: '#f5222d' },
+    { value: "Low", label: "Thấp", color: "#52c41a" },
+    { value: "Medium", label: "Trung bình", color: "#faad14" },
+    { value: "High", label: "Cao", color: "#f5222d" },
   ];
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !skills.includes(skillInput.trim())) {
       setSkills([...skills, skillInput.trim()]);
-      setSkillInput('');
+      setSkillInput("");
     }
   };
 
@@ -97,7 +97,7 @@ const CreateRecruitmentRequest = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAddSkill();
     }
@@ -114,51 +114,57 @@ const CreateRecruitmentRequest = () => {
       const payload = {
         ...values,
         skills: skills,
-        startDate: values.startDate?.format('YYYY-MM-DD'),
-        endDate: values.endDate?.format('YYYY-MM-DD'),
+        startDate: values.startDate?.format("YYYY-MM-DD"),
+        endDate: values.endDate?.format("YYYY-MM-DD"),
         salaryMin: values.salaryMin,
         salaryMax: values.salaryMax,
-        isDraft: submitType === 'draft',
+        isDraft: submitType === "draft",
       };
 
-      console.log('Payload:', payload);
+      console.log("Payload:", payload);
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       message.success(
-        submitType === 'draft'
-          ? 'Đã lưu nháp yêu cầu tuyển dụng!'
-          : 'Đã gửi yêu cầu tuyển dụng thành công!'
+        submitType === "draft"
+          ? "Đã lưu nháp yêu cầu tuyển dụng!"
+          : "Đã gửi yêu cầu tuyển dụng thành công!",
       );
-      navigate('/dept/dashboard');
+      navigate("/dept/dashboard");
     } catch (error) {
-      message.error('Có lỗi xảy ra. Vui lòng thử lại.');
+      message.error("Có lỗi xảy ra. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
   const steps = [
-    { title: 'Thông tin cơ bản', icon: <FileTextOutlined /> },
-    { title: 'Yêu cầu chi tiết', icon: <TeamOutlined /> },
-    { title: 'Điều kiện & Lưu', icon: <SaveOutlined /> },
+    { title: "Thông tin cơ bản", icon: <FileTextOutlined /> },
+    { title: "Yêu cầu chi tiết", icon: <TeamOutlined /> },
+    { title: "Điều kiện & Lưu", icon: <SaveOutlined /> },
   ];
 
   const validateStep0 = () => {
     const values = form.getFieldsValue([
-      'title',
-      'department',
-      'positions',
-      'employmentType',
-      'priority',
+      "title",
+      "department",
+      "positions",
+      "employmentType",
+      "priority",
     ]);
-    return values.title && values.department && values.positions && values.employmentType && values.priority;
+    return (
+      values.title &&
+      values.department &&
+      values.positions &&
+      values.employmentType &&
+      values.priority
+    );
   };
 
   const validateStep1 = () => {
     const values = form.getFieldsValue([
-      'description',
-      'requirements',
-      'experienceLevel',
+      "description",
+      "requirements",
+      "experienceLevel",
     ]);
     return values.description && values.requirements && values.experienceLevel;
   };
@@ -166,15 +172,19 @@ const CreateRecruitmentRequest = () => {
   return (
     <div className="create-request-page">
       <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/dept/dashboard')}
+            onClick={() => navigate("/dept/dashboard")}
           />
           <div>
-            <Title level={3} className="page-title">Tạo Yêu Cầu Tuyển Dụng</Title>
-            <Text type="secondary">Gửi yêu cầu tuyển dụng mới cho phòng ban của bạn</Text>
+            <Title level={3} className="page-title">
+              Tạo Yêu Cầu Tuyển Dụng
+            </Title>
+            <Text type="secondary">
+              Gửi yêu cầu tuyển dụng mới cho phòng ban của bạn
+            </Text>
           </div>
         </div>
       </div>
@@ -192,9 +202,9 @@ const CreateRecruitmentRequest = () => {
           onFinish={handleSubmit}
           initialValues={{
             positions: 1,
-            priority: 'Medium',
-            employmentType: 'FULL_TIME',
-            experienceLevel: 'Mid',
+            priority: "Medium",
+            employmentType: "FULL_TIME",
+            experienceLevel: "Mid",
             urgency: 50,
           }}
         >
@@ -213,21 +223,28 @@ const CreateRecruitmentRequest = () => {
                   <Form.Item
                     label="Tên vị trí tuyển dụng"
                     name="title"
-                    rules={[{ required: true, message: 'Vui lòng nhập tên vị trí' }]}
+                    rules={[
+                      { required: true, message: "Vui lòng nhập tên vị trí" },
+                    ]}
                   >
-                    <Input placeholder="VD: Senior Frontend Developer" size="large" />
+                    <Input
+                      placeholder="VD: Senior Frontend Developer"
+                      size="large"
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} lg={8}>
                   <Form.Item
                     label="Số lượng tuyển"
                     name="positions"
-                    rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+                    rules={[
+                      { required: true, message: "Vui lòng nhập số lượng" },
+                    ]}
                   >
                     <InputNumber
                       min={1}
                       max={20}
-                      style={{ width: '100%' }}
+                      style={{ width: "100%" }}
                       size="large"
                       placeholder="1"
                     />
@@ -240,7 +257,9 @@ const CreateRecruitmentRequest = () => {
                   <Form.Item
                     label="Phòng ban"
                     name="department"
-                    rules={[{ required: true, message: 'Vui lòng chọn phòng ban' }]}
+                    rules={[
+                      { required: true, message: "Vui lòng chọn phòng ban" },
+                    ]}
                   >
                     <Select placeholder="-- Chọn phòng ban --" size="large">
                       {departments.map((dept) => (
@@ -255,7 +274,9 @@ const CreateRecruitmentRequest = () => {
                   <Form.Item
                     label="Hình thức làm việc"
                     name="employmentType"
-                    rules={[{ required: true, message: 'Vui lòng chọn hình thức' }]}
+                    rules={[
+                      { required: true, message: "Vui lòng chọn hình thức" },
+                    ]}
                   >
                     <Select placeholder="-- Chọn hình thức --" size="large">
                       {employmentTypes.map((type) => (
@@ -274,7 +295,10 @@ const CreateRecruitmentRequest = () => {
                     <Radio.Group>
                       {priorityOptions.map((opt) => (
                         <Radio.Button key={opt.value} value={opt.value}>
-                          <Tag color={opt.color} style={{ marginRight: 4, marginBottom: 0 }}>
+                          <Tag
+                            color={opt.color}
+                            style={{ marginRight: 4, marginBottom: 0 }}
+                          >
                             ●
                           </Tag>
                           {opt.label}
@@ -286,7 +310,7 @@ const CreateRecruitmentRequest = () => {
                 <Col xs={24} lg={12}>
                   <Form.Item label="Ngày cần tuyển" name="startDate">
                     <DatePicker
-                      style={{ width: '100%' }}
+                      style={{ width: "100%" }}
                       size="large"
                       format="DD/MM/YYYY"
                       placeholder="Ngày bắt đầu tuyển"
@@ -310,7 +334,9 @@ const CreateRecruitmentRequest = () => {
               <Form.Item
                 label="Mô tả công việc"
                 name="description"
-                rules={[{ required: true, message: 'Vui lòng nhập mô tả công việc' }]}
+                rules={[
+                  { required: true, message: "Vui lòng nhập mô tả công việc" },
+                ]}
               >
                 <TextArea
                   rows={5}
@@ -321,7 +347,7 @@ const CreateRecruitmentRequest = () => {
               <Form.Item
                 label="Yêu cầu ứng viên"
                 name="requirements"
-                rules={[{ required: true, message: 'Vui lòng nhập yêu cầu' }]}
+                rules={[{ required: true, message: "Vui lòng nhập yêu cầu" }]}
               >
                 <TextArea
                   rows={5}
@@ -334,7 +360,9 @@ const CreateRecruitmentRequest = () => {
                   <Form.Item
                     label="Cấp bậc kinh nghiệm"
                     name="experienceLevel"
-                    rules={[{ required: true, message: 'Vui lòng chọn cấp bậc' }]}
+                    rules={[
+                      { required: true, message: "Vui lòng chọn cấp bậc" },
+                    ]}
                   >
                     <Select placeholder="-- Chọn cấp bậc --" size="large">
                       {experienceLevels.map((level) => (
@@ -347,7 +375,7 @@ const CreateRecruitmentRequest = () => {
                 </Col>
                 <Col xs={24} lg={12}>
                   <Form.Item label="Kỹ năng yêu cầu" required>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                       <Input
                         value={skillInput}
                         onChange={(e) => setSkillInput(e.target.value)}
@@ -355,17 +383,21 @@ const CreateRecruitmentRequest = () => {
                         placeholder="Nhập kỹ năng và Enter..."
                         size="large"
                       />
-                      <Button type="dashed" onClick={handleAddSkill} size="large">
+                      <Button
+                        type="dashed"
+                        onClick={handleAddSkill}
+                        size="large"
+                      >
                         Thêm
                       </Button>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {skills.map((skill) => (
                         <Tag
                           key={skill}
                           closable
                           onClose={() => handleRemoveSkill(skill)}
-                          style={{ padding: '4px 8px', fontSize: 14 }}
+                          style={{ padding: "4px 8px", fontSize: 14 }}
                         >
                           {skill}
                         </Tag>
@@ -401,36 +433,62 @@ const CreateRecruitmentRequest = () => {
 
               <Row gutter={24}>
                 <Col xs={24} lg={12}>
-                  <Card title="Thông tin tổng quan" size="small" style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <Card
+                    title="Thông tin tổng quan"
+                    size="small"
+                    style={{ marginBottom: 16 }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
                       <div>
                         <Text type="secondary">Vị trí: </Text>
-                        <Text strong>{form.getFieldValue('title') || '-'}</Text>
+                        <Text strong>{form.getFieldValue("title") || "-"}</Text>
                       </div>
                       <div>
                         <Text type="secondary">Phòng ban: </Text>
-                        <Text strong>{form.getFieldValue('department') || '-'}</Text>
+                        <Text strong>
+                          {form.getFieldValue("department") || "-"}
+                        </Text>
                       </div>
                       <div>
                         <Text type="secondary">Số lượng: </Text>
-                        <Text strong>{form.getFieldValue('positions') || '-'} vị trí</Text>
+                        <Text strong>
+                          {form.getFieldValue("positions") || "-"} vị trí
+                        </Text>
                       </div>
                       <div>
                         <Text type="secondary">Hình thức: </Text>
                         <Text strong>
-                          {employmentTypes.find((t) => t.value === form.getFieldValue('employmentType'))?.label || '-'}
+                          {employmentTypes.find(
+                            (t) =>
+                              t.value === form.getFieldValue("employmentType"),
+                          )?.label || "-"}
                         </Text>
                       </div>
                       <div>
                         <Text type="secondary">Mức ưu tiên: </Text>
-                        <Tag color={priorityOptions.find((p) => p.value === form.getFieldValue('priority'))?.color}>
-                          {form.getFieldValue('priority') || '-'}
+                        <Tag
+                          color={
+                            priorityOptions.find(
+                              (p) => p.value === form.getFieldValue("priority"),
+                            )?.color
+                          }
+                        >
+                          {form.getFieldValue("priority") || "-"}
                         </Tag>
                       </div>
                       <div>
                         <Text type="secondary">Cấp bậc: </Text>
                         <Text strong>
-                          {experienceLevels.find((l) => l.value === form.getFieldValue('experienceLevel'))?.label || '-'}
+                          {experienceLevels.find(
+                            (l) =>
+                              l.value === form.getFieldValue("experienceLevel"),
+                          )?.label || "-"}
                         </Text>
                       </div>
                     </div>
@@ -438,9 +496,15 @@ const CreateRecruitmentRequest = () => {
                 </Col>
 
                 <Col xs={24} lg={12}>
-                  <Card title="Kỹ năng yêu cầu" size="small" style={{ marginBottom: 16 }}>
+                  <Card
+                    title="Kỹ năng yêu cầu"
+                    size="small"
+                    style={{ marginBottom: 16 }}
+                  >
                     {skills.length > 0 ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <div
+                        style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
+                      >
                         {skills.map((skill) => (
                           <Tag key={skill} style={{ marginBottom: 0 }}>
                             {skill}
@@ -458,9 +522,11 @@ const CreateRecruitmentRequest = () => {
                         <Form.Item name="salaryMin" style={{ marginBottom: 0 }}>
                           <InputNumber
                             placeholder="Tối thiểu"
-                            style={{ width: '100%' }}
-                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                            parser={(value) => value.replace(/,/g, '')}
+                            style={{ width: "100%" }}
+                            formatter={(value) =>
+                              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                            }
+                            parser={(value) => value.replace(/,/g, "")}
                           />
                         </Form.Item>
                       </Col>
@@ -468,9 +534,11 @@ const CreateRecruitmentRequest = () => {
                         <Form.Item name="salaryMax" style={{ marginBottom: 0 }}>
                           <InputNumber
                             placeholder="Tối đa"
-                            style={{ width: '100%' }}
-                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                            parser={(value) => value.replace(/,/g, '')}
+                            style={{ width: "100%" }}
+                            formatter={(value) =>
+                              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                            }
+                            parser={(value) => value.replace(/,/g, "")}
                           />
                         </Form.Item>
                       </Col>
@@ -482,7 +550,10 @@ const CreateRecruitmentRequest = () => {
               <Divider />
 
               <Form.Item label="Ghi chú cho Recruiter (tùy chọn)" name="notes">
-                <TextArea rows={3} placeholder="Các lưu ý đặc biệt, yêu cầu riêng cho recruiter..." />
+                <TextArea
+                  rows={3}
+                  placeholder="Các lưu ý đặc biệt, yêu cầu riêng cho recruiter..."
+                />
               </Form.Item>
 
               <Form.Item label="Hành động">
@@ -491,13 +562,27 @@ const CreateRecruitmentRequest = () => {
                   onChange={(e) => setSubmitType(e.target.value)}
                   size="large"
                 >
-                  <Radio.Button value="draft" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
+                  <Radio.Button
+                    value="draft"
+                    style={{
+                      height: 48,
+                      lineHeight: "46px",
+                      paddingInline: 24,
+                    }}
+                  >
                     <Space>
                       <SaveOutlined />
                       Lưu nháp
                     </Space>
                   </Radio.Button>
-                  <Radio.Button value="submit" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
+                  <Radio.Button
+                    value="submit"
+                    style={{
+                      height: 48,
+                      lineHeight: "46px",
+                      paddingInline: 24,
+                    }}
+                  >
                     <Space>
                       <SendOutlined />
                       Gửi yêu cầu
@@ -510,16 +595,19 @@ const CreateRecruitmentRequest = () => {
 
           <Divider />
 
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div>
               {currentStep > 0 && (
-                <Button onClick={() => setCurrentStep(currentStep - 1)} size="large">
+                <Button
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  size="large"
+                >
                   <ArrowLeftOutlined /> Quay lại
                 </Button>
               )}
             </div>
             <Space>
-              <Button onClick={() => navigate('/dept/dashboard')} size="large">
+              <Button onClick={() => navigate("/dept/dashboard")} size="large">
                 Hủy
               </Button>
               {currentStep < 2 ? (
@@ -528,16 +616,19 @@ const CreateRecruitmentRequest = () => {
                   size="large"
                   onClick={() => {
                     if (currentStep === 0 && !validateStep0()) {
-                      message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+                      message.error("Vui lòng điền đầy đủ thông tin bắt buộc");
                       return;
                     }
                     if (currentStep === 1 && !validateStep1()) {
-                      message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+                      message.error("Vui lòng điền đầy đủ thông tin bắt buộc");
                       return;
                     }
                     setCurrentStep(currentStep + 1);
                   }}
-                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                  style={{
+                    background: MATCHA_GREEN,
+                    borderColor: MATCHA_GREEN,
+                  }}
                 >
                   Tiếp tục
                 </Button>
@@ -547,13 +638,17 @@ const CreateRecruitmentRequest = () => {
                   htmlType="submit"
                   loading={loading}
                   size="large"
-                  icon={submitType === 'draft' ? <SaveOutlined /> : <SendOutlined />}
+                  icon={
+                    submitType === "draft" ? <SaveOutlined /> : <SendOutlined />
+                  }
                   style={{
-                    background: submitType === 'submit' ? MATCHA_GREEN : undefined,
-                    borderColor: submitType === 'submit' ? MATCHA_GREEN : undefined,
+                    background:
+                      submitType === "submit" ? MATCHA_GREEN : undefined,
+                    borderColor:
+                      submitType === "submit" ? MATCHA_GREEN : undefined,
                   }}
                 >
-                  {submitType === 'draft' ? 'Lưu nháp' : 'Gửi yêu cầu'}
+                  {submitType === "draft" ? "Lưu nháp" : "Gửi yêu cầu"}
                 </Button>
               )}
             </Space>

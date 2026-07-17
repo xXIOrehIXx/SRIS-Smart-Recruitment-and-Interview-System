@@ -1,17 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Table, Tag, Button, Input, Select, Space, Avatar, Dropdown, Modal, message, Descriptions, Popconfirm, Form } from 'antd';
-import { PlusOutlined, SearchOutlined, MoreOutlined, EditOutlined, DeleteOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
-import { usersAPI } from '../../services/api';
-import './SubAccountManagement.css';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Table,
+  Tag,
+  Button,
+  Input,
+  Select,
+  Space,
+  Avatar,
+  Dropdown,
+  Modal,
+  message,
+  Descriptions,
+  Popconfirm,
+  Form,
+} from "antd";
+import {
+  PlusOutlined,
+  SearchOutlined,
+  MoreOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import { usersAPI } from "../../services/api";
+import "./SubAccountManagement.css";
 
 const SubAccountManagement = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
-  const [searchText, setSearchText] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [searchText, setSearchText] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   // Modal states
   const [detailModal, setDetailModal] = useState(false);
@@ -31,19 +54,19 @@ const SubAccountManagement = () => {
       }
       const normalized = (Array.isArray(data) ? data : []).map((item) => ({
         id: item.id ?? item.userId,
-        name: item.fullName || item.name || item.fullname || 'N/A',
+        name: item.fullName || item.name || item.fullname || "N/A",
         email: item.email,
-        role: item.role || 'user',
-        status: item.status || 'active',
-        department: item.department || 'N/A',
-        phone: item.phone || item.phoneNumber || '',
+        role: item.role || "user",
+        status: item.status || "active",
+        department: item.department || "N/A",
+        phone: item.phone || item.phoneNumber || "",
         createdAt: item.createdAt || item.created_at || null,
         lastLogin: item.lastLogin || item.lastLoginAt || null,
       }));
       setAccounts(normalized);
     } catch (error) {
-      console.error('Error fetching accounts:', error);
-      message.error('Không thể tải danh sách tài khoản');
+      console.error("Error fetching accounts:", error);
+      message.error("Không thể tải danh sách tài khoản");
     } finally {
       setLoading(false);
     }
@@ -59,18 +82,18 @@ const SubAccountManagement = () => {
       const data = response.data || record;
       setSelectedAccount({
         id: data.id ?? data.userId,
-        name: data.fullName || data.name || data.fullname || 'N/A',
+        name: data.fullName || data.name || data.fullname || "N/A",
         email: data.email,
-        role: data.role || 'user',
-        status: data.status || 'active',
-        department: data.department || 'N/A',
-        phone: data.phone || data.phoneNumber || '',
+        role: data.role || "user",
+        status: data.status || "active",
+        department: data.department || "N/A",
+        phone: data.phone || data.phoneNumber || "",
         createdAt: data.createdAt || data.created_at || null,
         lastLogin: data.lastLogin || data.lastLoginAt || null,
       });
       setDetailModal(true);
     } catch (error) {
-      console.error('Error fetching account detail:', error);
+      console.error("Error fetching account detail:", error);
       setSelectedAccount(record);
       setDetailModal(true);
     }
@@ -82,12 +105,12 @@ const SubAccountManagement = () => {
       const data = response.data || record;
       setSelectedAccount({
         id: data.id ?? data.userId,
-        name: data.fullName || data.name || data.fullname || 'N/A',
+        name: data.fullName || data.name || data.fullname || "N/A",
         email: data.email,
-        role: data.role || 'user',
-        status: data.status || 'active',
-        department: data.department || 'N/A',
-        phone: data.phone || data.phoneNumber || '',
+        role: data.role || "user",
+        status: data.status || "active",
+        department: data.department || "N/A",
+        phone: data.phone || data.phoneNumber || "",
       });
       form.setFieldsValue({
         fullName: data.fullName || data.name || data.fullname,
@@ -99,7 +122,7 @@ const SubAccountManagement = () => {
       });
       setEditModal(true);
     } catch (error) {
-      console.error('Error fetching account for edit:', error);
+      console.error("Error fetching account for edit:", error);
       setSelectedAccount(record);
       form.setFieldsValue({
         fullName: record.name,
@@ -114,10 +137,10 @@ const SubAccountManagement = () => {
 
   const handleEditConfirm = () => {
     Modal.confirm({
-      title: 'Xác nhận chỉnh sửa',
+      title: "Xác nhận chỉnh sửa",
       content: `Bạn có chắc chắn muốn chỉnh sửa tài khoản "${selectedAccount?.email}" không?`,
-      okText: 'Xác nhận',
-      cancelText: 'Hủy',
+      okText: "Xác nhận",
+      cancelText: "Hủy",
       onOk: () => handleUpdateAccount(),
     });
   };
@@ -135,13 +158,13 @@ const SubAccountManagement = () => {
       };
 
       await usersAPI.update(selectedAccount.id, payload);
-      message.success('Cập nhật tài khoản thành công');
+      message.success("Cập nhật tài khoản thành công");
       setEditModal(false);
       form.resetFields();
       fetchAccounts();
     } catch (error) {
-      console.error('Error updating account:', error);
-      message.error('Không thể cập nhật tài khoản');
+      console.error("Error updating account:", error);
+      message.error("Không thể cập nhật tài khoản");
     } finally {
       setSubmitting(false);
     }
@@ -156,12 +179,12 @@ const SubAccountManagement = () => {
     try {
       setSubmitting(true);
       await usersAPI.delete(selectedAccount.id);
-      message.success('Xóa tài khoản thành công');
+      message.success("Xóa tài khoản thành công");
       setDeleteModal(false);
       fetchAccounts();
     } catch (error) {
-      console.error('Error deleting account:', error);
-      message.error('Không thể xóa tài khoản');
+      console.error("Error deleting account:", error);
+      message.error("Không thể xóa tài khoản");
     } finally {
       setSubmitting(false);
     }
@@ -169,49 +192,49 @@ const SubAccountManagement = () => {
 
   const getRoleTag = (role) => {
     const colors = {
-      admin: 'gold',
-      recruiter: 'blue',
-      interviewer: 'purple',
-      department_manager: 'cyan',
-      user: 'default',
+      admin: "gold",
+      recruiter: "blue",
+      interviewer: "purple",
+      department_manager: "cyan",
+      user: "default",
     };
     const labels = {
-      admin: 'Admin',
-      recruiter: 'Recruiter',
-      interviewer: 'Interviewer',
-      department_manager: 'Department Manager',
-      user: 'User',
+      admin: "Admin",
+      recruiter: "Recruiter",
+      interviewer: "Interviewer",
+      department_manager: "Department Manager",
+      user: "User",
     };
-    return <Tag color={colors[role] || 'default'}>{labels[role] || role}</Tag>;
+    return <Tag color={colors[role] || "default"}>{labels[role] || role}</Tag>;
   };
 
   const getStatusTag = (status) => {
-    const isActive = status === 'active' || status === 'ACTIVE' || status === 1;
+    const isActive = status === "active" || status === "ACTIVE" || status === 1;
     return (
-      <Tag color={isActive ? 'success' : 'default'}>
-        {isActive ? 'Active' : 'Inactive'}
+      <Tag color={isActive ? "success" : "default"}>
+        {isActive ? "Active" : "Inactive"}
       </Tag>
     );
   };
 
   const getMenuItems = (record) => [
     {
-      key: 'view',
+      key: "view",
       icon: <EyeOutlined />,
-      label: 'Xem chi tiết',
+      label: "Xem chi tiết",
       onClick: () => handleViewDetail(record),
     },
     {
-      key: 'edit',
+      key: "edit",
       icon: <EditOutlined />,
-      label: 'Chỉnh sửa',
+      label: "Chỉnh sửa",
       onClick: () => handleEditClick(record),
     },
-    { type: 'divider' },
+    { type: "divider" },
     {
-      key: 'delete',
+      key: "delete",
       icon: <DeleteOutlined />,
-      label: 'Xóa',
+      label: "Xóa",
       danger: true,
       onClick: () => handleDeleteClick(record),
     },
@@ -219,11 +242,13 @@ const SubAccountManagement = () => {
 
   const columns = [
     {
-      title: 'Người dùng',
-      key: 'user',
+      title: "Người dùng",
+      key: "user",
       render: (_, record) => (
         <div className="user-cell">
-          <Avatar style={{ backgroundColor: '#5D8C3E' }}>{record.name[0]}</Avatar>
+          <Avatar style={{ backgroundColor: "#5D8C3E" }}>
+            {record.name[0]}
+          </Avatar>
           <div>
             <span className="user-name">{record.name}</span>
             <span className="user-email">{record.email}</span>
@@ -232,34 +257,35 @@ const SubAccountManagement = () => {
       ),
     },
     {
-      title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
+      title: "Vai trò",
+      dataIndex: "role",
+      key: "role",
       render: getRoleTag,
     },
     {
-      title: 'Phòng ban',
-      dataIndex: 'department',
-      key: 'department',
+      title: "Phòng ban",
+      dataIndex: "department",
+      key: "department",
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
       render: getStatusTag,
     },
     {
-      title: 'Đăng nhập cuối',
-      dataIndex: 'lastLogin',
-      key: 'lastLogin',
-      render: (text) => text && text !== 'N/A' ? dayjs(text).format('DD/MM/YYYY HH:mm') : '-',
+      title: "Đăng nhập cuối",
+      dataIndex: "lastLogin",
+      key: "lastLogin",
+      render: (text) =>
+        text && text !== "N/A" ? dayjs(text).format("DD/MM/YYYY HH:mm") : "-",
     },
     {
-      title: '',
-      key: 'actions',
+      title: "",
+      key: "actions",
       width: 50,
       render: (_, record) => (
-        <Dropdown menu={{ items: getMenuItems(record) }} trigger={['click']}>
+        <Dropdown menu={{ items: getMenuItems(record) }} trigger={["click"]}>
           <Button type="text" icon={<MoreOutlined />} />
         </Dropdown>
       ),
@@ -269,9 +295,9 @@ const SubAccountManagement = () => {
   const filteredData = accounts.filter((item) => {
     const matchesSearch =
       !searchText ||
-      (item.name || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.email || '').toLowerCase().includes(searchText.toLowerCase());
-    const matchesRole = roleFilter === 'all' || item.role === roleFilter;
+      (item.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (item.email || "").toLowerCase().includes(searchText.toLowerCase());
+    const matchesRole = roleFilter === "all" || item.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
@@ -283,10 +309,18 @@ const SubAccountManagement = () => {
           <p>Quản lý tài khoản người dùng và phân quyền</p>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchAccounts} loading={loading}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchAccounts}
+            loading={loading}
+          >
             Làm mới
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/create-account')}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate("/admin/create-account")}
+          >
             Tạo tài khoản
           </Button>
         </Space>
@@ -313,7 +347,9 @@ const SubAccountManagement = () => {
             <Select.Option value="admin">Admin</Select.Option>
             <Select.Option value="recruiter">Recruiter</Select.Option>
             <Select.Option value="interviewer">Interviewer</Select.Option>
-            <Select.Option value="department_manager">Department Manager</Select.Option>
+            <Select.Option value="department_manager">
+              Department Manager
+            </Select.Option>
           </Select>
         </div>
 
@@ -356,19 +392,33 @@ const SubAccountManagement = () => {
       >
         {selectedAccount && (
           <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="Họ tên">{selectedAccount.name}</Descriptions.Item>
-            <Descriptions.Item label="Email">{selectedAccount.email}</Descriptions.Item>
-            <Descriptions.Item label="Số điện thoại">{selectedAccount.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Vai trò">{getRoleTag(selectedAccount.role)}</Descriptions.Item>
-            <Descriptions.Item label="Phòng ban">{selectedAccount.department}</Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">{getStatusTag(selectedAccount.status)}</Descriptions.Item>
+            <Descriptions.Item label="Họ tên">
+              {selectedAccount.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Email">
+              {selectedAccount.email}
+            </Descriptions.Item>
+            <Descriptions.Item label="Số điện thoại">
+              {selectedAccount.phone || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Vai trò">
+              {getRoleTag(selectedAccount.role)}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phòng ban">
+              {selectedAccount.department}
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
+              {getStatusTag(selectedAccount.status)}
+            </Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">
-              {selectedAccount.createdAt ? dayjs(selectedAccount.createdAt).format('DD/MM/YYYY HH:mm') : '-'}
+              {selectedAccount.createdAt
+                ? dayjs(selectedAccount.createdAt).format("DD/MM/YYYY HH:mm")
+                : "-"}
             </Descriptions.Item>
             <Descriptions.Item label="Đăng nhập cuối">
-              {selectedAccount.lastLogin && selectedAccount.lastLogin !== 'N/A'
-                ? dayjs(selectedAccount.lastLogin).format('DD/MM/YYYY HH:mm')
-                : '-'}
+              {selectedAccount.lastLogin && selectedAccount.lastLogin !== "N/A"
+                ? dayjs(selectedAccount.lastLogin).format("DD/MM/YYYY HH:mm")
+                : "-"}
             </Descriptions.Item>
           </Descriptions>
         )}
@@ -386,7 +436,12 @@ const SubAccountManagement = () => {
           <Button key="cancel" onClick={() => setEditModal(false)}>
             Hủy
           </Button>,
-          <Button key="submit" type="primary" loading={submitting} onClick={handleEditConfirm}>
+          <Button
+            key="submit"
+            type="primary"
+            loading={submitting}
+            onClick={handleEditConfirm}
+          >
             Lưu thay đổi
           </Button>,
         ]}
@@ -396,7 +451,7 @@ const SubAccountManagement = () => {
           <Form.Item
             name="fullName"
             label="Họ tên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+            rules={[{ required: true, message: "Vui lòng nhập họ tên" }]}
           >
             <Input placeholder="Nhập họ tên" />
           </Form.Item>
@@ -405,8 +460,8 @@ const SubAccountManagement = () => {
             name="email"
             label="Email"
             rules={[
-              { required: true, message: 'Vui lòng nhập email' },
-              { type: 'email', message: 'Email không hợp lệ' },
+              { required: true, message: "Vui lòng nhập email" },
+              { type: "email", message: "Email không hợp lệ" },
             ]}
           >
             <Input disabled placeholder="Email không thể thay đổi" />
@@ -419,13 +474,15 @@ const SubAccountManagement = () => {
           <Form.Item
             name="role"
             label="Vai trò"
-            rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+            rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
           >
             <Select placeholder="Chọn vai trò">
               <Select.Option value="admin">Admin</Select.Option>
               <Select.Option value="recruiter">Recruiter</Select.Option>
               <Select.Option value="interviewer">Interviewer</Select.Option>
-              <Select.Option value="department_manager">Department Manager</Select.Option>
+              <Select.Option value="department_manager">
+                Department Manager
+              </Select.Option>
             </Select>
           </Form.Item>
 
@@ -436,7 +493,7 @@ const SubAccountManagement = () => {
           <Form.Item
             name="status"
             label="Trạng thái"
-            rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+            rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
           >
             <Select placeholder="Chọn trạng thái">
               <Select.Option value="active">Active</Select.Option>
@@ -455,21 +512,42 @@ const SubAccountManagement = () => {
           <Button key="cancel" onClick={() => setDeleteModal(false)}>
             Hủy
           </Button>,
-          <Button key="delete" type="primary" danger loading={submitting} onClick={handleDeleteConfirm}>
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            loading={submitting}
+            onClick={handleDeleteConfirm}
+          >
             Xóa
           </Button>,
         ]}
       >
-        <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <DeleteOutlined style={{ fontSize: 48, color: '#ff4d4f', marginBottom: 16 }} />
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <DeleteOutlined
+            style={{ fontSize: 48, color: "#ff4d4f", marginBottom: 16 }}
+          />
           <p>Bạn có chắc chắn muốn xóa tài khoản này không?</p>
           {selectedAccount && (
-            <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 8, marginTop: 16 }}>
-              <p><strong>Email:</strong> {selectedAccount.email}</p>
-              <p><strong>Họ tên:</strong> {selectedAccount.name}</p>
+            <div
+              style={{
+                background: "#f5f5f5",
+                padding: 12,
+                borderRadius: 8,
+                marginTop: 16,
+              }}
+            >
+              <p>
+                <strong>Email:</strong> {selectedAccount.email}
+              </p>
+              <p>
+                <strong>Họ tên:</strong> {selectedAccount.name}
+              </p>
             </div>
           )}
-          <p style={{ color: '#ff4d4f', marginTop: 16 }}>Hành động này không thể hoàn tác.</p>
+          <p style={{ color: "#ff4d4f", marginTop: 16 }}>
+            Hành động này không thể hoàn tác.
+          </p>
         </div>
       </Modal>
     </div>
