@@ -101,6 +101,29 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
         await _userRepo.UpdateAsync(companyId, userId, user.FullName, user.Phone, user.Role, "Disabled");
     }
 
+    public async Task<IReadOnlyList<UserOptionDto>> GetOptionsAsync(long companyId, string? role)
+    {
+        if (!string.IsNullOrWhiteSpace(role))
+            ValidateRole(role);
+
+        var users = await _userRepo.GetListByCompanyAsync(companyId);
+        // Admin luôn nằm trong kết quả kể cả khi lọc role: Admin làm được mọi việc
+        // (công ty 1 người chỉ có tài khoản Admin vẫn tự gán mình làm interviewer/DM được).
+        return users
+            .Where(u => u.Status == "Active")
+            .Where(u => string.IsNullOrWhiteSpace(role) ||
+                        string.Equals(u.Role, role, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(u.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase))
+            .Select(u => new UserOptionDto
+            {
+                UserId = u.UserId,
+                Email = u.Email,
+                FullName = u.FullName,
+                Role = u.Role
+            })
+            .ToList();
+    }
+
     // ============================================================
 
     private static void ValidateRole(string? role)
