@@ -388,6 +388,37 @@ export const usersAPI = {
   // Tự đổi mật khẩu của chính mình → authAPI.changePassword
 };
 
+// ==================== RECRUITMENT REQUESTS (Yêu cầu tuyển dụng — 5.17) ====================
+// DM "ra đề" (tùy chọn) → Recruiter duyệt → tạo Job từ yêu cầu (CONVERTED + jobId truy vết).
+
+export const recruitmentRequestAPI = {
+  // data: { title, department?, quantity, employmentType?, experienceLevel?, priority?,
+  //         description?, requirements?, benefits?, salaryMin?, salaryMax?, expectedStartDate? }
+  create: (data) =>
+    api.post('/recruitment-requests', data),
+
+  getAll: (status) =>
+    api.get('/recruitment-requests', { params: status ? { status } : {} }),
+
+  getById: (id) =>
+    api.get(`/recruitment-requests/${id}`),
+
+  update: (id, data) =>
+    api.put(`/recruitment-requests/${id}`, data),
+
+  // DM hủy — chỉ khi còn PENDING
+  cancel: (id) =>
+    api.delete(`/recruitment-requests/${id}`),
+
+  // Recruiter duyệt: approve=false bắt buộc note
+  review: (id, approve, note) =>
+    api.post(`/recruitment-requests/${id}/review`, { approve, note }),
+
+  // Recruiter gắn job đã tạo từ yêu cầu → CONVERTED
+  convert: (id, jobId) =>
+    api.post(`/recruitment-requests/${id}/convert`, { jobId }),
+};
+
 // ==================== PUBLIC CAREER SITE ====================
 
 export const publicCareerAPI = {

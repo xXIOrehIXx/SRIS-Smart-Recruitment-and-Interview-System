@@ -87,6 +87,7 @@ const App = () => {
         <Route path="/recruiter/jobs" element={<JobManagement />} />
         <Route path="/recruiter/jobs/:id" element={<JobDetail />} />
         <Route path="/recruiter/jobs/create" element={<CreateJob />} />
+        <Route path="/recruiter/requests" element={<DeptRecruitmentRequests />} />
         <Route path="/recruiter/jobs/:id/candidates" element={<CandidatePipeline />} />
         <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
         <Route path="/interviews/schedule" element={<InterviewScheduleRecruit />} />

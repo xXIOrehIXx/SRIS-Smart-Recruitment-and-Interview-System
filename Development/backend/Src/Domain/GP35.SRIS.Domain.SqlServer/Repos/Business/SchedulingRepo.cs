@@ -307,15 +307,22 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return await query.AnyAsync();
     }
 
-    public async Task<IReadOnlyList<InterviewSchedule>> GetSchedulesForInterviewerAsync(
+    public async Task<IReadOnlyList<InterviewerScheduleRow>> GetSchedulesForInterviewerAsync(
         long companyId, long interviewerId)
     {
+        // Join Application/Candidate/Job để danh sách buổi cần chấm hiện được TÊN ứng viên +
+        // vị trí + giờ hẹn (không bắt interviewer bấm vào từng buổi mới biết ai).
         var query =
             from s in _db.InterviewSchedules.AsNoTracking()
             join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
+            join a in _db.Applications.AsNoTracking() on s.ApplicationId equals a.ApplicationId
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
             where sl.InterviewerId == interviewerId
             orderby s.ScheduleId descending
-            select s;
+            select new InterviewerScheduleRow(
+                s.ScheduleId, s.ApplicationId, s.RoundNumber, s.Status,
+                sl.StartTime, c.FullName, c.Email, j.Title);
         return await query.ToListAsync();
     }
 }

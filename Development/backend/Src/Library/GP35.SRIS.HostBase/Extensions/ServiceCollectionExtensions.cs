@@ -111,6 +111,9 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Email template động (M4)
             services.AddScoped<IEmailTemplateRepo, EmailTemplateRepo>();
+
+            // Yêu cầu tuyển dụng (5.17 — DM ra đề)
+            services.AddScoped<IRecruitmentRequestRepo, RecruitmentRequestRepo>();
         }
 
         public static void AddBusinessRepos(this IServiceCollection services, IConfiguration configuration)
@@ -148,6 +151,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICandidateOfferService, CandidateOfferService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IInternalNoteService, InternalNoteService>();
+            services.AddScoped<IRecruitmentRequestService, RecruitmentRequestService>();
             services.AddScoped<IActivityLogService, ActivityLogService>();
 
         }

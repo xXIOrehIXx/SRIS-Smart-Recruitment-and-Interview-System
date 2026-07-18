@@ -35,8 +35,10 @@ public class InterviewPoolController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Xem mọi pool của 1 job kèm khung + ứng viên đã mời (có cờ nhắc gọi điện).</summary>
+    /// <summary>Xem mọi pool của 1 job kèm khung + ứng viên đã mời (có cờ nhắc gọi điện).
+    /// DM cũng xem được (read-only — theo dõi lịch phỏng vấn job mình phụ trách).</summary>
     [HttpGet("api/jobs/{jobId:long}/interview-pools")]
+    [WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
     public async Task<IActionResult> GetByJob(long jobId)
     {
         var result = await _poolService.GetPoolsByJobAsync(_contextData.CompanyId, jobId);

@@ -35,11 +35,16 @@ namespace GP35.SRIS.Controllers
             return Ok(job);
         }
 
-        /// <summary>Danh sách Job đang tuyển (public, không cần login).</summary>
+        /// <summary>
+        /// Danh sách Job của công ty (mặc định chỉ job Open; ?includeInactive=true để thấy cả
+        /// job đã đóng — màn quản lý của Recruiter). Career site công khai dùng /api/public/{slug}/jobs.
+        /// </summary>
         [HttpGet]
-        public async Task<IActionResult> List()
+        public async Task<IActionResult> List([FromQuery] bool includeInactive = false)
         {
-            var jobs = await _jobService.GetPublicJobsAsync();
+            var jobs = await _jobService.GetListAsync(_contextData.CompanyId);
+            if (!includeInactive)
+                jobs = jobs.Where(j => string.Equals(j.Status, "Open", StringComparison.OrdinalIgnoreCase));
             return Ok(jobs);
         }
 

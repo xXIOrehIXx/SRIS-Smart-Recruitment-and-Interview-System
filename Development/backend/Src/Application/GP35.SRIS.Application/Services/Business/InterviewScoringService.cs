@@ -42,7 +42,11 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             ScheduleId = s.ScheduleId,
             ApplicationId = s.ApplicationId,
             RoundNumber = s.RoundNumber,
-            Status = s.Status
+            Status = s.Status,
+            StartTime = s.StartTime,
+            CandidateName = s.CandidateName,
+            CandidateEmail = s.CandidateEmail,
+            JobTitle = s.JobTitle
         }).ToList();
     }
 
