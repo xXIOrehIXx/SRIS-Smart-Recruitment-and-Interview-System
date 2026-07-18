@@ -28,7 +28,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { interviewAPI } from '../../services/api';
+import { interviewAPI, applicationAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -107,17 +107,25 @@ const InterviewerDashboard = () => {
     }
   };
 
-  const fetchCandidatesBySchedule = async (scheduleId) => {
+  const fetchCandidatesBySchedule = async (applicationId) => {
+    // 1 buoi phong van gan voi dung 1 ho so — doc chi tiet qua /applications/{id}
+    // (Interviewer co quyen; KHONG dung /aggregate — panel tong hop chi cho Recruiter/DM).
     try {
       setLoadingCandidates(true);
-      const response = await interviewAPI.getAggregate(scheduleId);
-      let data = response.data;
-      if (!Array.isArray(data)) {
-        data = data?.candidates || data?.items || data?.applications || [];
-      }
-      setCandidates(Array.isArray(data) ? data : []);
+      const response = await applicationAPI.getById(applicationId);
+      const app = response.data;
+      setCandidates(app ? [{
+        id: app.applicationId,
+        applicationId: app.applicationId,
+        name: app.candidateName,
+        candidateName: app.candidateName,
+        email: app.candidateEmail,
+        position: app.jobTitle,
+        currentState: app.currentState,
+        aiMatchScore: app.aiMatchScore,
+      }] : []);
     } catch (error) {
-      console.error('Error fetching candidates:', error);
+      console.error('Error fetching candidate:', error);
       setCandidates([]);
     } finally {
       setLoadingCandidates(false);
@@ -126,7 +134,7 @@ const InterviewerDashboard = () => {
 
   const handleShowCandidates = (schedule) => {
     setSelectedSchedule(schedule);
-    fetchCandidatesBySchedule(schedule.id);
+    fetchCandidatesBySchedule(schedule.applicationId);
     setCandidateModalOpen(true);
   };
 
