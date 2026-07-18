@@ -1,22 +1,23 @@
+import { vi } from 'vitest';
 /**
  * Contract test cho services/api.js — chốt URL/payload khớp backend thật.
  * Đây chính là lớp lỗi đã từng làm gãy app (mất prefix /api, token trong body
  * thay vì query, key `scores` thay vì `items`...) — test giữ không tái phát.
  */
-jest.mock('axios', () => {
+vi.mock('axios', () => {
   const instances = [];
   const makeInstance = () => ({
-    get: jest.fn(() => Promise.resolve({ data: {} })),
-    post: jest.fn(() => Promise.resolve({ data: {} })),
-    put: jest.fn(() => Promise.resolve({ data: {} })),
-    delete: jest.fn(() => Promise.resolve({ data: {} })),
+    get: vi.fn(() => Promise.resolve({ data: {} })),
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
     interceptors: {
-      request: { use: jest.fn() },
-      response: { use: jest.fn() },
+      request: { use: vi.fn() },
+      response: { use: vi.fn() },
     },
   });
   const axiosMock = {
-    create: jest.fn((config) => {
+    create: vi.fn((config) => {
       const instance = makeInstance();
       instance.__config = config;
       instances.push(instance);
@@ -37,7 +38,7 @@ import {
 const apiInst = axios.__instances[0];
 const publicInst = axios.__instances[1];
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 describe('cấu hình axios', () => {
   test('baseURL mặc định là /api (đi qua dev proxy / reverse proxy)', () => {

@@ -28,7 +28,7 @@
 .auth-header .auth-icon {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%);
+  background: linear-gradient(135deg, #5d8c3e 0%, #7ba55c 100%);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -74,7 +74,7 @@
 
 .auth-input:focus,
 .auth-input-focused {
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
   background: #fff !important;
   box-shadow: 0 0 0 3px rgba(93, 140, 62, 0.1) !important;
 }
@@ -104,7 +104,7 @@
 }
 
 .auth-select.ant-select-focused .ant-select-selector {
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
   background: #fff !important;
   box-shadow: 0 0 0 3px rgba(93, 140, 62, 0.1) !important;
 }
@@ -130,12 +130,12 @@
 }
 
 .form-options .ant-checkbox-wrapper:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .forgot-link {
   font-size: 14px;
-  color: #5D8C3E;
+  color: #5d8c3e;
   font-weight: 500;
   transition: color 0.2s;
 }
@@ -150,7 +150,7 @@
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
-  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%) !important;
+  background: linear-gradient(135deg, #5d8c3e 0%, #7ba55c 100%) !important;
   border: none !important;
   box-shadow: 0 4px 14px rgba(93, 140, 62, 0.35);
   transition: all 0.3s ease;
@@ -158,7 +158,7 @@
 }
 
 .auth-submit-btn:hover {
-  background: linear-gradient(135deg, #4a7230 0%, #5D8C3E 100%) !important;
+  background: linear-gradient(135deg, #4a7230 0%, #5d8c3e 100%) !important;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(93, 140, 62, 0.45);
 }
@@ -201,8 +201,8 @@
 }
 
 .social-btn:hover {
-  border-color: #5D8C3E !important;
-  color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
+  color: #5d8c3e !important;
   background: #f0fdf4;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -220,7 +220,7 @@
 }
 
 .auth-footer-text a {
-  color: #5D8C3E;
+  color: #5d8c3e;
   font-weight: 600;
   transition: color 0.2s;
 }
@@ -231,7 +231,7 @@
 
 /* Resend Button */
 .resend-btn {
-  color: #5D8C3E !important;
+  color: #5d8c3e !important;
   padding: 0;
   height: auto;
   font-weight: 500;
@@ -257,7 +257,7 @@
 }
 
 .password-strength-item.active {
-  background: #5D8C3E;
+  background: #5d8c3e;
 }
 
 .password-strength-item.active.weak {
@@ -274,13 +274,13 @@
 
 /* Checkbox styling */
 .auth-page .ant-checkbox-checked .ant-checkbox-inner {
-  background-color: #5D8C3E;
-  border-color: #5D8C3E;
+  background-color: #5d8c3e;
+  border-color: #5d8c3e;
 }
 
 .auth-page .ant-checkbox-wrapper:hover .ant-checkbox-inner,
 .auth-page .ant-checkbox:hover .ant-checkbox-inner {
-  border-color: #5D8C3E;
+  border-color: #5d8c3e;
 }
 
 /* Result Page Adjustments */
@@ -340,7 +340,7 @@
 
 /* Terms links in checkbox */
 .auth-page .auth-terms-link {
-  color: #5D8C3E;
+  color: #5d8c3e;
   font-weight: 500;
 }
 
@@ -363,7 +363,9 @@
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
 .dark-title {
@@ -399,7 +401,7 @@
 
 .dark-input:focus,
 .dark-input.ant-input-affix-wrapper-focused {
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
   box-shadow: 0 0 0 3px rgba(93, 140, 62, 0.1) !important;
 }
 
@@ -414,7 +416,7 @@
 }
 
 .dark-input .ant-input-password-icon:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 /* Email display row */
@@ -438,7 +440,7 @@
 .edit-email-btn {
   background: none;
   border: none;
-  color: #5D8C3E;
+  color: #5d8c3e;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -457,7 +459,7 @@
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
-  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%) !important;
+  background: linear-gradient(135deg, #5d8c3e 0%, #7ba55c 100%) !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(93, 140, 62, 0.3);
   transition: all 0.2s ease;
@@ -465,7 +467,7 @@
 }
 
 .dark-btn:hover {
-  background: linear-gradient(135deg, #4a7230 0%, #5D8C3E 100%) !important;
+  background: linear-gradient(135deg, #4a7230 0%, #5d8c3e 100%) !important;
   box-shadow: 0 4px 12px rgba(93, 140, 62, 0.4);
   transform: translateY(-1px);
   color: #ffffff;
@@ -487,7 +489,7 @@
 
 .forgot-link-light {
   font-size: 14px;
-  color: #5D8C3E;
+  color: #5d8c3e;
   font-weight: 500;
   text-decoration: none;
   transition: color 0.2s;
@@ -515,7 +517,7 @@
 .dark-link-btn {
   display: inline-block;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%);
+  background: linear-gradient(135deg, #5d8c3e 0%, #7ba55c 100%);
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
@@ -526,7 +528,7 @@
 }
 
 .dark-link-btn:hover {
-  background: linear-gradient(135deg, #4a7230 0%, #5D8C3E 100%);
+  background: linear-gradient(135deg, #4a7230 0%, #5d8c3e 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(93, 140, 62, 0.4);
   color: #ffffff;

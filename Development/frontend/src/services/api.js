@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Cấu hình base URL - mặc định '/api' để đi qua dev proxy (setupProxy.js) hoặc
 // reverse proxy khi deploy. Đặt REACT_APP_API_URL khi backend ở origin khác.
-const BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Tạo axios instance
 const api = axios.create({

@@ -16,8 +16,8 @@
 }
 
 .create-btn {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 .main-card {
@@ -103,7 +103,7 @@
   margin: 0;
   font-size: 12px;
   background-color: #f4f8f2;
-  color: #5D8C3E;
+  color: #5d8c3e;
   border: none;
 }
 
@@ -125,7 +125,7 @@
 }
 
 .action-btn:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
   background-color: #f4f8f2;
 }
 

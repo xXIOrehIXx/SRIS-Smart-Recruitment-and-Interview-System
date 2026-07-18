@@ -44,7 +44,7 @@
 }
 
 .nav-links a:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .header-actions {
@@ -59,12 +59,12 @@
 }
 
 .login-btn:hover {
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .demo-btn {
-  background-color: #5D8C3E;
-  border-color: #5D8C3E;
+  background-color: #5d8c3e;
+  border-color: #5d8c3e;
 }
 
 .demo-btn:hover {
@@ -105,7 +105,7 @@
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
-  color: #5D8C3E;
+  color: #5d8c3e;
   margin-bottom: 24px;
 }
 
@@ -118,8 +118,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
 }
 
 .hero-title.ant-typography {
@@ -132,7 +139,7 @@
 }
 
 .hero-title .highlight {
-  color: #5D8C3E;
+  color: #5d8c3e;
   position: relative;
 }
 
@@ -145,8 +152,8 @@
 }
 
 .hero-buttons .primary-btn {
-  background-color: #5D8C3E;
-  border-color: #5D8C3E;
+  background-color: #5d8c3e;
+  border-color: #5d8c3e;
   font-weight: 600;
   padding: 0 32px;
   height: 52px;
@@ -166,8 +173,8 @@
 }
 
 .hero-buttons .secondary-btn:hover {
-  border-color: #5D8C3E !important;
-  color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
+  color: #5d8c3e !important;
 }
 
 .hero-stats {
@@ -206,16 +213,22 @@
   background-color: #ffffff;
   border-radius: 20px;
   padding: 28px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #f0f0f0;
   transform: perspective(1000px) rotateY(-3deg);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  transition:
+    transform 0.4s ease,
+    box-shadow 0.4s ease;
   animation: slideUp 0.6s ease 0.2s both;
 }
 
 .dashboard-mockup:hover {
   transform: perspective(1000px) rotateY(0deg);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .mockup-header {
@@ -270,16 +283,16 @@
 .candidate-card {
   margin-bottom: 12px;
   border-radius: 10px !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: all 0.2s;
   border: 1px solid #f0f0f0 !important;
 }
 
 .candidate-card:hover {
-  box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
 }
 
 .candidate-card .ant-card-meta-title {
@@ -359,7 +372,7 @@
 .feature-icon {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #5D8C3E 0%, #7BA55C 100%);
+  background: linear-gradient(135deg, #5d8c3e 0%, #7ba55c 100%);
   border-radius: 14px;
   display: flex;
   align-items: center;

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Trang ứng viên xem trạng thái qua magic link STATUS (?token=...).
  * Render test với API mock — kiểm 3 nhánh: thiếu token / thành công / link hết hạn.
@@ -7,8 +8,8 @@ import { MemoryRouter } from 'react-router-dom';
 import CandidateStatus from './CandidateStatus';
 import { candidateAPI } from '../../services/api';
 
-jest.mock('../../services/api', () => ({
-  candidateAPI: { getStatus: jest.fn() },
+vi.mock('../../services/api', () => ({
+  candidateAPI: { getStatus: vi.fn() },
 }));
 
 const renderAt = (url) =>
@@ -18,7 +19,7 @@ const renderAt = (url) =>
     </MemoryRouter>
   );
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 test('thiếu token -> báo liên kết không hợp lệ, KHÔNG gọi API', async () => {
   renderAt('/status');

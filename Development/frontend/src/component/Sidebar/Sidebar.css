@@ -64,7 +64,7 @@
 
 .main-menu .ant-menu-item-selected {
   background-color: rgba(93, 140, 62, 0.1) !important;
-  color: #5D8C3E !important;
+  color: #5d8c3e !important;
 }
 
 .main-menu .ant-menu-item-selected::after {

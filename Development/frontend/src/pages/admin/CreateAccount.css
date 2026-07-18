@@ -1,12 +1,12 @@
 /* Create Account Page Styles */
 .create-account-page .back-btn {
   margin-bottom: 16px;
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .create-account-page .back-btn:hover {
   color: #4a7032;
-  border-color: #5D8C3E;
+  border-color: #5d8c3e;
 }
 
 .create-account-page .page-title {
@@ -37,18 +37,18 @@
 
 .create-account-form .ant-input:hover,
 .create-account-form .ant-select-selector:hover {
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
 }
 
 .create-account-form .ant-input:focus,
 .create-account-form .ant-select-focused .ant-select-selector {
-  border-color: #5D8C3E !important;
+  border-color: #5d8c3e !important;
   box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.2) !important;
 }
 
 .create-account-form .ant-btn-primary {
-  background-color: #5D8C3E;
-  border-color: #5D8C3E;
+  background-color: #5d8c3e;
+  border-color: #5d8c3e;
   border-radius: 8px;
   height: 40px;
   padding: 0 24px;

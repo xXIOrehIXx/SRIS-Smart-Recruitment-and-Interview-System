@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, message } from 'antd';
-import { MailOutlined } from '@ant-design/icons';
-import { useAuth } from '../../contexts/AuthContext';
-import './css/Auth.css';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Form, Input, Button, message } from "antd";
+import { MailOutlined } from "@ant-design/icons";
+import { useAuth } from "../../contexts/AuthContext";
+import "./css/Auth.css";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { login, getDashboardRoute } = useAuth();
@@ -16,14 +16,14 @@ const Login = () => {
   // Bước 1: Validate email
   const handleNext = async () => {
     try {
-      const values = await form.validateFields(['email']);
+      const values = await form.validateFields(["email"]);
       setEmail(values.email);
       setStep(2);
       setTimeout(() => {
-        form.setFieldsValue({ password: '' });
+        form.setFieldsValue({ password: "" });
       }, 100);
     } catch (err) {
-      console.log('Validation failed:', err);
+      console.log("Validation failed:", err);
     }
   };
 
@@ -38,24 +38,29 @@ const Login = () => {
 
     try {
       const userData = await login(values.email, values.password);
-      message.success('Đăng nhập thành công!');
+      message.success("Đăng nhập thành công!");
 
       // Sử dụng getDashboardRoute từ context thay vì hardcode
       const redirectPath = getDashboardRoute();
-      
-      console.log('Login success, user role:', userData.role, 'redirect to:', redirectPath);
+
+      console.log(
+        "Login success, user role:",
+        userData.role,
+        "redirect to:",
+        redirectPath,
+      );
       navigate(redirectPath, { replace: true });
     } catch (err) {
-      console.error('Login error:', err);
+      console.error("Login error:", err);
       if (err.response?.data?.message) {
         message.error(err.response.data.message);
       } else if (err.message) {
         message.error(err.message);
       } else {
-        message.error('Mật khẩu không đúng');
+        message.error("Mật khẩu không đúng");
       }
       // Reset password field khi sai
-      form.setFieldsValue({ password: '' });
+      form.setFieldsValue({ password: "" });
     } finally {
       setLoading(false);
     }
@@ -81,8 +86,8 @@ const Login = () => {
                 name="email"
                 label={<span className="dark-label">Email</span>}
                 rules={[
-                  { required: true, message: 'Vui lòng nhập email!' },
-                  { type: 'email', message: 'Email không hợp lệ!' }
+                  { required: true, message: "Vui lòng nhập email!" },
+                  { type: "email", message: "Email không hợp lệ!" },
                 ]}
               >
                 <Input
@@ -110,22 +115,26 @@ const Login = () => {
             <>
               <div className="email-display">
                 <span className="email-display-label">{email}</span>
-                <button type="button" className="edit-email-btn" onClick={handleBack}>
+                <button
+                  type="button"
+                  className="edit-email-btn"
+                  onClick={handleBack}
+                >
                   Edit
                 </button>
               </div>
 
-              <Form.Item style={{ display: 'none' }}>
+              <Form.Item style={{ display: "none" }}>
                 <Input name="email" type="hidden" />
               </Form.Item>
 
               <Form.Item
                 name="email"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập email!' },
-                  { type: 'email', message: 'Email không hợp lệ!' }
+                  { required: true, message: "Vui lòng nhập email!" },
+                  { type: "email", message: "Email không hợp lệ!" },
                 ]}
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
               >
                 <Input />
               </Form.Item>
@@ -133,9 +142,7 @@ const Login = () => {
               <Form.Item
                 name="password"
                 label={<span className="dark-label">Password</span>}
-                rules={[
-                  { required: true, message: 'Vui lòng nhập mật khẩu!' }
-                ]}
+                rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
               >
                 <Input.Password
                   placeholder="Enter your password"
