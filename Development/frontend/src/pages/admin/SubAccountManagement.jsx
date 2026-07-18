@@ -12,7 +12,6 @@ import {
   Modal,
   message,
   Descriptions,
-  Popconfirm,
   Form,
 } from "antd";
 import {
@@ -23,6 +22,7 @@ import {
   DeleteOutlined,
   EyeOutlined,
   ReloadOutlined,
+  KeyOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -36,13 +36,15 @@ const SubAccountManagement = () => {
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  // Modal states
   const [detailModal, setDetailModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [resetPasswordModal, setResetPasswordModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [form] = Form.useForm();
+  const [resetForm] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const fetchAccounts = async () => {
     try {
@@ -56,9 +58,8 @@ const SubAccountManagement = () => {
         id: item.id ?? item.userId,
         name: item.fullName || item.name || item.fullname || "N/A",
         email: item.email,
-        role: item.role || "user",
-        status: item.status || "active",
-        department: item.department || "N/A",
+        role: item.role || "User",
+        status: item.status || "Active",
         phone: item.phone || item.phoneNumber || "",
         createdAt: item.createdAt || item.created_at || null,
         lastLogin: item.lastLogin || item.lastLoginAt || null,
@@ -84,9 +85,8 @@ const SubAccountManagement = () => {
         id: data.id ?? data.userId,
         name: data.fullName || data.name || data.fullname || "N/A",
         email: data.email,
-        role: data.role || "user",
-        status: data.status || "active",
-        department: data.department || "N/A",
+        role: data.role || "User",
+        status: data.status || "Active",
         phone: data.phone || data.phoneNumber || "",
         createdAt: data.createdAt || data.created_at || null,
         lastLogin: data.lastLogin || data.lastLoginAt || null,
@@ -107,9 +107,8 @@ const SubAccountManagement = () => {
         id: data.id ?? data.userId,
         name: data.fullName || data.name || data.fullname || "N/A",
         email: data.email,
-        role: data.role || "user",
-        status: data.status || "active",
-        department: data.department || "N/A",
+        role: data.role || "User",
+        status: data.status || "Active",
         phone: data.phone || data.phoneNumber || "",
       });
       form.setFieldsValue({
@@ -117,7 +116,6 @@ const SubAccountManagement = () => {
         email: data.email,
         role: data.role,
         status: data.status,
-        department: data.department,
         phone: data.phone || data.phoneNumber,
       });
       setEditModal(true);
@@ -129,7 +127,7 @@ const SubAccountManagement = () => {
         email: record.email,
         role: record.role,
         status: record.status,
-        department: record.department,
+        phone: record.phone,
       });
       setEditModal(true);
     }
@@ -153,7 +151,6 @@ const SubAccountManagement = () => {
         fullName: values.fullName,
         role: values.role,
         status: values.status,
-        department: values.department,
         phone: values.phone,
       };
 
@@ -164,7 +161,11 @@ const SubAccountManagement = () => {
       fetchAccounts();
     } catch (error) {
       console.error("Error updating account:", error);
-      message.error("Không thể cập nhật tài khoản");
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể cập nhật tài khoản";
+      message.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -184,35 +185,67 @@ const SubAccountManagement = () => {
       fetchAccounts();
     } catch (error) {
       console.error("Error deleting account:", error);
-      message.error("Không thể xóa tài khoản");
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể xóa tài khoản";
+      message.error(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleResetPasswordClick = (record) => {
+    setSelectedAccount(record);
+    resetForm.resetFields();
+    setResetPasswordModal(true);
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      setResetSubmitting(true);
+      const values = resetForm.getFieldsValue();
+      await usersAPI.resetPassword(selectedAccount.id, values.newPassword);
+      message.success("Đặt lại mật khẩu thành công");
+      setResetPasswordModal(false);
+      resetForm.resetFields();
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể đặt lại mật khẩu";
+      message.error(msg);
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
   const getRoleTag = (role) => {
     const colors = {
-      admin: "gold",
-      recruiter: "blue",
-      interviewer: "purple",
-      department_manager: "cyan",
-      user: "default",
+      Admin: "gold",
+      Recruiter: "blue",
+      Interviewer: "purple",
+      DepartmentManager: "cyan",
+      User: "default",
     };
     const labels = {
-      admin: "Admin",
-      recruiter: "Recruiter",
-      interviewer: "Interviewer",
-      department_manager: "Department Manager",
-      user: "User",
+      Admin: "Admin",
+      Recruiter: "Recruiter",
+      Interviewer: "Interviewer",
+      DepartmentManager: "Department Manager",
+      User: "User",
     };
-    return <Tag color={colors[role] || "default"}>{labels[role] || role}</Tag>;
+    return (
+      <Tag color={colors[role] || "default"}>{labels[role] || role}</Tag>
+    );
   };
 
   const getStatusTag = (status) => {
-    const isActive = status === "active" || status === "ACTIVE" || status === 1;
+    const isActive = status === "Active" || status === "ACTIVE" || status === 1;
     return (
       <Tag color={isActive ? "success" : "default"}>
-        {isActive ? "Active" : "Inactive"}
+        {isActive ? "Active" : "Disabled"}
       </Tag>
     );
   };
@@ -229,6 +262,12 @@ const SubAccountManagement = () => {
       icon: <EditOutlined />,
       label: "Chỉnh sửa",
       onClick: () => handleEditClick(record),
+    },
+    {
+      key: "reset",
+      icon: <KeyOutlined />,
+      label: "Đặt lại mật khẩu",
+      onClick: () => handleResetPasswordClick(record),
     },
     { type: "divider" },
     {
@@ -263,18 +302,13 @@ const SubAccountManagement = () => {
       render: getRoleTag,
     },
     {
-      title: "Phòng ban",
-      dataIndex: "department",
-      key: "department",
-    },
-    {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: getStatusTag,
     },
     {
-      title: "Đăng nhập cuối",
+      title: "Đăng nhập lần cuối",
       dataIndex: "lastLogin",
       key: "lastLogin",
       render: (text) =>
@@ -344,10 +378,10 @@ const SubAccountManagement = () => {
             placeholder="Lọc theo vai trò"
           >
             <Select.Option value="all">Tất cả vai trò</Select.Option>
-            <Select.Option value="admin">Admin</Select.Option>
-            <Select.Option value="recruiter">Recruiter</Select.Option>
-            <Select.Option value="interviewer">Interviewer</Select.Option>
-            <Select.Option value="department_manager">
+            <Select.Option value="Admin">Admin</Select.Option>
+            <Select.Option value="Recruiter">Recruiter</Select.Option>
+            <Select.Option value="Interviewer">Interviewer</Select.Option>
+            <Select.Option value="DepartmentManager">
               Department Manager
             </Select.Option>
           </Select>
@@ -404,9 +438,6 @@ const SubAccountManagement = () => {
             <Descriptions.Item label="Vai trò">
               {getRoleTag(selectedAccount.role)}
             </Descriptions.Item>
-            <Descriptions.Item label="Phòng ban">
-              {selectedAccount.department}
-            </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               {getStatusTag(selectedAccount.status)}
             </Descriptions.Item>
@@ -415,7 +446,7 @@ const SubAccountManagement = () => {
                 ? dayjs(selectedAccount.createdAt).format("DD/MM/YYYY HH:mm")
                 : "-"}
             </Descriptions.Item>
-            <Descriptions.Item label="Đăng nhập cuối">
+            <Descriptions.Item label="Đăng nhập lần cuối">
               {selectedAccount.lastLogin && selectedAccount.lastLogin !== "N/A"
                 ? dayjs(selectedAccount.lastLogin).format("DD/MM/YYYY HH:mm")
                 : "-"}
@@ -477,17 +508,13 @@ const SubAccountManagement = () => {
             rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
           >
             <Select placeholder="Chọn vai trò">
-              <Select.Option value="admin">Admin</Select.Option>
-              <Select.Option value="recruiter">Recruiter</Select.Option>
-              <Select.Option value="interviewer">Interviewer</Select.Option>
-              <Select.Option value="department_manager">
+              <Select.Option value="Admin">Admin</Select.Option>
+              <Select.Option value="Recruiter">Recruiter</Select.Option>
+              <Select.Option value="Interviewer">Interviewer</Select.Option>
+              <Select.Option value="DepartmentManager">
                 Department Manager
               </Select.Option>
             </Select>
-          </Form.Item>
-
-          <Form.Item name="department" label="Phòng ban">
-            <Input placeholder="Nhập tên phòng ban" />
           </Form.Item>
 
           <Form.Item
@@ -496,9 +523,54 @@ const SubAccountManagement = () => {
             rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
           >
             <Select placeholder="Chọn trạng thái">
-              <Select.Option value="active">Active</Select.Option>
-              <Select.Option value="inactive">Inactive</Select.Option>
+              <Select.Option value="Active">Active</Select.Option>
+              <Select.Option value="Disabled">Disabled</Select.Option>
             </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal Đặt lại mật khẩu */}
+      <Modal
+        title="Đặt lại mật khẩu"
+        open={resetPasswordModal}
+        onCancel={() => {
+          setResetPasswordModal(false);
+          resetForm.resetFields();
+        }}
+        footer={[
+          <Button key="cancel" onClick={() => setResetPasswordModal(false)}>
+            Hủy
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={resetSubmitting}
+            onClick={() => resetForm.submit()}
+          >
+            Đặt lại mật khẩu
+          </Button>,
+        ]}
+        width={420}
+      >
+        <p style={{ marginBottom: 16 }}>
+          Đặt lại mật khẩu cho tài khoản:{" "}
+          <strong>{selectedAccount?.email}</strong>
+        </p>
+        <Form
+          form={resetForm}
+          layout="vertical"
+          onFinish={handleResetPassword}
+        >
+          <Form.Item
+            name="newPassword"
+            label="Mật khẩu mới"
+            rules={[
+              { required: true, message: "Vui lòng nhập mật khẩu mới" },
+              { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự" },
+            ]}
+          >
+            <Input.Password placeholder="Nhập mật khẩu mới" />
           </Form.Item>
         </Form>
       </Modal>

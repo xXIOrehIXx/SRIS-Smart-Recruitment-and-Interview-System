@@ -15,7 +15,6 @@ import {
   MailOutlined,
   LockOutlined,
   UserOutlined,
-  TeamOutlined,
   PhoneOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -30,9 +29,10 @@ const CreateAccount = () => {
   const [loading, setLoading] = useState(false);
 
   const roles = [
-    { value: "recruiter", label: "Recruiter" },
-    { value: "interviewer", label: "Interviewer" },
-    { value: "department_manager", label: "Department Manager" },
+    { value: "Admin", label: "Admin" },
+    { value: "Recruiter", label: "Recruiter" },
+    { value: "Interviewer", label: "Interviewer" },
+    { value: "DepartmentManager", label: "Department Manager" },
   ];
 
   const handleSubmit = async (values) => {
@@ -43,7 +43,6 @@ const CreateAccount = () => {
         email: values.email,
         password: values.password,
         role: values.role,
-        department: values.department,
         phone: values.phone,
       };
 
@@ -162,18 +161,6 @@ const CreateAccount = () => {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="department"
-                label="Phòng ban"
-                rules={[{ required: true, message: "Vui lòng nhập phòng ban" }]}
-              >
-                <Input
-                  prefix={<TeamOutlined />}
-                  placeholder="Nhập tên phòng ban"
-                />
-              </Form.Item>
-            </Col>
           </Row>
 
           <Divider />
