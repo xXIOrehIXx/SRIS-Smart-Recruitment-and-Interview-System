@@ -20,15 +20,15 @@ import {
 } from "@ant-design/icons";
 import { companyAPI } from "../../services/api";
 import { useCompany } from "../../contexts/CompanyContext";
+import { useBrandTheme } from "../../contexts/BrandThemeContext";
 import "./css/CompanyBranding.css";
 
 const { Title, Text } = Typography;
 
-const MATCHA_GREEN = "#5D8C3E";
+const DEFAULT_COLOR = "#5D8C3E";
 
-/** Extract hex string from Color object or return as-is if already a string. */
 const toHex = (value) => {
-  if (!value) return null;
+  if (!value) return DEFAULT_COLOR;
   if (typeof value === "string") return value;
   if (typeof value === "object" && value !== null && "toHexString" in value)
     return value.toHexString();
@@ -43,6 +43,7 @@ const CompanyBranding = () => {
   const [brandForm] = Form.useForm();
   const [company, setCompany] = useState(null);
   const { refreshCompany } = useCompany();
+  const { primaryColor, updateBrandColor } = useBrandTheme();
 
   useEffect(() => {
     fetchCompany();
@@ -62,7 +63,7 @@ const CompanyBranding = () => {
 
       brandForm.setFieldsValue({
         logoUrl: data.logoUrl,
-        primaryColor: data.primaryColor || MATCHA_GREEN,
+        primaryColor: data.primaryColor || DEFAULT_COLOR,
       });
     } catch (error) {
       console.error("Error fetching company:", error);
@@ -75,10 +76,9 @@ const CompanyBranding = () => {
   const handleSaveProfile = async (values) => {
     try {
       setSaving(true);
-      await companyAPI.updateBrand({
+      await companyAPI.update({
         name: values.name,
-        logoUrl: brandForm.getFieldValue("logoUrl") || company?.logoUrl,
-        primaryColor: toHex(brandForm.getFieldValue("primaryColor")) || company?.primaryColor,
+        industry: values.industry,
       });
       message.success("Lưu thông tin công ty thành công!");
       await refreshCompany();
@@ -99,11 +99,15 @@ const CompanyBranding = () => {
     try {
       setBrandSaving(true);
       const brandValues = brandForm.getFieldsValue();
+      const chosenColor = toHex(brandValues.primaryColor) || DEFAULT_COLOR;
+
       await companyAPI.updateBrand({
         name: brandValues.name || company?.name,
         logoUrl: brandValues.logoUrl || null,
-        primaryColor: toHex(brandValues.primaryColor) || null,
+        primaryColor: chosenColor,
       });
+
+      updateBrandColor(chosenColor);
       message.success("Lưu thương hiệu thành công!");
       await refreshCompany();
       fetchCompany();
@@ -119,8 +123,9 @@ const CompanyBranding = () => {
     }
   };
 
-  const rawColor = brandForm.getFieldValue("primaryColor") || company?.primaryColor || MATCHA_GREEN;
-  const previewColor = toHex(rawColor);
+  const previewColor = toHex(
+    brandForm.getFieldValue("primaryColor") || company?.primaryColor || DEFAULT_COLOR
+  );
 
   return (
     <div className="company-branding-page">
@@ -138,10 +143,10 @@ const CompanyBranding = () => {
       <Row gutter={[24, 24]}>
         {/* Left column — company info */}
         <Col xs={24} lg={16}>
-          <Card
+            <Card
             title={
               <Space>
-                <BuildOutlined style={{ color: MATCHA_GREEN }} />
+                <BuildOutlined style={{ color: primaryColor }} />
                 Thông tin công ty
               </Space>
             }
@@ -180,8 +185,6 @@ const CompanyBranding = () => {
                 loading={saving}
                 icon={<SaveOutlined />}
                 style={{
-                  background: MATCHA_GREEN,
-                  borderColor: MATCHA_GREEN,
                   height: 44,
                   paddingInline: 32,
                 }}
@@ -197,7 +200,7 @@ const CompanyBranding = () => {
           <Card
             title={
               <Space>
-                <LinkOutlined style={{ color: MATCHA_GREEN }} />
+                <LinkOutlined style={{ color: primaryColor }} />
                 Logo công ty
               </Space>
             }
@@ -231,7 +234,7 @@ const CompanyBranding = () => {
           <Card
             title={
               <Space>
-                <SaveOutlined style={{ color: MATCHA_GREEN }} />
+                <SaveOutlined style={{ color: primaryColor }} />
                 Bộ màu thương hiệu
               </Space>
             }
@@ -271,7 +274,6 @@ const CompanyBranding = () => {
                 icon={<SaveOutlined />}
                 block
                 onClick={handleSaveBrand}
-                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
               >
                 Lưu thương hiệu
               </Button>

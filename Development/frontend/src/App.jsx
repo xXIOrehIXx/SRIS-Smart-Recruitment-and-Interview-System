@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import AuthLayout from "./layouts/AuthLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth, ROLES } from "./contexts/AuthContext";
-import { CompanyProvider } from "./contexts/CompanyContext";
 import Home from "./pages/Home";
 import Recruitment from "./pages/recruitment/Recruitment";
 import Login from "./pages/auth/Login";
@@ -49,8 +48,7 @@ const App = () => {
   }
 
   return (
-    <CompanyProvider>
-      <Routes>
+    <Routes>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -166,8 +164,7 @@ const App = () => {
           )
         }
       />
-      </Routes>
-    </CompanyProvider>
+    </Routes>
   );
 };
 

@@ -1,25 +1,33 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { companyAPI } from "../services/api";
+import { useBrandTheme } from "./BrandThemeContext";
 
 const CompanyContext = createContext(null);
 
-export const CompanyProvider = ({ children }) => {
+const CompanyProviderInner = ({ children }) => {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { updateBrandColor } = useBrandTheme();
 
   const fetchCompany = useCallback(async () => {
     try {
       setLoading(true);
       const response = await companyAPI.get();
-      setCompany(response.data);
+      const data = response.data;
+      setCompany(data);
+
+      if (data?.primaryColor) {
+        updateBrandColor(data.primaryColor);
+      }
     } catch (error) {
-      console.error("CompanyContext: failed to fetch company", error);
+      if (error.response?.status !== 401) {
+        console.error("CompanyContext: failed to fetch company", error);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [updateBrandColor]);
 
-  // Load company info once on mount
   useEffect(() => {
     fetchCompany();
   }, [fetchCompany]);
@@ -40,6 +48,10 @@ export const CompanyProvider = ({ children }) => {
     </CompanyContext.Provider>
   );
 };
+
+export const CompanyProvider = ({ children }) => (
+  <CompanyProviderInner>{children}</CompanyProviderInner>
+);
 
 export const useCompany = () => {
   const context = useContext(CompanyContext);

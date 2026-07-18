@@ -31,10 +31,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token hết hạn hoặc không hợp lệ
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      const isAuthPage = window.location.pathname === "/login" ||
+                          window.location.pathname === "/register" ||
+                          window.location.pathname === "/forgot-password";
+      if (!isAuthPage) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   },
@@ -313,11 +317,11 @@ export const talentPoolAPI = {
 // ==================== COMPANY ====================
 
 export const companyAPI = {
-  get: () => api.get("/company"),
+  get: () => api.get("/Company"),
 
-  update: (data) => api.put("/company", data),
+  update: (data) => api.put("/Company", data),
 
-  updateBrand: (data) => api.put("/company/brand", data),
+  updateBrand: (data) => api.put("/Company/brand", data),
 };
 
 // ==================== USERS / SUB-ACCOUNTS ====================
