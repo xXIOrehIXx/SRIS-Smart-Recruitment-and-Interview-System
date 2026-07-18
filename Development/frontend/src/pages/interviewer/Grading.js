@@ -71,21 +71,24 @@ const Grading = () => {
       const response = await interviewAPI.getMySheet(scheduleId);
       const data = response.data || {};
 
-      // Set criteria for scoring
+      // ScoringSheetDto: { scheduleId, myStatus, criteria: [{criteriaId, name, weight, maxScore, myScore, myNote}] }
+      if (data.myStatus === 'SUBMITTED') {
+        setIsSubmitted(true);
+      }
       if (data.criteria && Array.isArray(data.criteria)) {
         setCriteria(data.criteria.map((c) => ({
-          id: c.criteriaId || c.id,
-          name: c.criteriaName || c.name || 'Tiêu chí',
+          id: c.criteriaId,
+          name: c.name || 'Tiêu chí',
           maxScore: c.maxScore || 10,
           weight: c.weight || 1,
-          description: c.description || '',
+          description: '',
         })));
 
-        // Load existing scores
+        // Nạp lại điểm nháp đã lưu server (myScore — điểm CỦA MÌNH, blind review)
         const existingScores = {};
         data.criteria.forEach((c) => {
-          if (c.score !== undefined && c.score !== null) {
-            existingScores[c.criteriaId || c.id] = c.score;
+          if (c.myScore !== undefined && c.myScore !== null) {
+            existingScores[c.criteriaId] = c.myScore;
           }
         });
         setScores(existingScores);
@@ -100,12 +103,14 @@ const Grading = () => {
         ]);
       }
 
-      // Set existing feedback
-      if (data.feedback) {
-        setFeedback(data.feedback);
-      }
-      if (data.recommendation) {
-        setRecommendation(data.recommendation);
+      // Khôi phục nhận xét chung + đề xuất (được lưu trong note của tiêu chí đầu — xem buildItemsPayload)
+      const firstNote = data.criteria?.[0]?.myNote;
+      if (firstNote && firstNote.startsWith('[Nhận xét chung]')) {
+        const match = firstNote.match(/^\[Nhận xét chung\] ([\s\S]*?)(?: — \[Đề xuất\] (\w+))?$/);
+        if (match) {
+          setFeedback(match[1] || '');
+          if (match[2]) setRecommendation(match[2]);
+        }
       }
 
       // Set interview info
@@ -175,24 +180,35 @@ const Grading = () => {
     setSubmitConfirmModal(true);
   };
 
+  // Backend SaveScoreDraftDto = { items: [{criteriaId, score, note}] } — note theo TỪNG tiêu chí;
+  // nhận xét chung + đề xuất không có cột riêng nên ghi vào note của tiêu chí đầu.
+  const buildItemsPayload = () => ({
+    items: criteria
+      .filter((c) => typeof c.id === 'number') // bỏ tiêu chí fallback (id chuỗi, không có trên server)
+      .map((c, idx) => ({
+        criteriaId: c.id,
+        score: scores[c.id] ?? null,
+        note: idx === 0 && (feedback || recommendation)
+          ? `[Nhận xét chung] ${feedback || ''}${recommendation ? ` — [Đề xuất] ${recommendation}` : ''}`
+          : null,
+      })),
+  });
+
   const confirmSaveDraft = async () => {
     try {
       setSubmitting(true);
-      const payload = {
-        scores: criteria.map((c) => ({
-          criteriaId: c.id,
-          score: scores[c.id] || 0,
-        })),
-        feedback,
-        recommendation,
-      };
+      const payload = buildItemsPayload();
+      if (payload.items.length === 0) {
+        message.warning('Vị trí này chưa có bộ tiêu chí đã duyệt — không thể lưu điểm.');
+        return;
+      }
 
       await interviewAPI.updateMySheet(scheduleId, payload);
       message.success('Đã lưu nháp thành công!');
       setSaveConfirmModal(false);
     } catch (error) {
       console.error('Error saving draft:', error);
-      message.error('Không thể lưu nháp. Vui lòng thử lại.');
+      message.error(error?.response?.data?.userMsg || 'Không thể lưu nháp. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
@@ -201,22 +217,21 @@ const Grading = () => {
   const confirmSubmitScore = async () => {
     try {
       setSubmitting(true);
-      const payload = {
-        scores: criteria.map((c) => ({
-          criteriaId: c.id,
-          score: scores[c.id] || 0,
-        })),
-        feedback,
-        recommendation,
-      };
+      const payload = buildItemsPayload();
+      if (payload.items.length === 0) {
+        message.warning('Vị trí này chưa có bộ tiêu chí đã duyệt — không thể nộp phiếu.');
+        return;
+      }
 
-      await interviewAPI.submitMySheet(scheduleId, payload);
-      message.success('Đã submit điểm thành công!');
+      // Submit KHÔNG nhận body — phải lưu nháp lên server trước, backend kiểm "chấm đủ mọi tiêu chí"
+      await interviewAPI.updateMySheet(scheduleId, payload);
+      await interviewAPI.submitMySheet(scheduleId);
+      message.success('Đã nộp phiếu chấm — điểm của bạn giờ hiện với panel (mở blind).');
       setSubmitConfirmModal(false);
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error submitting score:', error);
-      message.error('Không thể submit điểm. Vui lòng thử lại.');
+      message.error(error?.response?.data?.userMsg || 'Không thể submit điểm. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }

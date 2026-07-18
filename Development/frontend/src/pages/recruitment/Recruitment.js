@@ -71,7 +71,7 @@ const Recruitment = () => {
     
     try {
       const jobId = getJobId(job);
-      const response = await jobsAPI.getPublicJob(jobId);
+      const response = await jobsAPI.getPublicJobBySlug(slug, jobId);
       // Backend có thể return data ở nhiều cấp khác nhau
       const jobData = response.data?.data || response.data?.items?.[0] || response.data;
       return jobData || job;

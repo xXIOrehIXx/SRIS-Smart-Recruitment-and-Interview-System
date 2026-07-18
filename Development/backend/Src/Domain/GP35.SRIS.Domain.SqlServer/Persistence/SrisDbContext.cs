@@ -47,6 +47,7 @@ public class SrisDbContext : DbContext
     public DbSet<OfferDetail> OfferDetails => Set<OfferDetail>();
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
+    public DbSet<RecruitmentRequest> RecruitmentRequests => Set<RecruitmentRequest>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -229,6 +230,16 @@ public class SrisDbContext : DbContext
             e.ToTable("EmailTemplate");
             e.HasKey(x => x.TemplateId);
             // name / is_active: thêm ở migration V007.
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<RecruitmentRequest>(e =>
+        {
+            e.ToTable("RecruitmentRequest");
+            e.HasKey(x => x.RequestId);
+            e.Property(x => x.SalaryMin).HasColumnType("decimal(18,2)");
+            e.Property(x => x.SalaryMax).HasColumnType("decimal(18,2)");
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

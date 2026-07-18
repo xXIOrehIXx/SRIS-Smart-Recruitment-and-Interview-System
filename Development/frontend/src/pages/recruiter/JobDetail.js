@@ -49,7 +49,16 @@ const JobDetail = () => {
     try {
       setLoading(true);
       const response = await applicationAPI.getAll(jobId);
-      setApplications(response.data || []);
+      // Backend trả ApplicationBoardDto: { jobId, applications: [ApplicationCardDto] }
+      const cards = response.data?.applications || [];
+      setApplications(cards.map(app => ({
+        ...app,
+        id: app.applicationId,
+        fullName: app.candidateName,
+        email: app.candidateEmail,
+        state: app.currentState,
+        cvScore: app.aiMatchScore != null ? Math.round(app.aiMatchScore) : null,
+      })));
     } catch (error) {
       console.error('Error fetching applications:', error);
       message.error('Không thể tải danh sách ứng viên');
@@ -67,11 +76,13 @@ const JobDetail = () => {
       Offer: 0,
     };
 
+    // 6 state nội bộ → 4 pha hiển thị (OFFER/HIRED gộp vào Quyết định, REJECTED không đếm)
+    const STATE_TO_STAGE = {
+      NEW: 'Applied', SCREENING: 'Screening', INTERVIEW: 'Interview',
+      OFFER: 'Offer', HIRED: 'Offer',
+    };
     applications.forEach(app => {
-      const stage = app.state || app.status || 'Applied';
-      const stageKey = Object.keys(stats).find(key => 
-        key.toLowerCase() === stage.toLowerCase()
-      );
+      const stageKey = STATE_TO_STAGE[app.state];
       if (stageKey) {
         stats[stageKey]++;
       }
@@ -119,16 +130,20 @@ const JobDetail = () => {
       key: 'stage',
       render: (stage) => {
         const colors = {
-          'Applied': 'blue',
-          'Screening': 'purple',
-          'Interview': 'orange',
-          'Offer': 'green',
+          NEW: 'blue',
+          SCREENING: 'purple',
+          INTERVIEW: 'orange',
+          OFFER: 'green',
+          HIRED: 'success',
+          REJECTED: 'error',
         };
         const stageText = {
-          'Applied': 'Đã Ứng Tuyển',
-          'Screening': 'Sàng Lọc',
-          'Interview': 'Phỏng Vấn',
-          'Offer': 'Offer',
+          NEW: 'Hồ sơ mới',
+          SCREENING: 'Sàng Lọc',
+          INTERVIEW: 'Phỏng Vấn',
+          OFFER: 'Offer',
+          HIRED: 'Đã tuyển',
+          REJECTED: 'Từ chối',
         };
         return <Tag color={colors[stage] || 'default'}>{stageText[stage] || stage || 'N/A'}</Tag>;
       },

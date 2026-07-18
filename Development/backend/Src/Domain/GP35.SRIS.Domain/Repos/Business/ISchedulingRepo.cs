@@ -91,5 +91,10 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     Task<bool> IsInterviewerOnScheduleAsync(long companyId, long scheduleId, long interviewerId);
 
     /// <summary>Các buổi ĐÃ CHỐT giao cho 1 interviewer (interviewer của confirmed slot) — để hiện danh sách cần chấm.</summary>
-    Task<IReadOnlyList<InterviewSchedule>> GetSchedulesForInterviewerAsync(long companyId, long interviewerId);
+    Task<IReadOnlyList<InterviewerScheduleRow>> GetSchedulesForInterviewerAsync(long companyId, long interviewerId);
 }
+
+/// <summary>1 buổi của interviewer kèm thông tin hiển thị (ứng viên + job + giờ hẹn).</summary>
+public record InterviewerScheduleRow(
+    long ScheduleId, long ApplicationId, int RoundNumber, string Status,
+    DateTime StartTime, string CandidateName, string CandidateEmail, string JobTitle);

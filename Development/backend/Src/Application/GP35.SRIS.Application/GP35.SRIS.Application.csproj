@@ -11,6 +11,10 @@
     <PackageReference Include="AutoMapper" Version="16.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="GP35.SRIS.Application.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

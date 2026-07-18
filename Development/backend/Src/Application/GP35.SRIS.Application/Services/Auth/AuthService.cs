@@ -165,6 +165,26 @@ public class AuthService : BaseService<AuthService>, IAuthService
         _logger.Information("ResetPassword: user={UserId} đã đặt lại mật khẩu.", row.UserId);
     }
 
+    public async Task ChangePasswordAsync(long userId, string oldPassword, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            throw Bad("Mật khẩu mới phải từ 6 ký tự.");
+
+        var user = await _userRepo.GetByIdCrossTenantAsync(userId);
+        if (user is null || string.Equals(user.Status, "Disabled", StringComparison.OrdinalIgnoreCase))
+            throw AuthError(AuthErrorCode.UserInactive, AuthErrorMessage.UserInactive);
+
+        if (_encode.SHA256WithSalt(oldPassword ?? "", PasswordSalt) != user.PasswordHash)
+            throw Bad("Mật khẩu hiện tại không đúng.");
+
+        await _userRepo.UpdatePasswordCrossTenantAsync(userId,
+            _encode.SHA256WithSalt(newPassword, PasswordSalt));
+        // Đổi mật khẩu -> thu hồi mọi refresh token cũ (đăng xuất các phiên khác).
+        await _tokenRepo.RevokeActiveAsync(userId, "REFRESH");
+
+        _logger.Information("ChangePassword: user={UserId} đã đổi mật khẩu.", userId);
+    }
+
     public async Task<LoginResult> RefreshAsync(string refreshToken)
     {
         var row = await _tokenRepo.GetByHashAsync(MagicLinkTokenCodec.Hash(refreshToken ?? ""), "REFRESH");

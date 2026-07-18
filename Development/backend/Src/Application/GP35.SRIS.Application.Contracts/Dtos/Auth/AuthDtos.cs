@@ -32,3 +32,10 @@ public class RefreshTokenRequest
 {
     public string RefreshToken { get; set; } = null!;
 }
+
+/// <summary>Người đang đăng nhập tự đổi mật khẩu (phải nhập đúng mật khẩu cũ).</summary>
+public class ChangePasswordRequest
+{
+    public string OldPassword { get; set; } = null!;
+    public string NewPassword { get; set; } = null!;
+}

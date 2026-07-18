@@ -62,6 +62,16 @@ namespace GP35.SRIS
       return Ok(result);
     }
 
+    /// <summary>Người đang đăng nhập tự đổi mật khẩu (nhập mật khẩu cũ + mới).</summary>
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+      var ctx = HttpContext.RequestServices.GetRequiredService<GP35.SRIS.Domain.Shared.Context.IContextData>();
+      await _authService.ChangePasswordAsync(ctx.UserId, request.OldPassword, request.NewPassword);
+      return Ok(new { message = "Đổi mật khẩu thành công. Các phiên đăng nhập khác đã bị thu hồi." });
+    }
+
     /// <summary>Đăng xuất — JWT stateless nên client chỉ cần xóa token; endpoint để FE gọi thống nhất.</summary>
     [Authorize]
     [HttpPost("logout")]

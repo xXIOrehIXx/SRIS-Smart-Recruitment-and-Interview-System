@@ -29,7 +29,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { interviewAPI } from '../../services/api';
+import { interviewAPI, applicationAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -78,7 +78,7 @@ const IncomingInterview = () => {
             endTime: item.endTime || item.interviewEndTime,
             duration: item.duration || 60,
             type: item.interviewType || item.type || 'Technical',
-            level: item.round || item.interviewRound || item.level || 1,
+            level: item.roundNumber || item.round || item.interviewRound || item.level || 1,
             status: item.status || 'UPCOMING',
             meetingLink: item.meetingLink || item.meetingUrl || '',
           }))
@@ -96,17 +96,26 @@ const IncomingInterview = () => {
     }
   };
 
-  const fetchCandidatesBySchedule = async (scheduleId) => {
+  const fetchCandidatesBySchedule = async (applicationId) => {
+    // 1 buổi phỏng vấn gắn với đúng 1 hồ sơ (schedule.applicationId) — đọc chi tiết hồ sơ
+    // qua /applications/{id} (Interviewer có quyền; KHÔNG dùng /aggregate — đó là panel
+    // tổng hợp chỉ dành cho Recruiter/DM sau khi mở blind).
     try {
       setLoadingCandidates(true);
-      const response = await interviewAPI.getAggregate(scheduleId);
-      let data = response.data;
-      if (!Array.isArray(data)) {
-        data = data?.candidates || data?.items || data?.applications || [];
-      }
-      setCandidates(Array.isArray(data) ? data : []);
+      const response = await applicationAPI.getById(applicationId);
+      const app = response.data;
+      setCandidates(app ? [{
+        id: app.applicationId,
+        applicationId: app.applicationId,
+        name: app.candidateName,
+        candidateName: app.candidateName,
+        email: app.candidateEmail,
+        position: app.jobTitle,
+        currentState: app.currentState,
+        aiMatchScore: app.aiMatchScore,
+      }] : []);
     } catch (error) {
-      console.error('Error fetching candidates:', error);
+      console.error('Error fetching candidate:', error);
       setCandidates([]);
     } finally {
       setLoadingCandidates(false);
@@ -115,7 +124,7 @@ const IncomingInterview = () => {
 
   const handleShowCandidates = (record) => {
     setSelectedSchedule(record);
-    fetchCandidatesBySchedule(record.id);
+    fetchCandidatesBySchedule(record.applicationId);
     setCandidateModalOpen(true);
   };
 

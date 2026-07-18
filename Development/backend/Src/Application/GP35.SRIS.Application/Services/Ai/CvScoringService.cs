@@ -133,7 +133,8 @@ public class CvScoringService : BaseService<CvScoringService>, ICvScoringService
             CandidateId = r.CandidateId,
             CandidateName = r.CandidateName,
             Score = r.AiMatchScore,
-            CurrentState = r.CurrentState
+            CurrentState = r.CurrentState,
+            CvId = r.CvId
         });
     }
 

@@ -188,7 +188,7 @@ public class CriteriaScoringService : BaseService<CriteriaScoringService>, ICrit
     /// Tiêu chí HARD: tìm keyword trong text CV (so cả bản bỏ dấu — CV hay viết không dấu).
     /// Khớp -> bằng chứng = đoạn text quanh vị trí tìm thấy.
     /// </summary>
-    private static (bool Matched, string? Evidence) MatchHardByKeywords(string cvText, EvaluationCriteria c)
+    internal static (bool Matched, string? Evidence) MatchHardByKeywords(string cvText, EvaluationCriteria c)
     {
         var keywords = (string.IsNullOrWhiteSpace(c.Keywords) ? c.Name : c.Keywords)
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -215,7 +215,7 @@ public class CriteriaScoringService : BaseService<CriteriaScoringService>, ICrit
     }
 
     /// <summary>Bỏ dấu tiếng Việt (đ/Đ xử lý riêng) — RemoveDiacritics("kế toán") = "ke toan".</summary>
-    private static string RemoveDiacritics(string text)
+    internal static string RemoveDiacritics(string text)
     {
         var decomposed = text.Normalize(NormalizationForm.FormD);
         var sb = new StringBuilder(decomposed.Length);

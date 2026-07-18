@@ -232,9 +232,10 @@ const HiringDecision = () => {
     
     try {
       setActionLoading(true);
-      await applicationAPI.transition(selectedRecord.id, 'REJECTED');
-      await applicationAPI.addNote(selectedRecord.id, `[TỪ CHỐI TUYỂN DỤNG] Lý do: ${rejectReason}`);
-      
+      // Endpoint reject riêng — reason bắt buộc, được ghi vào reject_reason
+      // (transition REJECTED không kèm reason sẽ bị backend từ chối).
+      await applicationAPI.reject(selectedRecord.id, rejectReason);
+
       message.success(`Đã từ chối ứng viên ${selectedRecord.candidateName}`);
       setRejectModalOpen(false);
       setRejectReason('');

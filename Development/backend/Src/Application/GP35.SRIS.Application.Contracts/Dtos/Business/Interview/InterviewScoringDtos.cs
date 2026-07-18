@@ -7,6 +7,11 @@ public class MyScheduleDto
     public long ApplicationId { get; set; }
     public int RoundNumber { get; set; }
     public string Status { get; set; } = null!;
+    /// <summary>Giờ hẹn (khung đã chốt).</summary>
+    public DateTime StartTime { get; set; }
+    public string CandidateName { get; set; } = null!;
+    public string CandidateEmail { get; set; } = null!;
+    public string JobTitle { get; set; } = null!;
 }
 
 /// <summary>1 dòng interviewer nhập điểm + note cho 1 tiêu chí.</summary>

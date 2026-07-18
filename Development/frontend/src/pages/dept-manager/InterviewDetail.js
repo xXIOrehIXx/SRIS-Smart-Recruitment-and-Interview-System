@@ -1,266 +1,207 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Row,
-  Col,
-  Card,
-  Typography,
-  Button,
-  Descriptions,
-  Tag,
-  Avatar,
-  Space,
-  Divider,
-  Rate,
-  Table,
+  Card, Typography, Button, Tag, Space, Table, Statistic, Row, Col,
+  Empty, Spin, Tooltip, Progress, message
 } from 'antd';
-import {
-  ArrowLeftOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  UserOutlined,
-  TeamOutlined,
-  VideoCameraOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-} from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
-import dayjs from 'dayjs';
+import { ArrowLeftOutlined, ReloadOutlined, WarningOutlined, TeamOutlined } from '@ant-design/icons';
+import { useParams, useNavigate } from 'react-router-dom';
+import { interviewAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+/**
+ * DM xem tổng hợp điểm panel của 1 buổi phỏng vấn (docs 5.7 — sau khi mở blind):
+ * trung bình từng tiêu chí + độ lệch chuẩn (đo đồng thuận, cờ "cần bàn") +
+ * điểm tổng có trọng số của từng interviewer. CHỈ tính phiếu ĐÃ NỘP.
+ */
 const DeptInterviewDetail = () => {
+  const { id: scheduleId } = useParams();
   const navigate = useNavigate();
-  const { id } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [aggregate, setAggregate] = useState(null);
 
-  const interview = {
-    id: id || 1,
-    candidate: 'Nguyễn Văn Minh',
-    candidateEmail: 'minhnv@email.com',
-    candidatePhone: '0912 345 678',
-    position: 'Senior Frontend Developer',
-    department: 'Engineering',
-    requestTitle: 'Senior Frontend Developer',
-    interviewType: 'Technical Interview',
-    scheduledDate: '2026-07-08',
-    scheduledTime: '14:00',
-    duration: 60,
-    level: 2,
-    totalLevel: 3,
-    status: 'COMPLETED',
-    interviewers: [
-      { name: 'Trần Văn A', role: 'Technical Lead', score: 8, feedback: 'Ứng viên có kiến thức vững về React và TypeScript.' },
-      { name: 'Lê Thị B', role: 'Senior Engineer', score: 7, feedback: 'Kỹ năng problem-solving tốt, giao tiếp rõ ràng.' },
-    ],
-    meetingLink: 'https://meet.google.com/abc-defg-hij',
-  };
+  const fetchAggregate = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await interviewAPI.getAggregate(scheduleId);
+      setAggregate(response.data);
+    } catch (error) {
+      console.error('Error fetching aggregate:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể tải tổng hợp điểm');
+      setAggregate(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [scheduleId]);
 
-  const getScoreColor = (score) => {
-    if (score >= 8) return '#52c41a';
-    if (score >= 6) return '#faad14';
-    return '#f5222d';
-  };
+  useEffect(() => {
+    if (scheduleId) fetchAggregate();
+  }, [scheduleId, fetchAggregate]);
 
-  const getRecommendationColor = (rec) => {
-    const colors = {
-      STRONG_HIRE: '#52c41a',
-      HIRE: '#73d13d',
-      CONSIDER: '#faad14',
-      NO_HIRE: '#f5222d',
-    };
-    return colors[rec] || '#999';
-  };
+  const criteria = aggregate?.criteria || [];
+  const needsDiscussionCount = criteria.filter(c => c.needsDiscussion).length;
 
-  const avgScore =
-    interview.interviewers.reduce((sum, i) => sum + i.score, 0) / interview.interviewers.length;
-
-  const decisionColumns = [
+  const criteriaColumns = [
     {
-      title: 'Người phỏng vấn',
-      key: 'interviewer',
-      render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
-          <div>
-            <Text strong>{record.name}</Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>{record.role}</Text>
-          </div>
-        </div>
+      title: 'Tiêu chí',
+      dataIndex: 'name',
+      key: 'name',
+      render: (name, record) => (
+        <Space size={6}>
+          <Text strong>{name}</Text>
+          {record.needsDiscussion && (
+            <Tooltip title="Panel bất đồng (độ lệch chuẩn cao) — nên trao đổi trước khi quyết">
+              <Tag icon={<WarningOutlined />} color="orange">Cần bàn</Tag>
+            </Tooltip>
+          )}
+        </Space>
       ),
     },
     {
-      title: 'Điểm',
-      key: 'score',
-      width: 200,
-      render: (_, record) => (
-        <div>
-          <Rate disabled count={5} value={record.score} style={{ fontSize: 16 }} />
-          <Text strong style={{ marginLeft: 8, color: getScoreColor(record.score * 2) }}>
-            {record.score}/5
-          </Text>
-        </div>
+      title: 'Điểm trung bình',
+      dataIndex: 'average',
+      key: 'average',
+      width: 220,
+      render: (avg, record) => (
+        <Space>
+          <Progress
+            percent={record.maxScore > 0 ? Math.round((avg / record.maxScore) * 100) : 0}
+            size="small"
+            strokeColor={MATCHA_GREEN}
+            style={{ width: 120 }}
+            format={() => `${avg}/${record.maxScore}`}
+          />
+        </Space>
       ),
+      sorter: (a, b) => a.average - b.average,
     },
     {
-      title: 'Nhận xét',
-      dataIndex: 'feedback',
-      key: 'feedback',
+      title: 'Độ lệch chuẩn',
+      dataIndex: 'stdDev',
+      key: 'stdDev',
+      width: 130,
+      render: (sd, record) => (
+        <Text type={record.needsDiscussion ? 'danger' : 'secondary'}>{sd}</Text>
+      ),
+    },
+    { title: 'Trọng số', dataIndex: 'weight', key: 'weight', width: 90 },
+    {
+      title: 'Điểm & note từng interviewer',
+      dataIndex: 'scores',
+      key: 'scores',
+      render: (scores) => (
+        <Space direction="vertical" size={2}>
+          {(scores || []).map((s) => (
+            <Text key={s.interviewerId} style={{ fontSize: 13 }}>
+              #{s.interviewerId}: <Text strong>{s.score ?? '—'}</Text>
+              {s.note && <Text type="secondary" italic> — "{s.note}"</Text>}
+            </Text>
+          ))}
+        </Space>
+      ),
     },
   ];
+
+  const totalColumns = [
+    { title: 'Interviewer', dataIndex: 'interviewerId', key: 'interviewerId', render: (id) => `#${id}` },
+    {
+      title: 'Điểm tổng có trọng số',
+      dataIndex: 'weightedTotal',
+      key: 'weightedTotal',
+      render: (t) => <Text strong style={{ color: MATCHA_GREEN }}>{t}</Text>,
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div className="dept-interview-detail-page">
       <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/dept/interviews')} />
-          <div>
-            <Title level={3} className="page-title">Chi Tiết Phỏng Vấn</Title>
-            <Text type="secondary">
-              {dayjs(interview.scheduledDate).format('DD/MM/YYYY')} lúc {interview.scheduledTime} • Vòng {interview.level}/{interview.totalLevel}
-            </Text>
-          </div>
+        <div>
+          <Button onClick={() => navigate(-1)} className="back-btn" icon={<ArrowLeftOutlined />}>
+            Quay Lại
+          </Button>
+          <Title level={3} className="page-title">Tổng hợp điểm panel — Buổi #{scheduleId}</Title>
+          <Text type="secondary">Chỉ tính phiếu ĐÃ NỘP (blind review 5.7) — điểm nháp của interviewer không hiển thị</Text>
         </div>
-        <Space>
-          {interview.meetingLink && (
-            <Button icon={<VideoCameraOutlined />} style={{ borderColor: MATCHA_GREEN, color: MATCHA_GREEN }}>
-              Tham gia phỏng vấn
-            </Button>
-          )}
-        </Space>
+        <Button icon={<ReloadOutlined />} onClick={fetchAggregate} loading={loading}>Làm mới</Button>
       </div>
 
-      <Row gutter={[20, 20]}>
-        <Col xs={24} lg={16}>
-          <Card className="main-card" bordered={false} style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-              <Avatar size={64} style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
-              <div style={{ flex: 1 }}>
-                <Title level={4} style={{ margin: 0 }}>{interview.candidate}</Title>
-                <Text type="secondary">{interview.candidateEmail}</Text>
-                <br />
-                <Text type="secondary">{interview.candidatePhone}</Text>
-              </div>
-              <Tag color={interview.status === 'COMPLETED' ? 'success' : 'processing'} style={{ fontSize: 14 }}>
-                {interview.status === 'COMPLETED' ? 'Đã hoàn thành' : 'Đã lên lịch'}
-              </Tag>
+      {!aggregate || aggregate.submittedInterviewers === 0 ? (
+        <Card className="main-card" bordered={false}>
+          <Empty description={
+            <div>
+              <Text>Chưa có phiếu chấm nào được nộp cho buổi này</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Điểm chỉ hiện sau khi interviewer bấm Nộp phiếu (mở blind)
+              </Text>
             </div>
+          } />
+        </Card>
+      ) : (
+        <>
+          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+            <Col xs={12} sm={8}>
+              <Card className="stat-card" bordered={false}>
+                <Statistic
+                  title="Phiếu đã nộp"
+                  value={aggregate.submittedInterviewers}
+                  prefix={<TeamOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={8}>
+              <Card className="stat-card" bordered={false}>
+                <Statistic
+                  title="Điểm panel (trung bình có trọng số)"
+                  value={aggregate.panelWeightedAverage}
+                  valueStyle={{ color: MATCHA_GREEN }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={8}>
+              <Card className="stat-card" bordered={false}>
+                <Statistic
+                  title="Tiêu chí cần bàn"
+                  value={needsDiscussionCount}
+                  valueStyle={{ color: needsDiscussionCount > 0 ? '#faad14' : '#52c41a' }}
+                  prefix={<WarningOutlined />}
+                />
+              </Card>
+            </Col>
+          </Row>
 
-            <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="Vị trí ứng tuyển" span={2}>
-                <Text strong>{interview.position}</Text>
-                <Text type="secondary" style={{ marginLeft: 8 }}>• {interview.department}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Yêu cầu tuyển dụng">{interview.requestTitle}</Descriptions.Item>
-              <Descriptions.Item label="Vòng phỏng vấn">Vòng {interview.level} / {interview.totalLevel}</Descriptions.Item>
-              <Descriptions.Item label="Loại phỏng vấn">{interview.interviewType}</Descriptions.Item>
-              <Descriptions.Item label="Thời lượng">{interview.duration} phút</Descriptions.Item>
-            </Descriptions>
-          </Card>
-
-          <Card className="main-card" bordered={false} style={{ marginBottom: 20 }}>
-            <Title level={5}>
-              <TeamOutlined style={{ marginRight: 8 }} />
-              Đánh giá từ người phỏng vấn
-            </Title>
+          <Card className="main-card" bordered={false} title="Điểm theo từng tiêu chí" style={{ marginBottom: 16 }}>
             <Table
-              columns={decisionColumns}
-              dataSource={interview.interviewers}
-              rowKey="name"
+              columns={criteriaColumns}
+              dataSource={criteria}
+              rowKey="criteriaId"
               pagination={false}
-              style={{ marginTop: 16 }}
+              size="small"
             />
           </Card>
 
-          <Card className="main-card" bordered={false}>
-            <Title level={5}>Quyết định tuyển dụng</Title>
-            <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {[
-                { key: 'STRONG_HIRE', label: 'Trúng tuyển mạnh', color: '#52c41a' },
-                { key: 'HIRE', label: 'Trúng tuyển', color: '#73d13d' },
-                { key: 'CONSIDER', label: 'Cân nhắc', color: '#faad14' },
-                { key: 'NO_HIRE', label: 'Không trúng tuyển', color: '#f5222d' },
-              ].map((opt) => (
-                <Button
-                  key={opt.key}
-                  style={{
-                    height: 48,
-                    borderColor: opt.color,
-                    color: opt.color,
-                  }}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
+          <Card className="main-card" bordered={false} title="Điểm tổng của từng interviewer">
+            <Table
+              columns={totalColumns}
+              dataSource={aggregate.interviewerTotals || []}
+              rowKey="interviewerId"
+              pagination={false}
+              size="small"
+            />
           </Card>
-        </Col>
-
-        <Col xs={24} lg={8}>
-          <Card className="main-card" bordered={false} style={{ marginBottom: 20 }}>
-            <Title level={5}>
-              <TeamOutlined style={{ marginRight: 8 }} />
-              Tổng quan điểm đánh giá
-            </Title>
-            <div style={{ textAlign: 'center', marginTop: 20 }}>
-              <div
-                style={{
-                  width: 120,
-                  height: 120,
-                  borderRadius: '50%',
-                  background: `${getScoreColor(avgScore)}15`,
-                  border: `4px solid ${getScoreColor(avgScore)}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto',
-                }}
-              >
-                <Text strong style={{ fontSize: 32, color: getScoreColor(avgScore) }}>
-                  {avgScore.toFixed(1)}
-                </Text>
-              </div>
-              <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>Điểm trung bình</Text>
-            </div>
-
-            <Divider />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {interview.interviewers.map((interviewer) => (
-                <div key={interviewer.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text>{interviewer.name}</Text>
-                  <Tag color={getScoreColor(interviewer.score * 2)}>
-                    {interviewer.score}/5
-                  </Tag>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="main-card" bordered={false}>
-            <Title level={5}>
-              <CalendarOutlined style={{ marginRight: 8 }} />
-              Thông tin lịch
-            </Title>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CalendarOutlined style={{ color: MATCHA_GREEN }} />
-                <Text>{dayjs(interview.scheduledDate).format('dddd, DD/MM/YYYY')}</Text>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClockCircleOutlined style={{ color: '#faad14' }} />
-                <Text>{interview.scheduledTime} ({interview.duration} phút)</Text>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <TeamOutlined style={{ color: '#1890ff' }} />
-                <Text>{interview.interviewers.length} người phỏng vấn</Text>
-              </div>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+        </>
+      )}
     </div>
   );
 };

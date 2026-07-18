@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Typography, Form, Input, Button, Tabs, Avatar, message, Upload } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI } from '../services/api';
+import { authAPI, usersAPI } from '../services/api';
 import './Settings.css';
 
 const { Title, Text } = Typography;
@@ -22,7 +22,8 @@ const Settings = () => {
     if (!user?.userId) return;
     try {
       setProfileLoading(true);
-      const response = await usersAPI.getById(user.userId);
+      // /account/me: ai đăng nhập cũng gọi được (usersAPI.getById chỉ dành cho Admin)
+      const response = await authAPI.me();
       const data = response.data || {};
       form.setFieldsValue({
         fullName: data.fullName || data.name || user.fullName,
@@ -63,7 +64,7 @@ const Settings = () => {
 
     try {
       setPasswordLoading(true);
-      await usersAPI.changePassword(user.userId, values.oldPassword, values.newPassword);
+      await authAPI.changePassword(values.oldPassword, values.newPassword);
       message.success('Password changed successfully');
       passwordForm.resetFields();
     } catch (error) {

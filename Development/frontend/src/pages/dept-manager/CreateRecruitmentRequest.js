@@ -32,6 +32,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { recruitmentRequestAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -111,27 +112,33 @@ const CreateRecruitmentRequest = () => {
 
     setLoading(true);
     try {
+      // RecruitmentRequestInputDto — skills không có cột riêng, gộp vào requirements
+      const requirementsText = [
+        values.requirements,
+        skills.length > 0 ? `Kỹ năng yêu cầu: ${skills.join(', ')}` : null,
+      ].filter(Boolean).join('\n');
+
       const payload = {
-        ...values,
-        skills: skills,
-        startDate: values.startDate?.format('YYYY-MM-DD'),
-        endDate: values.endDate?.format('YYYY-MM-DD'),
+        title: values.title,
+        department: values.department,
+        quantity: values.positions || 1,
+        employmentType: values.employmentType,
+        experienceLevel: values.experienceLevel,
+        priority: (values.priority || 'MEDIUM').toUpperCase(),
+        description: values.description,
+        requirements: requirementsText || null,
+        benefits: values.benefits,
         salaryMin: values.salaryMin,
         salaryMax: values.salaryMax,
-        isDraft: submitType === 'draft',
+        expectedStartDate: values.startDate?.toISOString(),
       };
 
-      console.log('Payload:', payload);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      message.success(
-        submitType === 'draft'
-          ? 'Đã lưu nháp yêu cầu tuyển dụng!'
-          : 'Đã gửi yêu cầu tuyển dụng thành công!'
-      );
-      navigate('/dept/dashboard');
+      await recruitmentRequestAPI.create(payload);
+      message.success('Đã gửi yêu cầu tuyển dụng — Recruiter sẽ duyệt và tạo tin đăng.');
+      navigate('/dept/requests');
     } catch (error) {
-      message.error('Có lỗi xảy ra. Vui lòng thử lại.');
+      console.error('Error creating request:', error);
+      message.error(error?.response?.data?.userMsg || 'Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

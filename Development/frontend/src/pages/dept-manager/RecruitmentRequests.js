@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Typography,
@@ -31,6 +31,8 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { recruitmentRequestAPI } from '../../services/api';
+import { useAuth, ROLES } from '../../contexts/AuthContext';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -46,99 +48,110 @@ const DeptRecruitmentRequests = () => {
   const [detailModal, setDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  const requests = [
-    {
-      id: 1,
-      title: 'Senior Frontend Developer',
-      department: 'Engineering',
-      positions: 2,
-      priority: 'High',
-      submittedDate: '2026-07-05',
-      status: 'PENDING',
-      submittedBy: 'Nguyễn Trí Minh',
-      employmentType: 'FULL_TIME',
-      experienceLevel: 'Senior',
-      description: 'Cần tuyển 2 Senior Frontend Developer với 4+ năm kinh nghiệm React, TypeScript.',
-      requirements: '• 4+ năm kinh nghiệm React\n• Thành thạo TypeScript, CSS\n• Có kinh nghiệm với testing',
-    },
-    {
-      id: 2,
-      title: 'UI/UX Designer',
-      department: 'Design',
-      positions: 1,
-      priority: 'Medium',
-      submittedDate: '2026-07-03',
-      status: 'PENDING',
-      submittedBy: 'Trần Thu Hà',
-      employmentType: 'FULL_TIME',
-      experienceLevel: 'Mid',
-      description: 'Cần tuyển 1 UI/UX Designer cho team sản phẩm.',
-      requirements: '• 2+ năm kinh nghiệm UI/UX\n• Thành thạo Figma\n• Hiểu biết về design system',
-    },
-    {
-      id: 3,
-      title: 'DevOps Engineer',
-      department: 'Infrastructure',
-      positions: 1,
-      priority: 'High',
-      submittedDate: '2026-07-01',
-      status: 'APPROVED',
-      submittedBy: 'Lê Hoàng Nam',
-      employmentType: 'FULL_TIME',
-      experienceLevel: 'Senior',
-      description: 'Cần tuyển DevOps Engineer quản lý hạ tầng cloud.',
-      requirements: '• 4+ năm kinh nghiệm DevOps\n• Thành thạo AWS/GCP, Docker, Kubernetes',
-    },
-    {
-      id: 4,
-      title: 'Product Manager',
-      department: 'Product',
-      positions: 1,
-      priority: 'Medium',
-      submittedDate: '2026-06-28',
-      status: 'APPROVED',
-      submittedBy: 'Phạm Đức Anh',
-      employmentType: 'FULL_TIME',
-      experienceLevel: 'Mid',
-      description: 'Cần tuyển Product Manager cho dự án mới.',
-      requirements: '• 3+ năm kinh nghiệm PM\n• Kinh nghiệm Agile/Scrum',
-    },
-    {
-      id: 5,
-      title: 'Data Analyst',
-      department: 'Data',
-      positions: 1,
-      priority: 'Low',
-      submittedDate: '2026-06-25',
-      status: 'REJECTED',
-      submittedBy: 'Hoàng Minh Tuấn',
-      employmentType: 'FULL_TIME',
-      experienceLevel: 'Junior',
-      description: 'Tuyển Data Analyst hỗ trợ phân tích dữ liệu.',
-      requirements: '• 1+ năm kinh nghiệm\n• Thành thạo SQL, Python',
-    },
-    {
-      id: 6,
-      title: 'Backend Developer',
-      department: 'Engineering',
-      positions: 2,
-      priority: 'High',
-      submittedDate: '2026-07-07',
-      status: 'PENDING',
-      submittedBy: 'Vũ Thị Lan',
-      employmentType: 'FULL_TIME',
-      experienceLevel: 'Senior',
-      description: 'Cần tuyển 2 Backend Developer cho team API.',
-      requirements: '• 4+ năm kinh nghiệm backend\n• Node.js hoặc Java\n• PostgreSQL, Redis',
-    },
-  ];
+  const { user } = useAuth();
+  const isRecruiter = user?.role === ROLES.RECRUITER || user?.role === ROLES.ADMIN;
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const PRIORITY_LABEL = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await recruitmentRequestAPI.getAll();
+      // RecruitmentRequestDto -> view model cua trang
+      setRequests((response.data || []).map((r) => ({
+        id: r.requestId,
+        title: r.title,
+        department: r.department || 'N/A',
+        positions: r.quantity,
+        priority: PRIORITY_LABEL[r.priority] || r.priority,
+        submittedDate: r.createdAt,
+        status: r.status,
+        submittedBy: r.createdByName || 'N/A',
+        employmentType: r.employmentType,
+        experienceLevel: r.experienceLevel || 'N/A',
+        description: r.description,
+        requirements: r.requirements,
+        benefits: r.benefits,
+        salaryMin: r.salaryMin,
+        salaryMax: r.salaryMax,
+        expectedStartDate: r.expectedStartDate,
+        reviewNote: r.reviewNote,
+        reviewedByName: r.reviewedByName,
+        jobId: r.jobId,
+      })));
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      message.error(error?.response?.data?.userMsg || 'Khong the tai danh sach yeu cau tuyen dung');
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Recruiter duyet / tu choi (tu choi bat buoc ly do)
+  const handleReview = async (record, approve) => {
+    if (!approve) {
+      let note = '';
+      Modal.confirm({
+        title: `Tu choi yeu cau "${record.title}"?`,
+        content: (
+          <Input.TextArea rows={3} placeholder="Ly do tu choi (bat buoc)..."
+            onChange={(e) => { note = e.target.value; }} />
+        ),
+        okText: 'Tu choi',
+        okButtonProps: { danger: true },
+        cancelText: 'Huy',
+        onOk: async () => {
+          if (!note.trim()) {
+            message.error('Vui long nhap ly do tu choi');
+            return Promise.reject();
+          }
+          try {
+            await recruitmentRequestAPI.review(record.id, false, note.trim());
+            message.success('Da tu choi yeu cau');
+            fetchRequests();
+          } catch (err) {
+            message.error(err?.response?.data?.userMsg || 'Khong the tu choi yeu cau');
+            return Promise.reject();
+          }
+        },
+      });
+      return;
+    }
+    try {
+      await recruitmentRequestAPI.review(record.id, true);
+      message.success('Da phe duyet yeu cau — co the tao tin tuyen dung tu yeu cau nay.');
+      fetchRequests();
+    } catch (error) {
+      message.error(error?.response?.data?.userMsg || 'Khong the phe duyet yeu cau');
+    }
+  };
+
+  // DM huy yeu cau cua minh (chi khi PENDING)
+  const handleCancel = async (record) => {
+    try {
+      await recruitmentRequestAPI.cancel(record.id);
+      message.success('Da huy yeu cau');
+      fetchRequests();
+    } catch (error) {
+      message.error(error?.response?.data?.userMsg || 'Khong the huy yeu cau');
+    }
+  };
 
   const getStatusConfig = (status) => {
     const configs = {
       PENDING: { color: 'warning', label: 'Chờ duyệt', icon: <ClockCircleOutlined /> },
       APPROVED: { color: 'success', label: 'Đã duyệt', icon: <CheckCircleOutlined /> },
       REJECTED: { color: 'error', label: 'Từ chối', icon: <CloseCircleOutlined /> },
-      DRAFT: { color: 'default', label: 'Nháp', icon: <FileTextOutlined /> },
+      CONVERTED: { color: 'processing', label: 'Đã tạo tin', icon: <FileTextOutlined /> },
+      CANCELLED: { color: 'default', label: 'Đã hủy', icon: <CloseCircleOutlined /> },
     };
     return configs[status] || { color: 'default', label: status };
   };
@@ -227,11 +240,12 @@ const DeptRecruitmentRequests = () => {
               setDetailModal(true);
             }}
           />
-          {record.status === 'PENDING' && (
+          {/* Recruiter/Admin: duyệt / từ chối khi PENDING; tạo tin khi đã duyệt */}
+          {isRecruiter && record.status === 'PENDING' && (
             <>
               <Popconfirm
                 title="Phê duyệt yêu cầu này?"
-                onConfirm={() => message.success('Đã phê duyệt!')}
+                onConfirm={() => handleReview(record, true)}
                 okText="Duyệt"
                 cancelText="Hủy"
               >
@@ -242,16 +256,37 @@ const DeptRecruitmentRequests = () => {
                   style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                 />
               </Popconfirm>
-              <Popconfirm
-                title="Từ chối yêu cầu này?"
-                onConfirm={() => message.success('Đã từ chối!')}
-                okText="Từ chối"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Button type="text" size="small" danger icon={<CloseCircleOutlined />} />
-              </Popconfirm>
+              <Button
+                type="text"
+                size="small"
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => handleReview(record, false)}
+              />
             </>
+          )}
+          {isRecruiter && record.status === 'APPROVED' && (
+            <Button
+              type="primary"
+              size="small"
+              icon={<PlusOutlined />}
+              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+              onClick={() => navigate(`/recruiter/jobs/create?requestId=${record.id}`)}
+            >
+              Tạo tin
+            </Button>
+          )}
+          {/* DM: hủy yêu cầu của mình khi còn PENDING */}
+          {!isRecruiter && record.status === 'PENDING' && (
+            <Popconfirm
+              title="Hủy yêu cầu này?"
+              onConfirm={() => handleCancel(record)}
+              okText="Hủy yêu cầu"
+              cancelText="Không"
+              okButtonProps={{ danger: true }}
+            >
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
           )}
         </Space>
       ),
@@ -280,14 +315,16 @@ const DeptRecruitmentRequests = () => {
           <Title level={3} className="page-title">Yêu Cầu Tuyển Dụng</Title>
           <Text type="secondary">Quản lý yêu cầu tuyển dụng từ các phòng ban</Text>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/dept/create-request')}
-          style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-        >
-          Tạo Yêu Cầu Mới
-        </Button>
+        {!isRecruiter && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/dept/create-request')}
+            style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+          >
+            Tạo Yêu Cầu Mới
+          </Button>
+        )}
       </div>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -360,6 +397,7 @@ const DeptRecruitmentRequests = () => {
           columns={columns}
           dataSource={filteredData}
           rowKey="id"
+          loading={loading}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -428,6 +466,19 @@ const DeptRecruitmentRequests = () => {
                 <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>{selectedRequest.requirements}</pre>
               </Descriptions.Item>
             </Descriptions>
+
+            {selectedRequest.reviewNote && (
+              <Descriptions title="Ghi chú của người duyệt" column={1} bordered size="small" style={{ marginTop: 16 }}>
+                <Descriptions.Item>
+                  {selectedRequest.reviewNote}
+                  {selectedRequest.reviewedByName && (
+                    <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
+                      — {selectedRequest.reviewedByName}
+                    </Text>
+                  )}
+                </Descriptions.Item>
+              </Descriptions>
+            )}
           </div>
         )}
       </Modal>

@@ -25,9 +25,9 @@ namespace GP35.SRIS.Controllers
             _jobService = jobService;
         }
 
-        /// <summary>Tạo Job mới — CHỈ Recruiter (role check qua JWT). Để trống Status = "Open".</summary>
+        /// <summary>Tạo Job mới — Recruiter (Admin bypass qua WithRole). Để trống Status = "Open".</summary>
         [HttpPost]
-        [Authorize(Roles = "Recruiter")]
+        [Authorize]
         [WithRole(RoleConstants.Recruiter, RoleConstants.Admin)]
         public async Task<IActionResult> Create([FromBody] JobCreateDto dto)
         {
@@ -35,11 +35,16 @@ namespace GP35.SRIS.Controllers
             return Ok(job);
         }
 
-        /// <summary>Danh sách Job đang tuyển (public, không cần login).</summary>
+        /// <summary>
+        /// Danh sách Job của công ty (mặc định chỉ job Open; ?includeInactive=true để thấy cả
+        /// job đã đóng — màn quản lý của Recruiter). Career site công khai dùng /api/public/{slug}/jobs.
+        /// </summary>
         [HttpGet]
-        public async Task<IActionResult> List()
+        public async Task<IActionResult> List([FromQuery] bool includeInactive = false)
         {
-            var jobs = await _jobService.GetPublicJobsAsync();
+            var jobs = await _jobService.GetListAsync(_contextData.CompanyId);
+            if (!includeInactive)
+                jobs = jobs.Where(j => string.Equals(j.Status, "Open", StringComparison.OrdinalIgnoreCase));
             return Ok(jobs);
         }
 
@@ -52,7 +57,8 @@ namespace GP35.SRIS.Controllers
 
         /// <summary>Sửa Job (title/JD/DM/status). Đóng job = Status "Closed". JD đổi -> embedding tự làm mới.</summary>
         [HttpPut("{jobId:long}")]
-        [Authorize(Roles = "Recruiter")]
+        [Authorize]
+        [WithRole(RoleConstants.Recruiter)]
         public async Task<IActionResult> Update(long jobId, [FromBody] JobUpdateDto dto)
         {
             return Ok(await _jobService.UpdateAsync(_contextData.CompanyId, jobId, dto));
@@ -60,7 +66,8 @@ namespace GP35.SRIS.Controllers
 
         /// <summary>Đóng Job (soft close — Status "Closed"). Không xóa cứng để giữ hồ sơ + analytics.</summary>
         [HttpDelete("{jobId:long}")]
-        [Authorize(Roles = "Recruiter")]
+        [Authorize]
+        [WithRole(RoleConstants.Recruiter)]
         public async Task<IActionResult> Close(long jobId)
         {
             await _jobService.CloseAsync(_contextData.CompanyId, jobId);

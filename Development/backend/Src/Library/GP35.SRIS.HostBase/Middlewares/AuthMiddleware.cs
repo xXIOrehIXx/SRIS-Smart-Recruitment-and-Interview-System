@@ -132,6 +132,8 @@ namespace GP35.SRIS.HostBase.Middlewares
             contextData.UserId = user.GetRequiredClaim<long>("userId");
             contextData.CompanyId = user.GetRequiredClaim<long>("companyId");
             contextData.Role = user.FindFirst(ClaimTypes.Role)?.Value;
+            contextData.Email = user.FindFirst(ClaimTypes.Email)?.Value;
+            contextData.FullName = user.FindFirst("full_name")?.Value;
 
             return true;
         }

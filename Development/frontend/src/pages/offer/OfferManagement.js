@@ -143,11 +143,14 @@ const OfferManagement = () => {
   const handleCreateOffer = async (values) => {
     try {
       setSubmitting(true);
+      // MakeOfferDto: { salaryAmount?, currency?, startDate?, note?, expiresInDays? }
       const payload = {
-        salary: values.salary,
+        salaryAmount: values.salary,
         startDate: values.startDate?.format('YYYY-MM-DD'),
-        deadline: values.deadline?.format('YYYY-MM-DD'),
-        notes: values.notes,
+        expiresInDays: values.deadline
+          ? Math.max(1, values.deadline.diff(dayjs(), 'day'))
+          : undefined,
+        note: values.notes,
       };
       await offerAPI.create(selectedApplication.id || selectedApplication.applicationId, payload);
       message.success('Tạo offer thành công!');
@@ -164,14 +167,16 @@ const OfferManagement = () => {
     }
   };
 
-  const handleWithdraw = async (offerId) => {
+  // Không có endpoint withdraw riêng — thu hồi offer = reject application
+  // (bắt buộc reason theo docs 5.7).
+  const handleWithdraw = async (applicationId) => {
     try {
-      await offerAPI.withdraw(offerId);
-      message.success('Đã thu hồi offer');
+      await applicationAPI.reject(applicationId, 'Công ty thu hồi offer');
+      message.success('Đã thu hồi offer (hồ sơ chuyển sang Từ chối)');
       fetchOffers();
     } catch (error) {
       console.error('Error withdrawing offer:', error);
-      message.error('Không thể thu hồi offer');
+      message.error(error?.response?.data?.userMsg || 'Không thể thu hồi offer');
     }
   };
 
@@ -325,7 +330,7 @@ const OfferManagement = () => {
               <Popconfirm
                 title="Thu hồi offer này?"
                 description="Hành động này không thể hoàn tác."
-                onConfirm={() => handleWithdraw(record.id)}
+                onConfirm={() => handleWithdraw(record.applicationId)}
                 okText="Thu hồi"
                 cancelText="Hủy"
                 okButtonProps={{ danger: true }}
@@ -652,7 +657,7 @@ const OfferManagement = () => {
               <Popconfirm
                 title="Thu hồi offer này?"
                 onConfirm={() => {
-                  handleWithdraw(selectedOffer.id);
+                  handleWithdraw(selectedOffer.applicationId);
                   setViewDrawerOpen(false);
                 }}
                 okText="Thu hồi"

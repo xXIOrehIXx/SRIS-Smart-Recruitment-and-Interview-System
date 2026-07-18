@@ -30,6 +30,7 @@ import HiringDecision from './pages/dept-manager/HiringDecision';
 import CreateRecruitmentRequest from './pages/dept-manager/CreateRecruitmentRequest';
 import OfferManagement from './pages/offer/OfferManagement';
 import CandidateResponse from './pages/candidate/CandidateResponse';
+import CandidateStatus from './pages/candidate/CandidateStatus';
 import Schedule from './pages/candidate/Schedule';
 import Analytics from './pages/analytics/Analytics';
 import CVScoring from './pages/analytics/CVScoring';
@@ -55,7 +56,11 @@ const App = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
 
+      {/* Route ứng viên qua magic link — path khớp link backend sinh trong email:
+          /schedule (SCHEDULE) · /offer (OFFER_RESPONSE) · /status (STATUS) */}
       <Route path="/candidate/offer-response" element={<CandidateResponse />} />
+      <Route path="/offer" element={<CandidateResponse />} />
+      <Route path="/status" element={<CandidateStatus />} />
       <Route path="/schedule" element={<Schedule />} />
 
       <Route
@@ -82,6 +87,7 @@ const App = () => {
         <Route path="/recruiter/jobs" element={<JobManagement />} />
         <Route path="/recruiter/jobs/:id" element={<JobDetail />} />
         <Route path="/recruiter/jobs/create" element={<CreateJob />} />
+        <Route path="/recruiter/requests" element={<DeptRecruitmentRequests />} />
         <Route path="/recruiter/jobs/:id/candidates" element={<CandidatePipeline />} />
         <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
         <Route path="/interviews/schedule" element={<InterviewScheduleRecruit />} />
