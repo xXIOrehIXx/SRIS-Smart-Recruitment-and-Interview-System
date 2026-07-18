@@ -113,7 +113,7 @@ const InterviewScheduleRecruit = () => {
   // ===== Actions =====
 
   const handleCreatePool = async (values) => {
-    const slots = (values.slots || []).filter(s => s && s.interviewerId && s.startTime);
+    const slots = (values.slots || []).filter(s => s && s.interviewerIds?.length && s.startTime);
     if (slots.length === 0) {
       message.error('Cần ít nhất 1 khung giờ (interviewer + thời gian)');
       return;
@@ -123,7 +123,7 @@ const InterviewScheduleRecruit = () => {
       await interviewAPI.createPool(selectedJobId, {
         roundNumber: values.roundNumber || undefined,
         slots: slots.map(s => ({
-          interviewerId: s.interviewerId,
+          interviewerIds: s.interviewerIds,
           startTime: s.startTime.toISOString(),
         })),
       });
@@ -190,7 +190,7 @@ const InterviewScheduleRecruit = () => {
     setSubmitting(true);
     try {
       await interviewAPI.manualConfirm(values.applicationId, {
-        interviewerId: values.interviewerId,
+        interviewerIds: values.interviewerIds,
         startTime: values.startTime.toISOString(),
         roundNumber: values.roundNumber || undefined,
       });
@@ -218,10 +218,12 @@ const InterviewScheduleRecruit = () => {
       ),
     },
     {
-      title: 'Interviewer',
-      dataIndex: 'interviewerId',
-      key: 'interviewerId',
-      render: (id) => <Tag>{interviewerName(id)}</Tag>,
+      title: 'Panel interviewer',
+      dataIndex: 'interviewers',
+      key: 'interviewers',
+      render: (list, record) => (list?.length
+        ? list.map(i => <Tag key={i.interviewerId}>{i.fullName || i.email}</Tag>)
+        : <Tag>{interviewerName(record.interviewerId)}</Tag>),
     },
     {
       title: 'Trạng thái',
@@ -438,12 +440,15 @@ const InterviewScheduleRecruit = () => {
                 {fields.map((field) => (
                   <Space key={field.key} align="baseline" style={{ display: 'flex', marginTop: 8 }}>
                     <Form.Item
-                      name={[field.name, 'interviewerId']}
-                      rules={[{ required: true, message: 'Chọn interviewer' }]}
+                      name={[field.name, 'interviewerIds']}
+                      rules={[{ required: true, message: 'Chọn ít nhất 1 interviewer' }]}
                       style={{ marginBottom: 8 }}
                     >
                       <Select
-                        placeholder="Interviewer"
+                        mode="multiple"
+                        maxTagCount={2}
+                        maxCount={5}
+                        placeholder="Panel interviewer (1-5 người)"
                         style={{ width: 240 }}
                         showSearch
                         optionFilterProp="label"
@@ -555,11 +560,13 @@ const InterviewScheduleRecruit = () => {
             />
           </Form.Item>
           <Form.Item
-            name="interviewerId"
-            label="Interviewer"
-            rules={[{ required: true, message: 'Chọn interviewer' }]}
+            name="interviewerIds"
+            label="Panel interviewer (1-5 người)"
+            rules={[{ required: true, message: 'Chọn ít nhất 1 interviewer' }]}
           >
             <Select
+              mode="multiple"
+              maxCount={5}
               placeholder="Chọn interviewer"
               showSearch
               optionFilterProp="label"

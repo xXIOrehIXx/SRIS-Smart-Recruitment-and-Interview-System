@@ -74,6 +74,12 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// <summary>Người phỏng vấn đã có khung BOOKED đúng giờ này ở pool khác chưa (chống trùng giờ — 15.3)?</summary>
     Task<bool> IsInterviewerBookedAtAsync(long companyId, long interviewerId, DateTime startTime, long excludeSlotId);
 
+    /// <summary>
+    /// Check CẢ PANEL cùng lúc — trả về interviewer_id đầu tiên trong panel đã có lịch BOOKED đúng
+    /// giờ. Trả null nếu cả panel rảnh. Dùng khi ứng viên chốt khung (panel N interviewers — mở rộng A).
+    /// </summary>
+    Task<long?> FindBusyInterviewerAsync(long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime, long excludeSlotId);
+
     /// <summary>Đổi trạng thái lịch (vd NO_SLOT_FITS).</summary>
     Task SetScheduleStatusAsync(long companyId, long scheduleId, string status);
 
@@ -82,7 +88,7 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// CONFIRMED cho ứng viên, trong 1 transaction. Trả schedule_id (để chấm điểm).
     /// </summary>
     Task<long> ManualConfirmAsync(
-        long companyId, long jobId, long applicationId, long interviewerId,
+        long companyId, long jobId, long applicationId, IReadOnlyList<long> interviewerIds,
         DateTime startTime, int roundNumber, long? createdBy);
 
     // ---------- Chấm điểm (5.7) ----------

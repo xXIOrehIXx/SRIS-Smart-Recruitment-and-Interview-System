@@ -71,6 +71,14 @@ const DeptInterviewSchedule = () => {
       render: (t) => <span><CalendarOutlined /> {dayjs(t).format('DD/MM/YYYY - HH:mm')}</span>,
     },
     {
+      title: 'Panel interviewer',
+      dataIndex: 'interviewers',
+      key: 'interviewers',
+      render: (list) => (list?.length
+        ? list.map(i => <Tag key={i.interviewerId}>{i.fullName || i.email}</Tag>)
+        : <Text type="secondary">—</Text>),
+    },
+    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',

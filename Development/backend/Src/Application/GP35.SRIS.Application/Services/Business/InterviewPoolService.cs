@@ -13,11 +13,17 @@ namespace GP35.SRIS.Application.Services.Business;
 /// <summary>
 /// Đặt lịch phỏng vấn theo POOL dùng chung — Recruiter (Section 15). KÉO trước (card ở INTERVIEW),
 /// MỜI sau. Ai chốt trước lấy trước; các khung khác giữ OPEN cho người sau.
+///
+/// Mở rộng A: mỗi khung có 1..N interviewer (panel) — Recruiter có thể chọn 3–5 người cùng dự buổi phỏng vấn.
 /// </summary>
 public class InterviewPoolService : BaseService<InterviewPoolService>, IInterviewPoolService
 {
+    /// <summary>Số interviewer tối đa trong 1 panel khung.</summary>
+    private const int MaxPanelSize = 5;
+
     private readonly IApplicationRepo _appRepo;
     private readonly ISchedulingRepo _schedulingRepo;
+    private readonly IUserRepo _userRepo;
     private readonly IMagicLinkService _magicLink;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly INotificationService _notify;
@@ -27,6 +33,7 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     {
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _schedulingRepo = serviceProvider.GetRequiredService<ISchedulingRepo>();
+        _userRepo = serviceProvider.GetRequiredService<IUserRepo>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _notify = serviceProvider.GetRequiredService<INotificationService>();
@@ -46,9 +53,9 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         };
         var slots = dto.Slots.Select(s => new InterviewSlot
         {
-            InterviewerId = s.InterviewerId,
             StartTime = s.StartTime,
-            Status = InterviewSlotStatus.Open
+            Status = InterviewSlotStatus.Open,
+            InterviewerIds = s.InterviewerIds.Distinct().ToList()
         }).ToList();
 
         var poolId = await _schedulingRepo.InsertPoolWithSlotsAsync(companyId, pool, slots);
@@ -176,15 +183,20 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         if (!string.Equals(app.CurrentState, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase))
             throw Conflict("Chỉ chốt lịch tay khi hồ sơ đang ở bước INTERVIEW.");
 
-        if (dto.InterviewerId <= 0)
-            throw Bad("Phải chọn 1 người phỏng vấn (interviewerId).");
+        if (dto.InterviewerIds is null || dto.InterviewerIds.Count == 0)
+            throw Bad("Phải chọn ít nhất 1 interviewer cho panel.");
+        if (dto.InterviewerIds.Count > MaxPanelSize)
+            throw Bad($"Panel tối đa {MaxPanelSize} interviewer.");
+        if (dto.InterviewerIds.Distinct().Count() != dto.InterviewerIds.Count)
+            throw Bad("Panel có interviewer bị trùng.");
         if (dto.StartTime <= DateTime.UtcNow)
             throw Bad("Thời điểm phỏng vấn phải ở tương lai.");
 
         var round = dto.RoundNumber ?? await _schedulingRepo.GetNextRoundNumberAsync(companyId, applicationId);
+        var panel = dto.InterviewerIds.Distinct().ToList();
 
         var scheduleId = await _schedulingRepo.ManualConfirmAsync(
-            companyId, app.JobId, applicationId, dto.InterviewerId, dto.StartTime, round,
+            companyId, app.JobId, applicationId, panel, dto.StartTime, round,
             userId > 0 ? userId : null);
 
         await _activityLogRepo.InsertAsync(companyId, new ActivityLog
@@ -192,14 +204,14 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             ApplicationId = applicationId,
             UserId = userId > 0 ? userId : null,
             Action = "INTERVIEW_SCHEDULED",
-            Detail = $"Vòng {round}, chốt tay lúc {dto.StartTime:O}."
+            Detail = $"Vòng {round}, chốt tay lúc {dto.StartTime:O}, panel {panel.Count} người."
         });
 
         // Email xác nhận + .ics (best-effort).
         await _notify.SendInterviewConfirmedAsync(companyId, applicationId, dto.StartTime);
 
-        _logger.Information("Scheduling: chốt lịch tay schedule={ScheduleId} app={AppId} vòng {Round}.",
-            scheduleId, applicationId, round);
+        _logger.Information("Scheduling: chốt lịch tay schedule={ScheduleId} app={AppId} vòng {Round} panel={Panel}.",
+            scheduleId, applicationId, round, panel.Count);
 
         return scheduleId;
     }
@@ -211,6 +223,13 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     {
         slots ??= await _schedulingRepo.GetSlotsByPoolAsync(companyId, pool.PoolId, onlyOpenFuture: false);
         var schedules = await _schedulingRepo.GetSchedulesByPoolAsync(companyId, pool.PoolId);
+
+        // Gom mọi interviewer_id trong panel các khung để fetch tên 1 lần (tránh N+1).
+        var allIds = slots.SelectMany(s => s.Interviewers.Select(i => i.InterviewerId))
+                          .Distinct()
+                          .ToList();
+        var userMap = (await _userRepo.GetNamesByIdsAsync(companyId, allIds))
+            .ToDictionary(u => u.UserId, u => u);
 
         var invited = new List<InvitedCandidateDto>(schedules.Count);
         foreach (var s in schedules)
@@ -236,16 +255,23 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             Slots = slots.Select(x => new SlotDto
             {
                 SlotId = x.SlotId,
-                InterviewerId = x.InterviewerId,
                 StartTime = x.StartTime,
                 Status = x.Status,
-                BookedApplicationId = x.BookedApplicationId
+                BookedApplicationId = x.BookedApplicationId,
+                Interviewers = x.Interviewers.Select(i => new InterviewerMiniDto
+                {
+                    InterviewerId = i.InterviewerId,
+                    FullName = userMap.TryGetValue(i.InterviewerId, out var u) ? (u.FullName ?? u.Email ?? $"#{i.InterviewerId}") : $"#{i.InterviewerId}",
+                    Email = userMap.TryGetValue(i.InterviewerId, out var u2) ? u2.Email : null
+                }).ToList()
             }).ToList(),
             InvitedCandidates = invited
         };
     }
 
-    /// <summary>Validate bộ khung: ≥1 khung, mỗi khung có interviewer + thời điểm ở tương lai.</summary>
+    /// <summary>
+    /// Validate bộ khung: ≥1 khung, mỗi khung có 1..MaxPanelSize interviewer (không trùng) + thời điểm tương lai.
+    /// </summary>
     private static void ValidateSlots(List<SlotInputDto>? slots)
     {
         if (slots is null || slots.Count == 0)
@@ -254,8 +280,14 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         var now = DateTime.UtcNow;
         foreach (var s in slots)
         {
-            if (s.InterviewerId <= 0)
-                throw Bad("Mỗi khung phải gán 1 người phỏng vấn (interviewerId).");
+            if (s.InterviewerIds is null || s.InterviewerIds.Count == 0)
+                throw Bad("Mỗi khung phải có ít nhất 1 interviewer trong panel.");
+            if (s.InterviewerIds.Count > MaxPanelSize)
+                throw Bad($"Mỗi khung tối đa {MaxPanelSize} interviewer trong panel.");
+            if (s.InterviewerIds.Any(id => id <= 0))
+                throw Bad("Panel có interviewer không hợp lệ (id <= 0).");
+            if (s.InterviewerIds.Distinct().Count() != s.InterviewerIds.Count)
+                throw Bad("Panel có interviewer bị trùng trong cùng 1 khung.");
             if (s.StartTime <= now)
                 throw Bad("Khung giờ phải ở tương lai.");
         }

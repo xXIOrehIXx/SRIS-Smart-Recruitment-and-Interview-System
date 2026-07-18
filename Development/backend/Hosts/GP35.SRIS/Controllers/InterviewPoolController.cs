@@ -1,5 +1,6 @@
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.HostBase.Authorization;
@@ -20,11 +21,13 @@ public class InterviewPoolController : ControllerBase
 {
     private readonly IContextData _contextData;
     private readonly IInterviewPoolService _poolService;
+    private readonly IUserRepo _userRepo;
 
-    public InterviewPoolController(IContextData contextData, IInterviewPoolService poolService)
+    public InterviewPoolController(IContextData contextData, IInterviewPoolService poolService, IUserRepo userRepo)
     {
         _contextData = contextData;
         _poolService = poolService;
+        _userRepo = userRepo;
     }
 
     /// <summary>Mở 1 pool khung dùng chung cho 1 job + vòng.</summary>
@@ -68,5 +71,25 @@ public class InterviewPoolController : ControllerBase
         var scheduleId = await _poolService.ManualConfirmAsync(
             _contextData.CompanyId, _contextData.UserId, applicationId, dto);
         return Ok(new { scheduleId });
+    }
+
+    /// <summary>
+    /// Danh sách Interviewer (user có role chứa "Interviewer", đang Active) trong công ty hiện tại —
+    /// phục vụ dropdown chọn người phỏng vấn khi Recruiter tạo pool. Tách khỏi /api/users (Admin-only)
+    /// để Recruiter có thể dùng mà không cần quyền Admin.
+    /// </summary>
+    [HttpGet("api/interview-pools/interviewers")]
+    public async Task<IActionResult> ListInterviewers()
+    {
+        var users = await _userRepo.GetListByRoleAsync(_contextData.CompanyId, RoleConstants.Interviewer);
+        var result = users.Select(u => new
+        {
+            userId = u.UserId,
+            email = u.Email,
+            fullName = u.FullName,
+            phone = u.Phone,
+            role = u.Role
+        });
+        return Ok(result);
     }
 }

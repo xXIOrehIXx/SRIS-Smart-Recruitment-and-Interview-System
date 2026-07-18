@@ -175,7 +175,7 @@ export const interviewAPI = {
   getInterviewPools: (jobId) =>
     api.get(`/jobs/${jobId}/interview-pools`),
 
-  // data: { roundNumber?, slots: [{ interviewerId, startTime }] }
+  // data: { roundNumber?, slots: [{ interviewerIds: [1..5 nguoi], startTime }] } — panel/slot
   createPool: (jobId, data) =>
     api.post(`/jobs/${jobId}/interview-pools`, data),
 
@@ -186,7 +186,7 @@ export const interviewAPI = {
   cancelPool: (poolId, reason) =>
     api.post(`/interview-pools/${poolId}/cancel`, { reason }),
 
-  // Chốt lịch TAY cho 1 ứng viên: { interviewerId, startTime, roundNumber? }
+  // Chốt lịch TAY cho 1 ứng viên: { interviewerIds: [...], startTime, roundNumber? }
   manualConfirm: (applicationId, data) =>
     api.post(`/applications/${applicationId}/manual-interview`, data),
 

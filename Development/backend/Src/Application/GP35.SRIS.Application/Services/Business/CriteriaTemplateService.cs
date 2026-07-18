@@ -3,6 +3,7 @@ using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -78,7 +79,12 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
         if (found.Items.Count == 0)
             throw Bad("Khuôn chưa có dòng tiêu chí nào — không có gì để áp.");
 
-        // Clone từng dòng thành EvaluationCriteria của job (bản sao độc lập, sửa riêng sau được).
+        // 1. Dọn record cũ cùng tên (cả DRAFT lẫn APPROVED — chỉ xóa nếu name trùng tên khuôn,
+        //    không trùng thì giữ nguyên tuyệt đối).
+        var names = found.Items.Select(i => i.Name.Trim()).Distinct().ToList();
+        await _criteriaRepo.DeleteByJobAndNamesAsync(companyId, jobId, names);
+
+        // 2. Clone từng dòng thành EvaluationCriteria mới.
         var created = new List<CriteriaDto>();
         foreach (var item in found.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.ItemId))
         {
@@ -88,7 +94,8 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
                 Name = item.Name,
                 Weight = item.Weight,
                 MaxScore = item.MaxScore,
-                Active = true
+                Active = true,
+                Status = CriteriaStatus.Draft
             };
             entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
 

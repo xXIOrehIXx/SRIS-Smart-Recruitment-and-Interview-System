@@ -10,7 +10,7 @@ public class PublicBrandDto
     public string? PrimaryColor { get; set; }
 }
 
-/// <summary>Job hiển thị công khai trên Career Site (chỉ field an toàn — không lộ embedding/nội bộ).</summary>
+/// <summary>Job hiển thị công khai trên Career Site (chỉ field an toàn — không lộ embedding/nội bộ). V020: mở rộng.</summary>
 public class PublicJobDto
 {
     public long JobId { get; set; }
@@ -18,6 +18,17 @@ public class PublicJobDto
     public string? JdText { get; set; }
     public string Status { get; set; } = null!;
     public DateTime? CreatedAt { get; set; }
+    public string? Department { get; set; }
+    public string? Location { get; set; }
+    public string? EmploymentType { get; set; }
+    public string? WorkMode { get; set; }
+    public string? ExperienceLevel { get; set; }
+    public decimal? SalaryMin { get; set; }
+    public decimal? SalaryMax { get; set; }
+    public DateTime? Deadline { get; set; }
+    public List<string>? Skills { get; set; }
+    public List<string>? Benefits { get; set; }
+    public List<string>? Requirements { get; set; }
 }
 
 /// <summary>

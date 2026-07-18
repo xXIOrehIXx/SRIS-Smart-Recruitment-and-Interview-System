@@ -17,8 +17,6 @@ public class InterviewSlot : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, I
     /// <summary>Ứng viên (application) đã đặt khung này. Null khi khung còn OPEN.</summary>
     [Column("booked_application_id")]
     public long? BookedApplicationId { get; set; }
-    [Column("interviewer_id")]
-    public long InterviewerId { get; set; }
     [Column("start_time")]
     public DateTime StartTime { get; set; }
     [Column("end_time")]
@@ -33,4 +31,14 @@ public class InterviewSlot : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, I
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
+
+    /// <summary>Panel interviewers của khung (1..N — docs 15 mở rộng A).</summary>
+    public ICollection<InterviewSlotInterviewer> Interviewers { get; set; } = new List<InterviewSlotInterviewer>();
+
+    /// <summary>
+    /// Danh sách interviewer_id tạm thời do service set khi insert (không lưu cột — dùng để build
+    /// InterviewSlotInterviewer trong cùng transaction). Repo sẽ đọc rồi xóa sau khi save.
+    /// </summary>
+    [NotMapped]
+    public List<long>? InterviewerIds { get; set; }
 }
