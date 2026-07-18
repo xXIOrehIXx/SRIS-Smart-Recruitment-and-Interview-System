@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import AuthLayout from "./layouts/AuthLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth, ROLES } from "./contexts/AuthContext";
+import { CompanyProvider } from "./contexts/CompanyContext";
 import Home from "./pages/Home";
 import Recruitment from "./pages/recruitment/Recruitment";
 import Login from "./pages/auth/Login";
@@ -48,15 +49,16 @@ const App = () => {
   }
 
   return (
-    <Routes>
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-      </Route>
+    <CompanyProvider>
+      <Routes>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+        </Route>
 
-      <Route path="/candidate/offer-response" element={<CandidateResponse />} />
-      <Route path="/schedule" element={<Schedule />} />
+        <Route path="/candidate/offer-response" element={<CandidateResponse />} />
+        <Route path="/schedule" element={<Schedule />} />
 
       <Route
         element={
@@ -164,7 +166,8 @@ const App = () => {
           )
         }
       />
-    </Routes>
+      </Routes>
+    </CompanyProvider>
   );
 };
 

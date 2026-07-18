@@ -20,6 +20,7 @@ import {
   GlobalOutlined,
 } from "@ant-design/icons";
 import { useAuth, ROLES } from "../contexts/AuthContext";
+import { useCompany } from "../contexts/CompanyContext";
 import "./css/MainLayout.css";
 
 const { Header, Sider, Content } = Layout;
@@ -44,6 +45,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, getMenuItems, getDashboardRoute } = useAuth();
+  const { company } = useCompany();
 
   const menuItems = getMenuItems().map((item) => ({
     key: item.key,
@@ -136,28 +138,40 @@ const AdminLayout = () => {
         <div className="sidebar-container">
           <div className="sider-header">
             <div className="logo" onClick={() => navigate(getDashboardRoute())}>
-              <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-                <rect width="48" height="48" rx="12" fill="#5D8C3E" />
-                <path
-                  d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-                  stroke="white"
-                  strokeWidth="2"
+              {company?.logoUrl ? (
+                <img
+                  src={company.logoUrl}
+                  alt={company.name || "Logo"}
+                  style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 4 }}
                 />
-                <path
-                  d="M20 22L24 26L28 22"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M24 18V26"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-              {!collapsed && <span className="logo-text">SRIS</span>}
+              ) : (
+                <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+                  <rect width="48" height="48" rx="12" fill="#5D8C3E" />
+                  <path
+                    d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M20 22L24 26L28 22"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M24 18V26"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+              {!collapsed && (
+                <span className="logo-text">
+                  {company?.name || "SRIS"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -218,7 +232,8 @@ const AdminLayout = () => {
                   <Avatar
                     size={36}
                     icon={<UserOutlined />}
-                    style={{ backgroundColor: "#5D8C3E" }}
+                    src={company?.logoUrl}
+                    style={{ backgroundColor: company?.primaryColor || "#5D8C3E" }}
                   />
                   <div className="user-details">
                     <span className="user-name">
