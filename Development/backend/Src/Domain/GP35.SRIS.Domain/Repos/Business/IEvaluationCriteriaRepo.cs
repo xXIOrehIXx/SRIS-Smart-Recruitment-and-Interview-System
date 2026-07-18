@@ -29,6 +29,13 @@ public interface IEvaluationCriteriaRepo : IBaseRepo<long, EvaluationCriteria>
     /// <summary>Xóa tiêu chí DRAFT của job (trước khi AI bóc lại — tránh trùng lặp).</summary>
     Task<int> DeleteDraftsAsync(long companyId, long jobId);
 
+    /// <summary>
+    /// Xóa tiêu chí của job có tên nằm trong danh sách — dùng khi áp khuôn tiêu chí
+    /// (đè toàn bộ record cũ cùng tên — cả DRAFT lẫn APPROVED, vì unique (job_id, name)).
+    /// Trả số dòng đã xóa.
+    /// </summary>
+    Task<int> DeleteByJobAndNamesAsync(long companyId, long jobId, IReadOnlyCollection<string> names);
+
     /// <summary>Vô hiệu 1 tiêu chí (soft — active=0; giữ để không phá kết quả chấm đã lưu). Trả số dòng.</summary>
     Task<int> DeactivateAsync(long companyId, long criteriaId);
 

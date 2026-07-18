@@ -71,6 +71,19 @@ public class EvaluationCriteriaRepo : BaseRepo<long, EvaluationCriteria>, IEvalu
             .ExecuteDeleteAsync();
     }
 
+    public async Task<int> DeleteByJobAndNamesAsync(
+        long companyId, long jobId, IReadOnlyCollection<string> names)
+    {
+        if (names is null || names.Count == 0) return 0;
+
+        var nameList = names.Where(n => !string.IsNullOrWhiteSpace(n)).ToList();
+        if (nameList.Count == 0) return 0;
+
+        return await _db.EvaluationCriterias
+            .Where(c => c.JobId == jobId && nameList.Contains(c.Name))
+            .ExecuteDeleteAsync();
+    }
+
     public async Task<int> DeactivateAsync(long companyId, long criteriaId)
     {
         return await _db.EvaluationCriterias

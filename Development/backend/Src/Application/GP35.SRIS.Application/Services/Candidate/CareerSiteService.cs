@@ -57,14 +57,20 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
     public async Task<IEnumerable<PublicJobDto>> ListOpenJobsAsync(long companyId)
     {
         var jobs = await _jobRepo.GetListByCompanyAsync(companyId);
-        return jobs.Where(IsOpen).Select(ToPublicDto).ToList();
+        var result = new List<PublicJobDto>();
+        foreach (var j in jobs.Where(IsOpen))
+        {
+            var dto = await ToPublicDtoAsync(companyId, j);
+            result.Add(dto);
+        }
+        return result;
     }
 
     public async Task<PublicJobDto?> GetOpenJobAsync(long companyId, long jobId)
     {
         var job = await _jobRepo.GetByIdAsync(companyId, jobId);
         if (job is null || !IsOpen(job)) return null;
-        return ToPublicDto(job);
+        return await ToPublicDtoAsync(companyId, job);
     }
 
     public async Task<PublicApplyResultDto> ApplyAsync(
@@ -126,6 +132,46 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
         Status = j.Status,
         CreatedAt = j.CreatedAt
     };
+
+    /// <summary>V020: build public DTO kèm requirements/benefits (chỉ field an toàn).</summary>
+    private async Task<PublicJobDto> ToPublicDtoAsync(long companyId, Job j)
+    {
+        List<string> requirements = new();
+        List<string> benefits = new();
+        try
+        {
+            var reqs = await _jobRepo.GetRequirementsAsync(companyId, j.JobId);
+            requirements = reqs.Select(r => r.Content).ToList();
+            var bens = await _jobRepo.GetBenefitsAsync(companyId, j.JobId);
+            benefits = bens.Select(b => b.Content).ToList();
+        }
+        catch
+        {
+            // bảng V020 có thể chưa tồn tại ở môi trường chưa migrate -> bỏ qua, không crash.
+        }
+
+        return new PublicJobDto
+        {
+            JobId = j.JobId,
+            Title = j.Title,
+            JdText = j.JdText,
+            Status = j.Status,
+            CreatedAt = j.CreatedAt,
+            Department = j.Department,
+            Location = j.Location,
+            EmploymentType = j.EmploymentType,
+            WorkMode = j.WorkMode,
+            ExperienceLevel = j.ExperienceLevel,
+            SalaryMin = j.SalaryMin,
+            SalaryMax = j.SalaryMax,
+            Deadline = j.Deadline,
+            Requirements = requirements,
+            Benefits = benefits,
+            Skills = string.IsNullOrWhiteSpace(j.SkillTags)
+                ? new List<string>()
+                : j.SkillTags!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList()
+        };
+    }
 
     private static BaseException Bad(string msg) => new(msg)
     {

@@ -1,9 +1,18 @@
 namespace GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 
-/// <summary>1 khung giờ Recruiter mở (gán interviewer + thời điểm).</summary>
-public class SlotInputDto
+/// <summary>1 interviewer rút gọn (id + tên) — dùng trong SlotDto để Recruiter thấy panel.</summary>
+public class InterviewerMiniDto
 {
     public long InterviewerId { get; set; }
+    public string FullName { get; set; } = null!;
+    public string? Email { get; set; }
+}
+
+/// <summary>1 khung giờ Recruiter mở (panel 1..N interviewer + 1 thời điểm).</summary>
+public class SlotInputDto
+{
+    /// <summary>Panel interviewer (1..5 người cùng dự buổi phỏng vấn). Docs Section 15 mở rộng A.</summary>
+    public List<long> InterviewerIds { get; set; } = new();
     public DateTime StartTime { get; set; }
 }
 
@@ -35,20 +44,22 @@ public class CancelPoolDto
 /// </summary>
 public class ManualConfirmDto
 {
-    public long InterviewerId { get; set; }
+    /// <summary>Panel interviewer (1..5 người) — mở rộng A.</summary>
+    public List<long> InterviewerIds { get; set; } = new();
     public DateTime StartTime { get; set; }
     public int? RoundNumber { get; set; }
 }
 
-/// <summary>1 khung giờ (góc nhìn nội bộ — có interviewer + ứng viên đã đặt).</summary>
+/// <summary>1 khung giờ (góc nhìn nội bộ — có panel interviewer + ứng viên đã đặt).</summary>
 public class SlotDto
 {
     public long SlotId { get; set; }
-    public long InterviewerId { get; set; }
     public DateTime StartTime { get; set; }
     public string Status { get; set; } = null!;
     /// <summary>Ứng viên (application) đã đặt khung này; null khi còn OPEN.</summary>
     public long? BookedApplicationId { get; set; }
+    /// <summary>Panel interviewer của khung (1..N người) — Recruiter xem tên.</summary>
+    public List<InterviewerMiniDto> Interviewers { get; set; } = new();
 }
 
 /// <summary>1 ứng viên đã được mời vào pool + trạng thái + cờ nhắc (vàng/đỏ khi báo bận nhiều lần).</summary>

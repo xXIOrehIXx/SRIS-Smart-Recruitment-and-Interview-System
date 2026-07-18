@@ -23,6 +23,25 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<User>> GetListByRoleAsync(long companyId, string role)
+    {
+        // Tìm user có role chứa tên role (role có thể là "Interviewer,Recruiter" nếu user giữ nhiều role).
+        // Chỉ lấy user đang Active.
+        return await _db.Users.AsNoTracking()
+            .Where(u => u.Status == "Active" && u.Role.Contains(role))
+            .OrderBy(u => u.FullName ?? u.Email)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<User>> GetNamesByIdsAsync(long companyId, IReadOnlyList<long> userIds)
+    {
+        if (userIds.Count == 0) return Array.Empty<User>();
+        return await _db.Users.AsNoTracking()
+            .Where(u => userIds.Contains(u.UserId))
+            .Select(u => new User { UserId = u.UserId, FullName = u.FullName, Email = u.Email })
+            .ToListAsync();
+    }
+
     public async Task<User?> GetByIdAsync(long companyId, long userId)
     {
         return await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);

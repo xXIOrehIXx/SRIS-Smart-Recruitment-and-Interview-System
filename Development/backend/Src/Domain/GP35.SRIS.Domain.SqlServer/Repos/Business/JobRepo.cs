@@ -94,6 +94,37 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
             vectorJson, companyId, jobId);
     }
 
+    public async Task<int> UpdateExtendedAsync(long companyId, long jobId, Job job, bool jdChanged)
+    {
+        // EF Core ExecuteUpdate không cho NULL-safe từng cột trong 1 lệnh, nên tách 2 nhịp:
+        // nhịp 1 update đầy đủ các cột non-null, nhịp 2 set NULL cho cột nullable nếu DTO thiếu.
+        var rows = await _db.Jobs
+            .Where(j => j.JobId == jobId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.Title, job.Title)
+                .SetProperty(j => j.JdText, job.JdText)
+                .SetProperty(j => j.DepartmentManagerId, job.DepartmentManagerId)
+                .SetProperty(j => j.Department, job.Department)
+                .SetProperty(j => j.Location, job.Location)
+                .SetProperty(j => j.EmploymentType, job.EmploymentType)
+                .SetProperty(j => j.WorkMode, job.WorkMode)
+                .SetProperty(j => j.ExperienceLevel, job.ExperienceLevel)
+                .SetProperty(j => j.SalaryMin, job.SalaryMin)
+                .SetProperty(j => j.SalaryMax, job.SalaryMax)
+                .SetProperty(j => j.Currency, job.Currency)
+                .SetProperty(j => j.Deadline, job.Deadline)
+                .SetProperty(j => j.Status, job.Status)
+                .SetProperty(j => j.UpdatedAt, DateTime.UtcNow));
+
+        if (rows > 0 && jdChanged)
+        {
+            await _db.Database.ExecuteSqlRawAsync(
+                "UPDATE Job SET embedding = NULL WHERE job_id = {0} AND company_id = {1}",
+                jobId, companyId);
+        }
+        return rows;
+    }
+
     public async Task<IEnumerable<Job>> GetPublicOpenJobsAsync()
     {
         // Public endpoint: bỏ qua global query filter company_id
@@ -112,5 +143,79 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
             .AsNoTracking()
             .Where(j => j.JobId == jobId && j.Status == "Open")
             .FirstOrDefaultAsync();
+    }
+
+    /* ===== V020 ===== */
+
+    public async Task<IReadOnlyList<JobRequirement>> GetRequirementsAsync(long companyId, long jobId)
+    {
+        return await _db.JobRequirements
+            .AsNoTracking()
+            .Where(r => r.JobId == jobId)
+            .OrderBy(r => r.Ordinal)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<JobBenefit>> GetBenefitsAsync(long companyId, long jobId)
+    {
+        return await _db.JobBenefits
+            .AsNoTracking()
+            .Where(b => b.JobId == jobId)
+            .OrderBy(b => b.Ordinal)
+            .ToListAsync();
+    }
+
+    public async Task ReplaceRequirementsAsync(long companyId, long jobId, IReadOnlyList<string> contents)
+    {
+        // Xóa cũ: IgnoreQueryFilters vì RLS ẩn dòng khi SESSION_CONTEXT('CompanyId') chưa set
+        // đúng ở DbContext scope hiện tại (caller đã có company_id nhưng EF context tạo sẵn
+        // có thể đang _companyId = 0). An toàn vì đã lọc theo jobId ở WHERE.
+        await _db.JobRequirements
+            .IgnoreQueryFilters()
+            .Where(r => r.JobId == jobId)
+            .ExecuteDeleteAsync();
+
+        for (int i = 0; i < contents.Count; i++)
+        {
+            var c = contents[i];
+            if (string.IsNullOrWhiteSpace(c)) continue;
+            var trimmed = c.Trim();
+            // NVARCHAR(500) -> clamp để không 500 vì DB sẽ tự reject nếu vượt quá.
+            if (trimmed.Length > 500) trimmed = trimmed[..500];
+            _db.JobRequirements.Add(new JobRequirement
+            {
+                CompanyId = companyId,
+                JobId = jobId,
+                Ordinal = i + 1,
+                Content = trimmed
+            });
+        }
+        if (_db.JobRequirements.Local.Count > 0)
+            await _db.SaveChangesAsync();
+    }
+
+    public async Task ReplaceBenefitsAsync(long companyId, long jobId, IReadOnlyList<string> contents)
+    {
+        await _db.JobBenefits
+            .IgnoreQueryFilters()
+            .Where(b => b.JobId == jobId)
+            .ExecuteDeleteAsync();
+
+        for (int i = 0; i < contents.Count; i++)
+        {
+            var c = contents[i];
+            if (string.IsNullOrWhiteSpace(c)) continue;
+            var trimmed = c.Trim();
+            if (trimmed.Length > 500) trimmed = trimmed[..500];
+            _db.JobBenefits.Add(new JobBenefit
+            {
+                CompanyId = companyId,
+                JobId = jobId,
+                Ordinal = i + 1,
+                Content = trimmed
+            });
+        }
+        if (_db.JobBenefits.Local.Count > 0)
+            await _db.SaveChangesAsync();
     }
 }

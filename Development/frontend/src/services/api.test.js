@@ -102,7 +102,7 @@ describe('applicationAPI', () => {
 
 describe('interviewAPI — model slot POOL (không còn API lịch 1-1 cũ)', () => {
   test('createPool đúng endpoint + shape CreatePoolDto', () => {
-    const data = { roundNumber: 1, slots: [{ interviewerId: 13, startTime: '2026-07-25T09:00:00Z' }] };
+    const data = { roundNumber: 1, slots: [{ interviewerIds: [13, 14], startTime: '2026-07-25T09:00:00Z' }] };
     interviewAPI.createPool(3, data);
     expect(apiInst.post).toHaveBeenCalledWith('/jobs/3/interview-pools', data);
   });

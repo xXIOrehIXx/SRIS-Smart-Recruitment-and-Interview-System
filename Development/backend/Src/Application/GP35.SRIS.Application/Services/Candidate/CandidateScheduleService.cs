@@ -81,9 +81,12 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
         if (slot.StartTime <= DateTime.UtcNow)
             throw Conflict("Khung này đã qua giờ. Vui lòng chọn khung khác.");
 
-        // Chống trùng giờ interviewer ở lịch khác (best-effort — 15.3).
-        if (await _schedulingRepo.IsInterviewerBookedAtAsync(v.CompanyId, slot.InterviewerId, slot.StartTime, slot.SlotId))
-            throw Conflict("Người phỏng vấn đã có lịch vào giờ này. Vui lòng chọn khung khác.");
+        // Chống trùng giờ interviewer ở lịch khác (best-effort — 15.3). Check CẢ PANEL.
+        var panelIds = slot.Interviewers.Select(i => i.InterviewerId).ToList();
+        var busyId = await _schedulingRepo.FindBusyInterviewerAsync(
+            v.CompanyId, panelIds, slot.StartTime, slot.SlotId);
+        if (busyId is not null)
+            throw Conflict("Một interviewer trong panel đã có lịch vào giờ này. Vui lòng chọn khung khác.");
 
         // Khóa lạc quan: ai chốt trước được trước (15.3). KHÔNG khóa khung khác của pool.
         var booked = await _schedulingRepo.BookAndConfirmAsync(
