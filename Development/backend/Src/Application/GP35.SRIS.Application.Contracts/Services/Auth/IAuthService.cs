@@ -20,4 +20,7 @@ public interface IAuthService : IBaseService
 
   /// <summary>Làm mới access token từ refresh token (xoay vòng: đốt refresh cũ, phát cặp mới).</summary>
   Task<LoginResult> RefreshAsync(string refreshToken);
+
+  /// <summary>Người đang đăng nhập tự đổi mật khẩu (xác thực mật khẩu cũ, thu hồi refresh token cũ).</summary>
+  Task ChangePasswordAsync(long userId, string oldPassword, string newPassword);
 }

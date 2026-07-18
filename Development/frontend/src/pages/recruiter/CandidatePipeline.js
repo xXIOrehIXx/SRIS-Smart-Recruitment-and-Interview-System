@@ -51,20 +51,22 @@ const CandidatePipeline = () => {
     try {
       setLoading(true);
       const response = await applicationAPI.getAll(jobId);
-      const appList = response.data || [];
-      
+      // Backend trả ApplicationBoardDto: { jobId, applications: [ApplicationCardDto] }
+      const appList = response.data?.applications || [];
+
       // Transform API data to pipeline format
       const transformedApps = appList.map(app => ({
         ...app,
-        stage: app.state || app.status || 'Applied',
+        id: app.applicationId,
+        stage: app.currentState || 'NEW',
         candidate: {
-          id: app.id,
-          name: app.fullName || app.name || app.candidateName || 'N/A',
-          email: app.email || app.candidateEmail || 'N/A',
-          phone: app.phone || app.candidatePhone || '',
-          applied: app.appliedAt || app.createdAt,
-          score: app.cvScore || app.score,
-          avatar: app.avatarUrl,
+          id: app.applicationId,
+          name: app.candidateName || 'N/A',
+          email: app.candidateEmail || 'N/A',
+          phone: '',
+          applied: app.appliedAt,
+          score: app.aiMatchScore != null ? Math.round(app.aiMatchScore) : null,
+          avatar: null,
         }
       }));
       
@@ -77,23 +79,24 @@ const CandidatePipeline = () => {
     }
   };
 
-  // Group applications by stage
+  // Group applications by stage: 6 state nội bộ → 4 pha hiển thị
+  // (OFFER/HIRED gộp vào cột Quyết định; REJECTED ẩn khỏi board)
   const getStageGroups = () => {
     const stages = {
-      Applied: { id: 'Applied', title: 'Đã Ứng Tuyển', color: '#1890ff', candidates: [] },
-      Screening: { id: 'Screening', title: 'Sàng Lọc', color: '#722ed1', candidates: [] },
-      Interview: { id: 'Interview', title: 'Phỏng Vấn', color: '#faad14', candidates: [] },
-      Offer: { id: 'Offer', title: 'Offer', color: '#52c41a', candidates: [] },
+      NEW: { id: 'NEW', title: 'Hồ Sơ Mới', color: '#1890ff', candidates: [] },
+      SCREENING: { id: 'SCREENING', title: 'Sàng Lọc', color: '#722ed1', candidates: [] },
+      INTERVIEW: { id: 'INTERVIEW', title: 'Phỏng Vấn', color: '#faad14', candidates: [] },
+      OFFER: { id: 'OFFER', title: 'Quyết Định', color: '#52c41a', candidates: [] },
+    };
+    const STATE_TO_COLUMN = {
+      NEW: 'NEW', SCREENING: 'SCREENING', INTERVIEW: 'INTERVIEW',
+      OFFER: 'OFFER', HIRED: 'OFFER',
     };
 
     applications.forEach(app => {
-      const stage = app.stage || 'Applied';
-      const stageKey = Object.keys(stages).find(key => 
-        key.toLowerCase() === stage.toLowerCase() ||
-        key.toLowerCase().includes(stage.toLowerCase())
-      ) || 'Applied';
-      
-      if (stages[stageKey]) {
+      const stageKey = STATE_TO_COLUMN[app.stage];
+
+      if (stageKey && stages[stageKey]) {
         stages[stageKey].candidates.push({
           id: app.id,
           name: app.candidate?.name || app.fullName || 'N/A',
@@ -147,8 +150,41 @@ const CandidatePipeline = () => {
       fetchApplications();
     } catch (error) {
       console.error('Error transitioning application:', error);
-      message.error('Không thể cập nhật trạng thái');
+      message.error(error?.response?.data?.userMsg || 'Không thể cập nhật trạng thái');
     }
+  };
+
+  // Reject bắt buộc có lý do (docs 5.7 — reject_reason phục vụ dashboard)
+  const openRejectModal = (candidate) => {
+    let reason = '';
+    Modal.confirm({
+      title: `Từ chối ứng viên ${candidate.name}?`,
+      content: (
+        <Input.TextArea
+          rows={3}
+          placeholder="Lý do từ chối (bắt buộc)..."
+          onChange={(e) => { reason = e.target.value; }}
+        />
+      ),
+      okText: 'Từ chối',
+      okButtonProps: { danger: true },
+      cancelText: 'Hủy',
+      onOk: async () => {
+        if (!reason.trim()) {
+          message.error('Vui lòng nhập lý do từ chối');
+          return Promise.reject();
+        }
+        try {
+          await applicationAPI.reject(candidate.id, reason.trim());
+          message.success('Đã từ chối ứng viên');
+          fetchApplications();
+        } catch (error) {
+          console.error('Error rejecting application:', error);
+          message.error(error?.response?.data?.userMsg || 'Không thể từ chối ứng viên');
+          return Promise.reject();
+        }
+      },
+    });
   };
 
   const getMenuItems = (candidate) => [
@@ -175,17 +211,18 @@ const CandidatePipeline = () => {
       key: 'move',
       icon: <ArrowRightOutlined />,
       label: 'Chuyển sang...',
+      // Pipeline forward-only: NEW → SCREENING → INTERVIEW → OFFER
       children: [
-        { key: 'Applied', label: 'Đã Ứng Tuyển' },
-        { key: 'Screening', label: 'Sàng Lọc' },
-        { key: 'Interview', label: 'Phỏng Vấn' },
-        { key: 'Offer', label: 'Offer' },
+        { key: 'SCREENING', label: 'Sàng Lọc', onClick: () => handleTransition(candidate.id, 'SCREENING') },
+        { key: 'INTERVIEW', label: 'Phỏng Vấn', onClick: () => handleTransition(candidate.id, 'INTERVIEW') },
+        { key: 'OFFER', label: 'Offer', onClick: () => handleTransition(candidate.id, 'OFFER') },
       ],
     },
     {
       key: 'reject',
       label: 'Từ Chối',
       danger: true,
+      onClick: () => openRejectModal(candidate),
     },
   ];
 

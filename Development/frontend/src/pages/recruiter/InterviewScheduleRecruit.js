@@ -1,749 +1,601 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form, DatePicker, Select, Input, message, Row, Col, Descriptions, Empty, Badge, Popconfirm, Divider } from 'antd';
-import { PlusOutlined, CalendarOutlined, VideoCameraOutlined, SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Card, Typography, Button, Table, Tag, Space, Modal, Form, DatePicker, Select,
+  Input, message, Empty, Badge, Popconfirm, Divider, Alert, Tooltip
+} from 'antd';
+import {
+  PlusOutlined, CalendarOutlined, ReloadOutlined, DeleteOutlined,
+  UserAddOutlined, PhoneOutlined, MinusCircleOutlined
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useParams, useSearchParams } from 'react-router-dom';
 import { interviewAPI, jobsAPI, applicationAPI, usersAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
-const InterviewSchedule = () => {
-  const [interviews, setInterviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState(null);
-  const [rescheduleDate, setRescheduleDate] = useState(null);
-  const [form] = Form.useForm();
-  const [submitting, setSubmitting] = useState(false);
-  const [interviewers, setInterviewers] = useState([]);
-  const [candidates, setCandidates] = useState([]);
+/**
+ * Đặt lịch phỏng vấn theo POOL dùng chung (docs Section 15):
+ * Recruiter mở 1 pool khung giờ cho job + vòng → mời nhiều ứng viên (mỗi người nhận
+ * 1 magic link SCHEDULE qua email) → ai chốt slot trước lấy trước.
+ * Ứng viên báo bận nhiều lần (cờ vàng/đỏ) → Recruiter gọi điện rồi "Chốt lịch tay".
+ */
+const InterviewScheduleRecruit = () => {
   const [jobs, setJobs] = useState([]);
-  const [selectedCandidates, setSelectedCandidates] = useState([]);
-  const [candidateDetails, setCandidateDetails] = useState({});
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [selectedJobDetail, setSelectedJobDetail] = useState(null);
-  const [timeSlots, setTimeSlots] = useState([]);
-  const [editingSlotId, setEditingSlotId] = useState(null);
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [pools, setPools] = useState([]);
+  const [applications, setApplications] = useState([]); // mọi hồ sơ của job (map tên + lọc INTERVIEW)
+  const [interviewers, setInterviewers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const { applicationId } = useParams();
-  const [searchParams] = useSearchParams();
-  const appId = applicationId || searchParams.get('applicationId');
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [inviteModal, setInviteModal] = useState(null);   // pool đang mời
+  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [createForm] = Form.useForm();
+  const [inviteForm] = Form.useForm();
+  const [manualForm] = Form.useForm();
 
   useEffect(() => {
-    if (appId) {
-      fetchInterviews(appId);
-    } else {
-      setLoading(false);
-    }
     fetchJobs();
-  }, [appId]);
-
-  useEffect(() => {
     fetchInterviewers();
-  }, [selectedJob]);
+  }, []);
 
-  useEffect(() => {
-    form.setFieldsValue({ timeSlots });
-  }, [form, timeSlots]);
-
-  const fetchInterviews = async (appId) => {
-    setLoading(true);
+  const fetchJobs = async () => {
     try {
-      const response = await interviewAPI.getSchedules(appId);
-      setInterviews(response.data || []);
+      const response = await jobsAPI.getAll();
+      const jobList = response.data || [];
+      setJobs(jobList);
+      if (jobList.length > 0) setSelectedJobId(jobList[0].jobId);
     } catch (error) {
-      console.error('Error fetching interviews:', error);
-      setInterviews([]);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching jobs:', error);
+      message.error('Không thể tải danh sách vị trí');
     }
   };
 
+  // Dropdown Interviewer qua /users/options (Recruiter gọi được, khác /users chỉ Admin)
   const fetchInterviewers = async () => {
     try {
-      let interviewerList = [];
-      
-      // Thử 1: Lấy từ interview pools (job cụ thể)
-      if (selectedJob) {
-        try {
-          const poolResponse = await interviewAPI.getInterviewPools(selectedJob);
-          if (poolResponse?.data?.interviewers) {
-            interviewerList = poolResponse.data.interviewers;
-          } else if (Array.isArray(poolResponse?.data)) {
-            interviewerList = poolResponse.data;
-          }
-        } catch (e) {
-          console.log('Interview pools not available for this job');
-        }
-      }
-      
-      // Thử 2: Lấy users từ API và lọc theo role = "Interviewer"
-      if (interviewerList.length === 0) {
-        try {
-          const usersResponse = await usersAPI.getAll();
-          const allUsers = usersResponse?.data || [];
-          console.log('All users from API:', allUsers);
-          
-          // Lọc theo role
-          interviewerList = allUsers.filter(u => {
-            const role = u.role || u.jobRole || '';
-            return role.toLowerCase() === 'interviewer';
-          });
-          console.log('Filtered interviewers:', interviewerList);
-          
-          // Nếu không có ai có role interviewer, dùng tất cả
-          if (interviewerList.length === 0) {
-            interviewerList = allUsers;
-          }
-        } catch (e) {
-          console.log('Users API not available:', e);
-        }
-      }
-      
-      setInterviewers(interviewerList.map((i, idx) => ({
-        id: i.userId || i.id || idx + 1,
-        name: i.fullName || i.name || i.userName || i.email || `Interviewer ${idx + 1}`,
-        email: i.email || ''
-      })));
-      console.log('Final interviewers state:', interviewerList);
+      const response = await usersAPI.getOptions('Interviewer');
+      setInterviewers(response.data || []);
     } catch (error) {
       console.error('Error fetching interviewers:', error);
       setInterviewers([]);
     }
   };
 
-  const fetchCandidates = async (jobId) => {
+  const fetchJobData = useCallback(async (jobId) => {
     if (!jobId) {
-      setCandidates([]);
-      setSelectedCandidates([]);
-      setCandidateDetails({});
-      form.setFieldsValue({ applicationIds: undefined });
+      setPools([]);
+      setApplications([]);
       return;
     }
-
+    setLoading(true);
     try {
-      const response = await applicationAPI.getAll(jobId);
-      console.log('Raw response from getAll:', response);
-      console.log('response.data:', response?.data);
-      
-      // Xử lý nhiều cấu trúc response khác nhau
-      let applications = [];
-      if (Array.isArray(response?.data)) {
-        applications = response.data;
-      } else if (response?.data?.items) {
-        applications = response.data.items;
-      } else if (response?.data?.applications) {
-        applications = response.data.applications;
-      } else if (response?.data?.data && Array.isArray(response.data.data)) {
-        applications = response.data.data;
-      }
-      
-      console.log('Applications found:', applications);
-      
-      const mappedCandidates = applications.map((item) => ({
-        applicationId: item.applicationId || item.id,
-        candidateId: item.candidateId,
-        name: item.candidateName || item.name || 'N/A',
-        email: item.candidateEmail || item.email || '',
-        position: item.position || item.jobTitle || 'Chưa cập nhật',
-        cvUrl: item.cvId ? `/cv/${item.cvId}` : null,
-        appliedAt: item.appliedAt || item.createdAt,
-        currentState: item.currentState || item.state,
-        aiMatchScore: item.aiMatchScore,
-        criteriaScore: item.criteriaScore,
-      }));
-
-      console.log('Mapped candidates:', mappedCandidates);
-      setCandidates(mappedCandidates);
+      const [poolsRes, appsRes] = await Promise.all([
+        interviewAPI.getInterviewPools(jobId),
+        applicationAPI.getAll(jobId),
+      ]);
+      setPools(poolsRes.data || []);
+      setApplications(appsRes.data?.applications || []);
     } catch (error) {
-      console.error('Error fetching candidates:', error);
-      setCandidates([]);
+      console.error('Error fetching pools:', error);
+      message.error('Không thể tải lịch phỏng vấn của vị trí này');
+      setPools([]);
+      setApplications([]);
+    } finally {
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchJobData(selectedJobId);
+  }, [selectedJobId, fetchJobData]);
+
+  // ===== Helpers =====
+
+  const interviewerName = (id) => {
+    const found = interviewers.find(i => i.userId === id);
+    return found ? (found.fullName || found.email) : `#${id}`;
   };
 
-  const fetchJobs = async () => {
-    try {
-      const response = await jobsAPI.getAll();
-      setJobs(response.data || []);
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-      setJobs([]);
-    }
+  const appById = (applicationId) =>
+    applications.find(a => a.applicationId === applicationId);
+
+  const candidateLabel = (applicationId) => {
+    const app = appById(applicationId);
+    return app ? `${app.candidateName}${app.candidateEmail ? ` — ${app.candidateEmail}` : ''}` : `Hồ sơ #${applicationId}`;
   };
 
-  const handleJobChange = (value) => {
-    const job = jobs.find((item) => String(item.jobId || item.id) === String(value));
-    setSelectedJob(value);
-    setSelectedJobDetail(job || null);
-    setSelectedCandidates([]);
-    setCandidateDetails({});
-    form.setFieldsValue({ applicationIds: undefined });
-    // Fetch candidates với jobId đã chọn
-    fetchCandidates(value);
-  };
+  // Ứng viên đang ở state INTERVIEW — đối tượng được mời vào pool / chốt tay
+  const interviewStageApps = applications.filter(a => a.currentState === 'INTERVIEW');
 
-  const handleAddTimeSlot = () => {
-    if (timeSlots.length >= 3) {
-      message.warning('Tối đa chỉ có thể thêm 3 slot thời gian');
+  // ===== Actions =====
+
+  const handleCreatePool = async (values) => {
+    const slots = (values.slots || []).filter(s => s && s.interviewerId && s.startTime);
+    if (slots.length === 0) {
+      message.error('Cần ít nhất 1 khung giờ (interviewer + thời gian)');
       return;
     }
-
-    const newSlot = { id: Date.now(), value: null };
-    setTimeSlots((prev) => [...prev, newSlot]);
-    setEditingSlotId(newSlot.id);
-  };
-
-  const handleTimeSlotChange = (slotId, value) => {
-    setTimeSlots((prev) => prev.map((slot) => (slot.id === slotId ? { ...slot, value } : slot)));
-    if (value) {
-      setEditingSlotId(null);
-    }
-  };
-
-  const handleEditTimeSlot = (slotId) => {
-    setEditingSlotId(slotId);
-  };
-
-  const handleRemoveTimeSlot = (slotId) => {
-    setTimeSlots((prev) => prev.filter((slot) => slot.id !== slotId));
-    if (editingSlotId === slotId) {
-      setEditingSlotId(null);
-    }
-  };
-
-  const handleCandidatesChange = async (values) => {
-    console.log('handleCandidatesChange called with values:', values);
-    console.log('Available candidates:', candidates);
-    
-    setSelectedCandidates(values || []);
-
-    if (values && values.length > 0) {
-      const details = {};
-      values.forEach(appId => {
-        const candidate = candidates.find(c => String(c.applicationId || c.id) === String(appId));
-        if (candidate) {
-          details[appId] = {
-            applicationId: candidate.applicationId || candidate.id,
-            name: candidate.name,
-            email: candidate.email,
-            position: candidate.position,
-            cvUrl: candidate.cvUrl,
-            appliedAt: candidate.appliedAt,
-            currentState: candidate.currentState,
-            aiMatchScore: candidate.aiMatchScore,
-            criteriaScore: candidate.criteriaScore,
-            skills: ['React', 'TypeScript', 'Node.js', 'GraphQL'],
-            experience: 'Chưa cập nhật',
-            education: 'Chưa cập nhật',
-          };
-        }
+    setSubmitting(true);
+    try {
+      await interviewAPI.createPool(selectedJobId, {
+        roundNumber: values.roundNumber || undefined,
+        slots: slots.map(s => ({
+          interviewerId: s.interviewerId,
+          startTime: s.startTime.toISOString(),
+        })),
       });
-      console.log('Mapped candidate details:', details);
-      setCandidateDetails(details);
-    } else {
-      setCandidateDetails({});
-    }
-  };
-
-  const handleCreateSchedule = async (values) => {
-    const selectedApplicationIds = values?.applicationIds || Object.keys(candidateDetails);
-    const interviewerIds = values?.interviewerIds || [];
-
-    if (!selectedApplicationIds || selectedApplicationIds.length === 0) {
-      message.error('Vui lòng chọn ít nhất một ứng viên');
-      return;
-    }
-
-    if (!timeSlots.length || timeSlots.some((slot) => !slot.value)) {
-      message.error('Vui lòng chọn ít nhất một thời gian phỏng vấn');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      // Tạo lịch cho từng ứng viên
-      for (const appId of selectedApplicationIds) {
-        for (const interviewerId of interviewerIds) {
-          const payload = {
-            RoundNumber: 0,
-            Slots: timeSlots.map((slot) => ({
-              InterviewerId: interviewerId,
-              StartTime: slot.value?.toISOString?.() || dayjs(slot.value).toISOString(),
-            })),
-          };
-
-          await interviewAPI.createSchedule(appId, payload);
-        }
-      }
-      
-      message.success(`Tạo lịch phỏng vấn thành công cho ${selectedApplicationIds.length} ứng viên!`);
-      handleCancel();
-      if (selectedApplicationIds.length > 0) {
-        fetchInterviews(selectedApplicationIds[0]);
-      }
+      message.success('Đã mở pool khung giờ phỏng vấn!');
+      setCreateModalOpen(false);
+      createForm.resetFields();
+      fetchJobData(selectedJobId);
     } catch (error) {
-      console.error('Error creating schedule:', error);
-      message.error('Tạo lịch phỏng vấn thất bại. Vui lòng thử lại.');
+      console.error('Error creating pool:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể mở pool. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCancel = () => {
-    setIsModalOpen(false);
-    form.resetFields();
-    setSelectedCandidates([]);
-    setCandidateDetails({});
-    setSelectedJob(null);
-    setSelectedJobDetail(null);
-    setTimeSlots([]);
-    setEditingSlotId(null);
-  };
-
-  const handleReschedule = async () => {
-    if (!editingSchedule || !rescheduleDate || !appId) {
-      message.error('Vui lòng chọn ngày giờ mới');
+  const handleInvite = async (values) => {
+    const applicationIds = values.applicationIds || [];
+    if (applicationIds.length === 0) {
+      message.error('Chọn ít nhất 1 ứng viên');
       return;
     }
-
     setSubmitting(true);
     try {
-      await interviewAPI.reschedule(appId, editingSchedule.id, rescheduleDate.toISOString());
-      message.success('Đổi lịch thành công!');
-      setIsRescheduleModalOpen(false);
-      setEditingSchedule(null);
-      setRescheduleDate(null);
-      fetchInterviews(appId);
+      const response = await interviewAPI.invite(inviteModal.poolId, applicationIds);
+      const { invited = [], skipped = [] } = response.data || {};
+      if (invited.length > 0) {
+        message.success(`Đã mời ${invited.length} ứng viên — mỗi người nhận 1 email chọn lịch.`);
+      }
+      if (skipped.length > 0) {
+        Modal.warning({
+          title: `${skipped.length} ứng viên bị bỏ qua`,
+          content: (
+            <ul style={{ paddingLeft: 18 }}>
+              {skipped.map(s => (
+                <li key={s.applicationId}>{candidateLabel(s.applicationId)}: {s.reason}</li>
+              ))}
+            </ul>
+          ),
+        });
+      }
+      setInviteModal(null);
+      inviteForm.resetFields();
+      fetchJobData(selectedJobId);
     } catch (error) {
-      console.error('Error rescheduling:', error);
-      message.error('Đổi lịch thất bại. Vui lòng thử lại.');
+      console.error('Error inviting:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể mời ứng viên.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleCancelSchedule = async (scheduleId) => {
-    if (!appId) {
-      message.error('Không tìm thấy thông tin ứng viên');
-      return;
-    }
-
+  const handleCancelPool = async (poolId) => {
     try {
-      await interviewAPI.cancelSchedule(appId, scheduleId, 'Hủy bởi recruiter');
-      message.success('Hủy lịch thành công!');
-      fetchInterviews(appId);
+      await interviewAPI.cancelPool(poolId, 'Hủy bởi recruiter');
+      message.success('Đã hủy pool (ứng viên đã chốt sẽ nhận email báo).');
+      fetchJobData(selectedJobId);
     } catch (error) {
-      console.error('Error canceling schedule:', error);
-      message.error('Hủy lịch thất bại. Vui lòng thử lại.');
+      console.error('Error canceling pool:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể hủy pool.');
     }
   };
 
-  const openRescheduleModal = (record) => {
-    setEditingSchedule(record);
-    setRescheduleDate(null);
-    setIsRescheduleModalOpen(true);
+  const handleManualConfirm = async (values) => {
+    setSubmitting(true);
+    try {
+      await interviewAPI.manualConfirm(values.applicationId, {
+        interviewerId: values.interviewerId,
+        startTime: values.startTime.toISOString(),
+        roundNumber: values.roundNumber || undefined,
+      });
+      message.success('Đã chốt lịch tay cho ứng viên!');
+      setManualModalOpen(false);
+      manualForm.resetFields();
+      fetchJobData(selectedJobId);
+    } catch (error) {
+      console.error('Error manual confirm:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể chốt lịch.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const columns = [
+  // ===== Render =====
+
+  const slotColumns = [
     {
-      title: 'Ứng viên',
-      dataIndex: 'candidate',
-      key: 'candidate',
-      render: (text) => (
-        <div className="candidate-cell">
-          <Avatar style={{ backgroundColor: '#5D8C3E' }}>{text ? text[0] : '?'}</Avatar>
-          <span style={{ fontWeight: 600 }}>{text || 'N/A'}</span>
-        </div>
-      ),
-    },
-    { title: 'Phòng ban', dataIndex: 'department', key: 'department' },
-    {
-      title: 'Date & Time',
-      dataIndex: 'scheduledAt',
-      key: 'scheduledAt',
-      render: (text) => (
-        <span>
-          <CalendarOutlined /> {text ? dayjs(text).format('DD/MM/YYYY - HH:mm') : 'N/A'}
-        </span>
+      title: 'Thời gian',
+      dataIndex: 'startTime',
+      key: 'startTime',
+      render: (t) => (
+        <span><CalendarOutlined /> {dayjs(t).format('DD/MM/YYYY - HH:mm')}</span>
       ),
     },
     {
-      title: 'Interviewers',
-      dataIndex: 'interviewerNames',
-      key: 'interviewers',
-      render: (names) => names?.map((name, idx) => <Tag key={idx}>{name}</Tag>) || '-',
+      title: 'Interviewer',
+      dataIndex: 'interviewerId',
+      key: 'interviewerId',
+      render: (id) => <Tag>{interviewerName(id)}</Tag>,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
-        const statusConfig = {
-          UPCOMING: { color: 'success', label: 'Sắp tới' },
-          PENDING: { color: 'warning', label: 'Chờ xác nhận' },
-          CONFIRMED: { color: 'processing', label: 'Đã xác nhận' },
-          COMPLETED: { color: 'default', label: 'Đã hoàn thành' },
-          CANCELLED: { color: 'error', label: 'Đã hủy' },
+        const config = {
+          OPEN: { color: 'success', label: 'Còn trống' },
+          BOOKED: { color: 'processing', label: 'Đã được đặt' },
+          LOCKED: { color: 'default', label: 'Đã khóa' },
         };
-        const config = statusConfig[status] || { color: 'default', label: status };
-        return <Tag color={config.color}>{config.label}</Tag>;
+        const c = config[status] || { color: 'default', label: status };
+        return <Tag color={c.color}>{c.label}</Tag>;
       },
     },
     {
-      title: 'Thao tác',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          {record.meetingLink && (
-            <Button type="primary" icon={<VideoCameraOutlined />} href={record.meetingLink} target="_blank">
-              Join
-            </Button>
-          )}
-          {record.status !== 'CANCELLED' && record.status !== 'COMPLETED' && (
-            <>
-              <Button icon={<EditOutlined />} onClick={() => openRescheduleModal(record)}>
-                Đổi lịch
-              </Button>
-              <Popconfirm
-                title="Xác nhận hủy lịch"
-                description="Bạn có chắc muốn hủy lịch phỏng vấn này?"
-                onConfirm={() => handleCancelSchedule(record.id)}
-                okText="Hủy lịch"
-                cancelText="Không"
-                okButtonProps={{ danger: true }}
-              >
-                <Button danger icon={<DeleteOutlined />}>
-                  Hủy
-                </Button>
-              </Popconfirm>
-            </>
-          )}
-        </Space>
-      ),
+      title: 'Ứng viên đã đặt',
+      dataIndex: 'bookedApplicationId',
+      key: 'bookedApplicationId',
+      render: (appId) => appId ? candidateLabel(appId) : <Text type="secondary">—</Text>,
     },
   ];
 
-  const filteredData = interviews.filter((item) => {
-    const matchesSearch =
-      !searchText ||
-      (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.department || '').toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const invitedColumns = [
+    {
+      title: 'Ứng viên',
+      dataIndex: 'applicationId',
+      key: 'applicationId',
+      render: (appId) => candidateLabel(appId),
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => {
+        const config = {
+          PENDING: { color: 'warning', label: 'Chờ chọn lịch' },
+          CONFIRMED: { color: 'success', label: 'Đã chốt lịch' },
+          NO_SLOT_FITS: { color: 'orange', label: 'Báo bận' },
+          CANCELLED: { color: 'error', label: 'Đã hủy' },
+        };
+        const c = config[status] || { color: 'default', label: status };
+        return <Tag color={c.color}>{c.label}</Tag>;
+      },
+    },
+    {
+      title: 'Cờ nhắc',
+      dataIndex: 'flag',
+      key: 'flag',
+      render: (flag, record) => {
+        if (flag === 'RED') {
+          return (
+            <Tooltip title={`Báo bận ${record.noSlotFitsCount} lần — gọi điện chốt tay ngay`}>
+              <Badge color="red" text={<Text type="danger">Gọi điện gấp</Text>} />
+            </Tooltip>
+          );
+        }
+        if (flag === 'YELLOW') {
+          return (
+            <Tooltip title={`Báo bận ${record.noSlotFitsCount} lần — cân nhắc gọi điện`}>
+              <Badge color="gold" text="Nên gọi điện" />
+            </Tooltip>
+          );
+        }
+        return <Text type="secondary">—</Text>;
+      },
+    },
+  ];
 
   return (
     <div className="interview-schedule-page">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Interview Schedule</Title>
-          <Text type="secondary">Manage interview schedules</Text>
+          <Title level={3} className="page-title">Lịch phỏng vấn</Title>
+          <Text type="secondary">
+            Mở pool khung giờ dùng chung → mời ứng viên chọn lịch qua email → ai chốt trước lấy trước
+          </Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
-          Tạo lịch phỏng vấn
-        </Button>
+        <Space>
+          <Select
+            placeholder="Chọn vị trí"
+            value={selectedJobId}
+            onChange={setSelectedJobId}
+            style={{ width: 260 }}
+            showSearch
+            optionFilterProp="label"
+            options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
+          />
+          <Button icon={<ReloadOutlined />} onClick={() => fetchJobData(selectedJobId)} loading={loading}>
+            Làm mới
+          </Button>
+          <Button icon={<PhoneOutlined />} onClick={() => setManualModalOpen(true)} disabled={!selectedJobId}>
+            Chốt lịch tay
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)} disabled={!selectedJobId}>
+            Mở pool khung giờ
+          </Button>
+        </Space>
       </div>
 
-      {!appId && (
+      {!selectedJobId && (
         <Card className="main-card" bordered={false}>
-          <Empty description="Vui lòng chọn ứng viên từ trang chi tiết" />
+          <Empty description="Chọn một vị trí để xem lịch phỏng vấn" />
         </Card>
       )}
 
-      {appId && (
+      {selectedJobId && pools.length === 0 && !loading && (
         <Card className="main-card" bordered={false}>
-          <div className="table-toolbar">
-            <Input
-              placeholder="Tìm kiếm ứng viên, vị trí..."
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 260 }}
-              allowClear
-            />
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 160 }}
-              placeholder="Trạng thái"
-            >
-              <Option value="all">Tất cả trạng thái</Option>
-              <Option value="UPCOMING">Sắp tới</Option>
-              <Option value="PENDING">Chờ xác nhận</Option>
-              <Option value="CONFIRMED">Đã xác nhận</Option>
-              <Option value="COMPLETED">Đã hoàn thành</Option>
-            </Select>
-            <Button icon={<ReloadOutlined />} onClick={() => fetchInterviews(appId)} loading={loading}>
-              Làm mới
-            </Button>
-          </div>
+          <Empty description={
+            <div>
+              <Text>Chưa có pool khung giờ nào cho vị trí này</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Bấm "Mở pool khung giờ" để tạo bộ khung, sau đó mời các ứng viên đang ở bước Phỏng vấn
+              </Text>
+            </div>
+          } />
+        </Card>
+      )}
+
+      {selectedJobId && pools.map((pool) => (
+        <Card
+          key={pool.poolId}
+          className="main-card"
+          bordered={false}
+          style={{ marginBottom: 16 }}
+          title={
+            <Space>
+              <Text strong>Vòng {pool.roundNumber}</Text>
+              <Tag color={pool.status === 'OPEN' ? 'success' : pool.status === 'CANCELLED' ? 'error' : 'default'}>
+                {pool.status === 'OPEN' ? 'Đang mở' : pool.status === 'CANCELLED' ? 'Đã hủy' : pool.status}
+              </Tag>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {pool.slots.filter(s => s.status === 'BOOKED').length}/{pool.slots.length} khung đã được đặt
+              </Text>
+            </Space>
+          }
+          extra={
+            pool.status === 'OPEN' && (
+              <Space>
+                <Button
+                  size="small"
+                  icon={<UserAddOutlined />}
+                  onClick={() => setInviteModal(pool)}
+                >
+                  Mời ứng viên
+                </Button>
+                <Popconfirm
+                  title="Hủy pool này?"
+                  description="Khung giờ sẽ khóa, lời mời chờ sẽ hủy, ứng viên đã chốt được email báo."
+                  onConfirm={() => handleCancelPool(pool.poolId)}
+                  okText="Hủy pool"
+                  cancelText="Không"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button size="small" danger icon={<DeleteOutlined />}>Hủy pool</Button>
+                </Popconfirm>
+              </Space>
+            )
+          }
+        >
           <Table
-            columns={columns}
-            dataSource={filteredData}
-            rowKey="id"
-            loading={loading}
-            locale={{ emptyText: 'Chưa có lịch phỏng vấn nào' }}
+            columns={slotColumns}
+            dataSource={pool.slots}
+            rowKey="slotId"
+            pagination={false}
+            size="small"
           />
+          {pool.invitedCandidates.length > 0 && (
+            <>
+              <Divider orientation="left" plain style={{ margin: '16px 0 8px' }}>
+                Ứng viên đã mời ({pool.invitedCandidates.length})
+              </Divider>
+              <Table
+                columns={invitedColumns}
+                dataSource={pool.invitedCandidates}
+                rowKey="scheduleId"
+                pagination={false}
+                size="small"
+              />
+            </>
+          )}
         </Card>
-      )}
+      ))}
 
+      {/* Modal: mở pool mới */}
       <Modal
-        title="Tạo lịch phỏng vấn"
-        open={isModalOpen}
-        onCancel={handleCancel}
+        title="Mở pool khung giờ phỏng vấn"
+        open={createModalOpen}
+        onCancel={() => { setCreateModalOpen(false); createForm.resetFields(); }}
         footer={null}
-        width={800}
+        width={640}
         destroyOnClose
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCreateSchedule}
-        >
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item
-                label="Tin tuyển dụng"
-                rules={[{ required: true, message: 'Vui lòng chọn tin tuyển dụng' }]}
-              >
-                <Select
-                  placeholder="Chọn tin tuyển dụng"
-                  showSearch
-                  allowClear
-                  optionFilterProp="children"
-                  value={selectedJob}
-                  onChange={handleJobChange}
-                >
-                  {jobs.map(job => (
-                    <Select.Option
-                      key={job.jobId || job.id}
-                      value={job.jobId || job.id}
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Một pool dùng chung cho cả vòng: mở khung giờ 1 lần, mời nhiều ứng viên, ai chốt trước lấy trước."
+        />
+        <Form form={createForm} layout="vertical" onFinish={handleCreatePool}>
+          <Form.Item name="roundNumber" label="Vòng phỏng vấn (bỏ trống = vòng 1)">
+            <Select
+              allowClear
+              placeholder="Vòng 1"
+              options={[1, 2, 3, 4, 5].map(n => ({ value: n, label: `Vòng ${n}` }))}
+            />
+          </Form.Item>
+
+          <Form.List name="slots" initialValue={[{}]}>
+            {(fields, { add, remove }) => (
+              <>
+                <Text strong>Khung giờ:</Text>
+                {fields.map((field) => (
+                  <Space key={field.key} align="baseline" style={{ display: 'flex', marginTop: 8 }}>
+                    <Form.Item
+                      name={[field.name, 'interviewerId']}
+                      rules={[{ required: true, message: 'Chọn interviewer' }]}
+                      style={{ marginBottom: 8 }}
                     >
-                      {job.title}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              {selectedJobDetail && (
-                <Card title="Thông tin Job" size="small" style={{ marginBottom: 16 }}>
-                  <Descriptions column={1} size="small">
-                    <Descriptions.Item label="Job">{selectedJobDetail.title || 'Chưa cập nhật'}</Descriptions.Item>
-                    <Descriptions.Item label="Mô tả">{selectedJobDetail.jdText || 'Chưa cập nhật'}</Descriptions.Item>
-                    <Descriptions.Item label="Vị trí">{selectedJobDetail.location || 'Chưa cập nhật'}</Descriptions.Item>
-                    <Descriptions.Item label="Phòng ban">{selectedJobDetail.department || 'Chưa cập nhật'}</Descriptions.Item>
-                    <Descriptions.Item label="Loại hình">{selectedJobDetail.employmentType || 'Chưa cập nhật'}</Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              )}
-            </Col>
-
-            <Col span={12}>
-              <Form.Item
-                name="applicationIds"
-                label="Chọn ứng viên"
-                rules={[{ required: true, message: 'Vui lòng chọn ít nhất một ứng viên' }]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder={selectedJob ? "Chọn ứng viên" : "Chọn tin tuyển dụng trước"}
-                  showSearch
-                  optionFilterProp="children"
-                  onChange={handleCandidatesChange}
-                  notFoundContent={candidates.length === 0 && selectedJob ? <Text type="secondary">Không có ứng viên</Text> : null}
-                  maxTagCount={3}
-                >
-                  {candidates.map(candidate => (
-                    <Select.Option
-                      key={candidate.applicationId}
-                      value={candidate.applicationId}
+                      <Select
+                        placeholder="Interviewer"
+                        style={{ width: 240 }}
+                        showSearch
+                        optionFilterProp="label"
+                        options={interviewers.map(i => ({
+                          value: i.userId,
+                          label: i.fullName || i.email,
+                        }))}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      name={[field.name, 'startTime']}
+                      rules={[{ required: true, message: 'Chọn thời gian' }]}
+                      style={{ marginBottom: 8 }}
                     >
-                      {candidate.name} {candidate.email ? `- ${candidate.email}` : ''}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
+                      <DatePicker
+                        showTime={{ format: 'HH:mm' }}
+                        format="DD/MM/YYYY HH:mm"
+                        placeholder="Ngày & giờ"
+                        disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        style={{ width: 200 }}
+                      />
+                    </Form.Item>
+                    {fields.length > 1 && (
+                      <MinusCircleOutlined onClick={() => remove(field.name)} />
+                    )}
+                  </Space>
+                ))}
+                <Button type="dashed" icon={<PlusOutlined />} onClick={() => add()} block style={{ marginTop: 8 }}>
+                  Thêm khung giờ
+                </Button>
+              </>
+            )}
+          </Form.List>
 
-              {Object.keys(candidateDetails).length > 0 && (
-                <Card title={`Thông tin ứng viên (${Object.keys(candidateDetails).length})`} size="small" style={{ marginBottom: 16, maxHeight: 200, overflow: 'auto' }}>
-                  {Object.values(candidateDetails).map((detail, idx) => (
-                    <div key={detail.applicationId} style={{ marginBottom: idx < Object.keys(candidateDetails).length - 1 ? 8 : 0, paddingBottom: idx < Object.keys(candidateDetails).length - 1 ? 8 : 0, borderBottom: idx < Object.keys(candidateDetails).length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                      <Text strong>{detail.name}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>{detail.email || 'N/A'}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 12 }}>Trạng thái: {detail.currentState || 'N/A'}</Text>
-                    </div>
-                  ))}
-                </Card>
-              )}
-
-              <Form.Item
-                name="timeSlots"
-                label="Thời gian phỏng vấn"
-                rules={[{
-                  validator: () =>
-                    timeSlots.length > 0 && timeSlots.every((slot) => slot.value)
-                      ? Promise.resolve()
-                      : Promise.reject(new Error('Vui lòng chọn ít nhất một thời gian phỏng vấn')),
-                }]}
-              >
-                <div>
-                  <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    onClick={handleAddTimeSlot}
-                    disabled={timeSlots.length >= 3}
-                    style={{ marginBottom: 12 }}
-                  >
-                    Thêm thời gian
-                  </Button>
-
-                  {timeSlots.length === 0 ? (
-                    <Text type="secondary">Chưa có slot thời gian nào</Text>
-                  ) : (
-                    <Space direction="vertical" style={{ width: '100%' }}>
-                      {timeSlots.map((slot, index) => (
-                        <div
-                          key={slot.id}
-                          style={{
-                            border: '1px solid #d9d9d9',
-                            borderRadius: 8,
-                            padding: '10px 12px',
-                            background: '#fafafa',
-                          }}
-                        >
-                          <div style={{ fontWeight: 600, marginBottom: 8 }}>Slot {index + 1}</div>
-                          {editingSlotId === slot.id || !slot.value ? (
-                            <Space align="start" style={{ width: '100%' }}>
-                              <DatePicker
-                                showTime
-                                format="DD/MM/YYYY HH:mm"
-                                placeholder="Chọn ngày và giờ"
-                                value={slot.value}
-                                onChange={(value) => handleTimeSlotChange(slot.id, value)}
-                                disabledDate={(current) => current && current < dayjs().startOf('day')}
-                                style={{ width: '100%' }}
-                              />
-                              {slot.value && (
-                                <Button size="small" onClick={() => setEditingSlotId(null)}>
-                                  Xong
-                                </Button>
-                              )}
-                            </Space>
-                          ) : (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                              <Text>{dayjs(slot.value).format('DD/MM/YYYY HH:mm')}</Text>
-                              <Space>
-                                <Button size="small" onClick={() => handleEditTimeSlot(slot.id)}>
-                                  Sửa
-                                </Button>
-                                <Button size="small" danger onClick={() => handleRemoveTimeSlot(slot.id)}>
-                                  Xóa
-                                </Button>
-                              </Space>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </Space>
-                  )}
-                </div>
-              </Form.Item>
-
-              <Form.Item
-                name="interviewerIds"
-                label="Người phỏng vấn"
-                rules={[{ required: false, message: 'Vui lòng chọn người phỏng vấn' }]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Chọn người phỏng vấn"
-                  showSearch
-                  optionFilterProp="children"
-                >
-                  {interviewers.map(interviewer => (
-                    <Select.Option key={interviewer.id} value={interviewer.id}>
-                      {interviewer.name} {interviewer.email ? `- ${interviewer.email}` : ''}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 16 }}>
             <Space>
-              <Button onClick={handleCancel}>Hủy</Button>
-              <Button type="primary" htmlType="submit" loading={submitting}>
-                Tạo lịch
-              </Button>
+              <Button onClick={() => { setCreateModalOpen(false); createForm.resetFields(); }}>Hủy</Button>
+              <Button type="primary" htmlType="submit" loading={submitting}>Mở pool</Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* Modal Reschedule */}
+      {/* Modal: mời ứng viên vào pool */}
       <Modal
-        title="Đổi lịch phỏng vấn"
-        open={isRescheduleModalOpen}
-        onCancel={() => {
-          setIsRescheduleModalOpen(false);
-          setEditingSchedule(null);
-          setRescheduleDate(null);
-        }}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setIsRescheduleModalOpen(false);
-              setEditingSchedule(null);
-              setRescheduleDate(null);
-            }}
-          >
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={submitting}
-            onClick={handleReschedule}
-          >
-            Xác nhận đổi lịch
-          </Button>,
-        ]}
+        title={inviteModal ? `Mời ứng viên — Vòng ${inviteModal.roundNumber}` : ''}
+        open={!!inviteModal}
+        onCancel={() => { setInviteModal(null); inviteForm.resetFields(); }}
+        footer={null}
+        width={560}
+        destroyOnClose
       >
-        {editingSchedule && (
-          <div>
-            <p><strong>Ứng viên:</strong> {editingSchedule.candidate}</p>
-            <p><strong>Lịch cũ:</strong> {editingSchedule.scheduledAt ? dayjs(editingSchedule.scheduledAt).format('DD/MM/YYYY - HH:mm') : 'N/A'}</p>
-            <Divider />
-            <Form.Item label="Chọn ngày giờ mới" required>
-              <DatePicker
-                showTime
-                format="DD/MM/YYYY HH:mm"
-                placeholder="Chọn ngày và giờ mới"
-                value={rescheduleDate}
-                onChange={setRescheduleDate}
-                disabledDate={(current) => current && current < dayjs().startOf('day')}
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
-          </div>
-        )}
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Mỗi ứng viên được mời sẽ nhận email kèm magic link để tự chọn khung giờ. Chỉ mời được hồ sơ đang ở bước Phỏng vấn."
+        />
+        <Form form={inviteForm} layout="vertical" onFinish={handleInvite}>
+          <Form.Item
+            name="applicationIds"
+            label={`Ứng viên đang ở bước Phỏng vấn (${interviewStageApps.length})`}
+            rules={[{ required: true, message: 'Chọn ít nhất 1 ứng viên' }]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Chọn ứng viên"
+              showSearch
+              optionFilterProp="label"
+              options={interviewStageApps.map(a => ({
+                value: a.applicationId,
+                label: `${a.candidateName}${a.candidateEmail ? ` — ${a.candidateEmail}` : ''}`,
+              }))}
+              notFoundContent={<Text type="secondary">Không có hồ sơ nào ở bước Phỏng vấn — kéo card sang cột Phỏng vấn trước</Text>}
+            />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => { setInviteModal(null); inviteForm.resetFields(); }}>Hủy</Button>
+              <Button type="primary" htmlType="submit" loading={submitting}>Gửi lời mời</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal: chốt lịch tay (nhánh gọi điện) */}
+      <Modal
+        title="Chốt lịch tay (đã gọi điện thống nhất với ứng viên)"
+        open={manualModalOpen}
+        onCancel={() => { setManualModalOpen(false); manualForm.resetFields(); }}
+        footer={null}
+        width={520}
+        destroyOnClose
+      >
+        <Form form={manualForm} layout="vertical" onFinish={handleManualConfirm}>
+          <Form.Item
+            name="applicationId"
+            label="Ứng viên (đang ở bước Phỏng vấn)"
+            rules={[{ required: true, message: 'Chọn ứng viên' }]}
+          >
+            <Select
+              placeholder="Chọn ứng viên"
+              showSearch
+              optionFilterProp="label"
+              options={interviewStageApps.map(a => ({
+                value: a.applicationId,
+                label: `${a.candidateName}${a.candidateEmail ? ` — ${a.candidateEmail}` : ''}`,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item
+            name="interviewerId"
+            label="Interviewer"
+            rules={[{ required: true, message: 'Chọn interviewer' }]}
+          >
+            <Select
+              placeholder="Chọn interviewer"
+              showSearch
+              optionFilterProp="label"
+              options={interviewers.map(i => ({ value: i.userId, label: i.fullName || i.email }))}
+            />
+          </Form.Item>
+          <Form.Item
+            name="startTime"
+            label="Thời gian phỏng vấn"
+            rules={[{ required: true, message: 'Chọn thời gian' }]}
+          >
+            <DatePicker
+              showTime={{ format: 'HH:mm' }}
+              format="DD/MM/YYYY HH:mm"
+              placeholder="Ngày & giờ"
+              disabledDate={(current) => current && current < dayjs().startOf('day')}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Form.Item name="roundNumber" label="Vòng (bỏ trống = tự đánh vòng kế tiếp)">
+            <Select
+              allowClear
+              placeholder="Tự động"
+              options={[1, 2, 3, 4, 5].map(n => ({ value: n, label: `Vòng ${n}` }))}
+            />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => { setManualModalOpen(false); manualForm.resetFields(); }}>Hủy</Button>
+              <Button type="primary" htmlType="submit" loading={submitting}>Chốt lịch</Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
 };
 
-export default InterviewSchedule;
+export default InterviewScheduleRecruit;

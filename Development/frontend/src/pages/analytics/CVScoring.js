@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Button, Table, Tag, Select, Upload, message, Progress, Row, Col, Statistic, Avatar, Space, Modal, Tabs, Spin, Empty } from 'antd';
+import { Card, Typography, Button, Table, Tag, Select, Upload, message, Progress, Row, Col, Statistic, Avatar, Space, Modal, Tabs, Spin, Empty, Input } from 'antd';
 import {
   UploadOutlined, FileTextOutlined, TrophyOutlined, StarOutlined,
   ReloadOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined,
   InboxOutlined, UserOutlined, TeamOutlined
 } from '@ant-design/icons';
-import { cvScoringAPI, jobsAPI } from '../../services/api';
+import { cvScoringAPI, jobsAPI, criteriaAPI } from '../../services/api';
 import './css/CVScoring.css';
 
 const { Title, Text } = Typography;
@@ -23,6 +23,9 @@ const CVScoring = () => {
   const [cvDetailOpen, setCvDetailOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [file, setFile] = useState(null);
+  const [candidateName, setCandidateName] = useState('');
+  const [candidateEmail, setCandidateEmail] = useState('');
+  const [candidatePhone, setCandidatePhone] = useState('');
 
   useEffect(() => {
     fetchJobs();
@@ -39,7 +42,7 @@ const CVScoring = () => {
       const response = await jobsAPI.getAll();
       setJobs(response.data || []);
       if (response.data?.length > 0) {
-        setSelectedJob(response.data[0].id);
+        setSelectedJob(response.data[0].jobId);
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -59,9 +62,21 @@ const CVScoring = () => {
     }
   };
 
+  const resetUploadModal = () => {
+    setUploadModalOpen(false);
+    setFile(null);
+    setCandidateName('');
+    setCandidateEmail('');
+    setCandidatePhone('');
+  };
+
   const handleUploadCV = async () => {
     if (!file || !selectedJob) {
       message.error('Vui lòng chọn file CV và vị trí');
+      return;
+    }
+    if (!candidateName.trim() || !candidateEmail.trim()) {
+      message.error('Vui lòng nhập tên và email ứng viên');
       return;
     }
     try {
@@ -69,27 +84,55 @@ const CVScoring = () => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('jobId', selectedJob);
+      formData.append('candidateName', candidateName.trim());
+      formData.append('candidateEmail', candidateEmail.trim());
+      if (candidatePhone.trim()) formData.append('candidatePhone', candidatePhone.trim());
       await cvScoringAPI.uploadCV(formData);
-      message.success('Upload và chấm điểm CV thành công!');
-      setUploadModalOpen(false);
-      setFile(null);
+      message.success('Đã nhận CV — hệ thống đang chấm điểm nền, bấm Làm mới để cập nhật.');
+      resetUploadModal();
       fetchRanking(selectedJob);
     } catch (error) {
       console.error('Error uploading CV:', error);
-      message.error('Không thể upload CV. Vui lòng thử lại.');
+      message.error(error?.response?.data?.error || 'Không thể upload CV. Vui lòng thử lại.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleViewCV = async (cvId) => {
+  // Mở file CV gốc (presigned URL ~1h) trong tab mới
+  const handleOpenCvFile = async (cvId) => {
     try {
-      const response = await cvScoringAPI.getCVScore(cvId);
-      setSelectedCV(response.data);
+      const response = await cvScoringAPI.getCvFileUrl(cvId);
+      const url = response.data?.url;
+      if (url) window.open(url, '_blank', 'noopener');
+      else message.error('CV không có file gốc');
+    } catch (error) {
+      console.error('Error fetching CV file url:', error);
+      message.error('Không thể mở file CV');
+    }
+  };
+
+  // Chi tiết = kết quả chấm theo TỪNG tiêu chí (khớp/thiếu + bằng chứng)
+  const handleViewCV = async (record) => {
+    try {
+      const response = await criteriaAPI.getCriteriaMatches(record.applicationId);
+      const matches = response.data || [];
+      setSelectedCV({
+        ...record,
+        matchedSkills: matches.filter(m => m.matched).map(m => m.name),
+        missingSkills: matches.filter(m => !m.matched).map(m => m.name),
+        evaluation: matches.map(m => ({
+          name: m.name,
+          score: m.similarity != null ? Math.round(m.similarity * 100) : (m.matched ? 100 : 0),
+          feedback: m.evidence,
+        })),
+      });
       setCvDetailOpen(true);
     } catch (error) {
-      console.error('Error fetching CV detail:', error);
-      message.error('Không thể tải chi tiết CV');
+      console.error('Error fetching criteria matches:', error);
+      // Job chưa có tiêu chí — vẫn mở modal với điểm tổng
+      setSelectedCV({ ...record, matchedSkills: [], missingSkills: [], evaluation: [] });
+      setCvDetailOpen(true);
     }
   };
 
@@ -203,15 +246,24 @@ const CVScoring = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 100,
+      width: 180,
       render: (_, record) => (
-        <Button
-          type="text"
-          icon={<EyeOutlined />}
-          onClick={() => handleViewCV(record.cvId || record.id)}
-        >
-          Chi tiết
-        </Button>
+        <Space size={4}>
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewCV(record)}
+          >
+            Chi tiết
+          </Button>
+          <Button
+            type="text"
+            icon={<FileTextOutlined />}
+            onClick={() => handleOpenCvFile(record.cvId)}
+          >
+            Mở CV
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -297,7 +349,7 @@ const CVScoring = () => {
           <Table
             columns={columns}
             dataSource={ranking}
-            rowKey="id"
+            rowKey="applicationId"
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
@@ -327,7 +379,7 @@ const CVScoring = () => {
           </div>
         }
         open={uploadModalOpen}
-        onCancel={() => { setUploadModalOpen(false); setFile(null); }}
+        onCancel={resetUploadModal}
         footer={null}
         width={480}
       >
@@ -340,18 +392,45 @@ const CVScoring = () => {
               style={{ width: '100%', marginTop: 8 }}
               placeholder="Chọn vị trí"
               showSearch
-              options={jobs.map(job => ({ value: job.id, label: job.title }))}
+              options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <Text strong>Tên ứng viên: <Text type="danger">*</Text></Text>
+            <Input
+              value={candidateName}
+              onChange={(e) => setCandidateName(e.target.value)}
+              placeholder="Nguyễn Văn A"
+              style={{ marginTop: 8 }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <Text strong>Email ứng viên: <Text type="danger">*</Text></Text>
+            <Input
+              value={candidateEmail}
+              onChange={(e) => setCandidateEmail(e.target.value)}
+              placeholder="email@example.com"
+              style={{ marginTop: 8 }}
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong>Số điện thoại (tùy chọn):</Text>
+            <Input
+              value={candidatePhone}
+              onChange={(e) => setCandidatePhone(e.target.value)}
+              placeholder="09xxxxxxxx"
+              style={{ marginTop: 8 }}
             />
           </div>
 
           <Dragger
             name="file"
             maxCount={1}
-            accept=".pdf,.doc,.docx"
+            accept=".pdf"
             beforeUpload={(f) => {
-              const valid = f.name.endsWith('.pdf') || f.name.endsWith('.doc') || f.name.endsWith('.docx');
-              if (!valid) {
-                message.error('Chỉ chấp nhận file PDF, DOC, DOCX!');
+              if (!f.name.toLowerCase().endsWith('.pdf')) {
+                message.error('Backend chỉ chấp nhận file PDF!');
                 return Upload.LIST_IGNORE;
               }
               setFile(f);
@@ -364,17 +443,17 @@ const CVScoring = () => {
               <InboxOutlined style={{ color: MATCHA_GREEN }} />
             </p>
             <p className="ant-upload-text">Click hoặc kéo file vào đây</p>
-            <p className="ant-upload-hint">Hỗ trợ: PDF, DOC, DOCX (tối đa 20MB)</p>
+            <p className="ant-upload-hint">Chỉ hỗ trợ PDF (tối đa 20MB)</p>
           </Dragger>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-            <Button onClick={() => { setUploadModalOpen(false); setFile(null); }}>Hủy</Button>
+            <Button onClick={resetUploadModal}>Hủy</Button>
             <Button
               type="primary"
               onClick={handleUploadCV}
               loading={uploading}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-              disabled={!file || !selectedJob}
+              disabled={!file || !selectedJob || !candidateName.trim() || !candidateEmail.trim()}
             >
               {uploading ? 'Đang chấm...' : 'Upload & Chấm điểm'}
             </Button>
@@ -414,9 +493,9 @@ const CVScoring = () => {
                           <Card size="small" bordered={false} style={{ background: '#f5f5f4' }}>
                             <Statistic
                               title="Điểm tổng"
-                              value={selectedCV.totalScore || selectedCV.aiScore || 0}
+                              value={selectedCV.score ?? selectedCV.totalScore ?? selectedCV.aiScore ?? 0}
                               suffix="%"
-                              valueStyle={{ color: getScoreColor(selectedCV.totalScore), fontSize: 28 }}
+                              valueStyle={{ color: getScoreColor(selectedCV.score ?? selectedCV.totalScore), fontSize: 28 }}
                               prefix={<TrophyOutlined />}
                             />
                           </Card>

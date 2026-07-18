@@ -214,16 +214,18 @@ const CandidateResponse = () => {
             </div>
 
             <Descriptions column={{ xs: 1, sm: 2 }} className="cr-offer-details">
+              {/* CandidateOfferDto: { salaryAmount, currency, startDate, status, expiresAt } */}
               <Descriptions.Item label={<span><DollarOutlined /> Mức lương</span>}>
                 <Text strong style={{ color: MATCHA_GREEN, fontSize: 16 }}>
-                  {formatSalary(offerData?.salary)}
+                  {formatSalary(offerData?.salaryAmount ?? offerData?.salary)}
+                  {offerData?.currency ? ` ${offerData.currency}` : ''}
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item label={<span><CalendarOutlined /> Ngày bắt đầu</span>}>
                 <Text strong>{formatDate(offerData?.startDate)}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Hạn phản hồi">
-                <Text type="danger" strong>{formatDate(offerData?.deadline)}</Text>
+                <Text type="danger" strong>{formatDate(offerData?.expiresAt ?? offerData?.deadline)}</Text>
               </Descriptions.Item>
               {offerData?.position && (
                 <Descriptions.Item label="Phòng ban">

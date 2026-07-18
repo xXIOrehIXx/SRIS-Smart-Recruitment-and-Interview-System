@@ -8,7 +8,8 @@ public record ApplicationRankingRow(
     long CandidateId,
     string CandidateName,
     decimal? AiMatchScore,
-    string CurrentState);
+    string CurrentState,
+    long CvId);
 
 /// <summary>1 hồ sơ chưa có điểm cần chấm nền (Cách A) — kèm company_id để worker set đúng tenant.</summary>
 public record UnscoredApplication(long CompanyId, long ApplicationId);

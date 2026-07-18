@@ -8,4 +8,6 @@ public class CandidateRankingDto
     public string CandidateName { get; set; } = null!;
     public decimal? Score { get; set; }
     public string CurrentState { get; set; } = null!;
+    /// <summary>CV gốc — FE dùng gọi /cv-scoring/cv/{cvId}/file-url để mở file.</summary>
+    public long CvId { get; set; }
 }

@@ -140,7 +140,7 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             where a.JobId == jobId
             orderby a.AiMatchScore descending
             select new ApplicationRankingRow(
-                a.ApplicationId, a.CandidateId, c.FullName, a.AiMatchScore, a.CurrentState))
+                a.ApplicationId, a.CandidateId, c.FullName, a.AiMatchScore, a.CurrentState, a.CvId))
             .ToListAsync();
     }
 

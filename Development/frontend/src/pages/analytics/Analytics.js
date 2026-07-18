@@ -5,7 +5,7 @@ import {
   TrophyOutlined, BarChartOutlined, PieChartOutlined,
   ArrowUpOutlined, ArrowDownOutlined, ReloadOutlined
 } from '@ant-design/icons';
-import { dashboardAPI } from '../../services/api';
+import { dashboardAPI, jobsAPI } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend } from 'recharts';
 import './css/Analytics.css';
 
@@ -17,29 +17,33 @@ const MATCHA_GREEN = '#5D8C3E';
 const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
-  const [funnel, setFunnel] = useState([]);
-  const [sources, setSources] = useState([]);
-  const [kanban, setKanban] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
 
   useEffect(() => {
     fetchAnalytics();
   }, [selectedJob]);
 
+  const fetchJobs = async () => {
+    try {
+      const response = await jobsAPI.getAll();
+      setJobs(response.data || []);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    }
+  };
+
+  // Funnel + nguồn ứng viên nằm ngay trong /dashboard/overview
+  // (DashboardOverviewDto: { summary, funnel, rejectReasons, sources })
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const [overviewRes, funnelRes, sourcesRes, kanbanRes] = await Promise.allSettled([
-        dashboardAPI.getOverview(selectedJob),
-        dashboardAPI.getFunnelData(selectedJob),
-        dashboardAPI.getSourceAnalytics(),
-        dashboardAPI.getKanban(selectedJob),
-      ]);
-
-      if (overviewRes.status === 'fulfilled') setOverview(overviewRes.value.data);
-      if (funnelRes.status === 'fulfilled') setFunnel(funnelRes.value.data || []);
-      if (sourcesRes.status === 'fulfilled') setSources(sourcesRes.value.data || []);
-      if (kanbanRes.status === 'fulfilled') setKanban(kanbanRes.value.data?.columns || []);
+      const response = await dashboardAPI.getOverview(selectedJob);
+      setOverview(response.data);
     } catch (error) {
       console.error('Error fetching analytics:', error);
       message.error('Không thể tải dữ liệu phân tích');
@@ -48,14 +52,23 @@ const Analytics = () => {
     }
   };
 
+  const funnel = overview?.funnel || [];
+  const sources = overview?.sources || [];
+
+  const STATE_LABELS = {
+    NEW: 'Hồ sơ mới', SCREENING: 'Sàng lọc', INTERVIEW: 'Phỏng vấn',
+    OFFER: 'Offer', HIRED: 'Đã tuyển', REJECTED: 'Từ chối',
+  };
+
   const funnelConfig = {
-    data: funnel.map(item => ({ stage: item.stateLabel || item.state, count: item.count })),
+    data: funnel.map(item => ({ stage: STATE_LABELS[item.state] || item.state, count: item.count })),
     margin: { top: 20, right: 30, left: 20, bottom: 20 },
   };
 
   const COLORS = ['#5D8C3E', '#7ab356', '#a8d48a', '#c8e4b4', '#e8f5dc'];
 
-  const sourceData = (sources || []).map((s, i) => ({ name: s.source || `Source ${i + 1}`, value: s.count || 0 }));
+  // BreakdownItemDto: { label, count, percentage }
+  const sourceData = sources.map((s, i) => ({ name: s.label || `Source ${i + 1}`, value: s.count || 0 }));
 
   if (loading && !overview) {
     return (
@@ -111,9 +124,12 @@ const Analytics = () => {
           <Select
             placeholder="Lọc theo vị trí"
             allowClear
+            showSearch
+            optionFilterProp="label"
             style={{ width: 200 }}
             onChange={(val) => setSelectedJob(val || null)}
             value={selectedJob}
+            options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
           />
           <RangePicker style={{ width: 260 }} placeholder={['Từ ngày', 'Đến ngày']} />
           <Button icon={<ReloadOutlined />} onClick={fetchAnalytics} loading={loading}>
