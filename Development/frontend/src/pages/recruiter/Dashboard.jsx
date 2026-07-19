@@ -28,7 +28,7 @@ import {
 } from "@ant-design/icons";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useNavigate } from "react-router-dom";
-import { dashboardAPI, applicationAPI } from "../../services/api";
+import { dashboardAPI, applicationAPI, jobsAPI } from "../../services/api";
 import "./css/Dashboard.css";
 
 const { Title, Text } = Typography;
@@ -39,17 +39,19 @@ const MATCHA_LIGHT = "rgba(93, 140, 62, 0.1)";
 
 const STATE_COLORS = {
   NEW: "#1890ff",
+  SCREENING: "#722ed1",
   INTERVIEW: "#faad14",
   OFFER: "#52c41a",
 };
 
 const STATE_LABELS = {
-  NEW: "Applied",
-  INTERVIEW: "Interview",
+  NEW: "Hồ sơ mới",
+  SCREENING: "Sàng lọc",
+  INTERVIEW: "Phỏng vấn",
   OFFER: "Offer",
 };
 
-const KANBAN_STATES = ["NEW", "INTERVIEW", "OFFER"];
+const KANBAN_STATES = ["NEW", "SCREENING", "INTERVIEW", "OFFER"];
 
 // Forward-only state machine order (matches backend ApplicationStateMachine)
 const STATE_ORDER = ["NEW", "SCREENING", "INTERVIEW", "OFFER", "HIRED"];
@@ -83,19 +85,17 @@ const RecruiterDashboard = () => {
 
   const fetchJobs = async () => {
     try {
-      const response = await dashboardAPI.getOverview();
-      if (response.data?.summary?.totalApplications > 0) {
-        setJobs([]);
-      }
+      const response = await jobsAPI.getAll();
+      setJobs(response.data || []);
     } catch (error) {
       console.error("Error fetching jobs:", error);
     }
   };
 
-  const fetchKanbanData = async () => {
+  const fetchKanbanData = async (jobId = selectedJob) => {
     try {
       setKanbanLoading(true);
-      const response = await dashboardAPI.getKanban(selectedJob);
+      const response = await dashboardAPI.getKanban(jobId);
       setKanbanData(response.data || { columns: [] });
     } catch (error) {
       console.error("Error fetching kanban data:", error);
@@ -107,7 +107,7 @@ const RecruiterDashboard = () => {
 
   const handleJobFilter = (jobId) => {
     setSelectedJob(jobId || null);
-    fetchKanbanData();
+    fetchKanbanData(jobId || null);
   };
 
   /**
@@ -196,37 +196,29 @@ const RecruiterDashboard = () => {
     }
   };
 
-  // Stats cards data
+  // Stats cards data (số thật từ /dashboard/overview — không gắn trend vì backend chưa có số liệu so kỳ trước)
   const stats = [
     {
       title: "Tổng Hồ Sơ",
       value: dashboardData?.summary?.totalApplications || 0,
-      trend: "+12%",
-      trendUp: true,
       icon: <FileTextOutlined />,
       color: MATCHA_GREEN,
     },
     {
       title: "Đang Xử Lý",
       value: dashboardData?.summary?.inPipeline || 0,
-      trend: "+8%",
-      trendUp: true,
       icon: <TeamOutlined />,
       color: "#1890ff",
     },
     {
       title: "Đã Tuyển",
       value: dashboardData?.summary?.hired || 0,
-      trend: "+3",
-      trendUp: true,
       icon: <CheckCircleOutlined />,
       color: "#52c41a",
     },
     {
       title: "Bị Từ Chối",
       value: dashboardData?.summary?.rejected || 0,
-      trend: "-5%",
-      trendUp: false,
       icon: <CloseOutlined />,
       color: "#f5222d",
     },
@@ -319,16 +311,6 @@ const RecruiterDashboard = () => {
               >
                 Chi tiết
               </Button>
-              <Button
-                type="link"
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  message.info("Chuyển trạng thái");
-                }}
-              >
-                Chuyển
-              </Button>
             </div>
           </div>
         )}
@@ -398,16 +380,6 @@ const RecruiterDashboard = () => {
                   </Text>
                   <div className="stat-value-row">
                     <span className="stat-value">{stat.value}</span>
-                    <span
-                      className={`stat-trend ${stat.trendUp ? "trend-up" : "trend-down"}`}
-                    >
-                      {stat.trendUp ? (
-                        <ArrowUpOutlined />
-                      ) : (
-                        <ArrowDownOutlined />
-                      )}
-                      {stat.trend}
-                    </span>
                   </div>
                 </div>
                 <div

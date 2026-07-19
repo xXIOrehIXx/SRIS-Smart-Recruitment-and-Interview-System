@@ -19,7 +19,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { dashboardAPI, interviewAPI, jobsAPI, applicationAPI } from '../services/api';
+import { dashboardAPI, interviewAPI, jobsAPI, applicationAPI, recruitmentRequestAPI } from '../services/api';
 import dayjs from 'dayjs';
 import './Dashboard.css';
 
@@ -42,9 +42,13 @@ const Dashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
 
+  // DM: yêu cầu tuyển dụng thật (đếm KPI + bảng chờ duyệt)
+  const [requests, setRequests] = useState([]);
+
   // Interviewer states
   const [upcomingInterviews, setUpcomingInterviews] = useState([]);
   const [pendingGrading, setPendingGrading] = useState([]);
+  const [interviewerStats, setInterviewerStats] = useState({ total: 0, upcoming: 0, submitted: 0 });
   const [candidateModalOpen, setCandidateModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [candidates, setCandidates] = useState([]);
@@ -60,8 +64,18 @@ const Dashboard = () => {
     } else {
       fetchDashboard();
       fetchJobs();
+      if (isDeptManager) fetchRequests();
     }
   }, [selectedJob, isInterviewer]);
+
+  const fetchRequests = async () => {
+    try {
+      const response = await recruitmentRequestAPI.getAll();
+      setRequests(response.data || []);
+    } catch (error) {
+      console.error('Error fetching recruitment requests:', error);
+    }
+  };
 
   const fetchDashboard = async () => {
     try {
@@ -86,36 +100,47 @@ const Dashboard = () => {
   };
 
   const fetchInterviewerData = async () => {
+    // MyScheduleDto: { scheduleId, applicationId, roundNumber, status, startTime, candidateName, candidateEmail, jobTitle }
+    // status lịch: PENDING (chờ ứng viên chốt slot) | CONFIRMED | NO_SLOT_FITS | CANCELLED
     try {
       setLoading(true);
-      const [overviewRes, scheduleRes] = await Promise.all([
-        dashboardAPI.getOverview().catch(() => ({ data: null })),
-        interviewAPI.getMySchedules().catch(() => ({ data: [] })),
-      ]);
-      setDashboardData(overviewRes?.data || null);
-      let data = scheduleRes?.data || [];
-      if (!Array.isArray(data)) {
-        data = data.interviews || data.schedules || data.items || [];
-      }
-      const normalized = Array.isArray(data) ? data.map((item) => ({
-        id: item.scheduleId || item.id,
+      const res = await interviewAPI.getMySchedules().catch(() => ({ data: [] }));
+      const data = Array.isArray(res?.data) ? res.data : [];
+      const normalized = data.map((item) => ({
+        id: item.scheduleId,
         applicationId: item.applicationId,
-        candidate: item.candidateName || item.candidate || 'N/A',
-        position: item.positionTitle || item.jobTitle || item.position || 'N/A',
-        jobId: item.jobId,
-        department: item.department || 'N/A',
-        date: item.interviewDate || item.scheduledDate || item.date,
-        time: item.interviewTime || item.startTime || item.time,
-        endTime: item.endTime || item.interviewEndTime,
-        duration: item.duration || 60,
-        type: item.interviewType || item.type || 'Technical',
-        level: item.round || item.interviewRound || item.level || 1,
-        status: item.status || 'UPCOMING',
-        meetingLink: item.meetingLink || item.meetingUrl || '',
-      })) : [];
-      const upcoming = normalized.filter(i => i.status === 'UPCOMING' || i.status === 'CONFIRMED' || i.status === 'PENDING');
+        candidate: item.candidateName || 'N/A',
+        position: item.jobTitle || 'N/A',
+        round: item.roundNumber || 1,
+        startTime: item.startTime,
+        status: item.status,
+      }));
+      const active = normalized.filter((i) => i.status !== 'CANCELLED');
+      const now = dayjs();
+      const upcoming = active
+        .filter((i) => i.startTime && dayjs(i.startTime).isAfter(now))
+        .sort((a, b) => dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf());
       setUpcomingInterviews(upcoming.slice(0, 5));
-      setPendingGrading(normalized.filter(i => i.status === 'PENDING').slice(0, 5));
+
+      // Buổi CONFIRMED đã diễn ra -> hỏi phiếu chấm của mình (my-sheet) xem đã SUBMITTED chưa
+      const past = active
+        .filter((i) => i.status === 'CONFIRMED' && i.startTime && !dayjs(i.startTime).isAfter(now))
+        .sort((a, b) => dayjs(b.startTime).valueOf() - dayjs(a.startTime).valueOf())
+        .slice(0, 8);
+      const sheets = await Promise.all(
+        past.map((s) =>
+          interviewAPI.getMySheet(s.id)
+            .then((r) => ({ schedule: s, myStatus: r.data?.myStatus }))
+            .catch(() => ({ schedule: s, myStatus: null }))
+        )
+      );
+      const pending = sheets.filter((x) => x.myStatus && x.myStatus !== 'SUBMITTED').map((x) => x.schedule);
+      setPendingGrading(pending.slice(0, 5));
+      setInterviewerStats({
+        total: active.length,
+        upcoming: upcoming.length,
+        submitted: sheets.filter((x) => x.myStatus === 'SUBMITTED').length,
+      });
     } catch (error) {
       console.error('Error fetching interviewer dashboard:', error);
       message.error('Không thể tải dữ liệu dashboard');
@@ -147,11 +172,6 @@ const Dashboard = () => {
     } finally {
       setLoadingCandidates(false);
     }
-  };
-
-  const getTypeColor = (type) => {
-    const colors = { Technical: 'blue', HR: 'green', Culture: 'purple' };
-    return colors[type] || 'default';
   };
 
   const handleShowCandidates = (schedule) => {
@@ -222,30 +242,33 @@ const Dashboard = () => {
     const summary = dashboardData?.summary || {};
     if (isAdmin) {
       return [
-        { title: 'Tổng Tin Tuyển Dụng', value: summary.totalApplications || 0, trend: '+12%', trendUp: true, icon: <FileTextOutlined />, color: MATCHA_GREEN },
-        { title: 'Ứng Viên Tiếp Nhận', value: summary.inPipeline || 0, trend: '+8%', trendUp: true, icon: <TeamOutlined />, color: '#1890ff' },
-        { title: 'Ứng Viên Đã Tuyển', value: summary.hired || 0, trend: '+3', trendUp: true, icon: <UserOutlined />, color: '#52c41a' },
-        { title: 'Tỷ Lệ Chấp Nhận Offer', value: summary.offerAcceptanceRatePct || 0, suffix: '%', trend: '+5%', trendUp: true, icon: <TrophyOutlined />, color: '#faad14' },
+        { title: 'Tổng Hồ Sơ Ứng Tuyển', value: summary.totalApplications || 0, icon: <FileTextOutlined />, color: MATCHA_GREEN },
+        { title: 'Đang Trong Pipeline', value: summary.inPipeline || 0, icon: <TeamOutlined />, color: '#1890ff' },
+        { title: 'Ứng Viên Đã Tuyển', value: summary.hired || 0, icon: <UserOutlined />, color: '#52c41a' },
+        { title: 'Tỷ Lệ Chấp Nhận Offer', value: summary.offerAcceptanceRatePct ?? 0, suffix: '%', icon: <TrophyOutlined />, color: '#faad14' },
       ];
     }
     if (isDeptManager) {
+      // Đếm từ danh sách yêu cầu tuyển dụng thật (recruitmentRequestAPI)
+      const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
+      const approvedCount = requests.filter((r) => r.status === 'APPROVED' || r.status === 'CONVERTED').length;
       return [
-        { title: 'Yêu Cầu Tuyển Dụng', value: summary.recruitmentRequests || 0, icon: <FileTextOutlined />, color: MATCHA_GREEN },
-        { title: 'Chờ Phê Duyệt', value: summary.pendingApprovals || 0, icon: <ClockCircleOutlined />, color: '#faad14' },
-        { title: 'Đã Phê Duyệt', value: summary.approvedRequests || 0, icon: <CheckCircleOutlined />, color: '#52c41a' },
-        { title: 'Ứng Viên Quan Tâm', value: summary.inPipeline || 0, icon: <TeamOutlined />, color: '#1890ff' },
+        { title: 'Yêu Cầu Tuyển Dụng', value: requests.length, icon: <FileTextOutlined />, color: MATCHA_GREEN },
+        { title: 'Chờ Phê Duyệt', value: pendingCount, icon: <ClockCircleOutlined />, color: '#faad14' },
+        { title: 'Đã Duyệt / Đã Tạo Job', value: approvedCount, icon: <CheckCircleOutlined />, color: '#52c41a' },
+        { title: 'Hồ Sơ Trong Pipeline', value: summary.inPipeline || 0, icon: <TeamOutlined />, color: '#1890ff' },
       ];
     }
     if (isInterviewer) {
       return [
-        { title: 'Total Interviews', value: dashboardData?.summary?.totalInterviews || upcomingInterviews.length + pendingGrading.length, icon: <CalendarOutlined />, color: MATCHA_GREEN },
-        { title: 'Pending Grading', value: pendingGrading.length, icon: <ClockCircleOutlined />, color: '#faad14' },
-        { title: 'Completed', value: dashboardData?.summary?.completed || 0, icon: <CheckCircleOutlined />, color: '#52c41a' },
-        { title: 'Avg Score', value: dashboardData?.summary?.avgScore || 82, suffix: '%', icon: <TeamOutlined />, color: '#1890ff' },
+        { title: 'Buổi Phỏng Vấn', value: interviewerStats.total, icon: <CalendarOutlined />, color: MATCHA_GREEN },
+        { title: 'Sắp Diễn Ra', value: interviewerStats.upcoming, icon: <ClockCircleOutlined />, color: '#1890ff' },
+        { title: 'Chờ Chấm Điểm', value: pendingGrading.length, icon: <ClockCircleOutlined />, color: '#faad14' },
+        { title: 'Đã Nộp Phiếu', value: interviewerStats.submitted, icon: <CheckCircleOutlined />, color: '#52c41a' },
       ];
     }
     return [];
-  }, [dashboardData, isAdmin, isDeptManager, isInterviewer, upcomingInterviews.length, pendingGrading.length]);
+  }, [dashboardData, requests, isAdmin, isDeptManager, isInterviewer, interviewerStats, pendingGrading.length]);
 
   const funnelData = dashboardData?.funnel || [];
   const maxFunnel = Math.max(...funnelData.map(f => f.count), 1);
@@ -281,7 +304,7 @@ const Dashboard = () => {
     if (isInterviewer) {
       return (
         <div className="header-actions">
-          <Button icon={<PlusOutlined />} type="primary" onClick={() => navigate('/dept/create-request')}>
+          <Button type="primary" onClick={fetchInterviewerData}>
             Làm mới
           </Button>
         </div>
@@ -375,17 +398,18 @@ const Dashboard = () => {
                 </div>
                 <Table
                   columns={[
-                    { title: 'Ứng Viên', dataIndex: 'name', key: 'name', render: (text, record) => (
-                      <div className="candidate-cell"><Avatar size={36} style={{ backgroundColor: MATCHA_GREEN }} icon={<TeamOutlined />} /><div><div className="candidate-name">{text}</div><Text type="secondary" style={{ fontSize: 12 }}>{record.email}</Text></div></div>
+                    { title: 'Ứng Viên', dataIndex: 'candidateName', key: 'candidateName', render: (text, record) => (
+                      <div className="candidate-cell"><Avatar size={36} style={{ backgroundColor: MATCHA_GREEN }} icon={<TeamOutlined />} /><div><div className="candidate-name">{text}</div><Text type="secondary" style={{ fontSize: 12 }}>{record.candidateEmail}</Text></div></div>
                     )},
-                    { title: 'Vị Trí', dataIndex: 'job', key: 'job', render: (text) => <span style={{ fontWeight: 500 }}>{text}</span> },
-                    { title: 'Trạng Thái', dataIndex: 'status', key: 'status', render: (status) => <Tag color={status === 'new' ? 'blue' : status === 'offer' ? 'green' : 'default'}>{status}</Tag> },
-                    { title: 'Thời Gian', dataIndex: 'time', key: 'time', render: (time) => <span style={{ color: '#8c8c8b', fontSize: 13 }}><ClockCircleOutlined style={{ marginRight: 4 }} />{time}</span> },
+                    { title: 'Vị Trí', dataIndex: 'jobTitle', key: 'jobTitle', render: (text) => <span style={{ fontWeight: 500 }}>{text}</span> },
+                    { title: 'Trạng Thái', dataIndex: 'currentState', key: 'currentState', render: (state) => <Tag color={state === 'NEW' ? 'blue' : state === 'HIRED' ? 'green' : state === 'REJECTED' ? 'red' : state === 'OFFER' ? 'gold' : 'default'}>{FUNNEL_LABELS[state] || state}</Tag> },
+                    { title: 'Ngày Nộp', dataIndex: 'appliedAt', key: 'appliedAt', render: (v) => <span style={{ color: '#8c8c8b', fontSize: 13 }}><ClockCircleOutlined style={{ marginRight: 4 }} />{v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '-'}</span> },
                   ]}
-                  dataSource={[]}
-                  rowKey="id"
+                  dataSource={dashboardData?.recentApplications || []}
+                  rowKey="applicationId"
                   pagination={false}
                   className="applications-table"
+                  onRow={(record) => ({ onClick: () => navigate(`/recruiter/candidates/${record.applicationId}`), style: { cursor: 'pointer' } })}
                 />
               </Card>
             </Col>
@@ -437,26 +461,26 @@ const Dashboard = () => {
             <Col xs={24} lg={14}>
               <Card className="dashboard-card" bordered={false}>
                 <div className="card-header">
-                  <Title level={5}>Yêu Cầu Chờ Phê Duyệt</Title>
-                  <Button type="link" onClick={() => navigate('/dept/hiring-decision')}>Xem tất cả <RightOutlined /></Button>
+                  <Title level={5}>Yêu Cầu Đang Chờ Duyệt</Title>
+                  <Button type="link" onClick={() => navigate('/dept/requests')}>Xem tất cả <RightOutlined /></Button>
                 </div>
                 <Table
                   columns={[
-                    { title: 'Vị trí', key: 'title', render: (text, record) => (
-                      <div><Text strong>{text}</Text><br /><Text type="secondary" style={{ fontSize: 12 }}>{record.department}</Text></div>
+                    { title: 'Vị trí', dataIndex: 'title', key: 'title', render: (text, record) => (
+                      <div><Text strong>{text}</Text><br /><Text type="secondary" style={{ fontSize: 12 }}>{record.department || '-'}</Text></div>
                     )},
-                    { title: 'Số lượng', dataIndex: 'positions', width: 100, render: (val) => <Tag color="blue">{val} vị trí</Tag> },
-                    { title: 'Mức ưu tiên', dataIndex: 'priority', width: 110, render: (val) => <Tag color={val === 'High' ? 'error' : val === 'Medium' ? 'warning' : 'success'}>{val}</Tag> },
-                    { title: 'Ngày gửi', dataIndex: 'submittedDate', width: 110 },
-                    { title: 'Thao tác', key: 'actions', width: 120, render: (_, record) => (
-                      <Space><Button type="link" size="small" onClick={() => navigate(`/dept/hiring-decision/${record.id}`)}>Xem</Button>
-                      <Button type="primary" size="small" onClick={() => navigate(`/dept/hiring-decision`)} style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}>Duyệt</Button></Space>
+                    { title: 'Số lượng', dataIndex: 'quantity', width: 100, render: (val) => <Tag color="blue">{val} vị trí</Tag> },
+                    { title: 'Mức ưu tiên', dataIndex: 'priority', width: 110, render: (val) => <Tag color={val === 'HIGH' ? 'error' : val === 'MEDIUM' ? 'warning' : 'success'}>{val === 'HIGH' ? 'Cao' : val === 'MEDIUM' ? 'Trung bình' : 'Thấp'}</Tag> },
+                    { title: 'Ngày gửi', dataIndex: 'createdAt', width: 110, render: (v) => v ? dayjs(v).format('DD/MM/YYYY') : '-' },
+                    { title: 'Thao tác', key: 'actions', width: 90, render: () => (
+                      <Button type="link" size="small" onClick={() => navigate('/dept/requests')}>Xem</Button>
                     )},
                   ]}
-                  dataSource={dashboardData?.pendingRequests || []}
-                  rowKey="id"
+                  dataSource={requests.filter((r) => r.status === 'PENDING')}
+                  rowKey="requestId"
                   pagination={false}
                   scroll={{ x: 650 }}
+                  locale={{ emptyText: 'Không có yêu cầu nào chờ duyệt' }}
                 />
               </Card>
             </Col>
@@ -468,14 +492,15 @@ const Dashboard = () => {
                 </div>
                 <Table
                   columns={[
-                    { title: 'Ứng viên', key: 'candidate', render: (_, record) => <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} /><Text strong>{record.candidate}</Text></div> },
-                    { title: 'Vị trí', dataIndex: 'position', key: 'position' },
-                    { title: 'Quyết định', dataIndex: 'action', key: 'action', render: (val) => <Tag color={val === 'APPROVED' ? 'success' : 'error'}>{val === 'APPROVED' ? 'Đã duyệt' : 'Từ chối'}</Tag> },
-                    { title: 'Ngày', dataIndex: 'date', key: 'date' },
+                    { title: 'Ứng viên', key: 'candidate', render: (_, record) => <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} /><Text strong>{record.candidateName}</Text></div> },
+                    { title: 'Vị trí', dataIndex: 'jobTitle', key: 'jobTitle' },
+                    { title: 'Quyết định', dataIndex: 'currentState', key: 'currentState', render: (val) => <Tag color={val === 'HIRED' ? 'success' : 'error'}>{val === 'HIRED' ? 'Tuyển' : 'Loại'}</Tag> },
+                    { title: 'Ngày', dataIndex: 'stageUpdatedAt', key: 'stageUpdatedAt', render: (v) => v ? dayjs(v).format('DD/MM/YYYY') : '-' },
                   ]}
                   dataSource={dashboardData?.recentDecisions || []}
-                  rowKey="id"
+                  rowKey="applicationId"
                   pagination={false}
+                  locale={{ emptyText: 'Chưa có quyết định nào' }}
                 />
               </Card>
             </Col>
@@ -487,10 +512,13 @@ const Dashboard = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {(dashboardData?.departmentProgress || []).map((dept, idx) => (
                     <div key={idx}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><Text>{dept.department}</Text><Text type="secondary">{dept.filled || 0}/{dept.total || 0} vị trí</Text></div>
-                      <Progress percent={dept.total > 0 ? Math.round((dept.filled / dept.total) * 100) : 0} strokeColor={dept.color || MATCHA_GREEN} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}><Text>{dept.department}</Text><Text type="secondary">{dept.hired || 0}/{dept.total || 0} hồ sơ đã tuyển</Text></div>
+                      <Progress percent={dept.total > 0 ? Math.round((dept.hired / dept.total) * 100) : 0} strokeColor={MATCHA_GREEN} />
                     </div>
                   ))}
+                  {(!dashboardData?.departmentProgress || dashboardData.departmentProgress.length === 0) && (
+                    <Text type="secondary">Chưa có hồ sơ nào gắn với phòng ban</Text>
+                  )}
                 </div>
               </Card>
             </Col>
@@ -498,12 +526,28 @@ const Dashboard = () => {
               <Card className="dashboard-card" bordered={false}>
                 <div className="card-header"><Title level={5}>Hoạt Động Gần Đây</Title></div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {(dashboardData?.activities || []).map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <Avatar size={32} style={{ backgroundColor: `${MATCHA_GREEN}15`, color: MATCHA_GREEN, flexShrink: 0, marginTop: 2 }} icon={item.icon || <FileTextOutlined />} />
-                      <div><Text style={{ display: 'block' }}>{item.text}</Text><Text type="secondary" style={{ fontSize: 12 }}>{item.time}</Text></div>
-                    </div>
-                  ))}
+                  {(dashboardData?.recentActivities || []).map((item, idx) => {
+                    const ACTION_LABELS = {
+                      STATE_CHANGE: item.toState ? `chuyển sang ${FUNNEL_LABELS[item.toState] || item.toState}` : 'chuyển trạng thái',
+                      INTERVIEW_INVITED: 'được mời phỏng vấn',
+                      INTERVIEW_SCHEDULED: 'đã chốt lịch phỏng vấn',
+                      INTERVIEW_CANCELLED: 'bị hủy lịch phỏng vấn',
+                      INTERVIEW_NO_SLOT_FITS: 'không chọn được khung giờ phỏng vấn',
+                      OFFER_MADE: 'được gửi offer',
+                    };
+                    return (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <Avatar size={32} style={{ backgroundColor: `${MATCHA_GREEN}15`, color: MATCHA_GREEN, flexShrink: 0, marginTop: 2 }} icon={<FileTextOutlined />} />
+                        <div>
+                          <Text style={{ display: 'block' }}><Text strong>{item.candidateName}</Text> {ACTION_LABELS[item.action] || item.action}</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>{item.createdAt ? dayjs(item.createdAt).format('DD/MM/YYYY HH:mm') : ''}</Text>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!dashboardData?.recentActivities || dashboardData.recentActivities.length === 0) && (
+                    <Text type="secondary">Chưa có hoạt động nào</Text>
+                  )}
                 </div>
               </Card>
             </Col>
@@ -528,12 +572,11 @@ const Dashboard = () => {
                   renderItem={(item) => (
                     <List.Item className="interview-item" actions={[
                       <Button key="candidates" type="primary" size="small" icon={<TeamOutlined />} onClick={() => handleShowCandidates(item)} style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}>DS Ứng viên</Button>,
-                      <Button key="join" type="default" size="small" icon={<VideoCameraOutlined />} onClick={() => window.open(item.meetingLink, '_blank')}>Join</Button>,
                     ]}>
                       <List.Item.Meta avatar={<Avatar size={44} style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />} title={<span className="candidate-name">{item.candidate}</span>} description={
-                        <div className="interview-meta"><span>{item.position}</span><span>•</span><span><ClockCircleOutlined /> {item.date ? dayjs(item.date).format('DD/MM/YYYY') : '-'} {item.time || ''}</span></div>
+                        <div className="interview-meta"><span>{item.position}</span><span>•</span><span><ClockCircleOutlined /> {item.startTime ? dayjs(item.startTime).format('DD/MM/YYYY HH:mm') : '-'}</span></div>
                       } />
-                      <Tag color={getTypeColor(item.type)}>{item.type}</Tag>
+                      <Tag color="cyan">Vòng {item.round}</Tag>
                     </List.Item>
                   )}
                 />
@@ -547,17 +590,17 @@ const Dashboard = () => {
                 </div>
                 <List
                   itemLayout="horizontal"
-                  dataSource={pendingGrading.slice(0, 5)}
+                  dataSource={pendingGrading}
                   loading={loading}
-                  locale={{ emptyText: 'Không có bài chấm điểm nào chờ' }}
+                  locale={{ emptyText: 'Không có phiếu chấm nào chờ' }}
                   renderItem={(item) => (
                     <List.Item className="interview-item" actions={[
-                      <Button key="grade" type="primary" size="small" onClick={() => navigate(`/interviewer/grading/${item.id}`)}>Grade Now</Button>,
+                      <Button key="grade" type="primary" size="small" onClick={() => navigate(`/interviewer/grading/${item.id}`)}>Chấm điểm</Button>,
                     ]}>
                       <List.Item.Meta avatar={<Avatar size={44} style={{ backgroundColor: '#faad14' }} icon={<UserOutlined />} />} title={<span className="candidate-name">{item.candidate}</span>} description={
-                        <div className="interview-meta"><span>{item.position}</span><span>•</span><span>{item.interviewDate || '-'}</span></div>
+                        <div className="interview-meta"><span>{item.position}</span><span>•</span><span>{item.startTime ? dayjs(item.startTime).format('DD/MM/YYYY HH:mm') : '-'}</span></div>
                       } />
-                      <Tag color="warning">Pending</Tag>
+                      <Tag color="warning">Chờ chấm</Tag>
                     </List.Item>
                   )}
                 />
@@ -579,10 +622,8 @@ const Dashboard = () => {
             <Descriptions column={3} size="small" style={{ marginBottom: 16, background: '#f5f5f5', padding: 12, borderRadius: 8 }}>
               <Descriptions.Item label="Buổi PV"><Text strong>{selectedSchedule.candidate}</Text></Descriptions.Item>
               <Descriptions.Item label="Vị trí">{selectedSchedule.position}</Descriptions.Item>
-              <Descriptions.Item label="Ngày">{selectedSchedule.date ? dayjs(selectedSchedule.date).format('DD/MM/YYYY') : '-'}</Descriptions.Item>
-              <Descriptions.Item label="Giờ">{selectedSchedule.time || '-'} - {selectedSchedule.endTime || '-'}</Descriptions.Item>
-              <Descriptions.Item label="Loại"><Tag color={getTypeColor(selectedSchedule.type)}>{selectedSchedule.type}</Tag></Descriptions.Item>
-              <Descriptions.Item label="Vòng"><Tag color="cyan">Vòng {selectedSchedule.level}</Tag></Descriptions.Item>
+              <Descriptions.Item label="Thời gian">{selectedSchedule.startTime ? dayjs(selectedSchedule.startTime).format('DD/MM/YYYY HH:mm') : '-'}</Descriptions.Item>
+              <Descriptions.Item label="Vòng"><Tag color="cyan">Vòng {selectedSchedule.round}</Tag></Descriptions.Item>
             </Descriptions>
             <Divider orientation="left">Danh sách cần chấm điểm</Divider>
             {loadingCandidates ? <div style={{ textAlign: 'center', padding: 40 }}>Đang tải...</div> : candidates.length === 0 ? (

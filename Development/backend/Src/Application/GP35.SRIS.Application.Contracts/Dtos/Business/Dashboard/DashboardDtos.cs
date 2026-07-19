@@ -32,6 +32,37 @@ public class DashboardSummaryDto
     public decimal? OfferAcceptanceRatePct { get; set; }  // accepted / (accepted + declined)
 }
 
+/// <summary>1 hồ sơ rút gọn cho các bảng "gần đây" trên dashboard.</summary>
+public class RecentApplicationDto
+{
+    public long ApplicationId { get; set; }
+    public string CandidateName { get; set; } = null!;
+    public string CandidateEmail { get; set; } = null!;
+    public string JobTitle { get; set; } = null!;
+    public string CurrentState { get; set; } = null!;
+    public DateTime AppliedAt { get; set; }
+    public DateTime? StageUpdatedAt { get; set; }
+}
+
+/// <summary>Tiến độ tuyển theo phòng ban: số HIRED / tổng hồ sơ.</summary>
+public class DepartmentProgressDto
+{
+    public string Department { get; set; } = null!;
+    public int Hired { get; set; }
+    public int Total { get; set; }
+}
+
+/// <summary>1 dòng hoạt động gần đây (từ ActivityLog).</summary>
+public class RecentActivityDto
+{
+    public long ApplicationId { get; set; }
+    public string CandidateName { get; set; } = null!;
+    public string Action { get; set; } = null!;
+    public string? FromState { get; set; }
+    public string? ToState { get; set; }
+    public DateTime? CreatedAt { get; set; }
+}
+
 /// <summary>Tổng quan Dashboard (docs 4, M7). jobId null = toàn công ty.</summary>
 public class DashboardOverviewDto
 {
@@ -40,6 +71,15 @@ public class DashboardOverviewDto
     public List<FunnelStageDto> Funnel { get; set; } = new();
     public List<BreakdownItemDto> RejectReasons { get; set; } = new();
     public List<BreakdownItemDto> Sources { get; set; } = new();
+
+    /// <summary>Hồ sơ mới nộp gần nhất (bảng "Ứng viên ứng tuyển gần đây").</summary>
+    public List<RecentApplicationDto> RecentApplications { get; set; } = new();
+    /// <summary>Quyết định HIRED/REJECTED gần nhất (bảng "Quyết định gần đây" của DM).</summary>
+    public List<RecentApplicationDto> RecentDecisions { get; set; } = new();
+    /// <summary>Tiến độ theo phòng ban (job.department — danh mục V022).</summary>
+    public List<DepartmentProgressDto> DepartmentProgress { get; set; } = new();
+    /// <summary>Hoạt động gần đây toàn công ty (ActivityLog).</summary>
+    public List<RecentActivityDto> RecentActivities { get; set; } = new();
 }
 
 /// <summary>1 item trong Kanban board (1 ứng viên).</summary>
