@@ -151,6 +151,27 @@ const InterviewScheduleRecruit = () => {
       const { invited = [], skipped = [] } = response.data || {};
       if (invited.length > 0) {
         message.success(`Đã mời ${invited.length} ứng viên — mỗi người nhận 1 email chọn lịch.`);
+        // Hiện link chọn lịch để copy gửi tay (khi chưa cấu hình SMTP)
+        Modal.success({
+          title: `Đã mời ${invited.length} ứng viên — link chọn lịch`,
+          width: 640,
+          content: (
+            <div>
+              <p>Email đã tự gửi kèm link (nếu SMTP đã cấu hình). Copy gửi tay nếu cần:</p>
+              {invited.map((i) => (
+                <div key={i.scheduleId} style={{ marginBottom: 10 }}>
+                  <Text strong>{candidateLabel(i.applicationId)}</Text>
+                  <Typography.Paragraph
+                    copyable={{ text: `${window.location.origin}/schedule?token=${encodeURIComponent(i.magicToken)}` }}
+                    style={{ wordBreak: 'break-all', marginBottom: 0 }}
+                  >
+                    {`${window.location.origin}/schedule?token=${i.magicToken}`}
+                  </Typography.Paragraph>
+                </div>
+              ))}
+            </div>
+          ),
+        });
       }
       if (skipped.length > 0) {
         Modal.warning({

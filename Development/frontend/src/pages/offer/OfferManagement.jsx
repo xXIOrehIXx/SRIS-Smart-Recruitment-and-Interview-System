@@ -152,8 +152,13 @@ const OfferManagement = () => {
           : undefined,
         note: values.notes,
       };
-      await offerAPI.create(selectedApplication.id || selectedApplication.applicationId, payload);
+      const res = await offerAPI.create(selectedApplication.id || selectedApplication.applicationId, payload);
       message.success('Tạo offer thành công!');
+      showOfferLinkModal(
+        selectedApplication.candidateName,
+        res.data?.magicToken,
+        res.data?.tokenExpiresAt,
+      );
       setCreateModalOpen(false);
       form.resetFields();
       setSelectedApplication(null);
@@ -169,6 +174,34 @@ const OfferManagement = () => {
 
   // Không có endpoint withdraw riêng — thu hồi offer = reject application
   // (bắt buộc reason theo docs 5.7).
+  // Hiện link magic (copy tay khi chưa cấu hình SMTP; email vẫn tự gửi nếu có SMTP)
+  const showOfferLinkModal = (name, rawToken, expiresAt) => {
+    if (!rawToken) return;
+    const link = `${window.location.origin}/offer?token=${encodeURIComponent(rawToken)}`;
+    Modal.success({
+      title: `Link phản hồi offer — ${name || 'ứng viên'}`,
+      width: 600,
+      content: (
+        <div>
+          <p>Email đã tự gửi kèm link này (nếu SMTP đã cấu hình). Bạn cũng có thể copy gửi tay:</p>
+          <Typography.Paragraph copyable={{ text: link }} style={{ wordBreak: 'break-all' }}>{link}</Typography.Paragraph>
+          {expiresAt && <Text type="secondary">Hết hạn: {dayjs(expiresAt).format('DD/MM/YYYY HH:mm')}</Text>}
+        </div>
+      ),
+    });
+  };
+
+  // "Gửi nhắc nhở" = phát lại magic link OFFER_RESPONSE (email tự gửi + link copy tay)
+  const handleSendReminder = async (record) => {
+    try {
+      const res = await applicationAPI.createMagicLink(record.applicationId, 'OFFER_RESPONSE');
+      message.success('Đã phát lại link phản hồi offer.');
+      showOfferLinkModal(record.candidateName, res.data?.rawToken, res.data?.expiresAt);
+    } catch (error) {
+      message.error(error?.response?.data?.userMsg || 'Không thể gửi nhắc nhở');
+    }
+  };
+
   const handleWithdraw = async (applicationId) => {
     try {
       await applicationAPI.reject(applicationId, 'Công ty thu hồi offer');
@@ -324,8 +357,8 @@ const OfferManagement = () => {
           </Tooltip>
           {record.status === 'PENDING' && (
             <>
-              <Tooltip title="Gửi nhắc nhở">
-                <Button type="text" size="small" icon={<SendOutlined />} />
+              <Tooltip title="Gửi nhắc nhở (phát lại link phản hồi offer)">
+                <Button type="text" size="small" icon={<SendOutlined />} onClick={() => handleSendReminder(record)} />
               </Tooltip>
               <Popconfirm
                 title="Thu hồi offer này?"
