@@ -412,6 +412,28 @@ export const usersAPI = {
   // Tự đổi mật khẩu của chính mình → authAPI.changePassword
 };
 
+// ==================== DEPARTMENTS (Danh mục phòng ban — V022) ====================
+// Admin CRUD; mọi role đăng nhập gọi getAll để đổ dropdown (tạo Job / Yêu cầu tuyển dụng).
+
+export const departmentAPI = {
+  getAll: () =>
+    api.get('/departments'),
+
+  getById: (id) =>
+    api.get(`/departments/${id}`),
+
+  // data: { name, description?, status? ('Active' | 'Inactive') } — CHỈ Admin
+  create: (data) =>
+    api.post('/departments', data),
+
+  update: (id, data) =>
+    api.put(`/departments/${id}`, data),
+
+  // Chặn 409 khi còn job dùng phòng ban → đổi status 'Inactive' thay thế
+  delete: (id) =>
+    api.delete(`/departments/${id}`),
+};
+
 // ==================== RECRUITMENT REQUESTS (Yêu cầu tuyển dụng — 5.17) ====================
 // DM "ra đề" (tùy chọn) → Recruiter duyệt → tạo Job từ yêu cầu (CONVERTED + jobId truy vết).
 
