@@ -27,7 +27,7 @@ import {
   ArrowLeftOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { jobsAPI } from "../../services/api";
+import { jobsAPI, recruitmentRequestAPI } from "../../services/api";
 import JobSetupSteps from "../../components/JobSetupSteps";
 import "./css/CreateJob.css";
 
@@ -47,6 +47,7 @@ const CreateJob = () => {
   const [currentStep, setCurrentStep] = useState("posting");
 
   const editJobId = searchParams.get("edit");
+  const requestId = searchParams.get("requestId"); // tạo job TỪ yêu cầu tuyển dụng của DM (5.17)
 
   const steps = [
     { key: "posting", title: "Đăng tin" },
@@ -58,8 +59,47 @@ const CreateJob = () => {
     if (editJobId) {
       setIsEditMode(true);
       fetchJobDetails(editJobId);
+    } else if (requestId) {
+      prefillFromRequest(requestId);
     }
-  }, [editJobId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editJobId, requestId]);
+
+  // Prefill từ Yêu cầu tuyển dụng của DM — tạo xong gọi convert để truy vết đề bài -> job
+  const prefillFromRequest = async (id) => {
+    try {
+      setInitialLoading(true);
+      const response = await recruitmentRequestAPI.getById(id);
+      const req = response.data;
+      form.setFieldsValue({
+        title: req.title,
+        department: req.department,
+        type: req.employmentType,
+        description: req.description,
+        salaryMin: req.salaryMin,
+        salaryMax: req.salaryMax,
+      });
+      if (req.requirements) setRequirements(req.requirements.split("\n").filter(Boolean));
+      if (req.benefits) setBenefits(req.benefits.split("\n").filter(Boolean));
+      message.info(`Đang tạo tin từ yêu cầu tuyển dụng của ${req.createdByName || "DM"} — "${req.title}"`);
+    } catch (error) {
+      console.error("Error loading request:", error);
+      message.error("Không thể tải yêu cầu tuyển dụng");
+    } finally {
+      setInitialLoading(false);
+    }
+  };
+
+  // Đánh dấu yêu cầu -> CONVERTED sau khi tạo job (best-effort, không chặn flow)
+  const linkToRequest = async (jobId) => {
+    if (!requestId || !jobId) return;
+    try {
+      await recruitmentRequestAPI.convert(requestId, jobId);
+    } catch (error) {
+      console.error("Error linking job to request:", error);
+      message.warning("Job đã tạo nhưng chưa gắn được vào yêu cầu tuyển dụng.");
+    }
+  };
 
   const fetchJobDetails = async (jobId) => {
     try {
@@ -158,7 +198,8 @@ const CreateJob = () => {
         await jobsAPI.update(editingJobId, data);
         message.success("Cập nhật tin tuyển dụng thành công");
       } else {
-        await jobsAPI.create(data);
+        const res = await jobsAPI.create(data);
+        await linkToRequest(res.data?.jobId);
         message.success("Lưu nháp thành công");
       }
       navigate("/recruiter/jobs");
@@ -182,7 +223,8 @@ const CreateJob = () => {
         await jobsAPI.update(editingJobId, data);
         message.success("Cập nhật và đăng tin thành công!");
       } else {
-        await jobsAPI.create(data);
+        const res = await jobsAPI.create(data);
+        await linkToRequest(res.data?.jobId);
         message.success("Tin tuyển dụng đã được đăng thành công!");
       }
       navigate("/recruiter/jobs");
