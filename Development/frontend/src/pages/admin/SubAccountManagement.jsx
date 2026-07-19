@@ -498,7 +498,7 @@ const SubAccountManagement = () => {
             <Input disabled placeholder="Email không thể thay đổi" />
           </Form.Item>
 
-          <Form.Item name="phone" label="Số điện thoại">
+          <Form.Item name="phone" label="Số điện thoại" rules={[{ pattern: /^0\d{9}$/, message: "Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0" }]}>
             <Input placeholder="Nhập số điện thoại" />
           </Form.Item>
 
