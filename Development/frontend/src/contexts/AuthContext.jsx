@@ -42,11 +42,21 @@ export const ROLE_ROUTES = {
 
 // Menu items theo vai trò
 export const ROLE_MENUS = {
+  // Admin bypass mọi quyền (khớp backend) — menu gồm cả mục vận hành để công ty
+  // 1 tài khoản Admin chạy trọn luồng tuyển dụng không phải gõ URL tay.
   [ROLES.ADMIN]: [
     { key: '/admin/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/admin/sub-accounts', icon: 'TeamOutlined', label: 'Quản lý tài khoản' },
     { key: '/admin/create-account', icon: 'UserAddOutlined', label: 'Tạo tài khoản' },
     { key: '/admin/company-branding', icon: 'GlobalOutlined', label: 'Thương Hiệu' },
+    { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
+    { key: '/recruiter/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
+    { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
+    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
+    { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
+    { key: '/talent-pool', icon: 'TeamOutlined', label: 'Talent Pool' },
+    { key: '/analytics', icon: 'BarChartOutlined', label: 'Báo Cáo' },
+    { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
   ],
   [ROLES.RECRUITER]: [
     { key: '/recruiter/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
@@ -78,6 +88,9 @@ export const hasPermission = (userRole, route) => {
   if (!userRole) return false;
 
   const normalizedRole = normalizeRole(userRole);
+
+  // Admin bypass (khớp backend WithRole)
+  if (normalizedRole === ROLES.ADMIN) return true;
   
   const rolePermissions = {
     [ROLES.ADMIN]: [
