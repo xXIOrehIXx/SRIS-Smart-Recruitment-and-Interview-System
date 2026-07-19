@@ -51,7 +51,7 @@
 
 .detail-icon {
   font-size: 20px;
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 .detail-item h4 {
@@ -67,6 +67,14 @@
 
 .job-tabs .ant-tabs-nav {
   margin-bottom: 20px;
+}
+
+.job-skills-section {
+  margin-top: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .candidates-table .ant-table-thead > tr > th {
@@ -120,8 +128,8 @@
 }
 
 .primary-action {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 .pipeline-summary {
@@ -170,8 +178,8 @@
 
 .submit-btn {
   margin-top: 8px;
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 /* Responsive */

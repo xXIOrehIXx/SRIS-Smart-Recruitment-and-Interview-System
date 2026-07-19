@@ -38,8 +38,8 @@
 }
 
 .admin-dashboard .header-actions .ant-btn-primary {
-  background-color: #5D8C3E !important;
-  border-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
+  border-color: #5d8c3e !important;
 }
 
 .admin-dashboard .header-actions .ant-btn-primary:hover {
@@ -60,7 +60,7 @@
 }
 
 .admin-dashboard .stat-card:hover {
-  border-color: #5D8C3E;
+  border-color: #5d8c3e;
   box-shadow: 0 8px 20px rgba(93, 140, 62, 0.12) !important;
   transform: translateY(-2px);
 }
@@ -152,7 +152,7 @@
 }
 
 .admin-dashboard .card-header .ant-btn-link {
-  color: #5D8C3E;
+  color: #5d8c3e;
   padding: 0;
   font-size: 14px;
 }
@@ -194,7 +194,7 @@
 .admin-dashboard .pipeline-count {
   margin-left: auto;
   font-weight: 600;
-  color: #5D8C3E;
+  color: #5d8c3e;
 }
 
 /* Quick Stats */
@@ -291,18 +291,22 @@
   border-radius: 8px !important;
 }
 
-.admin-dashboard .ant-select:not(.ant-select-disabled):hover .ant-select-selector {
-  border-color: #5D8C3E !important;
+.admin-dashboard
+  .ant-select:not(.ant-select-disabled):hover
+  .ant-select-selector {
+  border-color: #5d8c3e !important;
 }
 
-.admin-dashboard .ant-select-focused:not(.ant-select-disabled) .ant-select-selector {
-  border-color: #5D8C3E !important;
+.admin-dashboard
+  .ant-select-focused:not(.ant-select-disabled)
+  .ant-select-selector {
+  border-color: #5d8c3e !important;
   box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.1) !important;
 }
 
 /* Progress Bars */
 .admin-dashboard .ant-progress-bg {
-  background-color: #5D8C3E !important;
+  background-color: #5d8c3e !important;
 }
 
 .admin-dashboard .ant-progress-inner {

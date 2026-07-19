@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Checkbox, Alert, Select, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, BankOutlined, GoogleOutlined, GithubOutlined } from '@ant-design/icons';
-import { useAuth } from '../../contexts/AuthContext';
-import './css/Auth.css';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Form, Input, Button, Checkbox, Alert, Select, message } from "antd";
+import {
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  BankOutlined,
+  GoogleOutlined,
+  GithubOutlined,
+} from "@ant-design/icons";
+import { useAuth } from "../../contexts/AuthContext";
+import "./css/Auth.css";
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
 
   const onFinish = async (values) => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const registerData = {
@@ -22,28 +29,28 @@ const Register = () => {
         password: values.password,
         fullName: values.fullName,
         companyName: values.companyName,
-        role: values.role || 'Recruiter',
+        role: values.role || "Recruiter",
       };
 
       await register(registerData);
       setSuccess(true);
-      message.success('Đăng ký thành công! Vui lòng đăng nhập.');
+      message.success("Đăng ký thành công! Vui lòng đăng nhập.");
 
       setTimeout(() => {
-        navigate('/login');
+        navigate("/login");
       }, 2000);
     } catch (err) {
-      console.error('Register error:', err);
+      console.error("Register error:", err);
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.data?.errors) {
         const errors = err.response.data.errors;
-        const errorMessages = Object.values(errors).flat().join('\n');
+        const errorMessages = Object.values(errors).flat().join("\n");
         setError(errorMessages);
       } else if (err.message) {
         setError(err.message);
       } else {
-        setError('Đã có lỗi xảy ra. Vui lòng thử lại.');
+        setError("Đã có lỗi xảy ra. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
@@ -55,8 +62,13 @@ const Register = () => {
       <div className="auth-header">
         <div className="auth-icon">
           <svg viewBox="0 0 48 48" fill="none">
-            <path d="M24 10V38M10 24H38" stroke="white" strokeWidth="3" strokeLinecap="round"/>
-            <circle cx="24" cy="24" r="16" stroke="white" strokeWidth="2.5"/>
+            <path
+              d="M24 10V38M10 24H38"
+              stroke="white"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <circle cx="24" cy="24" r="16" stroke="white" strokeWidth="2.5" />
           </svg>
         </div>
         <h2>Tạo tài khoản mới</h2>
@@ -64,12 +76,7 @@ const Register = () => {
       </div>
 
       {error && (
-        <Alert
-          message={error}
-          type="error"
-          showIcon
-          className="auth-alert"
-        />
+        <Alert message={error} type="error" showIcon className="auth-alert" />
       )}
 
       {success && (
@@ -81,21 +88,18 @@ const Register = () => {
         />
       )}
 
-      <Form
-        name="register"
-        onFinish={onFinish}
-        layout="vertical"
-        size="large"
-      >
+      <Form name="register" onFinish={onFinish} layout="vertical" size="large">
         <Form.Item
           name="fullName"
           rules={[
-            { required: true, message: 'Vui lòng nhập họ tên!' },
-            { min: 2, message: 'Họ tên phải có ít nhất 2 ký tự!' }
+            { required: true, message: "Vui lòng nhập họ tên!" },
+            { min: 2, message: "Họ tên phải có ít nhất 2 ký tự!" },
           ]}
         >
           <Input
-            prefix={<UserOutlined style={{ color: '#9ca3af', fontSize: '18px' }} />}
+            prefix={
+              <UserOutlined style={{ color: "#9ca3af", fontSize: "18px" }} />
+            }
             placeholder="Họ và tên"
             className="auth-input"
           />
@@ -104,12 +108,14 @@ const Register = () => {
         <Form.Item
           name="email"
           rules={[
-            { required: true, message: 'Vui lòng nhập email!' },
-            { type: 'email', message: 'Email không hợp lệ!' }
+            { required: true, message: "Vui lòng nhập email!" },
+            { type: "email", message: "Email không hợp lệ!" },
           ]}
         >
           <Input
-            prefix={<MailOutlined style={{ color: '#9ca3af', fontSize: '18px' }} />}
+            prefix={
+              <MailOutlined style={{ color: "#9ca3af", fontSize: "18px" }} />
+            }
             placeholder="Email"
             className="auth-input"
           />
@@ -117,12 +123,12 @@ const Register = () => {
 
         <Form.Item
           name="companyName"
-          rules={[
-            { required: true, message: 'Vui lòng nhập tên công ty!' }
-          ]}
+          rules={[{ required: true, message: "Vui lòng nhập tên công ty!" }]}
         >
           <Input
-            prefix={<BankOutlined style={{ color: '#9ca3af', fontSize: '18px' }} />}
+            prefix={
+              <BankOutlined style={{ color: "#9ca3af", fontSize: "18px" }} />
+            }
             placeholder="Tên công ty"
             className="auth-input"
           />
@@ -130,9 +136,7 @@ const Register = () => {
 
         <Form.Item
           name="role"
-          rules={[
-            { required: true, message: 'Vui lòng chọn vai trò!' }
-          ]}
+          rules={[{ required: true, message: "Vui lòng chọn vai trò!" }]}
           initialValue="Recruiter"
         >
           <Select
@@ -147,12 +151,14 @@ const Register = () => {
         <Form.Item
           name="password"
           rules={[
-            { required: true, message: 'Vui lòng nhập mật khẩu!' },
-            { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' }
+            { required: true, message: "Vui lòng nhập mật khẩu!" },
+            { min: 8, message: "Mật khẩu phải có ít nhất 8 ký tự!" },
           ]}
         >
           <Input.Password
-            prefix={<LockOutlined style={{ color: '#9ca3af', fontSize: '18px' }} />}
+            prefix={
+              <LockOutlined style={{ color: "#9ca3af", fontSize: "18px" }} />
+            }
             placeholder="Mật khẩu (ít nhất 8 ký tự)"
             className="auth-input"
           />
@@ -160,21 +166,25 @@ const Register = () => {
 
         <Form.Item
           name="confirmPassword"
-          dependencies={['password']}
+          dependencies={["password"]}
           rules={[
-            { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+            { required: true, message: "Vui lòng xác nhận mật khẩu!" },
             ({ getFieldValue }) => ({
               validator(_, value) {
-                if (!value || getFieldValue('password') === value) {
+                if (!value || getFieldValue("password") === value) {
                   return Promise.resolve();
                 }
-                return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                return Promise.reject(
+                  new Error("Mật khẩu xác nhận không khớp!"),
+                );
               },
             }),
           ]}
         >
           <Input.Password
-            prefix={<LockOutlined style={{ color: '#9ca3af', fontSize: '18px' }} />}
+            prefix={
+              <LockOutlined style={{ color: "#9ca3af", fontSize: "18px" }} />
+            }
             placeholder="Xác nhận mật khẩu"
             className="auth-input"
           />
@@ -189,13 +199,22 @@ const Register = () => {
                 if (value) {
                   return Promise.resolve();
                 }
-                return Promise.reject(new Error('Vui lòng đồng ý với điều khoản sử dụng!'));
+                return Promise.reject(
+                  new Error("Vui lòng đồng ý với điều khoản sử dụng!"),
+                );
               },
-            }
+            },
           ]}
         >
           <Checkbox>
-            Tôi đồng ý với <a href="#terms" className="auth-terms-link">Điều khoản dịch vụ</a> và <a href="#privacy" className="auth-terms-link">Chính sách bảo mật</a>
+            Tôi đồng ý với{" "}
+            <a href="#terms" className="auth-terms-link">
+              Điều khoản dịch vụ
+            </a>{" "}
+            và{" "}
+            <a href="#privacy" className="auth-terms-link">
+              Chính sách bảo mật
+            </a>
           </Checkbox>
         </Form.Item>
 

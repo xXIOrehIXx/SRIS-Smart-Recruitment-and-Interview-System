@@ -1,22 +1,26 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Alert, Result } from 'antd';
-import { MailOutlined, LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import { authAPI } from '../../services/api';
-import './css/Auth.css';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Form, Input, Button, Alert, Result } from "antd";
+import {
+  MailOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+} from "@ant-design/icons";
+import { authAPI } from "../../services/api";
+import "./css/Auth.css";
 
 const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [step, setStep] = useState(1);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
   const handleSendResetLink = async (values) => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       await authAPI.forgotPassword(values.email);
@@ -24,13 +28,13 @@ const ForgotPassword = () => {
       setStep(2);
       form.resetFields();
     } catch (err) {
-      console.error('Forgot password error:', err);
+      console.error("Forgot password error:", err);
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.message) {
         setError(err.message);
       } else {
-        setError('Không thể gửi yêu cầu. Vui lòng thử lại.');
+        setError("Không thể gửi yêu cầu. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
@@ -39,24 +43,24 @@ const ForgotPassword = () => {
 
   const handleResetPassword = async (values) => {
     if (values.newPassword !== values.confirmPassword) {
-      setError('Mật khẩu mới không khớp');
+      setError("Mật khẩu mới không khớp");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       await authAPI.resetPassword(values.token, values.newPassword);
       setSuccess(true);
     } catch (err) {
-      console.error('Reset password error:', err);
+      console.error("Reset password error:", err);
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.message) {
         setError(err.message);
       } else {
-        setError('Không thể đổi mật khẩu. Vui lòng thử lại.');
+        setError("Không thể đổi mật khẩu. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
@@ -65,7 +69,7 @@ const ForgotPassword = () => {
 
   const handleResend = () => {
     setStep(1);
-    setError('');
+    setError("");
     form.resetFields();
   };
 
@@ -94,8 +98,8 @@ const ForgotPassword = () => {
         <h2>Quên mật khẩu</h2>
         <p>
           {step === 1
-            ? 'Nhập email để nhận mã xác nhận đổi mật khẩu'
-            : 'Nhập mã xác nhận và mật khẩu mới'}
+            ? "Nhập email để nhận mã xác nhận đổi mật khẩu"
+            : "Nhập mã xác nhận và mật khẩu mới"}
         </p>
       </div>
 
@@ -105,7 +109,7 @@ const ForgotPassword = () => {
           type="error"
           showIcon
           className="auth-alert"
-          onClose={() => setError('')}
+          onClose={() => setError("")}
         />
       )}
 
@@ -121,12 +125,12 @@ const ForgotPassword = () => {
             <Form.Item
               name="email"
               rules={[
-                { required: true, message: 'Vui lòng nhập email!' },
-                { type: 'email', message: 'Email không hợp lệ!' },
+                { required: true, message: "Vui lòng nhập email!" },
+                { type: "email", message: "Email không hợp lệ!" },
               ]}
             >
               <Input
-                prefix={<MailOutlined style={{ color: '#8c8c8b' }} />}
+                prefix={<MailOutlined style={{ color: "#8c8c8b" }} />}
                 placeholder="name@company.com"
                 className="auth-input"
                 autoFocus
@@ -162,10 +166,14 @@ const ForgotPassword = () => {
 
             <Form.Item
               name="token"
-              rules={[{ required: true, message: 'Vui lòng nhập mã xác nhận!' }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập mã xác nhận!" },
+              ]}
             >
               <Input
-                prefix={<SafetyCertificateOutlined style={{ color: '#8c8c8b' }} />}
+                prefix={
+                  <SafetyCertificateOutlined style={{ color: "#8c8c8b" }} />
+                }
                 placeholder="Nhập mã xác nhận"
                 className="auth-input"
                 autoFocus
@@ -174,10 +182,12 @@ const ForgotPassword = () => {
 
             <Form.Item
               name="newPassword"
-              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu mới!' }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập mật khẩu mới!" },
+              ]}
             >
               <Input.Password
-                prefix={<LockOutlined style={{ color: '#8c8c8b' }} />}
+                prefix={<LockOutlined style={{ color: "#8c8c8b" }} />}
                 placeholder="Nhập mật khẩu mới"
                 className="auth-input"
               />
@@ -185,10 +195,12 @@ const ForgotPassword = () => {
 
             <Form.Item
               name="confirmPassword"
-              rules={[{ required: true, message: 'Vui lòng xác nhận mật khẩu!' }]}
+              rules={[
+                { required: true, message: "Vui lòng xác nhận mật khẩu!" },
+              ]}
             >
               <Input.Password
-                prefix={<LockOutlined style={{ color: '#8c8c8b' }} />}
+                prefix={<LockOutlined style={{ color: "#8c8c8b" }} />}
                 placeholder="Nhập lại mật khẩu mới"
                 className="auth-input"
               />
