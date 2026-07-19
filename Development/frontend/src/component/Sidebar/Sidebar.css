@@ -63,8 +63,8 @@
 }
 
 .main-menu .ant-menu-item-selected {
-  background-color: rgba(93, 140, 62, 0.1) !important;
-  color: #5d8c3e !important;
+  background-color: var(--brand-color-light) !important;
+  color: var(--brand-color) !important;
 }
 
 .main-menu .ant-menu-item-selected::after {

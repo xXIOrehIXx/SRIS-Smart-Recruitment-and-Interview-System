@@ -2,6 +2,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@300;400;500;600;700;800&display=swap");
 
 :root {
+  /* Brand Color (dynamic, set by BrandThemeContext) */
+  --brand-color: #5D8C3E;
+  --brand-color-hover: #4a7230;
+  --brand-color-active: #3d5f28;
+  --brand-color-light: rgba(93, 140, 62, 0.1);
+
   /* Matcha Color Palette */
   --matcha-100: #f4f8f2;
   --matcha-200: #e3eddd;
@@ -69,13 +75,13 @@ body {
 }
 
 a {
-  color: var(--matcha-600);
+  color: var(--brand-color);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 a:hover {
-  color: var(--matcha-700);
+  color: var(--brand-color-hover);
 }
 
 /* Utility Classes */
@@ -121,7 +127,8 @@ a:hover {
 }
 
 .ant-menu-item-selected {
-  background-color: rgba(93, 140, 62, 0.1) !important;
+  background-color: var(--brand-color-light) !important;
+  color: var(--brand-color) !important;
 }
 
 .ant-card {
@@ -135,20 +142,25 @@ a:hover {
 }
 
 .ant-btn-primary {
-  background-color: var(--matcha-600) !important;
-  border-color: var(--matcha-600) !important;
+  background-color: var(--brand-color) !important;
+  border-color: var(--brand-color) !important;
 }
 
 .ant-btn-primary:hover {
-  background-color: var(--matcha-700) !important;
-  border-color: var(--matcha-700) !important;
+  background-color: var(--brand-color-hover) !important;
+  border-color: var(--brand-color-hover) !important;
+}
+
+.ant-btn-primary:active {
+  background-color: var(--brand-color-active) !important;
+  border-color: var(--brand-color-active) !important;
 }
 
 .ant-input:focus,
 .ant-input-focused,
 .ant-select-focused .ant-select-selector {
-  border-color: var(--matcha-500) !important;
-  box-shadow: 0 0 0 2px rgba(93, 140, 62, 0.2) !important;
+  border-color: var(--brand-color) !important;
+  box-shadow: 0 0 0 2px var(--brand-color-light) !important;
 }
 
 /* Page Transitions */

@@ -1,154 +1,53 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Typography,
   Form,
   Input,
   Button,
-  Switch,
-  Upload,
   Space,
   message,
   Row,
   Col,
-  Divider,
   Avatar,
   ColorPicker,
-  Tag,
+  Divider,
 } from "antd";
 import {
   SaveOutlined,
-  UploadOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  EnvironmentOutlined,
-  GlobalOutlined,
-  FileTextOutlined,
-  InstagramOutlined,
-  LinkedinOutlined,
-  FacebookOutlined,
-  RestOutlined,
-  CheckCircleOutlined,
+  LinkOutlined,
+  BuildOutlined,
 } from "@ant-design/icons";
 import { companyAPI } from "../../services/api";
+import { useCompany } from "../../contexts/CompanyContext";
+import { useBrandTheme } from "../../contexts/BrandThemeContext";
 import "./css/CompanyBranding.css";
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 
-const MATCHA_GREEN = "#5D8C3E";
-const DRAFT_KEY = "company_branding_draft";
+const DEFAULT_COLOR = "#5D8C3E";
 
-// Auto-save hook for page-level forms
-const usePageDraft = (storageKey) => {
-  const [hasDraft, setHasDraft] = useState(false);
-  const [draftTime, setDraftTime] = useState(null);
-
-  useEffect(() => {
-    const savedDraft = localStorage.getItem(storageKey);
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed && parsed.values && Object.keys(parsed.values).length > 0) {
-          setHasDraft(true);
-          setDraftTime(parsed.savedAt ? new Date(parsed.savedAt) : null);
-        }
-      } catch (e) {
-        localStorage.removeItem(storageKey);
-      }
-    }
-  }, [storageKey]);
-
-  const saveDraft = useCallback(
-    (values) => {
-      if (values) {
-        const draft = {
-          values,
-          savedAt: new Date().toISOString(),
-        };
-        localStorage.setItem(storageKey, JSON.stringify(draft));
-        setHasDraft(true);
-        setDraftTime(new Date());
-      }
-    },
-    [storageKey],
-  );
-
-  const clearDraft = useCallback(() => {
-    localStorage.removeItem(storageKey);
-    setHasDraft(false);
-    setDraftTime(null);
-  }, [storageKey]);
-
-  const getDraft = useCallback(() => {
-    const savedDraft = localStorage.getItem(storageKey);
-    if (savedDraft) {
-      try {
-        return JSON.parse(savedDraft).values || null;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }, [storageKey]);
-
-  return { hasDraft, draftTime, saveDraft, clearDraft, getDraft };
+const toHex = (value) => {
+  if (!value) return DEFAULT_COLOR;
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value !== null && "toHexString" in value)
+    return value.toHexString();
+  return String(value);
 };
 
 const CompanyBranding = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [brandSaving, setBrandSaving] = useState(false);
   const [form] = Form.useForm();
   const [brandForm] = Form.useForm();
   const [company, setCompany] = useState(null);
-  const [logo, setLogo] = useState(null);
-  const [showDraftBanner, setShowDraftBanner] = useState(false);
-  const draftTimeoutRef = useRef(null);
-
-  // Draft auto-save hook
-  const { hasDraft, draftTime, saveDraft, clearDraft, getDraft } =
-    usePageDraft(DRAFT_KEY);
+  const { refreshCompany } = useCompany();
+  const { primaryColor, updateBrandColor } = useBrandTheme();
 
   useEffect(() => {
     fetchCompany();
   }, []);
-
-  // Check for draft on load
-  useEffect(() => {
-    if (hasDraft) {
-      setShowDraftBanner(true);
-    }
-  }, [hasDraft]);
-
-  // Auto-save when form values change
-  const handleDraftAutoSave = useCallback(
-    (changedValues, allValues) => {
-      if (draftTimeoutRef.current) {
-        clearTimeout(draftTimeoutRef.current);
-      }
-      draftTimeoutRef.current = setTimeout(() => {
-        saveDraft(allValues);
-      }, 1500);
-    },
-    [saveDraft],
-  );
-
-  // Restore draft
-  const handleRestoreDraft = () => {
-    const savedValues = getDraft();
-    if (savedValues) {
-      form.setFieldsValue(savedValues);
-      message.success("Đã khôi phục dữ liệu đã lưu tạm");
-    }
-    setShowDraftBanner(false);
-  };
-
-  // Discard draft
-  const handleDiscardDraft = () => {
-    clearDraft();
-    message.info("Đã xóa dữ liệu tạm");
-    setShowDraftBanner(false);
-  };
 
   const fetchCompany = async () => {
     try {
@@ -156,20 +55,15 @@ const CompanyBranding = () => {
       const response = await companyAPI.get();
       const data = response.data;
       setCompany(data);
+
       form.setFieldsValue({
         name: data.name,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        website: data.website,
-        description: data.description,
         industry: data.industry,
-        foundedYear: data.foundedYear,
-        employeeCount: data.employeeCount,
       });
+
       brandForm.setFieldsValue({
-        primaryColor: data.brandColors?.primary || MATCHA_GREEN,
-        secondaryColor: data.brandColors?.secondary || "#7ab356",
+        logoUrl: data.logoUrl,
+        primaryColor: data.primaryColor || DEFAULT_COLOR,
       });
     } catch (error) {
       console.error("Error fetching company:", error);
@@ -182,75 +76,59 @@ const CompanyBranding = () => {
   const handleSaveProfile = async (values) => {
     try {
       setSaving(true);
-      await companyAPI.update(values);
+      await companyAPI.update({
+        name: values.name,
+        industry: values.industry,
+      });
       message.success("Lưu thông tin công ty thành công!");
-      clearDraft(); // Clear draft after successful save
+      await refreshCompany();
       fetchCompany();
     } catch (error) {
       console.error("Error saving company:", error);
-      message.error("Không thể lưu thông tin công ty");
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể lưu thông tin công ty";
+      message.error(msg);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSaveBrand = async (values) => {
+  const handleSaveBrand = async () => {
     try {
-      setSaving(true);
-      await companyAPI.updateBrand(values);
+      setBrandSaving(true);
+      const brandValues = brandForm.getFieldsValue();
+      const chosenColor = toHex(brandValues.primaryColor) || DEFAULT_COLOR;
+
+      await companyAPI.updateBrand({
+        name: brandValues.name || company?.name,
+        logoUrl: brandValues.logoUrl || null,
+        primaryColor: chosenColor,
+      });
+
+      updateBrandColor(chosenColor);
       message.success("Lưu thương hiệu thành công!");
+      await refreshCompany();
       fetchCompany();
     } catch (error) {
       console.error("Error saving brand:", error);
-      message.error("Không thể lưu thương hiệu");
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể lưu thương hiệu";
+      message.error(msg);
     } finally {
-      setSaving(false);
+      setBrandSaving(false);
     }
   };
 
+  const previewColor = toHex(
+    brandForm.getFieldValue("primaryColor") || company?.primaryColor || DEFAULT_COLOR
+  );
+
   return (
     <div className="company-branding-page">
-      {showDraftBanner && (
-        <div
-          style={{
-            background: "#fffbe6",
-            border: "1px solid #ffe58f",
-            borderRadius: 8,
-            padding: "12px 16px",
-            marginBottom: 16,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <Text strong style={{ color: "#ad6800" }}>
-              <SaveOutlined style={{ marginRight: 8 }} />
-              Dữ liệu đã được lưu tạm{" "}
-              {draftTime && `lúc ${draftTime.toLocaleTimeString("vi-VN")}`}
-            </Text>
-          </div>
-          <Space>
-            <Button
-              size="small"
-              onClick={handleDiscardDraft}
-              icon={<RestOutlined />}
-            >
-              Bỏ qua
-            </Button>
-            <Button
-              size="small"
-              type="primary"
-              onClick={handleRestoreDraft}
-              icon={<CheckCircleOutlined />}
-              style={{ background: "#faad14", borderColor: "#faad14" }}
-            >
-              Khôi phục
-            </Button>
-          </Space>
-        </div>
-      )}
-
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">
@@ -263,11 +141,12 @@ const CompanyBranding = () => {
       </div>
 
       <Row gutter={[24, 24]}>
+        {/* Left column — company info */}
         <Col xs={24} lg={16}>
-          <Card
+            <Card
             title={
               <Space>
-                <FileTextOutlined style={{ color: MATCHA_GREEN }} />
+                <BuildOutlined style={{ color: primaryColor }} />
                 Thông tin công ty
               </Space>
             }
@@ -278,7 +157,6 @@ const CompanyBranding = () => {
               form={form}
               layout="vertical"
               onFinish={handleSaveProfile}
-              onValuesChange={handleDraftAutoSave}
             >
               <Row gutter={16}>
                 <Col xs={24} md={12}>
@@ -289,11 +167,7 @@ const CompanyBranding = () => {
                       { required: true, message: "Vui lòng nhập tên công ty" },
                     ]}
                   >
-                    <Input
-                      placeholder="VD: SRIS Corp"
-                      size="large"
-                      prefix={<FileTextOutlined />}
-                    />
+                    <Input placeholder="VD: SRIS Corp" size="large" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -373,8 +247,6 @@ const CompanyBranding = () => {
                 loading={saving}
                 icon={<SaveOutlined />}
                 style={{
-                  background: MATCHA_GREEN,
-                  borderColor: MATCHA_GREEN,
                   height: 44,
                   paddingInline: 32,
                 }}
@@ -383,113 +255,48 @@ const CompanyBranding = () => {
               </Button>
             </Form>
           </Card>
-
-          <Card
-            title={
-              <Space>
-                <GlobalOutlined style={{ color: MATCHA_GREEN }} />
-                Mạng xã hội
-              </Space>
-            }
-            className="main-card"
-            bordered={false}
-            style={{ marginTop: 24 }}
-          >
-            <Form layout="vertical">
-              <Row gutter={16}>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label={
-                      <span>
-                        <FacebookOutlined style={{ marginRight: 8 }} />
-                        Facebook
-                      </span>
-                    }
-                    name="facebook"
-                  >
-                    <Input placeholder="facebook.com/company" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label={
-                      <span>
-                        <InstagramOutlined style={{ marginRight: 8 }} />
-                        Instagram
-                      </span>
-                    }
-                    name="instagram"
-                  >
-                    <Input placeholder="@company" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item
-                    label={
-                      <span>
-                        <LinkedinOutlined style={{ marginRight: 8 }} />
-                        LinkedIn
-                      </span>
-                    }
-                    name="linkedin"
-                  >
-                    <Input placeholder="linkedin.com/company" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Form>
-          </Card>
         </Col>
 
+        {/* Right column — logo + brand colors */}
         <Col xs={24} lg={8}>
           <Card
             title={
               <Space>
-                <GlobalOutlined style={{ color: MATCHA_GREEN }} />
+                <LinkOutlined style={{ color: primaryColor }} />
                 Logo công ty
               </Space>
             }
             className="main-card"
             bordered={false}
           >
-            <div style={{ textAlign: "center" }}>
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
               <Avatar
-                size={160}
-                src={company?.logo || logo}
+                size={120}
+                src={company?.logoUrl}
                 style={{
-                  background: `linear-gradient(135deg, ${company?.brandColors?.primary || MATCHA_GREEN}, ${company?.brandColors?.secondary || "#7ab356"})`,
-                  marginBottom: 16,
-                  fontSize: 64,
+                  background: previewColor,
+                  fontSize: 48,
                 }}
-                icon={<FileTextOutlined />}
+                icon={<BuildOutlined />}
               />
-              <Upload
-                showUploadList={false}
-                beforeUpload={(file) => {
-                  if (!file.type.startsWith("image/")) {
-                    message.error("Chỉ chấp nhận file hình ảnh!");
-                    return Upload.LIST_IGNORE;
-                  }
-                  const reader = new FileReader();
-                  reader.onload = (e) => setLogo(e.target.result);
-                  reader.readAsDataURL(file);
-                  return false;
-                }}
-              >
-                <Button icon={<UploadOutlined />} style={{ marginBottom: 8 }}>
-                  Tải lên Logo
-                </Button>
-              </Upload>
-              <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
-                PNG, JPG, SVG (tối đa 5MB, khuyến nghị 512x512px)
-              </Text>
             </div>
+            <Form form={brandForm} layout="vertical">
+              <Form.Item label="Logo URL" name="logoUrl">
+                <Input
+                  placeholder="https://example.com/logo.png"
+                  prefix={<LinkOutlined />}
+                />
+              </Form.Item>
+              <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+                Dán URL logo từ CDN hoặc upload lên MinIO rồi dán link.
+              </Text>
+            </Form>
           </Card>
 
           <Card
             title={
               <Space>
-                <GlobalOutlined style={{ color: MATCHA_GREEN }} />
+                <SaveOutlined style={{ color: primaryColor }} />
                 Bộ màu thương hiệu
               </Space>
             }
@@ -497,35 +304,18 @@ const CompanyBranding = () => {
             bordered={false}
             style={{ marginTop: 24 }}
           >
-            <Form form={brandForm} layout="vertical" onFinish={handleSaveBrand}>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="Màu chính" name="primaryColor">
-                    <ColorPicker
-                      defaultValue={
-                        company?.brandColors?.primary || MATCHA_GREEN
-                      }
-                      showText
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Màu phụ" name="secondaryColor">
-                    <ColorPicker
-                      defaultValue={
-                        company?.brandColors?.secondary || "#7ab356"
-                      }
-                      showText
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+            <Form form={brandForm} layout="vertical">
+              <Form.Item label="Màu chính (Primary Color)" name="primaryColor">
+                <ColorPicker
+                  showText
+                  size="large"
+                  format="hex"
+                />
+              </Form.Item>
 
               <div
                 style={{
-                  background: `linear-gradient(135deg, ${company?.brandColors?.primary || MATCHA_GREEN}, ${company?.brandColors?.secondary || "#7ab356"})`,
+                  background: previewColor,
                   height: 60,
                   borderRadius: 10,
                   display: "flex",
@@ -541,11 +331,11 @@ const CompanyBranding = () => {
 
               <Button
                 type="primary"
-                htmlType="submit"
-                loading={saving}
+                htmlType="button"
+                loading={brandSaving}
                 icon={<SaveOutlined />}
                 block
-                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                onClick={handleSaveBrand}
               >
                 Lưu thương hiệu
               </Button>

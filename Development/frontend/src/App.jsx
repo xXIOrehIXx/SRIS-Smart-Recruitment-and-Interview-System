@@ -50,11 +50,11 @@ const App = () => {
 
   return (
     <Routes>
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-      </Route>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+        </Route>
 
       {/* Route ứng viên qua magic link — path khớp link backend sinh trong email:
           /schedule (SCHEDULE) · /offer (OFFER_RESPONSE) · /status (STATUS) */}
