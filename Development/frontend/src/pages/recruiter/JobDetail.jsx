@@ -281,8 +281,9 @@ const JobDetail = () => {
                 <Title level={3} className="job-title">{job?.title || 'N/A'}</Title>
                 <div className="job-tags">
                   <Tag color="blue">{job?.jobType || job?.type || 'N/A'}</Tag>
-                  <Tag color={job?.status === 'Active' ? 'success' : 'default'}>
-                    {job?.status === 'Active' ? 'Đang tuyển' : 'Đã đóng'}
+                  {/* Backend trả "Open"/"Closed" (không phải "Active") */}
+                  <Tag color={/^open$/i.test(job?.status) ? 'success' : 'default'}>
+                    {/^open$/i.test(job?.status) ? 'Đang tuyển' : 'Đã đóng'}
                   </Tag>
                   <Tag icon={<ClockCircleOutlined />}>Đăng ngày {formatDate(job?.createdAt)}</Tag>
                 </div>
