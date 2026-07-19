@@ -331,13 +331,13 @@ const AdminDashboard = () => {
               {funnelData.length > 0 ? (
                 funnelData.map((item, index) => (
                   <div key={index} className="pipeline-item">
-                    <div className="pipeline-label">
+                    <div className="pipeline-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span
                         className="pipeline-dot"
-                        style={{ backgroundColor: MATCHA_GREEN }}
+                        style={{ backgroundColor: MATCHA_GREEN, width: 8, height: 8, borderRadius: "50%", display: "inline-block" }}
                       ></span>
-                      <span>{item.state}</span>
-                      <span className="pipeline-count">{item.count}</span>
+                      <span>{FUNNEL_LABELS[item.state] || item.state}</span>
+                      <span className="pipeline-count" style={{ marginLeft: "auto", fontWeight: 600, color: MATCHA_GREEN }}>{item.count}</span>
                     </div>
                     <Progress
                       percent={(item.count / maxFunnel) * 100}

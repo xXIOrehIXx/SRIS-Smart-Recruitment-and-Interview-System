@@ -349,10 +349,10 @@ const Dashboard = () => {
                 <div className="pipeline-chart">
                   {funnelData.length > 0 ? funnelData.map((item, index) => (
                     <div key={index} className="pipeline-item">
-                      <div className="pipeline-label">
-                        <span className="pipeline-dot" style={{ backgroundColor: MATCHA_GREEN }}></span>
-                        <span>{item.state}</span>
-                        <span className="pipeline-count">{item.count}</span>
+                      <div className="pipeline-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="pipeline-dot" style={{ backgroundColor: MATCHA_GREEN, width: 8, height: 8, borderRadius: '50%', display: 'inline-block' }}></span>
+                        <span>{FUNNEL_LABELS[item.state] || item.state}</span>
+                        <span className="pipeline-count" style={{ marginLeft: 'auto', fontWeight: 600, color: MATCHA_GREEN }}>{item.count}</span>
                       </div>
                       <Progress percent={(item.count / maxFunnel) * 100} showInfo={false} strokeColor={MATCHA_GREEN} trailColor="#f0f0f0" size="small" />
                     </div>

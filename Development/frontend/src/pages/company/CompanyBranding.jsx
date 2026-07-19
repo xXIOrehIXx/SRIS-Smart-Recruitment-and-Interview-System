@@ -318,7 +318,7 @@ const CompanyBranding = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item label="Số điện thoại" name="phone">
+                  <Form.Item label="Số điện thoại" name="phone" rules={[{ pattern: /^0\d{9}$/, message: "Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0" }]}>
                     <Input
                       placeholder="+84 123 456 789"
                       size="large"

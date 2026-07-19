@@ -27,6 +27,24 @@ api.interceptors.request.use(
   }
 );
 
+// Backend trả lỗi dạng PascalCase (ErrorObjectCommon: UserMsg/DevMsg/ErrorCode qua
+// Newtonsoft), còn FE đọc camelCase -> chuẩn hóa tại đây để MỌI trang hiện đúng
+// lý do thật thay vì thông báo chung chung. Kèm fallback cho ProblemDetails (400 binding).
+const normalizeApiError = (error) => {
+  const d = error.response?.data;
+  if (d && typeof d === 'object') {
+    let firstBindingError = null;
+    if (d.errors && typeof d.errors === 'object') {
+      const firstKey = Object.keys(d.errors)[0];
+      if (firstKey) firstBindingError = [].concat(d.errors[firstKey])[0];
+    }
+    d.userMsg = d.userMsg || d.UserMsg || d.ErrorMessage || firstBindingError || d.title || d.error;
+    d.devMsg = d.devMsg || d.DevMsg;
+    d.errorCode = d.errorCode || d.ErrorCode;
+  }
+  return Promise.reject(error);
+};
+
 // Interceptor để xử lý response
 api.interceptors.response.use(
   (response) => response,
@@ -37,7 +55,7 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
-    return Promise.reject(error);
+    return normalizeApiError(error);
   }
 );
 
@@ -79,6 +97,8 @@ const publicApi = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+publicApi.interceptors.response.use((r) => r, normalizeApiError);
 
 export const jobsAPI = {
   getAll: (includeInactive = false) =>

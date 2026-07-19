@@ -927,12 +927,12 @@ const Recruitment = () => {
               rules={[
                 { required: true, message: "Vui lòng nhập số điện thoại!" },
                 {
-                  pattern: /^[0-9]{9,11}$/,
-                  message: "Số điện thoại không hợp lệ!",
+                  pattern: /^0\d{9}$/,
+                  message: "Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0",
                 },
               ]}
             >
-              <Input placeholder="Nhập số điện thoại của bạn" size="large" />
+              <Input placeholder="Nhập số điện thoại của bạn" size="large" maxLength={10} />
             </Form.Item>
 
             <Form.Item label="Upload CV (PDF)">

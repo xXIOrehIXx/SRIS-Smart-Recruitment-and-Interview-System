@@ -52,6 +52,12 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   // Normalize user role
   const userRole = normalizeRole(user?.role);
 
+  // Admin bypass mọi route — khớp backend ([WithRole] cho Admin qua hết):
+  // công ty nhỏ chỉ có 1 tài khoản Admin vẫn phải chạy được trọn luồng tuyển dụng.
+  if (userRole === ROLES.ADMIN) {
+    return children;
+  }
+
   // Nếu có allowedRoles, kiểm tra quyền
   if (allowedRoles.length > 0) {
     const normalizedAllowedRoles = allowedRoles.map(

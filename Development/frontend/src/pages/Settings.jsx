@@ -97,7 +97,7 @@ const Settings = () => {
           <Form.Item label="Email" name="email">
             <Input prefix={<MailOutlined />} disabled />
           </Form.Item>
-          <Form.Item label="Phone" name="phone">
+          <Form.Item label="Phone" name="phone" rules={[{ pattern: /^0\d{9}$/, message: "Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0" }]}>
             <Input prefix={<PhoneOutlined />} placeholder="Enter phone number" />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={profileLoading} className="save-btn">

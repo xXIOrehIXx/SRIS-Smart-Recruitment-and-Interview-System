@@ -303,6 +303,7 @@ const CreateJob = () => {
                   <Form.Item
                     name="type"
                     label="Loại công việc"
+                    initialValue="Full-time"
                     rules={[
                       {
                         required: true,
@@ -310,7 +311,9 @@ const CreateJob = () => {
                       },
                     ]}
                   >
-                    <Select defaultValue={"Full-time"} size="large">
+                    {/* defaultValue trên Select KHÔNG ghi vào Form store -> validate fail
+                        dù ô đang hiển thị giá trị. Phải dùng initialValue của Form.Item. */}
+                    <Select size="large">
                       <Select.Option value="Full-time">
                         Toàn thời gian
                       </Select.Option>
