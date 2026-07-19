@@ -27,7 +27,7 @@ import {
   ArrowLeftOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { jobsAPI, recruitmentRequestAPI, usersAPI } from "../../services/api";
+import { jobsAPI, recruitmentRequestAPI, usersAPI, departmentAPI } from "../../services/api";
 import JobSetupSteps from "../../components/JobSetupSteps";
 import "./css/CreateJob.css";
 
@@ -46,12 +46,17 @@ const CreateJob = () => {
   const [editingJobId, setEditingJobId] = useState(null);
   const [currentStep, setCurrentStep] = useState("posting");
   const [dmOptions, setDmOptions] = useState([]);
+  const [deptOptions, setDeptOptions] = useState([]);
 
   useEffect(() => {
     // Dropdown "Người quyết tuyển" — DM (kèm Admin, đúng luật Admin làm được mọi việc)
     usersAPI.getOptions("DepartmentManager")
       .then((r) => setDmOptions(r.data || []))
       .catch(() => setDmOptions([]));
+    // Dropdown "Phòng ban" — danh mục Department (V022), chỉ hiện Active
+    departmentAPI.getAll()
+      .then((r) => setDeptOptions((r.data || []).filter((d) => d.status === "Active")))
+      .catch(() => setDeptOptions([]));
   }, []);
 
   const editJobId = searchParams.get("edit");
@@ -286,11 +291,21 @@ const CreateJob = () => {
                   <Form.Item
                     name="department"
                     label="Phòng ban"
+                    tooltip="Danh mục phòng ban do Admin quản lý (menu Phòng Ban)"
                     rules={[
                       { required: true, message: "Vui lòng chọn phòng ban" },
                     ]}
                   >
-                    <Input />
+                    <Select
+                      showSearch
+                      placeholder="-- Chọn phòng ban --"
+                      optionFilterProp="label"
+                      options={deptOptions.map((d) => ({
+                        value: d.name,
+                        label: d.name,
+                      }))}
+                      notFoundContent="Chưa có phòng ban — nhờ Admin tạo ở menu Phòng Ban"
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>

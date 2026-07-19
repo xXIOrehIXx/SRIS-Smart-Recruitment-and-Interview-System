@@ -41,7 +41,6 @@ const IncomingInterview = () => {
   const [loading, setLoading] = useState(false);
   const [interviews, setInterviews] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Modal states
@@ -65,28 +64,22 @@ const IncomingInterview = () => {
       }
       data = data || [];
 
+      // MyScheduleDto: { scheduleId, applicationId, roundNumber, status, startTime, candidateName, candidateEmail, jobTitle }
       const normalized = Array.isArray(data)
         ? data.map((item) => ({
-            id: item.scheduleId || item.id,
+            id: item.scheduleId,
             applicationId: item.applicationId,
-            candidate: item.candidateName || item.candidate || 'N/A',
-            position: item.positionTitle || item.jobTitle || item.position || 'N/A',
-            jobId: item.jobId,
-            department: item.department || 'N/A',
-            date: item.interviewDate || item.scheduledDate || item.date,
-            time: item.interviewTime || item.startTime || item.time,
-            endTime: item.endTime || item.interviewEndTime,
-            duration: item.duration || 60,
-            type: item.interviewType || item.type || 'Technical',
-            level: item.roundNumber || item.round || item.interviewRound || item.level || 1,
-            status: item.status || 'UPCOMING',
-            meetingLink: item.meetingLink || item.meetingUrl || '',
+            candidate: item.candidateName || 'N/A',
+            position: item.jobTitle || 'N/A',
+            startTime: item.startTime,
+            level: item.roundNumber || 1,
+            status: item.status,
           }))
         : [];
 
-      // Filter only upcoming/pending interviews
+      // Chỉ hiện lịch còn hiệu lực (PENDING = ứng viên chưa chốt slot, CONFIRMED = đã chốt)
       setInterviews(normalized.filter(i =>
-        i.status === 'UPCOMING' || i.status === 'CONFIRMED' || i.status === 'PENDING'
+        i.status === 'PENDING' || i.status === 'CONFIRMED'
       ));
     } catch (error) {
       console.error('Error fetching interviews:', error);
@@ -135,20 +128,12 @@ const IncomingInterview = () => {
     });
   };
 
-  const getTypeColor = (type) => {
-    const colors = {
-      Technical: 'blue',
-      HR: 'green',
-      Culture: 'purple',
-    };
-    return colors[type] || 'default';
-  };
-
   const getStatusConfig = (status) => {
     const configs = {
-      UPCOMING: { color: 'success', label: 'Sắp tới' },
-      PENDING: { color: 'warning', label: 'Chờ xác nhận' },
-      CONFIRMED: { color: 'processing', label: 'Đã xác nhận' },
+      PENDING: { color: 'warning', label: 'Chờ ứng viên chốt lịch' },
+      CONFIRMED: { color: 'processing', label: 'Đã chốt lịch' },
+      NO_SLOT_FITS: { color: 'error', label: 'Không khớp khung giờ' },
+      CANCELLED: { color: 'default', label: 'Đã hủy' },
     };
     return configs[status] || { color: 'default', label: status };
   };
@@ -238,20 +223,14 @@ const IncomingInterview = () => {
         <div>
           <div>
             <CalendarOutlined style={{ marginRight: 4, color: MATCHA_GREEN }} />
-            <Text>{record.date ? dayjs(record.date).format('DD/MM/YYYY') : '-'}</Text>
+            <Text>{record.startTime ? dayjs(record.startTime).format('DD/MM/YYYY') : '-'}</Text>
           </div>
           <div>
             <ClockCircleOutlined style={{ marginRight: 4, color: '#faad14' }} />
-            <Text type="secondary">{record.time || '-'} - {record.endTime || '-'}</Text>
+            <Text type="secondary">{record.startTime ? dayjs(record.startTime).format('HH:mm') : '-'}</Text>
           </div>
         </div>
       ),
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type) => <Tag color={getTypeColor(type)}>{type}</Tag>,
     },
     {
       title: 'Vòng',
@@ -282,14 +261,6 @@ const IncomingInterview = () => {
           >
             DS Ứng viên
           </Button>
-          <Button
-            type="default"
-            size="small"
-            icon={<VideoCameraOutlined />}
-            onClick={() => window.open(record.meetingLink, '_blank')}
-          >
-            Join
-          </Button>
         </Space>
       ),
     },
@@ -300,9 +271,8 @@ const IncomingInterview = () => {
       !searchText ||
       (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
       (item.position || '').toLowerCase().includes(searchText.toLowerCase());
-    const matchesType = typeFilter === 'all' || item.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    return matchesSearch && matchesType && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -339,26 +309,14 @@ const IncomingInterview = () => {
             allowClear
           />
           <Select
-            value={typeFilter}
-            onChange={setTypeFilter}
-            style={{ width: 150 }}
-            placeholder="Loại PV"
-          >
-            <Select.Option value="all">Tất cả loại</Select.Option>
-            <Select.Option value="Technical">Technical</Select.Option>
-            <Select.Option value="HR">HR</Select.Option>
-            <Select.Option value="Culture">Culture</Select.Option>
-          </Select>
-          <Select
             value={statusFilter}
             onChange={setStatusFilter}
-            style={{ width: 150 }}
+            style={{ width: 200 }}
             placeholder="Trạng thái"
           >
             <Select.Option value="all">Tất cả</Select.Option>
-            <Select.Option value="UPCOMING">Sắp tới</Select.Option>
-            <Select.Option value="PENDING">Chờ xác nhận</Select.Option>
-            <Select.Option value="CONFIRMED">Đã xác nhận</Select.Option>
+            <Select.Option value="PENDING">Chờ ứng viên chốt lịch</Select.Option>
+            <Select.Option value="CONFIRMED">Đã chốt lịch</Select.Option>
           </Select>
         </div>
 

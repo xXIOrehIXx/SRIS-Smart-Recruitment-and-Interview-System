@@ -114,6 +114,9 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Yêu cầu tuyển dụng (5.17 — DM ra đề)
             services.AddScoped<IRecruitmentRequestRepo, RecruitmentRequestRepo>();
+
+            // Danh mục phòng ban (V022)
+            services.AddScoped<IDepartmentRepo, DepartmentRepo>();
         }
 
         public static void AddBusinessRepos(this IServiceCollection services, IConfiguration configuration)
@@ -152,6 +155,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IInternalNoteService, InternalNoteService>();
             services.AddScoped<IRecruitmentRequestService, RecruitmentRequestService>();
+            services.AddScoped<IDepartmentService, DepartmentService>();
             services.AddScoped<IActivityLogService, ActivityLogService>();
 
         }

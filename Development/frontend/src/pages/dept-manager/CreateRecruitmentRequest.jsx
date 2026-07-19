@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Typography,
@@ -32,7 +32,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { recruitmentRequestAPI } from '../../services/api';
+import { recruitmentRequestAPI, departmentAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -50,18 +50,16 @@ const CreateRecruitmentRequest = () => {
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
 
-  const departments = [
-    'Engineering',
-    'Design',
-    'Product',
-    'Marketing',
-    'Sales',
-    'Human Resources',
-    'Finance',
-    'Infrastructure',
-    'Customer Support',
-    'Operations',
-  ];
+  // Danh mục phòng ban (V022) — Admin quản lý, chỉ hiện Active
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    departmentAPI.getAll()
+      .then((r) => setDepartments(
+        (r.data || []).filter((d) => d.status === 'Active').map((d) => d.name)
+      ))
+      .catch(() => setDepartments([]));
+  }, []);
 
   const employmentTypes = [
     { value: 'FULL_TIME', label: 'Toàn thời gian' },
