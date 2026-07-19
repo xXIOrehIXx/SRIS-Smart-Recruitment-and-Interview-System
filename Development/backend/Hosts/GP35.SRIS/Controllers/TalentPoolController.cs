@@ -1,3 +1,4 @@
+using GP35.SRIS.Application.Contracts.Dtos.Ai;
 using GP35.SRIS.Application.Contracts.Services.Ai;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
@@ -27,6 +28,18 @@ public class TalentPoolController : ControllerBase
     }
 
     /// <summary>Gợi ý CV từ kho cũ. withinMonths = độ tươi (mặc định 6 tháng); topN = số gợi ý (mặc định 10).</summary>
+    /// <summary>
+    /// Gửi email mời 1 ứng viên trong kho vào job này (kèm link career site).
+    /// Trả { sent } — false khi SMTP chưa cấu hình để FE hiện link gửi tay.
+    /// </summary>
+    [HttpPost("invite")]
+    public async Task<IActionResult> Invite(long jobId, [FromBody] TalentPoolInviteDto dto)
+    {
+        var sent = await _talentPoolService.InviteAsync(
+            _contextData.CompanyId, jobId, dto.CandidateEmail, dto.CandidateName ?? "bạn");
+        return Ok(new { sent });
+    }
+
     [HttpGet]
     public async Task<IActionResult> Suggest(
         long jobId, [FromQuery] int withinMonths = 6, [FromQuery] int topN = 10)

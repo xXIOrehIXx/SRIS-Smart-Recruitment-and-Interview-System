@@ -13,4 +13,10 @@ public interface ITalentPoolService : IBaseService
     /// (mặc định 6 — chuẩn "độ tươi" ngành; nới được). topN = số gợi ý.
     /// </summary>
     Task<TalentPoolResultDto> SuggestForJobAsync(long companyId, long jobId, int withinMonths, int topN);
+
+    /// <summary>
+    /// Gửi email mời ứng viên trong kho ứng tuyển vào 1 job (kèm link career site).
+    /// Trả false nếu SMTP chưa cấu hình/gửi lỗi — FE hiện link để gửi tay.
+    /// </summary>
+    Task<bool> InviteAsync(long companyId, long jobId, string candidateEmail, string candidateName);
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Typography, Button, Table, Tag, Select, Input, Space, Tooltip, Row, Col, Statistic, Avatar, Empty } from 'antd';
+import { Card, Typography, Button, Table, Tag, Select, Input, Space, Tooltip, Row, Col, Statistic, Avatar, Empty, Modal } from 'antd';
 import { message } from 'antd';
 import {
   UserOutlined, ReloadOutlined, TrophyOutlined, ClockCircleOutlined,
@@ -79,27 +79,33 @@ const TalentPool = () => {
     }
   };
 
-  // Mời ứng tuyển = mở email soạn sẵn (kèm link career site của job đang chọn).
-  // Ứng viên trong kho là người NGOÀI hệ thống -> kênh chủ động là email/điện thoại.
-  const handleInvite = (record) => {
+  // Mời ứng tuyển: backend TỰ GỬI EMAIL qua SMTP (không mở app mail).
+  // SMTP chưa cấu hình -> hiện link career site để copy gửi tay.
+  const [inviting, setInviting] = useState(null);
+  const handleInvite = async (record) => {
     if (!record.candidateEmail) {
       message.warning('Ứng viên này chưa có email trong hồ sơ');
       return;
     }
-    const job = jobs.find(j => j.jobId === selectedJobId);
-    const link = `${window.location.origin}/${companySlug || ''}/recruitment`;
-    const subject = encodeURIComponent(`Mời ứng tuyển vị trí ${job?.title || ''}`);
-    const body = encodeURIComponent(
-      `Chào ${record.candidateName},
-
-` +
-      `Chúng tôi thấy hồ sơ của bạn rất phù hợp với vị trí "${job?.title || ''}" đang tuyển.
-` +
-      `Xem chi tiết và ứng tuyển tại: ${link}
-
-Trân trọng.`
-    );
-    window.open(`mailto:${record.candidateEmail}?subject=${subject}&body=${body}`, '_blank');
+    setInviting(record.cvId);
+    try {
+      const res = await talentPoolAPI.invite(selectedJobId, record.candidateEmail, record.candidateName);
+      if (res.data?.sent) {
+        message.success(`Đã gửi email mời ${record.candidateName} ứng tuyển`);
+      } else {
+        const link = `${window.location.origin}/${companySlug || ''}/recruitment`;
+        Modal.info({
+          title: 'SMTP chưa cấu hình — gửi tay giúp nhé',
+          content: (
+            <Typography.Paragraph copyable={{ text: link }} style={{ wordBreak: 'break-all' }}>{link}</Typography.Paragraph>
+          ),
+        });
+      }
+    } catch (error) {
+      message.error(error?.response?.data?.userMsg || 'Không thể gửi lời mời');
+    } finally {
+      setInviting(null);
+    }
   };
 
   const getMatchScoreColor = (score) => {
@@ -170,8 +176,8 @@ Trân trọng.`
               Mở CV
             </Button>
           </Tooltip>
-          <Tooltip title="Gửi email mời ứng tuyển vị trí đang chọn">
-            <Button type="primary" ghost size="small" icon={<MailOutlined />} onClick={() => handleInvite(record)}>
+          <Tooltip title="Hệ thống gửi email mời ứng tuyển vị trí đang chọn">
+            <Button size="small" icon={<MailOutlined />} loading={inviting === record.cvId} onClick={() => handleInvite(record)}>
               Mời ứng tuyển
             </Button>
           </Tooltip>

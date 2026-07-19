@@ -27,3 +27,10 @@ public class TalentPoolResultDto
     public int Count { get; set; }
     public List<TalentPoolSuggestionDto> Suggestions { get; set; } = new();
 }
+
+/// <summary>Recruiter mời 1 ứng viên trong kho ứng tuyển vào job (email lấy từ gợi ý).</summary>
+public class TalentPoolInviteDto
+{
+    public string CandidateEmail { get; set; } = null!;
+    public string? CandidateName { get; set; }
+}

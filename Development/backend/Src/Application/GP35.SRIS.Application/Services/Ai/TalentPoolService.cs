@@ -5,6 +5,7 @@ using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Lib.Services.Ai;
 using Microsoft.Extensions.DependencyInjection;
+using GP35.SRIS.Lib.Services;
 using Serilog;
 
 namespace GP35.SRIS.Application.Services.Ai;
@@ -24,6 +25,8 @@ public class TalentPoolService : BaseService<TalentPoolService>, ITalentPoolServ
     private readonly IJobRepo _jobRepo;
     private readonly IEmbeddingClient _embeddingClient;
     private readonly ICvDocumentRepo _cvRepo;
+    private readonly ICompanyRepo _companyRepo;
+    private readonly IEmailService _email;
     private readonly ILogger _logger;
 
     public TalentPoolService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -31,7 +34,41 @@ public class TalentPoolService : BaseService<TalentPoolService>, ITalentPoolServ
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
         _embeddingClient = serviceProvider.GetRequiredService<IEmbeddingClient>();
         _cvRepo = serviceProvider.GetRequiredService<ICvDocumentRepo>();
+        _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
+        _email = serviceProvider.GetRequiredService<IEmailService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<TalentPoolService>();
+    }
+
+    public async Task<bool> InviteAsync(long companyId, long jobId, string candidateEmail, string candidateName)
+    {
+        if (string.IsNullOrWhiteSpace(candidateEmail))
+            return false;
+
+        var job = await _jobRepo.GetByIdAsync(companyId, jobId);
+        if (job is null)
+            return false;
+
+        var company = await _companyRepo.GetByCompanyId(companyId);
+        var baseUrl = (_defaultConfig.CandidatePortal?.BaseUrl ?? "http://localhost:3000").TrimEnd('/');
+        var link = $"{baseUrl}/{company?.Slug}/recruitment";
+
+        var body = $@"<p>Chào {System.Net.WebUtility.HtmlEncode(candidateName)},</p>
+<p>Chúng tôi thấy hồ sơ bạn từng gửi rất phù hợp với vị trí <b>{System.Net.WebUtility.HtmlEncode(job.Title)}</b>
+mà {System.Net.WebUtility.HtmlEncode(company?.Name ?? "chúng tôi")} đang tuyển.</p>
+<p>Xem chi tiết và ứng tuyển tại: <a href=""{link}"">{link}</a></p>
+<p>Trân trọng.</p>";
+
+        try
+        {
+            await _email.SendEmailAsync($"Mời ứng tuyển vị trí {job.Title}", body, candidateEmail.Trim(), string.Empty);
+            _logger.Information("TalentPool: đã gửi email mời {Email} ứng tuyển job {JobId}.", candidateEmail, jobId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "TalentPool: gửi email mời thất bại ({Email}, job {JobId}).", candidateEmail, jobId);
+            return false;
+        }
     }
 
     public async Task<TalentPoolResultDto> SuggestForJobAsync(

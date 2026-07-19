@@ -354,6 +354,10 @@ export const dashboardAPI = {
 export const talentPoolAPI = {
   getSuggestions: (jobId) =>
     api.get(`/jobs/${jobId}/talent-pool`),
+
+  // Gửi email mời ứng tuyển từ backend (SMTP) — trả { sent }
+  invite: (jobId, candidateEmail, candidateName) =>
+    api.post(`/jobs/${jobId}/talent-pool/invite`, { candidateEmail, candidateName }),
 };
 
 // ==================== COMPANY ====================
