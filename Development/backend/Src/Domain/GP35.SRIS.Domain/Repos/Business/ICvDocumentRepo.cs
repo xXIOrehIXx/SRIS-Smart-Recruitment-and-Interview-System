@@ -10,6 +10,7 @@ public record TalentPoolRow(
     long CvId,
     long CandidateId,
     string CandidateName,
+    string CandidateEmail,
     DateTime? UploadedAt,
     double Distance);
 

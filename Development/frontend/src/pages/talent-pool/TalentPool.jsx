@@ -3,9 +3,9 @@ import { Card, Typography, Button, Table, Tag, Select, Input, Space, Tooltip, Ro
 import { message } from 'antd';
 import {
   UserOutlined, ReloadOutlined, TrophyOutlined, ClockCircleOutlined,
-  TeamOutlined, FileTextOutlined, SearchOutlined
+  TeamOutlined, FileTextOutlined, SearchOutlined, MailOutlined
 } from '@ant-design/icons';
-import { talentPoolAPI, jobsAPI, cvScoringAPI } from '../../services/api';
+import { talentPoolAPI, jobsAPI, cvScoringAPI, companyAPI } from '../../services/api';
 import './css/TalentPool.css';
 
 const { Title, Text } = Typography;
@@ -24,9 +24,11 @@ const TalentPool = () => {
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [result, setResult] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [companySlug, setCompanySlug] = useState(null);
 
   useEffect(() => {
     fetchJobs();
+    companyAPI.get().then((r) => setCompanySlug(r.data?.slug)).catch(() => {});
   }, []);
 
   const fetchSuggestions = useCallback(async (jobId) => {
@@ -77,6 +79,29 @@ const TalentPool = () => {
     }
   };
 
+  // Mời ứng tuyển = mở email soạn sẵn (kèm link career site của job đang chọn).
+  // Ứng viên trong kho là người NGOÀI hệ thống -> kênh chủ động là email/điện thoại.
+  const handleInvite = (record) => {
+    if (!record.candidateEmail) {
+      message.warning('Ứng viên này chưa có email trong hồ sơ');
+      return;
+    }
+    const job = jobs.find(j => j.jobId === selectedJobId);
+    const link = `${window.location.origin}/${companySlug || ''}/recruitment`;
+    const subject = encodeURIComponent(`Mời ứng tuyển vị trí ${job?.title || ''}`);
+    const body = encodeURIComponent(
+      `Chào ${record.candidateName},
+
+` +
+      `Chúng tôi thấy hồ sơ của bạn rất phù hợp với vị trí "${job?.title || ''}" đang tuyển.
+` +
+      `Xem chi tiết và ứng tuyển tại: ${link}
+
+Trân trọng.`
+    );
+    window.open(`mailto:${record.candidateEmail}?subject=${subject}&body=${body}`, '_blank');
+  };
+
   const getMatchScoreColor = (score) => {
     if (score === null || score === undefined) return '#d9d9d9';
     if (score >= 80) return '#52c41a';
@@ -96,7 +121,10 @@ const TalentPool = () => {
       render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar size={40} style={{ backgroundColor: MATCHA_GREEN, flexShrink: 0 }} icon={<UserOutlined />} />
-          <div style={{ fontWeight: 600 }}>{record.candidateName || 'N/A'}</div>
+          <div>
+            <div style={{ fontWeight: 600 }}>{record.candidateName || 'N/A'}</div>
+            {record.candidateEmail && <Text type="secondary" style={{ fontSize: 12 }}>{record.candidateEmail}</Text>}
+          </div>
         </div>
       ),
       sorter: (a, b) => (a.candidateName || '').localeCompare(b.candidateName || ''),
@@ -134,18 +162,20 @@ const TalentPool = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 240,
       render: (_, record) => (
-        <Tooltip title="Mở file CV gốc">
-          <Button
-            type="text"
-            size="small"
-            icon={<FileTextOutlined />}
-            onClick={() => handleOpenCv(record.cvId)}
-          >
-            Mở CV
-          </Button>
-        </Tooltip>
+        <Space size={4}>
+          <Tooltip title="Mở file CV gốc">
+            <Button type="text" size="small" icon={<FileTextOutlined />} onClick={() => handleOpenCv(record.cvId)}>
+              Mở CV
+            </Button>
+          </Tooltip>
+          <Tooltip title="Gửi email mời ứng tuyển vị trí đang chọn">
+            <Button type="primary" ghost size="small" icon={<MailOutlined />} onClick={() => handleInvite(record)}>
+              Mời ứng tuyển
+            </Button>
+          </Tooltip>
+        </Space>
       ),
     },
   ];

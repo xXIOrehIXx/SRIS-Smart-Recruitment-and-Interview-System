@@ -75,6 +75,7 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
         var rows = await _db.Database
             .SqlQueryRaw<TalentPoolRow>(
                 "SELECT TOP({3}) c.cv_id AS CvId, c.candidate_id AS CandidateId, cand.full_name AS CandidateName, " +
+                "       cand.email AS CandidateEmail, " +
                 "       c.created_at AS UploadedAt, " +
                 "       VECTOR_DISTANCE('cosine', c.embedding, j.embedding) AS Distance " +
                 "FROM CvDocument c " +

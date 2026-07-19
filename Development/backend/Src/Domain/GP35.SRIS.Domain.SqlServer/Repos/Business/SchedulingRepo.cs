@@ -288,7 +288,9 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
                     s.SlotId != excludeSlotId &&
                     s.StartTime == startTime &&
                     s.Status == InterviewSlotStatus.Booked))
-            .Select(si => si.InterviewerId)
+            // Cast nullable TRƯỚC FirstOrDefault: long thường trả default(long)=0 khi
+            // không có ai bận -> "0 is not null" làm check trùng giờ LUÔN chặn (bug 409).
+            .Select(si => (long?)si.InterviewerId)
             .FirstOrDefaultAsync();
     }
 

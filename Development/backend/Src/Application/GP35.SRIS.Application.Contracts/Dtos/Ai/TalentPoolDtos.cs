@@ -9,6 +9,7 @@ public class TalentPoolSuggestionDto
     public long CvId { get; set; }
     public long CandidateId { get; set; }
     public string CandidateName { get; set; } = null!;
+    public string? CandidateEmail { get; set; }
     public decimal Score { get; set; }
     public double CosineDistance { get; set; }
     public DateTime? UploadedAt { get; set; }

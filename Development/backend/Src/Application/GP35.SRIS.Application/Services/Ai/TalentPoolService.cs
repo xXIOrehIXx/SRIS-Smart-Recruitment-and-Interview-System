@@ -68,6 +68,7 @@ public class TalentPoolService : BaseService<TalentPoolService>, ITalentPoolServ
                 CvId = r.CvId,
                 CandidateId = r.CandidateId,
                 CandidateName = r.CandidateName,
+                CandidateEmail = r.CandidateEmail,
                 Score = score,
                 CosineDistance = Math.Round(r.Distance, 4),
                 UploadedAt = r.UploadedAt,
