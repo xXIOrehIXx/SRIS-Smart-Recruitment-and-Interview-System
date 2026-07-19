@@ -13,7 +13,7 @@ import {
   TeamOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
-import { jobsAPI, applicationAPI } from '../../services/api';
+import { jobsAPI, applicationAPI, cvScoringAPI } from '../../services/api';
 import './css/CandidatePipeline.css';
 
 const { Title, Text } = Typography;
@@ -105,7 +105,8 @@ const CandidatePipeline = () => {
           score: app.cvScore || app.score || null,
           interview: app.nextInterview ? formatDateTime(app.nextInterview) : null,
           phone: app.candidate?.phone || app.phone || '',
-          cvUrl: app.cvUrl,
+          cvId: app.cvId,
+          state: app.stage,
         });
       }
     });
@@ -154,6 +155,25 @@ const CandidatePipeline = () => {
     }
   };
 
+  // Mở file CV gốc (presigned URL ~1h) — xem CV rồi mới quyết chuyển bước
+  const handleOpenCv = async (cvId) => {
+    if (!cvId) {
+      message.warning('Hồ sơ này không có file CV');
+      return;
+    }
+    try {
+      const res = await cvScoringAPI.getCvFileUrl(cvId);
+      if (res.data?.url) window.open(res.data.url, '_blank', 'noopener');
+      else message.error('CV không có file gốc');
+    } catch (error) {
+      message.error(error?.response?.data?.userMsg || 'Không thể mở file CV (MinIO đã chạy chưa?)');
+    }
+  };
+
+  // Bước kế tiếp theo state machine forward-only (docs 5.8)
+  const NEXT_STATE = { NEW: 'SCREENING', SCREENING: 'INTERVIEW', INTERVIEW: 'OFFER' };
+  const NEXT_LABEL = { NEW: 'Sàng lọc', SCREENING: 'Phỏng vấn', INTERVIEW: 'Offer' };
+
   // Reject bắt buộc có lý do (docs 5.7 — reject_reason phục vụ dashboard)
   const openRejectModal = (candidate) => {
     let reason = '';
@@ -198,11 +218,18 @@ const CandidatePipeline = () => {
       key: 'email',
       icon: <MailOutlined />,
       label: 'Gửi Email',
+      onClick: () => window.open(`mailto:${candidate.email}`, '_blank'),
     },
     {
       key: 'schedule',
       icon: <CalendarOutlined />,
       label: 'Lên Lịch Phỏng Vấn',
+      onClick: () => {
+        if (candidate.state !== 'INTERVIEW') {
+          message.info('Chuyển hồ sơ sang bước Phỏng vấn trước, rồi mời lịch ở trang Lịch Phỏng Vấn.');
+        }
+        navigate('/interviews/schedule');
+      },
     },
     {
       type: 'divider',
@@ -428,12 +455,30 @@ const CandidatePipeline = () => {
             
             <div className="detail-actions">
               <Space>
-                <Button icon={<MailOutlined />}>Gửi Email</Button>
-                <Button icon={<CalendarOutlined />}>Lên Lịch Phỏng Vấn</Button>
+                <Button icon={<FileTextOutlined />} onClick={() => handleOpenCv(selectedCandidate.cvId)}>
+                  Xem CV
+                </Button>
+                <Button icon={<EyeOutlined />} onClick={() => navigate(`/recruiter/candidates/${selectedCandidate.id}`)}>
+                  Hồ sơ đầy đủ
+                </Button>
+                {selectedCandidate.state === 'INTERVIEW' && (
+                  <Button icon={<CalendarOutlined />} onClick={() => navigate('/interviews/schedule')}>
+                    Lên Lịch Phỏng Vấn
+                  </Button>
+                )}
               </Space>
-              <Button type="primary" className="move-btn">
-                Chuyển Sang Bước Tiếp Theo
-              </Button>
+              {NEXT_STATE[selectedCandidate.state] && (
+                <Button
+                  type="primary"
+                  className="move-btn"
+                  onClick={async () => {
+                    await handleTransition(selectedCandidate.id, NEXT_STATE[selectedCandidate.state]);
+                    setIsDetailModalOpen(false);
+                  }}
+                >
+                  Chuyển sang {NEXT_LABEL[selectedCandidate.state]} →
+                </Button>
+              )}
             </div>
           </div>
         )}
