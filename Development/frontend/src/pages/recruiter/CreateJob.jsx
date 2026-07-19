@@ -27,7 +27,7 @@ import {
   ArrowLeftOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { jobsAPI, recruitmentRequestAPI } from "../../services/api";
+import { jobsAPI, recruitmentRequestAPI, usersAPI } from "../../services/api";
 import JobSetupSteps from "../../components/JobSetupSteps";
 import "./css/CreateJob.css";
 
@@ -45,6 +45,14 @@ const CreateJob = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingJobId, setEditingJobId] = useState(null);
   const [currentStep, setCurrentStep] = useState("posting");
+  const [dmOptions, setDmOptions] = useState([]);
+
+  useEffect(() => {
+    // Dropdown "Người quyết tuyển" — DM (kèm Admin, đúng luật Admin làm được mọi việc)
+    usersAPI.getOptions("DepartmentManager")
+      .then((r) => setDmOptions(r.data || []))
+      .catch(() => setDmOptions([]));
+  }, []);
 
   const editJobId = searchParams.get("edit");
   const requestId = searchParams.get("requestId"); // tạo job TỪ yêu cầu tuyển dụng của DM (5.17)
@@ -171,6 +179,7 @@ const CreateJob = () => {
     return {
       title: values.title,
       department: values.department,
+      departmentManagerId: values.departmentManagerId || null,
       employmentType: values.type,
       experienceLevel: values.experienceLevel,
       quantity: values.quantity,
@@ -284,7 +293,24 @@ const CreateJob = () => {
                     <Input />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={12}></Col>
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    name="departmentManagerId"
+                    label="Người quyết tuyển (DM)"
+                    tooltip="DM sẽ là người CHỐT tuyển/loại ở bước Offer (docs 5.17). Bỏ trống = Recruiter tự quyết — đường mặc định của công ty nhỏ."
+                  >
+                    <Select
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      placeholder="Bỏ trống = Recruiter tự quyết"
+                      options={dmOptions.map((u) => ({
+                        value: u.userId,
+                        label: `${u.fullName || u.email}${u.role === "Admin" ? " (Admin)" : ""}`,
+                      }))}
+                    />
+                  </Form.Item>
+                </Col>
               </Row>
 
               <Row gutter={16}>
