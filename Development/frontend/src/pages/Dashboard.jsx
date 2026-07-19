@@ -27,6 +27,11 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const MATCHA_GREEN = '#5D8C3E';
 
+const FUNNEL_LABELS = {
+  NEW: "Hồ sơ mới", SCREENING: "Sàng lọc", INTERVIEW: "Phỏng vấn",
+  OFFER: "Offer", HIRED: "Đã tuyển", REJECTED: "Từ chối",
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();

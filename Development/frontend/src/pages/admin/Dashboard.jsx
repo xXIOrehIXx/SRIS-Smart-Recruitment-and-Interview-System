@@ -38,6 +38,11 @@ const { Title, Text } = Typography;
 
 // Matcha color palette
 const MATCHA_GREEN = "#5D8C3E";
+
+const FUNNEL_LABELS = {
+  NEW: "Hồ sơ mới", SCREENING: "Sàng lọc", INTERVIEW: "Phỏng vấn",
+  OFFER: "Offer", HIRED: "Đã tuyển", REJECTED: "Từ chối",
+};
 const MATCHA_LIGHT = "rgba(93, 140, 62, 0.1)";
 const MATCHA_BG = "#f4f8f2";
 
