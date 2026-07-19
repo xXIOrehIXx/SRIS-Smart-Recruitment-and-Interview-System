@@ -159,8 +159,8 @@ const Recruitment = () => {
   const handleApply = (job) => {
     const jobId = getJobId(job);
     if (appliedJobs.includes(jobId)) {
-      message.info("Bạn đã ứng tuyển vị trí này rồi");
-      return;
+      // Cho phép nộp lại (nộp nhầm CV -> nộp bản khác); backend tạo hồ sơ mới
+      message.info("Bạn đã ứng tuyển vị trí này — nộp lại sẽ tạo hồ sơ mới với CV mới.");
     }
     setApplyingJob(job);
     setApplyModalVisible(true);
@@ -418,13 +418,12 @@ const Recruitment = () => {
                 e.stopPropagation();
                 handleApply(job);
               }}
-              disabled={appliedJobs.includes(jobId)}
               loading={applyingJob === jobId}
               className={
                 appliedJobs.includes(jobId) ? "applied-btn" : "apply-btn"
               }
             >
-              {appliedJobs.includes(jobId) ? "Đã ứng tuyển" : "Apply ngay"}
+              {appliedJobs.includes(jobId) ? "Ứng tuyển lại" : "Apply ngay"}
             </Button>
             <Button
               icon={<FileTextOutlined />}
@@ -493,13 +492,12 @@ const Recruitment = () => {
               size="large"
               icon={<SendOutlined />}
               onClick={() => handleApply(selectedJob)}
-              disabled={appliedJobs.includes(jobId)}
               loading={applyingJob === jobId}
               className={
                 appliedJobs.includes(jobId) ? "applied-btn" : "apply-btn-large"
               }
             >
-              {appliedJobs.includes(jobId) ? "Đã ứng tuyển" : "Apply ngay"}
+              {appliedJobs.includes(jobId) ? "Ứng tuyển lại" : "Apply ngay"}
             </Button>
           </div>
         </div>
