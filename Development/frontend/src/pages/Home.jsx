@@ -72,7 +72,7 @@ const Home = () => {
           <Button
             type="text"
             className="login-btn"
-            onClick={() => (window.location.href = "/login")}
+            onClick={() => navigate("/login")}
           >
             Log in
           </Button>
@@ -80,7 +80,7 @@ const Home = () => {
             type="primary"
             shape="round"
             className="demo-btn"
-            onClick={() => (window.location.href = "/register")}
+            onClick={() => navigate("/register")}
           >
             Book a demo
           </Button>
@@ -124,11 +124,11 @@ const Home = () => {
                 size="large"
                 shape="round"
                 className="secondary-btn"
-                onClick={() => (window.location.href = "/recruitment")}
+                onClick={() => navigate("/recruitment")}
                 style={{
                   background:
-                    "linear-gradient(135deg, #5D8C3E 0%, #4a7330 100%)",
-                  borderColor: "#5D8C3E",
+                    "linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-hover) 100%)",
+                  borderColor: "var(--brand-color)",
                   color: "white",
                   fontWeight: 500,
                 }}
