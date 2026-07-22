@@ -1,7 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Layout, Card, Typography, Button, Tag, Descriptions, Result, Spin, Radio, message, Alert } from 'antd';
-import { ClockCircleOutlined, CalendarOutlined, UserOutlined, MailOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import {
+  Layout,
+  Card,
+  Typography,
+  Button,
+  Tag,
+  Descriptions,
+  Result,
+  Spin,
+  Radio,
+  message,
+  Alert,
+  Space,
+  Divider,
+} from 'antd';
+import {
+  ClockCircleOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ExclamationCircleOutlined,
+} from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { candidateAPI } from '../../services/api';
 import './css/Schedule.css';
 
@@ -9,6 +30,52 @@ const { Header, Content, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
+
+// BE schema (CandidateScheduleDtos.cs):
+//   CandidateSlotDto       { SlotId, StartTime }      → chỉ 2 field, không lộ interviewer
+//   CandidateScheduleDto   { ScheduleId, RoundNumber, Status, Slots[], ConfirmedSlot? }
+//   Status: PENDING | CONFIRMED | NO_SLOT_FITS | CANCELLED
+//   PENDING + có PoolId    → Slots là các khung OPEN + tương lai
+//   CONFIRMED + ConfirmedSlotId → ConfirmedSlot có giá trị, Slots rỗng
+
+const STATUS_META = {
+  PENDING: {
+    color: 'warning',
+    label: 'Chờ bạn chọn khung giờ',
+    tone: 'gold',
+  },
+  CONFIRMED: {
+    color: 'success',
+    label: 'Đã xác nhận',
+    tone: 'green',
+  },
+  NO_SLOT_FITS: {
+    color: 'default',
+    label: 'Bạn đã báo không khung phù hợp',
+    tone: 'mute',
+  },
+  CANCELLED: {
+    color: 'error',
+    label: 'Lịch đã bị hủy',
+    tone: 'red',
+  },
+};
+
+const Logo = () => (
+  <div className="header-logo">
+    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="12" fill={MATCHA_GREEN} />
+      <path
+        d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.8956 14 32V16Z"
+        stroke="white"
+        strokeWidth="2.5"
+      />
+      <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+    <span>SRIS</span>
+  </div>
+);
 
 const Schedule = () => {
   const [searchParams] = useSearchParams();
@@ -19,7 +86,7 @@ const Schedule = () => {
   const [submitting, setSubmitting] = useState(false);
   const [scheduleData, setScheduleData] = useState(null);
   const [error, setError] = useState(null);
-  const [submitted, setSubmitted] = useState(null);
+  const [submitted, setSubmitted] = useState(null); // 'confirmed' | 'no-slot'
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   useEffect(() => {
@@ -29,6 +96,7 @@ const Schedule = () => {
       setError('Token không hợp lệ hoặc đã hết hạn.');
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const fetchSchedule = async () => {
@@ -38,8 +106,12 @@ const Schedule = () => {
       setScheduleData(response.data);
     } catch (err) {
       console.error('Error fetching schedule:', err);
-      const errorMsg = err?.response?.data?.message || err?.response?.data || 'Không thể tải thông tin lịch phỏng vấn. Liên kết có thể đã hết hạn.';
-      setError(errorMsg);
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.userMsg ||
+        err?.response?.data ||
+        'Không thể tải thông tin lịch phỏng vấn. Liên kết có thể đã hết hạn.';
+      setError(typeof errorMsg === 'string' ? errorMsg : 'Liên kết đã hết hạn hoặc không hợp lệ.');
     } finally {
       setLoading(false);
     }
@@ -50,14 +122,23 @@ const Schedule = () => {
       message.warning('Vui lòng chọn một khung giờ phỏng vấn.');
       return;
     }
-
     try {
       setSubmitting(true);
       await candidateAPI.confirmSchedule(token, selectedSlot);
+      message.success('Đã chốt lịch thành công.');
       setSubmitted('confirmed');
     } catch (err) {
       console.error('Error confirming schedule:', err);
-      message.error(err?.response?.data?.message || 'Không thể xác nhận lịch. Vui lòng thử lại.');
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.userMsg ||
+        'Không thể xác nhận lịch. Vui lòng thử lại.';
+      message.error(errMsg);
+      // 409 (slot vừa bị người khác đặt) → refetch để ẩn khung đã mất
+      if (err?.response?.status === 409) {
+        await fetchSchedule();
+        setSelectedSlot(null);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -67,40 +148,28 @@ const Schedule = () => {
     try {
       setSubmitting(true);
       await candidateAPI.noSlotAvailable(token);
+      message.success('Đã ghi nhận phản hồi của bạn.');
       setSubmitted('no-slot');
     } catch (err) {
       console.error('Error reporting no slot:', err);
-      message.error(err?.response?.data?.message || 'Không thể gửi phản hồi. Vui lòng thử lại.');
+      message.error(
+        err?.response?.data?.message ||
+          err?.response?.data?.userMsg ||
+          'Không thể gửi phản hồi. Vui lòng thử lại.'
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-  };
-
-  const formatTime = (dateStr) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  };
-
+  // ===========================================================
+  // Render: Loading
+  // ===========================================================
   if (loading) {
     return (
       <Layout className="schedule-layout">
         <Header className="sch-header">
-          <div className="header-logo">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span>SRIS</span>
-          </div>
+          <Logo />
         </Header>
         <Content className="sch-content">
           <div style={{ textAlign: 'center', padding: 80 }}>
@@ -114,19 +183,14 @@ const Schedule = () => {
     );
   }
 
+  // ===========================================================
+  // Render: Error
+  // ===========================================================
   if (error) {
     return (
       <Layout className="schedule-layout">
         <Header className="sch-header">
-          <div className="header-logo">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span>SRIS</span>
-          </div>
+          <Logo />
         </Header>
         <Content className="sch-content">
           <Result
@@ -135,41 +199,47 @@ const Schedule = () => {
             title="Không thể tải lịch phỏng vấn"
             subTitle={error}
             extra={
-              <Button type="primary" onClick={() => navigate('/')}>
+              <Button type="primary" onClick={() => window.close()}>
                 Đóng
               </Button>
             }
           />
         </Content>
+        <Footer className="sch-footer">
+          <Text type="secondary">© 2026 SRIS - Smart Recruitment & Interview System</Text>
+        </Footer>
       </Layout>
     );
   }
 
+  // ===========================================================
+  // Render: Sau khi confirm thành công (PENDING → CONFIRMED)
+  // ===========================================================
   if (submitted === 'confirmed') {
+    const confirmedSlot = scheduleData?.confirmedSlot; // backend đã set ConfirmedSlot ở response confirm
     return (
       <Layout className="schedule-layout">
         <Header className="sch-header">
-          <div className="header-logo">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span>SRIS</span>
-          </div>
+          <Logo />
         </Header>
         <Content className="sch-content">
           <Result
             status="success"
             icon={<CheckCircleOutlined style={{ color: '#52c41a', fontSize: 72 }} />}
-            title="Xác nhận thành công!"
+            title="Xác nhận lịch phỏng vấn thành công!"
             subTitle={
               <div>
-                <p>Bạn đã xác nhận tham gia phỏng vấn thành công.</p>
-                <p style={{ marginTop: 8, color: '#666' }}>
+                {confirmedSlot?.startTime && (
+                  <Paragraph style={{ marginTop: 8 }}>
+                    <CalendarOutlined /> Khung giờ bạn đã chọn:{' '}
+                    <Text strong>
+                      {dayjs(confirmedSlot.startTime).format('dddd, DD/MM/YYYY — HH:mm')}
+                    </Text>
+                  </Paragraph>
+                )}
+                <Paragraph style={{ color: '#666' }}>
                   Chúng tôi sẽ gửi email xác nhận kèm lịch phỏng vấn chi tiết trong thời gian sớm nhất.
-                </p>
+                </Paragraph>
               </div>
             }
             extra={
@@ -179,23 +249,21 @@ const Schedule = () => {
             }
           />
         </Content>
+        <Footer className="sch-footer">
+          <Text type="secondary">© 2026 SRIS - Smart Recruitment & Interview System</Text>
+        </Footer>
       </Layout>
     );
   }
 
+  // ===========================================================
+  // Render: Sau khi báo không có khung phù hợp
+  // ===========================================================
   if (submitted === 'no-slot') {
     return (
       <Layout className="schedule-layout">
         <Header className="sch-header">
-          <div className="header-logo">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span>SRIS</span>
-          </div>
+          <Logo />
         </Header>
         <Content className="sch-content">
           <Result
@@ -203,12 +271,9 @@ const Schedule = () => {
             icon={<ClockCircleOutlined style={{ color: MATCHA_GREEN, fontSize: 72 }} />}
             title="Phản hồi của bạn đã được ghi nhận"
             subTitle={
-              <div>
-                <p>Chúng tôi đã ghi nhận rằng bạn chưa có khung giờ phù hợp.</p>
-                <p style={{ marginTop: 8, color: '#666' }}>
-                  Bộ phận tuyển dụng sẽ liên hệ với bạn để sắp xếp lịch phỏng vấn khác.
-                </p>
-              </div>
+              <Paragraph style={{ color: '#666' }}>
+                Bộ phận tuyển dụng sẽ liên hệ với bạn để sắp xếp khung giờ khác.
+              </Paragraph>
             }
             extra={
               <Button type="primary" onClick={() => window.close()}>
@@ -217,136 +282,227 @@ const Schedule = () => {
             }
           />
         </Content>
+        <Footer className="sch-footer">
+          <Text type="secondary">© 2026 SRIS - Smart Recruitment & Interview System</Text>
+        </Footer>
       </Layout>
     );
   }
 
+  // ===========================================================
+  // Render: Form chính
+  // ===========================================================
+  const status = scheduleData?.status || 'PENDING';
+  const meta = STATUS_META[status] || STATUS_META.PENDING;
   const slots = scheduleData?.slots || [];
+  const confirmedSlot = scheduleData?.confirmedSlot;
+  const roundNumber = scheduleData?.roundNumber;
 
   return (
     <Layout className="schedule-layout">
       <Header className="sch-header">
-        <div className="header-logo">
-          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-            <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-            <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
-          <span>SRIS</span>
-        </div>
-        <Tag color="green" icon={<CalendarOutlined />}>Xác nhận lịch phỏng vấn</Tag>
+        <Logo />
+        <Tag color={meta.color} icon={<CalendarOutlined />}>
+          {meta.label}
+        </Tag>
       </Header>
 
       <Content className="sch-content">
         <div className="sch-container">
+          {/* Hero */}
           <div className="sch-hero">
             <div className="sch-hero-icon">
               <CalendarOutlined />
             </div>
             <Title level={2} className="sch-hero-title">
-              Chọn lịch phỏng vấn
+              {status === 'PENDING' && 'Chọn lịch phỏng vấn'}
+              {status === 'CONFIRMED' && 'Lịch phỏng vấn của bạn'}
+              {status === 'NO_SLOT_FITS' && 'Chưa có khung phù hợp'}
+              {status === 'CANCELLED' && 'Lịch đã bị hủy'}
             </Title>
             <Paragraph className="sch-hero-subtitle">
-              Vui lòng chọn một khung giờ phỏng vấn phù hợp với bạn. 
-              Sau khi xác nhận, bạn sẽ nhận được email xác nhận kèm lịch chi tiết.
+              {status === 'PENDING' &&
+                'Vui lòng chọn một khung giờ phỏng vấn phù hợp. Sau khi chốt, bạn sẽ nhận email xác nhận.'}
+              {status === 'CONFIRMED' &&
+                'Bạn đã chốt khung giờ phỏng vấn. Vui lòng có mặt đúng giờ.'}
+              {status === 'NO_SLOT_FITS' &&
+                'Bạn đã phản hồi rằng chưa có khung phù hợp. Bộ phận tuyển dụng sẽ liên hệ lại.'}
+              {status === 'CANCELLED' &&
+                'Lịch này đã bị hủy. Nếu có thắc mắc, vui lòng liên hệ bộ phận nhân sự.'}
             </Paragraph>
           </div>
 
-          <Alert
-            message="Thông tin phỏng vấn"
-            description={
-              <Descriptions size="small" column={1} className="sch-info">
-                <Descriptions.Item label={<span><UserOutlined /> Vị trí ứng tuyển</span>}>
-                  <Text strong>{scheduleData?.jobTitle || 'N/A'}</Text>
+          {/* Thông tin vòng */}
+          {roundNumber !== undefined && (
+            <Alert
+              message={`Vòng phỏng vấn số ${roundNumber}`}
+              type="info"
+              showIcon
+              className="sch-info-alert"
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {/* ============== PENDING: chọn slot ============== */}
+          {status === 'PENDING' && (
+            <Card className="sch-slots-card">
+              <div className="sch-slots-header">
+                <Title level={4} style={{ margin: 0 }}>
+                  <CalendarOutlined /> Khung giờ khả dụng
+                </Title>
+                <Text type="secondary">Chọn 1 khung bên dưới</Text>
+              </div>
+
+              {slots.length === 0 ? (
+                <Alert
+                  message="Hiện chưa có khung giờ nào được mở"
+                  description={
+                    <div>
+                      <Paragraph>
+                        Vui lòng liên hệ bộ phận tuyển dụng, hoặc bấm "Báo không có khung phù hợp" bên dưới
+                        để nhân sự biết và mở vòng mới cho bạn.
+                      </Paragraph>
+                    </div>
+                  }
+                  type="warning"
+                  showIcon
+                />
+              ) : (
+                <>
+                  <Alert
+                    type="info"
+                    icon={<ExclamationCircleOutlined />}
+                    message="Vì có nhiều ứng viên cùng chọn pool này — khung vừa có người đặt sẽ tự biến mất. Nếu bấm Xác nhận mà khung đã hết, vui lòng chọn khung khác."
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Radio.Group
+                    onChange={(e) => setSelectedSlot(e.target.value)}
+                    value={selectedSlot}
+                    className="sch-slots-group"
+                    style={{ width: '100%' }}
+                  >
+                    <div className="sch-slots-list">
+                      {slots.map((slot) => {
+                        const start = slot.startTime ? dayjs(slot.startTime) : null;
+                        return (
+                          <Card
+                            key={slot.slotId}
+                            className={`sch-slot-card ${selectedSlot === slot.slotId ? 'selected' : ''}`}
+                            hoverable
+                            onClick={() => setSelectedSlot(slot.slotId)}
+                          >
+                            <Radio value={slot.slotId} onClick={(e) => e.stopPropagation()}>
+                              <div className="sch-slot-content">
+                                <div className="sch-slot-date">
+                                  <CalendarOutlined />{' '}
+                                  {start ? start.format('dddd, DD/MM/YYYY') : '—'}
+                                </div>
+                                <div className="sch-slot-time">
+                                  <ClockCircleOutlined />{' '}
+                                  {start ? start.format('HH:mm') : '—'}
+                                </div>
+                                {start && (
+                                  <Tag color="green" style={{ marginTop: 6 }}>
+                                    Còn{' '}
+                                    {Math.max(
+                                      0,
+                                      Math.ceil((start.valueOf() - Date.now()) / (1000 * 60 * 60 * 24))
+                                    )}{' '}
+                                    ngày nữa
+                                  </Tag>
+                                )}
+                              </div>
+                            </Radio>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </Radio.Group>
+                </>
+              )}
+
+              <Divider />
+
+              <div className="sch-actions">
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                  onClick={handleConfirm}
+                  loading={submitting}
+                  disabled={!selectedSlot || slots.length === 0}
+                  className="sch-confirm-btn"
+                >
+                  Xác nhận lịch phỏng vấn
+                </Button>
+
+                <Button
+                  size="large"
+                  onClick={handleNoSlot}
+                  loading={submitting}
+                  className="sch-no-slot-btn"
+                >
+                  <ClockCircleOutlined /> Báo không có khung phù hợp
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* ============== CONFIRMED: hiển thị khung đã chốt ============== */}
+          {status === 'CONFIRMED' && confirmedSlot && (
+            <Card className="sch-confirmed-card">
+              <Descriptions
+                column={1}
+                size="large"
+                bordered
+                title={
+                  <Space>
+                    <CheckCircleOutlined style={{ color: MATCHA_GREEN, fontSize: 20 }} />
+                    <Text strong>Thông tin buổi phỏng vấn</Text>
+                  </Space>
+                }
+              >
+                <Descriptions.Item label="Vòng">{roundNumber ?? '—'}</Descriptions.Item>
+                <Descriptions.Item label="Ngày giờ">
+                  <Text strong style={{ color: MATCHA_GREEN }}>
+                    {confirmedSlot.startTime
+                      ? dayjs(confirmedSlot.startTime).format('dddd, DD/MM/YYYY — HH:mm')
+                      : '—'}
+                  </Text>
                 </Descriptions.Item>
-                <Descriptions.Item label={<span><MailOutlined /> Email liên hệ</span>}>
-                  {scheduleData?.candidateEmail || 'N/A'}
+                <Descriptions.Item label="Mã lịch">
+                  <Tag>#{scheduleData?.scheduleId ?? '—'}</Tag>
                 </Descriptions.Item>
               </Descriptions>
-            }
-            type="info"
-            showIcon
-            className="sch-info-alert"
-          />
+              <Paragraph type="secondary" style={{ marginTop: 16, marginBottom: 0 }}>
+                Vui lòng có mặt trước buổi phỏng vấn 5–10 phút. Nếu cần đổi lịch, liên hệ bộ phận
+                nhân sự qua email trong thư mời gốc.
+              </Paragraph>
+            </Card>
+          )}
 
-          <Card className="sch-slots-card">
-            <div className="sch-slots-header">
-              <Title level={4} style={{ margin: 0 }}>
-                <CalendarOutlined /> Khung giờ phỏng vấn
-              </Title>
-              <Text type="secondary">Chọn 1 trong các khung giờ dưới đây</Text>
-            </div>
-
-            {slots.length === 0 ? (
-              <Alert
-                message="Hiện không có khung giờ trống"
-                description="Vui lòng liên hệ bộ phận tuyển dụng để được sắp xếp lịch phỏng vấn khác."
-                type="warning"
-                showIcon
-              />
-            ) : (
-              <Radio.Group 
-                onChange={(e) => setSelectedSlot(e.target.value)} 
-                value={selectedSlot}
-                className="sch-slots-group"
-              >
-                <div className="sch-slots-list">
-                  {slots.map((slot) => (
-                    <Card 
-                      key={slot.slotId} 
-                      className={`sch-slot-card ${selectedSlot === slot.slotId ? 'selected' : ''}`}
-                      hoverable
-                    >
-                      <Radio value={slot.slotId}>
-                        <div className="sch-slot-content">
-                          <div className="sch-slot-date">
-                            <CalendarOutlined /> {formatDate(slot.startTime)}
-                          </div>
-                          <div className="sch-slot-time">
-                            <ClockCircleOutlined /> {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                          </div>
-                          {slot.interviewerName && (
-                            <div className="sch-slot-interviewer">
-                              <UserOutlined /> Người phỏng vấn: {slot.interviewerName}
-                            </div>
-                          )}
-                        </div>
-                      </Radio>
-                    </Card>
-                  ))}
-                </div>
-              </Radio.Group>
-            )}
-          </Card>
-
-          <div className="sch-actions">
-            <Button
-              type="primary"
-              size="large"
-              icon={<CheckCircleOutlined />}
-              onClick={handleConfirm}
-              loading={submitting}
-              disabled={!selectedSlot || slots.length === 0}
-              className="sch-confirm-btn"
-            >
-              Xác nhận lịch phỏng vấn
-            </Button>
-            
-            {slots.length > 0 && (
-              <Button
-                size="large"
-                onClick={handleNoSlot}
-                loading={submitting}
-                className="sch-no-slot-btn"
-              >
-                <ClockCircleOutlined /> Không có khung giờ phù hợp
-              </Button>
-            )}
-          </div>
+          {/* ============== NO_SLOT_FITS / CANCELLED: thông báo ============== */}
+          {(status === 'NO_SLOT_FITS' || status === 'CANCELLED') && (
+            <Alert
+              type={status === 'CANCELLED' ? 'error' : 'info'}
+              showIcon
+              message={
+                status === 'CANCELLED'
+                  ? 'Lịch phỏng vấn đã bị hủy'
+                  : 'Chưa có khung phù hợp'
+              }
+              description={
+                <Paragraph style={{ marginBottom: 0, color: '#666' }}>
+                  {status === 'CANCELLED'
+                    ? 'Vòng phỏng vấn này đã bị hủy. Nếu có thắc mắc, vui lòng liên hệ bộ phận nhân sự.'
+                    : 'Bạn đã phản hồi rằng chưa có khung nào phù hợp. Bộ phận tuyển dụng sẽ mở vòng mới và liên hệ lại.'}
+                </Paragraph>
+              }
+            />
+          )}
 
           <Text type="secondary" className="sch-footer-note">
-            Nếu bạn cần hỗ trợ thêm, vui lòng liên hệ bộ phận nhân sự qua email hoặc số điện thoại được cung cấp trong email gốc.
+            Nếu bạn cần hỗ trợ, vui lòng liên hệ bộ phận nhân sự qua email hoặc số điện thoại trong email mời gốc.
           </Text>
         </div>
       </Content>

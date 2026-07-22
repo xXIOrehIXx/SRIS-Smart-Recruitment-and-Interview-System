@@ -62,12 +62,6 @@ const Home = () => {
           </svg>
           <h2>SRIS</h2>
         </div>
-        <div className="nav-links">
-          <a href="#product">Product</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#resources">Resources</a>
-          <a href="#customers">Customers</a>
-        </div>
         <div className="header-actions">
           <Button
             type="text"
@@ -124,7 +118,7 @@ const Home = () => {
                 size="large"
                 shape="round"
                 className="secondary-btn"
-                onClick={() => (window.location.href = "/recruitment")}
+                onClick={() => navigate("/sris/recruitment")}
                 style={{
                   background:
                     "linear-gradient(135deg, #5D8C3E 0%, #4a7330 100%)",

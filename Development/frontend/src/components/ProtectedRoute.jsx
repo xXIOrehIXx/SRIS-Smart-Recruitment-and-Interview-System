@@ -69,7 +69,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
       const dashboardRoutes = {
         [ROLES.ADMIN]: "/admin/dashboard",
         [ROLES.RECRUITER]: "/recruiter/dashboard",
-        [ROLES.INTERVIEWER]: "/interviewer/dashboard",
+        [ROLES.INTERVIEWER]: "/interviewer/incoming",
         [ROLES.DEPARTMENT_MANAGER]: "/dept/dashboard",
       };
       const redirectPath = dashboardRoutes[userRole] || "/login";

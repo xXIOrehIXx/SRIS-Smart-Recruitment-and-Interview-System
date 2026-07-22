@@ -103,4 +103,5 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 /// <summary>1 buổi của interviewer kèm thông tin hiển thị (ứng viên + job + giờ hẹn).</summary>
 public record InterviewerScheduleRow(
     long ScheduleId, long ApplicationId, int RoundNumber, string Status,
-    DateTime StartTime, string CandidateName, string CandidateEmail, string JobTitle);
+    DateTime StartTime, string CandidateName, string CandidateEmail, string JobTitle,
+    string MySheetStatus);

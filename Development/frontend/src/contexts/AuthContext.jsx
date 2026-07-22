@@ -36,7 +36,7 @@ const normalizeRole = (role) => {
 export const ROLE_ROUTES = {
   [ROLES.ADMIN]: '/admin/dashboard',
   [ROLES.RECRUITER]: '/recruiter/dashboard',
-  [ROLES.INTERVIEWER]: '/interviewer/dashboard',
+  [ROLES.INTERVIEWER]: '/interviewer/incoming',
   [ROLES.DEPARTMENT_MANAGER]: '/dept/dashboard',
 };
 
@@ -70,8 +70,6 @@ export const ROLE_MENUS = {
     { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
   ],
   [ROLES.INTERVIEWER]: [
-    { key: '/interviewer/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
-    { key: '/interviewer/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     { key: '/interviewer/history', icon: 'HistoryOutlined', label: 'Lịch Sử Phỏng Vấn' },
     { key: '/interviewer/incoming', icon: 'VideoCameraOutlined', label: 'Phỏng Vấn Sắp Tới' },
   ],
