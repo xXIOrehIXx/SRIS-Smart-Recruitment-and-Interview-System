@@ -21,6 +21,8 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
 
     private readonly ISchedulingRepo _schedulingRepo;
     private readonly IApplicationRepo _appRepo;
+    private readonly IJobRepo _jobRepo;
+    private readonly ICandidateRepo _candidateRepo;
     private readonly IEvaluationCriteriaRepo _criteriaRepo;
     private readonly IInterviewScoreRepo _scoreRepo;
     private readonly ILogger _logger;
@@ -29,6 +31,8 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
     {
         _schedulingRepo = serviceProvider.GetRequiredService<ISchedulingRepo>();
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
+        _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
+        _candidateRepo = serviceProvider.GetRequiredService<ICandidateRepo>();
         _criteriaRepo = serviceProvider.GetRequiredService<IEvaluationCriteriaRepo>();
         _scoreRepo = serviceProvider.GetRequiredService<IInterviewScoreRepo>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<InterviewScoringService>();
@@ -54,9 +58,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
     public async Task<ScoringSheetDto> GetSheetAsync(long companyId, long interviewerId, long scheduleId)
     {
         await EnsureAssignedAsync(companyId, scheduleId, interviewerId);
-        var criteria = await GetActiveCriteriaAsync(companyId, scheduleId);
-        var mine = await _scoreRepo.GetByScheduleAndInterviewerAsync(companyId, scheduleId, interviewerId);
-        return BuildSheet(scheduleId, criteria, mine);
+        return await BuildSheetFullAsync(companyId, scheduleId, interviewerId);
     }
 
     public async Task<ScoringSheetDto> SaveDraftAsync(
@@ -76,8 +78,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             await _scoreRepo.UpsertAsync(companyId, scheduleId, interviewerId, item.CriteriaId, item.Score, item.Note);
         }
 
-        var mine = await _scoreRepo.GetByScheduleAndInterviewerAsync(companyId, scheduleId, interviewerId);
-        return BuildSheet(scheduleId, criteria, mine);
+        return await BuildSheetFullAsync(companyId, scheduleId, interviewerId);
     }
 
     public async Task<ScoringSheetDto> SubmitAsync(long companyId, long interviewerId, long scheduleId)
@@ -98,8 +99,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         _logger.Information("Scoring: interviewer {InterviewerId} nộp phiếu buổi {ScheduleId} (mở blind).",
             interviewerId, scheduleId);
 
-        var refreshed = await _scoreRepo.GetByScheduleAndInterviewerAsync(companyId, scheduleId, interviewerId);
-        return BuildSheet(scheduleId, criteria, refreshed);
+        return await BuildSheetFullAsync(companyId, scheduleId, interviewerId);
     }
 
     public async Task<ScheduleAggregateDto> GetAggregateAsync(long companyId, long scheduleId)
@@ -186,6 +186,52 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         var app = await _appRepo.GetByIdAsync(companyId, schedule.ApplicationId)
             ?? throw NotFound("Không tìm thấy hồ sơ của buổi phỏng vấn.");
         return await _criteriaRepo.GetByJobAsync(companyId, app.JobId, activeOnly: true);
+    }
+
+    /// <summary>
+    /// Build đầy đủ: tiêu chí ACTIVE + điểm/note của interviewer + thông tin buổi + ứng viên + panel size.
+    /// Dùng cho cả Get / Save / Submit để FE có đủ context bind header (vòng, thời gian, số người panel).
+    /// </summary>
+    private async Task<ScoringSheetDto> BuildSheetFullAsync(
+        long companyId, long scheduleId, long interviewerId)
+    {
+        var schedule = await _schedulingRepo.GetScheduleByIdAsync(companyId, scheduleId)
+            ?? throw NotFound($"Không tìm thấy buổi phỏng vấn (schedule_id={scheduleId}).");
+        var app = await _appRepo.GetByIdAsync(companyId, schedule.ApplicationId)
+            ?? throw NotFound("Không tìm thấy hồ sơ của buổi phỏng vấn.");
+
+        var criteria = await _criteriaRepo.GetByJobAsync(companyId, app.JobId, activeOnly: true);
+        var mine = await _scoreRepo.GetByScheduleAndInterviewerAsync(companyId, scheduleId, interviewerId);
+        var panelSize = await _schedulingRepo.GetPanelSizeAsync(companyId, scheduleId);
+
+        var coreDto = BuildSheet(scheduleId, criteria, mine);
+
+        // Lấy thông tin Job + Candidate — đã có scope, query trực tiếp qua repo đã đăng ký.
+        var job = await _jobRepo.GetByIdAsync(companyId, app.JobId);
+        var candidate = await _candidateRepo.GetByIdAsync(companyId, app.CandidateId);
+
+        var startTime = coreDto.Schedule?.StartTime ?? default;
+        // Lấy startTime từ slot đã chốt (cùng nguồn với list schedules).
+        var slotStart = await _schedulingRepo.GetConfirmedSlotStartAsync(companyId, scheduleId);
+
+        coreDto.Schedule = new ScoringScheduleInfoDto
+        {
+            ScheduleId = schedule.ScheduleId,
+            ApplicationId = schedule.ApplicationId,
+            RoundNumber = schedule.RoundNumber,
+            Status = schedule.Status,
+            StartTime = slotStart,
+            JobTitle = job?.Title ?? string.Empty,
+            PanelSize = panelSize,
+        };
+        coreDto.Candidate = candidate is null ? null : new ScoringCandidateInfoDto
+        {
+            CandidateId = candidate.CandidateId,
+            FullName = candidate.FullName ?? string.Empty,
+            Email = candidate.Email ?? string.Empty,
+        };
+
+        return coreDto;
     }
 
     private static ScoringSheetDto BuildSheet(

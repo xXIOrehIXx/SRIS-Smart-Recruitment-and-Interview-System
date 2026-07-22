@@ -8,9 +8,7 @@ import {
   Button,
   Typography,
   Spin,
-  Empty,
   Divider,
-  Result,
 } from 'antd';
 import {
   UserOutlined,
@@ -22,9 +20,9 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
-import { interviewAPI, applicationAPI } from '../../services/api';
+import { applicationAPI } from '../../services/api';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
@@ -43,25 +41,17 @@ const SHEET_STATUS_CONFIG = {
 };
 
 /**
- * Popup chi tiết 1 buổi phỏng vấn.
- *
- * Hiện:
- *  - Thời gian, vòng, trạng thái lịch (PENDING/CONFIRMED/...)
- *  - Ứng viên (tên, email) + vị trí
- *  - Trạng thái phiếu chấm (NOT_STARTED / DRAFT / SUBMITTED)
- *
- * Có nút "Chấm điểm" / "Xem & sửa" chuyển sang trang Grading.
+ * Popup chi tiết 1 buổi phỏng vấn — dùng chung cho Incoming (sắp tới) và History (đã chấm).
  *
  * Props:
  *  - schedule: { scheduleId, applicationId, status, startTime, candidateName, candidateEmail, jobTitle, roundNumber, mySheetStatus }
  *  - open / onClose
- *  - mode: 'incoming' | 'history' — để điều chỉnh label nút và copy
+ *  - mode: 'incoming' | 'history'
  */
 const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [application, setApplication] = useState(null);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!open || !schedule?.applicationId) return;
@@ -69,7 +59,6 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
     const fetchApp = async () => {
       try {
         setLoading(true);
-        setError(null);
         const res = await applicationAPI.getById(schedule.applicationId);
         if (!cancelled) setApplication(res.data || null);
       } catch (err) {
@@ -95,6 +84,8 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
 
   const handleGrade = () => {
     onClose?.();
+    // candidate object giữ 3 alias (candidateName/candidate/name) để Grading.jsx fallback chain
+    // (candidateData.candidateName || candidateData.candidate || candidateData.name) luôn có giá trị.
     navigate(`/interviewer/grading/${schedule.scheduleId}`, {
       state: {
         schedule,

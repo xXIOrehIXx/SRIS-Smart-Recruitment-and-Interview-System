@@ -373,6 +373,33 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return await query.AnyAsync();
     }
 
+    /// <summary>
+    /// Số interviewer trong panel của buổi (đếm từ InterviewSlotInterviewer của slot đã chốt).
+    /// Trả 0 nếu buổi chưa CONFIRMED hoặc không tìm thấy.
+    /// </summary>
+    public async Task<int> GetPanelSizeAsync(long companyId, long scheduleId)
+    {
+        var query =
+            from s in _db.InterviewSchedules.AsNoTracking()
+            join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
+            join si in _db.InterviewSlotInterviewers.AsNoTracking() on sl.SlotId equals si.SlotId
+            where s.ScheduleId == scheduleId
+            select si.InterviewerId;
+        var ids = await query.Distinct().ToListAsync();
+        return ids.Count;
+    }
+
+    /// <summary>StartTime của slot đã chốt của buổi. Trả DateTime.MinValue nếu chưa chốt.</summary>
+    public async Task<DateTime> GetConfirmedSlotStartAsync(long companyId, long scheduleId)
+    {
+        var query =
+            from s in _db.InterviewSchedules.AsNoTracking()
+            join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
+            where s.ScheduleId == scheduleId
+            select sl.StartTime;
+        return await query.FirstOrDefaultAsync();
+    }
+
     public async Task<IReadOnlyList<InterviewerScheduleRow>> GetSchedulesForInterviewerAsync(
         long companyId, long interviewerId)
     {
