@@ -7,6 +7,13 @@ public class MyScheduleDto
     public long ApplicationId { get; set; }
     public int RoundNumber { get; set; }
     public string Status { get; set; } = null!;
+
+    /// <summary>
+    /// Trạng thái phiếu chấm của CHÍNH interviewer này cho buổi:
+    /// NOT_STARTED | DRAFT | SUBMITTED. FE dùng để phân biệt "đã nộp / đang nháp / chưa chấm".
+    /// </summary>
+    public string MySheetStatus { get; set; } = "NOT_STARTED";
+
     /// <summary>Giờ hẹn (khung đã chốt).</summary>
     public DateTime StartTime { get; set; }
     public string CandidateName { get; set; } = null!;

@@ -114,7 +114,6 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/interviewer/dashboard" element={<Dashboard />} />
         <Route path="/interviewer/incoming" element={<IncomingInterview />} />
         <Route
           path="/interviewer/history"

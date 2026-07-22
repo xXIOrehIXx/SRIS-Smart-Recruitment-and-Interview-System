@@ -43,6 +43,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             ApplicationId = s.ApplicationId,
             RoundNumber = s.RoundNumber,
             Status = s.Status,
+            MySheetStatus = string.IsNullOrWhiteSpace(s.MySheetStatus) ? "NOT_STARTED" : s.MySheetStatus,
             StartTime = s.StartTime,
             CandidateName = s.CandidateName,
             CandidateEmail = s.CandidateEmail,

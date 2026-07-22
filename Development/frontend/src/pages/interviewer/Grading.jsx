@@ -229,6 +229,8 @@ const Grading = () => {
       message.success('Đã nộp phiếu chấm — điểm của bạn giờ hiện với panel (mở blind).');
       setSubmitConfirmModal(false);
       setIsSubmitted(true);
+      // Đợi toast hiện xong rồi quay lại trang trước
+      setTimeout(() => navigate(-1), 700);
     } catch (error) {
       console.error('Error submitting score:', error);
       message.error(error?.response?.data?.userMsg || 'Không thể submit điểm. Vui lòng thử lại.');
@@ -268,7 +270,7 @@ const Grading = () => {
     <div className="grading-page">
       <div className="grading-header">
         <Button
-          onClick={() => navigate('/interviewer/schedule')}
+          onClick={() => navigate(-1)}
           icon={<ArrowLeftOutlined />}
         >
           Quay lại
