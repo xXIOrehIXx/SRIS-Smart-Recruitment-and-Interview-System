@@ -24,7 +24,7 @@ import {
   ClockCircleOutlined,
   UserOutlined,
   CalendarOutlined,
-  TrophyOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -46,18 +46,15 @@ const Grading = () => {
   const [scores, setScores] = useState({});
   const [criteria, setCriteria] = useState([]);
   const [feedback, setFeedback] = useState('');
-  const [recommendation, setRecommendation] = useState(null);
   const [interviewInfo, setInterviewInfo] = useState(null);
-  const [candidateInfo, setCandidateInfo] = useState(null);
 
   // Modal states
   const [saveConfirmModal, setSaveConfirmModal] = useState(false);
   const [submitConfirmModal, setSubmitConfirmModal] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Get data from navigation state or use passed params
-  const stateData = location.state || {};
-  const candidateData = stateData.candidate || {};
+  // Get candidate info từ navigation state — fallback khi API trả candidate rỗng
+  const candidateData = location.state?.candidate || {};
 
   useEffect(() => {
     if (scheduleId) {
@@ -71,17 +68,15 @@ const Grading = () => {
       const response = await interviewAPI.getMySheet(scheduleId);
       const data = response.data || {};
 
-      // ScoringSheetDto: { scheduleId, myStatus, criteria: [{criteriaId, name, weight, maxScore, myScore, myNote}] }
-      if (data.myStatus === 'SUBMITTED') {
-        setIsSubmitted(true);
-      }
-      if (data.criteria && Array.isArray(data.criteria)) {
+      // ScoringSheetDto: { scheduleId, myStatus, criteria: [...], schedule, candidate }
+      if (data.myStatus === 'SUBMITTED') setIsSubmitted(true);
+
+      if (Array.isArray(data.criteria)) {
         setCriteria(data.criteria.map((c) => ({
           id: c.criteriaId,
           name: c.name || 'Tiêu chí',
           maxScore: c.maxScore || 10,
           weight: c.weight || 1,
-          description: '',
         })));
 
         // Nạp lại điểm nháp đã lưu server (myScore — điểm CỦA MÌNH, blind review)
@@ -92,51 +87,19 @@ const Grading = () => {
           }
         });
         setScores(existingScores);
-      } else {
-        // Fallback criteria if none from API
-        setCriteria([
-          { id: 'technical', name: 'Kỹ năng kỹ thuật', maxScore: 10, weight: 1 },
-          { id: 'communication', name: 'Giao tiếp', maxScore: 10, weight: 1 },
-          { id: 'problem_solving', name: 'Giải quyết vấn đề', maxScore: 10, weight: 1 },
-          { id: 'culture_fit', name: 'Phù hợp văn hóa', maxScore: 10, weight: 1 },
-          { id: 'experience', name: 'Kinh nghiệm', maxScore: 10, weight: 1 },
-        ]);
-      }
 
-      // Khôi phục nhận xét chung + đề xuất (được lưu trong note của tiêu chí đầu — xem buildItemsPayload)
-      const firstNote = data.criteria?.[0]?.myNote;
-      if (firstNote && firstNote.startsWith('[Nhận xét chung]')) {
-        const match = firstNote.match(/^\[Nhận xét chung\] ([\s\S]*?)(?: — \[Đề xuất\] (\w+))?$/);
-        if (match) {
-          setFeedback(match[1] || '');
-          if (match[2]) setRecommendation(match[2]);
+        // Khôi phục nhận xét chung (được lưu trong note của tiêu chí đầu)
+        const firstNote = data.criteria[0]?.myNote;
+        if (firstNote?.startsWith('[Nhận xét chung]')) {
+          const match = firstNote.match(/^\[Nhận xét chung\] ([\s\S]*)$/);
+          if (match) setFeedback(match[1] || '');
         }
       }
 
-      // Set interview info
-      if (data.schedule) {
-        setInterviewInfo(data.schedule);
-      }
-      if (data.candidate) {
-        setCandidateInfo(data.candidate);
-      }
-
-      // Check if already submitted
-      if (data.isSubmitted || data.status === 'SUBMITTED') {
-        setIsSubmitted(true);
-      }
+      if (data.schedule) setInterviewInfo(data.schedule);
     } catch (error) {
       console.error('Error fetching my sheet:', error);
-      message.warning('Không thể tải dữ liệu chấm điểm, sử dụng form mới');
-
-      // Set default criteria
-      setCriteria([
-        { id: 'technical', name: 'Kỹ năng kỹ thuật', maxScore: 10, weight: 1 },
-        { id: 'communication', name: 'Giao tiếp', maxScore: 10, weight: 1 },
-        { id: 'problem_solving', name: 'Giải quyết vấn đề', maxScore: 10, weight: 1 },
-        { id: 'culture_fit', name: 'Phù hợp văn hóa', maxScore: 10, weight: 1 },
-        { id: 'experience', name: 'Kinh nghiệm', maxScore: 10, weight: 1 },
-      ]);
+      message.error(error?.response?.data?.userMsg || 'Không thể tải phiếu chấm. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -188,8 +151,8 @@ const Grading = () => {
       .map((c, idx) => ({
         criteriaId: c.id,
         score: scores[c.id] ?? null,
-        note: idx === 0 && (feedback || recommendation)
-          ? `[Nhận xét chung] ${feedback || ''}${recommendation ? ` — [Đề xuất] ${recommendation}` : ''}`
+        note: idx === 0 && feedback
+          ? `[Nhận xét chung] ${feedback}`
           : null,
       })),
   });
@@ -239,33 +202,6 @@ const Grading = () => {
     }
   };
 
-  const getRecommendationConfig = (rec) => {
-    const configs = {
-      STRONG_HIRE: { color: '#52c41a', label: 'Rất nên tuyển', icon: <TrophyOutlined /> },
-      HIRE: { color: '#73d13d', label: 'Nên tuyển', icon: <CheckCircleOutlined /> },
-      NO_HIRE: { color: '#ff4d4f', label: 'Không nên tuyển', icon: <CloseCircleOutlined /> },
-      STRONG_NO_HIRE: { color: '#cf1322', label: 'Tuyệt đối không tuyển', icon: <CloseCircleOutlined /> },
-    };
-    return configs[rec] || { color: '#d9d9d9', label: rec || 'Chưa đánh giá' };
-  };
-
-  const recommendationOptions = [
-    { key: 'STRONG_HIRE', label: 'Rất nên tuyển', className: 'strong-hire' },
-    { key: 'HIRE', label: 'Nên tuyển', className: 'hire' },
-    { key: 'NO_HIRE', label: 'Không nên tuyển', className: 'no-hire' },
-    { key: 'STRONG_NO_HIRE', label: 'Tuyệt đối không', className: 'strong-no-hire' },
-  ];
-
-  const getRecommendationIcon = (key) => {
-    const icons = {
-      STRONG_HIRE: <TrophyOutlined />,
-      HIRE: <CheckCircleOutlined />,
-      NO_HIRE: <ClockCircleOutlined />,
-      STRONG_NO_HIRE: <ClockCircleOutlined />,
-    };
-    return icons[key];
-  };
-
   return (
     <div className="grading-page">
       <div className="grading-header">
@@ -283,8 +219,69 @@ const Grading = () => {
         )}
       </div>
 
+      {/* Khung thông tin buổi phỏng vấn — Bind từ scoring sheet.scheduleInfo trả về từ BE */}
+      <Card
+        className="info-card"
+        bordered={false}
+        style={{ background: '#fafafa', marginBottom: 16 }}
+        title={
+          <Space>
+            <CalendarOutlined style={{ color: MATCHA_GREEN }} />
+            <Text strong>Thông tin buổi phỏng vấn</Text>
+          </Space>
+        }
+        size="small"
+      >
+        <Row gutter={[16, 8]}>
+          <Col xs={24} md={6}>
+            <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Ứng viên</Text>
+            <Text strong style={{ fontSize: 15 }}>
+              {interviewInfo?.candidate?.fullName || candidateData.candidateName || candidateData.candidate || candidateData.name || 'N/A'}
+            </Text>
+            {interviewInfo?.candidate?.email && (
+              <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                {interviewInfo.candidate.email}
+              </Text>
+            )}
+          </Col>
+          <Col xs={12} md={5}>
+            <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Vòng</Text>
+            <Tag color="cyan" style={{ fontSize: 13, padding: '2px 10px', marginTop: 2 }}>
+              Vòng {interviewInfo?.schedule?.roundNumber || candidateData.round || interviewInfo?.schedule?.RoundNumber || '1'}
+            </Tag>
+          </Col>
+          <Col xs={12} md={5}>
+            <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Thời gian</Text>
+            <Text strong>
+              {interviewInfo?.schedule?.startTime
+                ? dayjs(interviewInfo.schedule.startTime).format('DD/MM/YYYY HH:mm')
+                : candidateData.startTime
+                  ? dayjs(candidateData.startTime).format('DD/MM/YYYY HH:mm')
+                  : '—'}
+            </Text>
+          </Col>
+          <Col xs={12} md={4}>
+            <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Số người panel</Text>
+            <Space size={4}>
+              <TeamOutlined style={{ color: MATCHA_GREEN }} />
+              <Text strong style={{ fontSize: 15 }}>
+                {interviewInfo?.schedule?.panelSize ?? '—'}
+              </Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>người</Text>
+            </Space>
+          </Col>
+          <Col xs={12} md={4}>
+            <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Vị trí</Text>
+            <Text strong>
+              {interviewInfo?.schedule?.jobTitle || candidateData.position || candidateData.jobTitle || '—'}
+            </Text>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Khung chấm điểm — full-width */}
       <Row gutter={[24, 24]}>
-        <Col xs={24} lg={16}>
+        <Col xs={24}>
           <Card className="main-card" bordered={false}>
             <div className="grading-header-content">
               <div>
@@ -361,32 +358,6 @@ const Grading = () => {
               />
             </div>
 
-            <div className="recommendation">
-              <Title level={5}>Đề xuất</Title>
-              <div className="recommendation-options">
-                {recommendationOptions.map((option) => {
-                  const isSelected = recommendation === option.key;
-                  const config = getRecommendationConfig(option.key);
-                  return (
-                    <Button
-                      key={option.key}
-                      className={`recommend-btn ${option.className} ${isSelected ? 'selected' : ''}`}
-                      onClick={() => !isSubmitted && setRecommendation(option.key)}
-                      icon={getRecommendationIcon(option.key)}
-                      disabled={isSubmitted}
-                      style={{
-                        borderColor: isSelected ? config.color : undefined,
-                        backgroundColor: isSelected ? `${config.color}15` : undefined,
-                        color: isSelected ? config.color : undefined,
-                      }}
-                    >
-                      {option.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-
             {!isSubmitted && (
               <div className="grading-actions">
                 <Button
@@ -418,40 +389,6 @@ const Grading = () => {
                 style={{ marginTop: 16 }}
               />
             )}
-          </Card>
-        </Col>
-
-        <Col xs={24} lg={8}>
-          <Card className="sidebar-card" bordered={false}>
-            <Title level={5}>Thông tin phỏng vấn</Title>
-            <div className="interview-info">
-              <div className="info-row">
-                <Text type="secondary"><UserOutlined /> Ứng viên:</Text>
-                <span>{candidateData.candidateName || candidateData.candidate || candidateData.name || 'N/A'}</span>
-              </div>
-              <div className="info-row">
-                <Text type="secondary"><CalendarOutlined /> Ngày PV:</Text>
-                <span>{interviewInfo?.date ? dayjs(interviewInfo.date).format('DD/MM/YYYY') : candidateData.interviewDate || '-'}</span>
-              </div>
-              <div className="info-row">
-                <Text type="secondary"><ClockCircleOutlined /> Giờ PV:</Text>
-                <span>{interviewInfo?.time || candidateData.time || '-'}</span>
-              </div>
-              <div className="info-row">
-                <Text type="secondary">Vòng:</Text>
-                <span>{interviewInfo?.round || candidateData.round || interviewInfo?.level || '1'}</span>
-              </div>
-            </div>
-
-            <Divider />
-
-            <Title level={5}>Hướng dẫn chấm điểm</Title>
-            <div style={{ fontSize: 13, color: '#666' }}>
-              <p>• Chấm điểm từ 0 đến điểm tối đa của mỗi tiêu chí</p>
-              <p>• Nhập nhận xét chi tiết về từng khía cạnh</p>
-              <p>• Chọn đề xuất phù hợp với ứng viên</p>
-              <p>• Submit khi hoàn thành đánh giá</p>
-            </div>
           </Card>
         </Col>
       </Row>
@@ -490,14 +427,10 @@ const Grading = () => {
         <p>Bạn có chắc chắn muốn submit điểm đánh giá này?</p>
         <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 8, marginTop: 16 }}>
           <p><strong>Tổng điểm:</strong> {calculateTotal()}/{calculateMaxScore()}</p>
-          <p><strong>Đề xuất:</strong> {recommendation ? getRecommendationConfig(recommendation).label : 'Chưa chọn'}</p>
         </div>
       </Modal>
     </div>
   );
 };
-
-// Add missing icon import fix
-const CloseCircleOutlined = () => <span style={{ fontSize: 14 }}>✕</span>;
 
 export default Grading;

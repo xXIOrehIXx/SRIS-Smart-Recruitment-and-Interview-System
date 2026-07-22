@@ -98,6 +98,12 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 
     /// <summary>Các buổi ĐÃ CHỐT giao cho 1 interviewer (interviewer của confirmed slot) — để hiện danh sách cần chấm.</summary>
     Task<IReadOnlyList<InterviewerScheduleRow>> GetSchedulesForInterviewerAsync(long companyId, long interviewerId);
+
+    /// <summary>Số interviewer trong panel của buổi (để hiển thị "số người tham gia" ở header phiếu chấm).</summary>
+    Task<int> GetPanelSizeAsync(long companyId, long scheduleId);
+
+    /// <summary>Giờ bắt đầu thực sự của buổi (từ slot đã chốt). Trả default nếu chưa chốt.</summary>
+    Task<DateTime> GetConfirmedSlotStartAsync(long companyId, long scheduleId);
 }
 
 /// <summary>1 buổi của interviewer kèm thông tin hiển thị (ứng viên + job + giờ hẹn).</summary>

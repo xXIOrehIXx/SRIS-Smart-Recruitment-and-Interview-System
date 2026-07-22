@@ -23,6 +23,14 @@ public class CandidateRepo : BaseRepo<long, Candidate>, ICandidateRepo
             .FirstOrDefaultAsync(c => c.Email == email);
     }
 
+    public async Task<Candidate?> GetByIdAsync(long companyId, long candidateId)
+    {
+        // Global Query Filter tự kèm company_id; truyền companyId tham số để giữ signature thống nhất với IJobRepo.
+        return await _db.Candidates
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.CandidateId == candidateId);
+    }
+
     public async Task<long> InsertAsync(long companyId, Candidate candidate)
     {
         candidate.CompanyId = companyId;
