@@ -19,6 +19,13 @@ public record KanbanCard(
     DateTime AppliedAt,
     DateTime? StageUpdatedAt);
 
+/// <summary>1 hồ sơ theo phòng ban (đếm hired/total — tiến độ tuyển theo phòng ban).</summary>
+public record DepartmentCount(string Department, int Hired, int Total);
+
+/// <summary>1 dòng hoạt động gần đây (ActivityLog join Candidate — feed dashboard).</summary>
+public record ActivityRow(long ApplicationId, string CandidateName, string Action,
+    string? FromState, string? ToState, DateTime? CreatedAt);
+
 /// <summary>
 /// Truy vấn tổng hợp cho Dashboard/Analytics (docs 4, M7). Mọi truy vấn tự kèm company_id
 /// (Global Query Filter) — cô lập tenant. jobId null = toàn công ty; có giá trị = lọc theo 1 job.
@@ -42,4 +49,16 @@ public interface IDashboardRepo
 
     /// <summary>Lấy danh sách ứng viên theo state cho Kanban board.</summary>
     Task<IReadOnlyList<KanbanCard>> GetKanbanCardsAsync(long companyId, long? jobId);
+
+    /// <summary>Hồ sơ mới nộp gần nhất (mọi state, mới nhất trước).</summary>
+    Task<IReadOnlyList<KanbanCard>> GetRecentApplicationsAsync(long companyId, long? jobId, int take);
+
+    /// <summary>Quyết định gần nhất (HIRED/REJECTED, theo stage_updated_at mới nhất trước).</summary>
+    Task<IReadOnlyList<KanbanCard>> GetRecentDecisionsAsync(long companyId, long? jobId, int take);
+
+    /// <summary>Tiến độ theo phòng ban: số hồ sơ HIRED / tổng hồ sơ của các job trong phòng ban.</summary>
+    Task<IReadOnlyList<DepartmentCount>> GetDepartmentProgressAsync(long companyId);
+
+    /// <summary>Hoạt động gần đây toàn công ty (ActivityLog mới nhất trước).</summary>
+    Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, int take);
 }

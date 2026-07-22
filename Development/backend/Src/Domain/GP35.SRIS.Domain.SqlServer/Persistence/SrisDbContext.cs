@@ -51,6 +51,7 @@ public class SrisDbContext : DbContext
     public DbSet<RecruitmentRequest> RecruitmentRequests => Set<RecruitmentRequest>();
     public DbSet<JobRequirement> JobRequirements => Set<JobRequirement>();
     public DbSet<JobBenefit> JobBenefits => Set<JobBenefit>();
+    public DbSet<Department> Departments => Set<Department>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -278,6 +279,14 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("JobBenefit");
             e.HasKey(x => x.BenefitId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<Department>(e =>
+        {
+            e.ToTable("Department");
+            e.HasKey(x => x.DepartmentId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

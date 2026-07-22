@@ -78,36 +78,29 @@ const Analytics = () => {
     );
   }
 
+  // Số thật từ /dashboard/overview — không hiển thị trend vì backend chưa có số liệu so kỳ trước
   const stats = [
     {
       title: 'Tổng đơn ứng tuyển',
       value: overview?.summary?.totalApplications || 0,
-      trend: '+12%',
-      trendUp: true,
       icon: <FileTextOutlined />,
       color: '#1890ff',
     },
     {
       title: 'Đang xử lý',
       value: overview?.summary?.inPipeline || 0,
-      trend: '+8%',
-      trendUp: true,
       icon: <ClockCircleOutlined />,
       color: '#faad14',
     },
     {
       title: 'Đã tuyển',
       value: overview?.summary?.hired || 0,
-      trend: '+3',
-      trendUp: true,
       icon: <CheckCircleOutlined />,
       color: '#52c41a',
     },
     {
       title: 'Từ chối',
       value: overview?.summary?.rejected || 0,
-      trend: '-5%',
-      trendUp: false,
       icon: <TeamOutlined />,
       color: '#f5222d',
     },
@@ -147,13 +140,6 @@ const Analytics = () => {
                   <Text type="secondary" style={{ fontSize: 13 }}>{stat.title}</Text>
                   <div style={{ fontSize: 32, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2, marginTop: 4 }}>
                     {stat.value}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8 }}>
-                    {stat.trendUp
-                      ? <ArrowUpOutlined style={{ color: '#52c41a', fontSize: 12 }} />
-                      : <ArrowDownOutlined style={{ color: '#f5222d', fontSize: 12 }} />}
-                    <Text style={{ color: stat.trendUp ? '#52c41a' : '#f5222d', fontSize: 13 }}>{stat.trend}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>so với tháng trước</Text>
                   </div>
                 </div>
                 <div style={{

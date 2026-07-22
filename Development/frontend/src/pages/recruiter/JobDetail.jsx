@@ -26,7 +26,6 @@ const JobDetail = () => {
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   useEffect(() => {
     if (jobId) {
@@ -168,7 +167,7 @@ const JobDetail = () => {
       render: (_, record) => (
         <Space>
           <Button size="small" onClick={() => navigate(`/recruiter/candidates/${record.id}`)}>Xem</Button>
-          <Button size="small" type="primary" onClick={() => setIsScheduleModalOpen(true)}>Lịch</Button>
+          <Button size="small" type="primary" onClick={() => navigate('/interviews/schedule')}>Lịch</Button>
         </Space>
       ),
     },
@@ -339,7 +338,7 @@ const JobDetail = () => {
                 type="primary" 
                 icon={<UserAddOutlined />} 
                 block
-                onClick={() => setIsScheduleModalOpen(true)}
+                onClick={() => navigate('/interviews/schedule')}
                 className="primary-action"
               >
                 Lên Lịch Phỏng Vấn
@@ -371,34 +370,6 @@ const JobDetail = () => {
         </Col>
       </Row>
 
-      <Modal
-        title="Lên Lịch Phỏng Vấn"
-        open={isScheduleModalOpen}
-        onCancel={() => setIsScheduleModalOpen(false)}
-        footer={null}
-      >
-        <div className="schedule-form">
-          <div className="form-group">
-            <label>Chọn Ứng Viên</label>
-            <Select placeholder="Chọn ứng viên" style={{ width: '100%' }} />
-          </div>
-          <div className="form-group">
-            <label>Loại Phỏng Vấn</label>
-            <Select placeholder="Chọn loại" style={{ width: '100%' }}>
-              <Select.Option value="technical">Kỹ thuật</Select.Option>
-              <Select.Option value="hr">HR</Select.Option>
-              <Select.Option value="culture">Văn hóa</Select.Option>
-            </Select>
-          </div>
-          <div className="form-group">
-            <label>Ngày & Giờ</label>
-            <DatePicker showTime style={{ width: '100%' }} format="DD/MM/YYYY HH:mm" />
-          </div>
-          <Button type="primary" block className="submit-btn">
-            Lên Lịch
-          </Button>
-        </div>
-      </Modal>
     </div>
   );
 };

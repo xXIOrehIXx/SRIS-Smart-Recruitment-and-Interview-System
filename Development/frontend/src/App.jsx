@@ -11,6 +11,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import SubAccountManagement from "./pages/admin/SubAccountManagement";
 import CreateAccount from "./pages/admin/CreateAccount";
+import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import AdminLayout from "./layouts/AdminLayout";
 import RecruiterDashboard from "./pages/recruiter/Dashboard";
 import JobManagement from "./pages/recruiter/JobManagement";
@@ -73,6 +74,7 @@ const App = () => {
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/sub-accounts" element={<SubAccountManagement />} />
         <Route path="/admin/create-account" element={<CreateAccount />} />
+        <Route path="/admin/departments" element={<DepartmentManagement />} />
         <Route path="/admin/company-branding" element={<CompanyBranding />} />
       </Route>
 

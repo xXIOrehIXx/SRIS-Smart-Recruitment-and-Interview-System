@@ -436,10 +436,6 @@ const Grading = () => {
                 <span>{interviewInfo?.time || candidateData.time || '-'}</span>
               </div>
               <div className="info-row">
-                <Text type="secondary">Loại:</Text>
-                <span>{interviewInfo?.type || candidateData.type || 'Technical'}</span>
-              </div>
-              <div className="info-row">
                 <Text type="secondary">Vòng:</Text>
                 <span>{interviewInfo?.round || candidateData.round || interviewInfo?.level || '1'}</span>
               </div>

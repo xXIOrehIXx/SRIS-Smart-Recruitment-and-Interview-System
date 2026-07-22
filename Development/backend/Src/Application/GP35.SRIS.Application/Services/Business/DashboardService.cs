@@ -29,6 +29,10 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
         var sourceRaw = await _repo.GetSourceBreakdownAsync(companyId, jobId);
         var offerRaw = await _repo.GetOfferStatusCountsAsync(companyId, jobId);
         var hireDurations = await _repo.GetHireDurationDaysAsync(companyId, jobId);
+        var recentApps = await _repo.GetRecentApplicationsAsync(companyId, jobId, 8);
+        var recentDecisions = await _repo.GetRecentDecisionsAsync(companyId, jobId, 5);
+        var departmentProgress = await _repo.GetDepartmentProgressAsync(companyId);
+        var recentActivities = await _repo.GetRecentActivitiesAsync(companyId, 8);
 
         var byState = funnelRaw.ToDictionary(x => x.State, x => x.Count, StringComparer.OrdinalIgnoreCase);
         int CountOf(string state) => byState.TryGetValue(state, out var c) ? c : 0;
@@ -73,15 +77,43 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
             Summary = summary,
             Funnel = funnel,
             RejectReasons = ToBreakdown(rejectRaw, "Không rõ"),
-            Sources = ToBreakdown(sourceRaw, "Không rõ")
+            Sources = ToBreakdown(sourceRaw, "Không rõ"),
+            RecentApplications = recentApps.Select(ToRecent).ToList(),
+            RecentDecisions = recentDecisions.Select(ToRecent).ToList(),
+            DepartmentProgress = departmentProgress
+                .Select(d => new DepartmentProgressDto { Department = d.Department, Hired = d.Hired, Total = d.Total })
+                .ToList(),
+            RecentActivities = recentActivities
+                .Select(a => new RecentActivityDto
+                {
+                    ApplicationId = a.ApplicationId,
+                    CandidateName = a.CandidateName,
+                    Action = a.Action,
+                    FromState = a.FromState,
+                    ToState = a.ToState,
+                    CreatedAt = a.CreatedAt
+                })
+                .ToList()
         };
     }
+
+    private static RecentApplicationDto ToRecent(KanbanCard c) => new()
+    {
+        ApplicationId = c.ApplicationId,
+        CandidateName = c.CandidateName,
+        CandidateEmail = c.CandidateEmail,
+        JobTitle = c.JobTitle,
+        CurrentState = c.CurrentState,
+        AppliedAt = c.AppliedAt,
+        StageUpdatedAt = c.StageUpdatedAt
+    };
 
     public async Task<KanbanBoardDto> GetKanbanBoardAsync(long companyId, long? jobId)
     {
         var cards = await _repo.GetKanbanCardsAsync(companyId, jobId);
 
-        var kanbanStates = new[] { "NEW", "INTERVIEW", "QUIZ", "OFFER" };
+        // 4 pha hiển thị của pipeline (QUIZ đã loại khỏi scope 07/2026)
+        var kanbanStates = new[] { "NEW", "SCREENING", "INTERVIEW", "OFFER" };
         var columns = kanbanStates
             .Select(state => new KanbanColumnDto
             {
@@ -112,9 +144,9 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
 
     private static string GetStateLabel(string state) => state switch
     {
-        "NEW" => "Applied",
-        "INTERVIEW" => "Interview",
-        "QUIZ" => "Làm Quiz",
+        "NEW" => "Hồ sơ mới",
+        "SCREENING" => "Sàng lọc",
+        "INTERVIEW" => "Phỏng vấn",
         "OFFER" => "Offer",
         _ => state
     };

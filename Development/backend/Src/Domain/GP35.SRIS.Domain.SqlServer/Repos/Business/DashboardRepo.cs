@@ -116,4 +116,64 @@ public class DashboardRepo : IDashboardRepo
             .OrderByDescending(c => c.StageUpdatedAt ?? c.AppliedAt)
             .ToList();
     }
+
+    public async Task<IReadOnlyList<KanbanCard>> GetRecentApplicationsAsync(long companyId, long? jobId, int take)
+    {
+        // Lọc/sort trên cột entity TRƯỚC rồi mới project vào record (EF không compose được
+        // Where/OrderBy sau constructor projection).
+        return await (
+            from a in _db.Applications.AsNoTracking()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
+            where jobId == null || a.JobId == jobId.Value
+            orderby a.ApplicationId descending
+            select new KanbanCard(a.ApplicationId, c.CandidateId, c.FullName, c.Email, j.Title,
+                a.JobId, a.CurrentState, a.AiMatchScore, a.CreatedAt ?? DateTime.MinValue, a.StageUpdatedAt))
+            .Take(take)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<KanbanCard>> GetRecentDecisionsAsync(long companyId, long? jobId, int take)
+    {
+        return await (
+            from a in _db.Applications.AsNoTracking()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
+            where (jobId == null || a.JobId == jobId.Value)
+                  && (a.CurrentState == "HIRED" || a.CurrentState == "REJECTED")
+            // stage_updated_at luôn set khi transition; tránh ?? trong ORDER BY (EF không translate)
+            orderby a.StageUpdatedAt descending
+            select new KanbanCard(a.ApplicationId, c.CandidateId, c.FullName, c.Email, j.Title,
+                a.JobId, a.CurrentState, a.AiMatchScore, a.CreatedAt ?? DateTime.MinValue, a.StageUpdatedAt))
+            .Take(take)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<DepartmentCount>> GetDepartmentProgressAsync(long companyId)
+    {
+        return await (
+            from a in _db.Applications.AsNoTracking()
+            join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
+            where j.Department != null && j.Department != ""
+            group a by j.Department into g
+            orderby g.Count() descending
+            select new DepartmentCount(
+                g.Key!,
+                g.Count(x => x.CurrentState == "HIRED"),
+                g.Count()))
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, int take)
+    {
+        return await (
+            from log in _db.ActivityLogs.AsNoTracking()
+            join a in _db.Applications.AsNoTracking() on log.ApplicationId equals a.ApplicationId
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            orderby log.LogId descending
+            select new ActivityRow(log.ApplicationId, c.FullName, log.Action,
+                log.FromState, log.ToState, log.CreatedAt))
+            .Take(take)
+            .ToListAsync();
+    }
 }

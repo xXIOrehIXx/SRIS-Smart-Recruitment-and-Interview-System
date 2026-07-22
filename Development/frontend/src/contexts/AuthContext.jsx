@@ -48,6 +48,7 @@ export const ROLE_MENUS = {
     { key: '/admin/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/admin/sub-accounts', icon: 'TeamOutlined', label: 'Quản lý tài khoản' },
     { key: '/admin/create-account', icon: 'UserAddOutlined', label: 'Tạo tài khoản' },
+    { key: '/admin/departments', icon: 'ApartmentOutlined', label: 'Phòng Ban' },
     { key: '/admin/company-branding', icon: 'GlobalOutlined', label: 'Thương Hiệu' },
     { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
     { key: '/recruiter/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
