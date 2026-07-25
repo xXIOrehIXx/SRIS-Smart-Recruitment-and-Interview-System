@@ -119,7 +119,7 @@ Nguyên tắc thiết kế: **đơn giản là mặc định, phức tạp là t
 > **MODULE QUIZ ĐÃ LOẠI HOÀN TOÀN KHỎI SCOPE (07/2026)** — cả quiz nhập tay lẫn AI gen
 > (docs Section 3 OUT). Không thiết kế, không code, không tài liệu gì thêm cho quiz.
 
-### Roles (4 login + 1 ẩn danh — GÁN CHỒNG được, 1 người giữ nhiều role)
+### Roles (4 login + 1 ẩn danh — mỗi user 1 role; công ty nhỏ dùng 1 tài khoản Admin)
 - `Admin` / `Recruiter` / `Interviewer` / `DepartmentManager` → đăng nhập Portal (JWT)
 - `Candidate` → **magic link only**, không có account, không có User row
 - Câu thần chú: Recruiter lái · Interviewer chấm · DM quyết (và RA ĐỀ) · Candidate ứng tuyển · Admin dựng sân
