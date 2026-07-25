@@ -263,16 +263,32 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(data);
       const responseData = response.data;
 
-      const token = responseData.token || responseData.accessToken;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(responseData.user || responseData));
+      // BE trả cùng shape với login: { companyId, accessToken, refreshToken } — role/email
+      // nằm trong JWT, phải decode như login (trước đây lưu nguyên response nên user thiếu role).
+      const accessToken =
+        responseData.accessToken || responseData.token || responseData.access_token;
+      const refreshToken = responseData.refreshToken || responseData.refresh_token;
 
-      setUser(responseData.user || responseData);
+      if (!accessToken) {
+        throw new Error('Không nhận được access token từ server');
+      }
+
+      localStorage.setItem('token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      const userData = parseJwt(accessToken);
+      userData.role = normalizeRole(userData.role);
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      setUser(userData);
       setIsAuthenticated(true);
 
-      return responseData;
+      return userData;
     } catch (error) {
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       throw error;
     }
