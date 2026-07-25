@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Form, Input, Button, Checkbox, Alert, Select, message } from "antd";
+import { Form, Input, Button, Checkbox, Alert, message } from "antd";
 import {
   UserOutlined,
   LockOutlined,
@@ -9,7 +9,7 @@ import {
   GoogleOutlined,
   GithubOutlined,
 } from "@ant-design/icons";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth, ROLE_ROUTES } from "../../contexts/AuthContext";
 import "./css/Auth.css";
 
 const Register = () => {
@@ -24,21 +24,22 @@ const Register = () => {
     setError("");
 
     try {
+      // BE nhận adminEmail/adminPassword/adminFullName (RegisterCompanyRequest) — tạo
+      // công ty + tài khoản Admin đầu tiên rồi trả token (tự đăng nhập luôn, docs API §1).
       const registerData = {
-        email: values.email,
-        password: values.password,
-        fullName: values.fullName,
         companyName: values.companyName,
-        role: values.role || "Recruiter",
+        adminEmail: values.email,
+        adminPassword: values.password,
+        adminFullName: values.fullName,
       };
 
-      await register(registerData);
+      const userData = await register(registerData);
       setSuccess(true);
-      message.success("Đăng ký thành công! Vui lòng đăng nhập.");
+      message.success("Đăng ký thành công!");
 
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      // Tài khoản đầu tiên luôn là Admin → vào thẳng Portal (khỏi bắt đăng nhập lại).
+      const redirectPath = ROLE_ROUTES[userData?.role] || "/admin/dashboard";
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       console.error("Register error:", err);
       if (err.response?.data?.message) {
@@ -132,20 +133,6 @@ const Register = () => {
             placeholder="Tên công ty"
             className="auth-input"
           />
-        </Form.Item>
-
-        <Form.Item
-          name="role"
-          rules={[{ required: true, message: "Vui lòng chọn vai trò!" }]}
-          initialValue="Recruiter"
-        >
-          <Select
-            placeholder="Chọn vai trò của bạn"
-            size="large"
-            className="auth-select"
-          >
-            <Select.Option value="Recruiter">Recruiter</Select.Option>
-          </Select>
         </Form.Item>
 
         <Form.Item

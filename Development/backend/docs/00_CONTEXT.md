@@ -12,7 +12,7 @@ Quy ước tên gọi: Radar Chart = hình dạng mạnh/yếu theo trục tiêu
 - AI dùng Local AI + Vector (không OpenAI/Gemini).
 - Đã hoàn thành PoC chạy thật: Việc 2 (Local AI+Vector), Việc 3 (PDF extract), Việc 4 (pipeline LLM JSON — tính năng gốc đã loại, GIỮ pattern tái dùng), Việc 5 (State Machine). Chi tiết & bài học ở Section 14.
 - Đặt lịch phỏng vấn (Section 15) **ĐÃ CODE 07/2026 — mô hình POOL khung dùng chung (thay luồng 1-1)**. Chấm CV theo tiêu chí (5.18) ĐÃ CODE end-to-end (07/2026 — Việc B4 phần code, xem 5.18 mục TRẠNG THÁI CODE + Section 14); còn phần ĐO ngưỡng/chunk (khung §16, P/R/F1) chưa làm.** Yêu cầu tuyển dụng (5.17) chờ chốt mô hình hóa (Việc B3).
-- Mô hình role: 4 role đăng nhập Portal — Admin, Recruiter, Interviewer, Department Manager; **một người gán được NHIỀU role** (công ty gia đình: 1 chủ giữ cả 4). Candidate là khách ẩn danh dùng magic link. Người quyết tuyển = Department Manager của job (Job.department_manager_id; để trống → Recruiter quyết). OfferDetail cho state OFFER; ứng viên tự nhận/từ chối qua magic link OFFER_RESPONSE. DB: nhóm bảng Quiz ĐÃ GỠ (V012); EvaluationCriteria ĐÃ MỞ RỘNG + thêm CvChunk/ApplicationCriterionMatch (V013 — 5.18); ERD mới (Việc B3) còn lại: thêm Yêu cầu tuyển dụng + vẽ lại sơ đồ. ERD vẽ kiểu chỉ thuộc tính + quan hệ bằng đường nối, không vẽ cột FK; GIỮ MagicLinkToken, KHÔNG vẽ ActivityLog + EmailLog; mọi bảng đều có company_id. Quan hệ Application → MagicLinkToken là 1-N, nhãn generates. Job có 2 FK tới User (department_manager_id, created_by) → 2 đường nối: decides hiring for + creates.
+- Mô hình role: 4 role đăng nhập Portal — Admin, Recruiter, Interviewer, Department Manager; **mỗi User giữ ĐÚNG 1 role** (code hiện tại KHÔNG gán chồng nhiều role trên một tài khoản). Công ty gia đình dùng **1 tài khoản Admin** làm hết (Admin là superuser, bypass mọi cổng quyền); tách vai = tạo thêm tài khoản cho từng role khi công ty lớn lên. Candidate là khách ẩn danh dùng magic link. Người quyết tuyển = Department Manager của job (Job.department_manager_id; để trống → Recruiter quyết). OfferDetail cho state OFFER; ứng viên tự nhận/từ chối qua magic link OFFER_RESPONSE. DB: nhóm bảng Quiz ĐÃ GỠ (V012); EvaluationCriteria ĐÃ MỞ RỘNG + thêm CvChunk/ApplicationCriterionMatch (V013 — 5.18); ERD mới (Việc B3) còn lại: thêm Yêu cầu tuyển dụng + vẽ lại sơ đồ. ERD vẽ kiểu chỉ thuộc tính + quan hệ bằng đường nối, không vẽ cột FK; GIỮ MagicLinkToken, KHÔNG vẽ ActivityLog + EmailLog; mọi bảng đều có company_id. Quan hệ Application → MagicLinkToken là 1-N, nhãn generates. Job có 2 FK tới User (department_manager_id, created_by) → 2 đường nối: decides hiring for + creates.
 - Phạm vi: tuyển cho MỌI vị trí, không chỉ IT (Charter/Persona nghiêng IT chỉ là ví dụ).
 - Tên đồ án: Smart Recruitment and Interview System (SRIS).
 - CẦN HỎI THẦY: (1) phỏng vấn nhiều vòng có in-scope không (bằng chứng VPBank — 5.12, 10); (2) xác nhận tái định vị target ≤200 người + luồng Yêu cầu tuyển dụng mới.
@@ -37,7 +37,7 @@ Quy ước tên gọi: Radar Chart = hình dạng mạnh/yếu theo trục tiêu
 
 Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal — Admin, Recruiter, Interviewer, Department Manager. Chỉ Candidate là khách ẩn danh, tham gia qua magic link an toàn, KHÔNG cần account. (Câu chốt khi bảo vệ.)
 
-**GÁN CHỒNG ROLE:** 4 role là 4 TẬP QUYỀN, không phải 4 con người. Một User gán được nhiều role cùng lúc. Công ty gia đình: 1 chủ giữ cả 4 role, làm hết từ đăng tin đến quyết tuyển. Công ty lớn hơn: tách dần từng role ra từng người. → Câu bảo vệ: "Hệ thống phân quyền đầy đủ 4 role, sẵn sàng cho công ty tách vai — nhưng công ty nhỏ chỉ cần MỘT người giữ hết. Không bắt công ty 10 người xài bộ máy công ty 1000 người."
+**PHÂN QUYỀN THEO QUY MÔ (mỗi User 1 role):** 4 role là 4 TẬP QUYỀN. Trong code hiện tại **mỗi User giữ đúng 1 role** — KHÔNG gán chồng nhiều role trên một tài khoản. Công ty gia đình/nhỏ: dùng **1 tài khoản Admin** làm hết từ đăng tin đến quyết tuyển — Admin là superuser, bypass mọi cổng `[WithRole]` nên chạy trọn luồng mà không cần thêm tài khoản. Công ty lớn hơn: **tạo thêm tài khoản** cho từng role (Recruiter / Interviewer / DM riêng). → Câu bảo vệ: "Hệ thống phân quyền đầy đủ 4 role, sẵn sàng cho công ty tách vai bằng cách tạo tài khoản riêng — nhưng công ty nhỏ chỉ cần MỘT tài khoản Admin giữ hết. Không bắt công ty 10 người xài bộ máy công ty 1000 người."
 
 Ba vai tách bạch — chấm / quyết / thao tác: Interviewer chấm (cho điểm phỏng vấn). Department Manager (trưởng bộ phận) quyết (chốt tuyển hay không, ở bước OFFER) **và ra đề tuyển dụng (tạo Yêu cầu tuyển dụng — 5.17)**. Recruiter thao tác (vận hành cả pipeline, sàng lọc CV, đặt lịch).
 
@@ -59,7 +59,7 @@ Cách phân biệt role (chống nhầm): (1) Vào bằng gì? 4 role nội bộ
 ### IN-SCOPE
 - Recruitment: Career Site · Pipeline Kanban (hiển thị 4 pha — 5.16) + State Machine nội bộ · **Yêu cầu tuyển dụng (DM) → Tin tuyển dụng (Recruiter) — 5.17** · **AI bóc tiêu chí + chấm CV THEO TỪNG TIÊU CHÍ có giải thích (Local AI + Vector) — 5.18** · Email Automation · Multi-tenant (shared schema + company_id) · Brand theming.
 - Interview: Collaborative Scoring + Radar Chart (Blind Review tự bật khi >1 người chấm) · CRUD tiêu chí chấm (dùng CHUNG bộ tiêu chí với chấm CV — 5.18) · Đặt lịch phỏng vấn nội bộ + .ics (Section 15).
-- Chung: Dashboard Analytics · RBAC 4 role gán chồng + Candidate magic link · Activity Log & Internal Notes.
+- Chung: Dashboard Analytics · RBAC 4 role (mỗi user 1 role; Admin superuser) + Candidate magic link · Activity Log & Internal Notes.
 - **"Smart" (2 điểm nhấn khi bảo vệ):** (1) **Talent Pool reverse matching** — CV cũ "sống lại" cho job mới (hero, ĐÃ CODE); (2) **Chấm CV theo tiêu chí có giải thích** (khớp/thiếu + câu bằng chứng) — trả lời thẳng câu hội đồng "AI chấm dựa vào đâu".
 - "Wow" phụ: Blind Review · Insight std deviation · Ứng viên tự nhận/từ chối offer online · Đặt lịch self-service kiểu Calendly thu nhỏ.
 
@@ -189,7 +189,7 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính 
 
 ### 5.10 Cấu trúc Web — 2 site tách biệt
 - Career Site (công khai) — ứng viên, vào bằng /t/{slug} + magic link, KHÔNG đăng nhập.
-- Internal Portal (nội bộ) — nhân sự đăng nhập /t/{slug}/login (JWT). Khu theo role: /admin · /recruiter · /interviewer · /manager. Người giữ nhiều role thấy đủ các khu tương ứng.
+- Internal Portal (nội bộ) — nhân sự đăng nhập /t/{slug}/login (JWT). Khu theo role: /admin · /recruiter · /interviewer · /manager. Mỗi tài khoản thấy khu theo role của mình; Admin (superuser) thấy đủ các khu — công ty nhỏ 1 tài khoản Admin chạy trọn luồng.
 - KHÔNG nút "Đăng nhập" nổi bật ở header Career Site (ứng viên tưởng phải tạo account). Link nhỏ ở footer nếu cần.
 - DEMO: mở sẵn 2 tab (Career Site + Portal đã login).
 
@@ -216,7 +216,7 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính 
 - Chấm điểm & quyết tuyển KHÔNG dùng magic link — nằm trong Portal.
 
 ### 5.14 Người quyết tuyển — Department Manager
-- Người quyết = DM sở hữu job (Job.department_manager_id → User, nullable). Có DM → DM quyết ở OFFER; trống → Recruiter quyết (đây cũng là đường mặc định của công ty nhỏ 1 người nhiều role).
+- Người quyết = DM sở hữu job (Job.department_manager_id → User, nullable). Có DM → DM quyết ở OFFER; trống → Recruiter quyết (đây cũng là đường mặc định của công ty nhỏ dùng 1 tài khoản Admin).
 - DM xuất hiện ở HAI đầu: tạo Yêu cầu tuyển dụng (5.17) và chốt ở OFFER. KHÔNG gác cổng CV, KHÔNG đụng vận hành.
 - Một người vừa là DM vừa chấm phỏng vấn: gán họ làm interviewer của slot (InterviewSlot.interviewer_id). Không cần cơ chế riêng.
 - KHÔNG cổng duyệt CV riêng, KHÔNG bảng cấu hình thẩm quyền.
@@ -247,7 +247,7 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính 
 ### 5.17 YÊU CẦU TUYỂN DỤNG (Hiring Requisition) — DM ra đề, Recruiter triển khai (chi tiết ERD = Việc B3)
 - **Luồng:** Department Manager tạo **Yêu cầu tuyển dụng** — KHÔNG phải JD chi tiết, chỉ cần: vị trí cần tuyển, số lượng, và **các tiêu chí cần thiết** (gõ tự nhiên). → Recruiter vào xem yêu cầu → tạo **Tin tuyển dụng** công khai (mô tả đầy đủ, phúc lợi, form nộp) từ yêu cầu đó.
 - **Vì sao:** (1) đúng thực tế doanh nghiệp — trưởng bộ phận biết cần người thế nào, HR biết cách đăng tin (khớp As-Is 4.2 bước 1); (2) giải quyết gốc câu hội đồng "tiêu chí từ đâu ra" — tri thức chuyên môn đến từ DM, không phải HR bịa, không phải AI bịa; (3) cho DM vai trò đầu-cuối tròn trịa (ra đề → chốt).
-- **Tùy chọn theo quy mô (5.16):** công ty nhỏ 1 người nhiều role → bỏ qua phiếu yêu cầu, tạo job + gõ tiêu chí trực tiếp (về bản chất là tự ra đề cho mình). Có DM tách vai → bật phiếu.
+- **Tùy chọn theo quy mô (5.16):** công ty nhỏ dùng 1 tài khoản Admin → bỏ qua phiếu yêu cầu, tạo job + gõ tiêu chí trực tiếp (về bản chất là tự ra đề cho mình). Có DM tách vai → bật phiếu.
 - **CHỜ CHỐT (Việc B3):** mô hình hóa — entity HiringRequisition riêng hay Job có giai đoạn requisition; quan hệ với Job/EvaluationCriteria; trạng thái phiếu (DRAFT/SENT/CONVERTED...).
 
 ### 5.18 TIÊU CHÍ LÀ TRỤC XUYÊN SUỐT + CHẤM CV THEO TỪNG TIÊU CHÍ (thay cách "ném cả JD↔CV")
@@ -303,7 +303,7 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính 
 | M5. Collaborative Scoring | Chấm theo bộ tiêu chí chung; multi-interviewer + radar + Blind Review tự bật khi >1 người chấm |
 | M6. Dashboard & Analytics | Funnel chart, KPI card, reject_reason analytics |
 | M7. Multi-tenant & Brand | Cô lập theo company_id (RLS + Global Query Filter), brand theming |
-| M8. Auth & Authorization | JWT + RBAC 4 role GÁN CHỒNG; candidate magic link |
+| M8. Auth & Authorization | JWT + RBAC 4 role (mỗi user 1 role; Admin superuser); candidate magic link |
 | M9. Interview Scheduling | Self-scheduling nội bộ + magic link SCHEDULE + .ics (chi tiết 15.4) |
 
 ---
@@ -406,7 +406,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
   - **MODULE QUIZ ĐÃ LOẠI HOÀN TOÀN** (Section 3 OUT + đạn Q&A Section 10). Không thiết kế, không code, không tài liệu gì thêm cho quiz.
   - DB SQL Server 2025; AI Local AI + Vector (không OpenAI); embedding BAAI/bge-m3 (1024 chiều, 8192 token). EF Core (SqlVector + VectorDistance; FromSqlRaw cửa thoát). Cô lập tenant: RLS + Global Query Filter + test (5.2). PDPD 2026 = luận điểm tuân thủ. Object storage: Amazon S3.
   - Không "web của chúng em"; mô hình dịch vụ SaaS. Tuyển MỌI vị trí.
-  - Role: 4 role GÁN CHỒNG (1 người giữ được nhiều/cả 4); chỉ Candidate ẩn danh magic link. Câu thần chú: Recruiter lái · Interviewer chấm · DM quyết (và RA ĐỀ) · Candidate ứng tuyển · Admin dựng sân.
+  - Role: 4 role, mỗi user giữ ĐÚNG 1 role (công ty nhỏ dùng 1 tài khoản Admin — superuser bypass mọi quyền; tách vai = tạo thêm tài khoản); chỉ Candidate ẩn danh magic link. Câu thần chú: Recruiter lái · Interviewer chấm · DM quyết (và RA ĐỀ) · Candidate ứng tuyển · Admin dựng sân.
   - **Luồng tiêu chí (5.17, 5.18): DM tạo Yêu cầu tuyển dụng (tùy chọn) → Recruiter tạo Job → AI bóc tiêu chí DRAFT → người duyệt chốt → chấm CV THEO TỪNG tiêu chí (CV_MATCHABLE, HARD lọc rule/SOFT vector, khớp/thiếu + bằng chứng) → cùng bộ tiêu chí chấm phỏng vấn. KHÔNG ném cả JD↔CV. Phần 5.18 ĐÃ CODE (xem TRẠNG THÁI CODE trong 5.18) — chat mới ĐỪNG thiết kế lại; 5.17 (requisition) còn chờ chốt B3.**
   - Pipeline: hiển thị 4 pha (Hồ sơ mới · Sàng lọc · Phỏng vấn · Quyết định); **6 state nội bộ, 8 transition**, forward-only, guard G2 (5.8, 5.16). Bảng bật/tắt 5.16.
   - Chấm vs quyết (5.7, 5.14): 1 người chấm mặc định; Blind + std dev + Radar tự bật khi >1. DM quyết chỉ ở OFFER; trống → Recruiter. reject_reason bắt buộc 1-chạm.
