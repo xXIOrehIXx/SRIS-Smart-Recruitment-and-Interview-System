@@ -38,6 +38,7 @@ import {
   cvScoringAPI,
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import '../Dashboard.css';
 
 // Thông báo lỗi từ BE (ErrorObjectCommon) — hiện đúng câu BE trả về, ví dụ 403 khi
@@ -116,6 +117,9 @@ const HiringDecision = () => {
     fetchCandidates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId]);
+
+  // Recruiter/DM gửi offer ở màn khác -> hồ sơ rơi vào cột OFFER; quay lại tab này là thấy ngay.
+  useRefreshOnFocus(() => fetchCandidates());
 
   const getStatusTag = (status) => {
     const config = {
