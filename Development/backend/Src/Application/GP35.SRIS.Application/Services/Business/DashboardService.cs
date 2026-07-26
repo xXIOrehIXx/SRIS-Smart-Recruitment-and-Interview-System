@@ -133,7 +133,9 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
                         CurrentState = c.CurrentState,
                         AiMatchScore = c.AiMatchScore,
                         AppliedAt = c.AppliedAt,
-                        StageUpdatedAt = c.StageUpdatedAt
+                        StageUpdatedAt = c.StageUpdatedAt,
+                        Department = c.Department,
+                        DepartmentManagerId = c.DepartmentManagerId
                     })
                     .ToList()
             })

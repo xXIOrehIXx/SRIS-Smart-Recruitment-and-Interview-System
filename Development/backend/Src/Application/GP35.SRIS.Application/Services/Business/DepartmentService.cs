@@ -2,6 +2,7 @@ using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Department;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -18,11 +19,13 @@ public class DepartmentService : BaseService<DepartmentService>, IDepartmentServ
     private static readonly string[] ValidStatuses = { "Active", "Inactive" };
 
     private readonly IDepartmentRepo _departmentRepo;
+    private readonly IUserRepo _userRepo;
     private readonly ILogger _logger;
 
     public DepartmentService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _departmentRepo = serviceProvider.GetRequiredService<IDepartmentRepo>();
+        _userRepo = serviceProvider.GetRequiredService<IUserRepo>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<DepartmentService>();
     }
 
@@ -36,7 +39,8 @@ public class DepartmentService : BaseService<DepartmentService>, IDepartmentServ
         {
             Name = name,
             Description = Clean(dto.Description),
-            Status = NormalizeStatus(dto.Status)
+            Status = NormalizeStatus(dto.Status),
+            ManagerUserId = await ValidateManagerAsync(companyId, dto.ManagerUserId)
         };
         var departmentId = await _departmentRepo.InsertAsync(companyId, department);
 
@@ -48,7 +52,7 @@ public class DepartmentService : BaseService<DepartmentService>, IDepartmentServ
     public async Task<IReadOnlyList<DepartmentDto>> GetListAsync(long companyId)
     {
         var rows = await _departmentRepo.GetListAsync(companyId);
-        return rows.Select(r => Map(r.Department, r.JobCount)).ToList();
+        return rows.Select(r => Map(r.Department, r.JobCount, r.ManagerName, r.ManagerEmail)).ToList();
     }
 
     public async Task<DepartmentDto> GetByIdAsync(long companyId, long departmentId)
@@ -56,7 +60,7 @@ public class DepartmentService : BaseService<DepartmentService>, IDepartmentServ
         var rows = await _departmentRepo.GetListAsync(companyId);
         var row = rows.FirstOrDefault(r => r.Department.DepartmentId == departmentId)
             ?? throw NotFound($"Không tìm thấy phòng ban (department_id={departmentId}).");
-        return Map(row.Department, row.JobCount);
+        return Map(row.Department, row.JobCount, row.ManagerName, row.ManagerEmail);
     }
 
     public async Task<DepartmentDto> UpdateAsync(long companyId, long departmentId, DepartmentInputDto dto)
@@ -71,6 +75,7 @@ public class DepartmentService : BaseService<DepartmentService>, IDepartmentServ
         department.Name = name;
         department.Description = Clean(dto.Description);
         department.Status = NormalizeStatus(dto.Status ?? department.Status);
+        department.ManagerUserId = await ValidateManagerAsync(companyId, dto.ManagerUserId);
         department.UpdatedAt = DateTime.UtcNow;
         await _departmentRepo.SaveAsync();
 
@@ -112,6 +117,29 @@ public class DepartmentService : BaseService<DepartmentService>, IDepartmentServ
         return name;
     }
 
+    /// <summary>
+    /// Kiểm DM gán cho phòng ban (V023): phải là user Active của CHÍNH công ty này và role
+    /// DepartmentManager (hoặc Admin — công ty nhỏ chạy 1 tài khoản Admin kiêm hết).
+    /// Null/0 = bỏ trống, hợp lệ.
+    /// </summary>
+    private async Task<long?> ValidateManagerAsync(long companyId, long? managerUserId)
+    {
+        if (managerUserId is not > 0) return null;
+
+        var user = await _userRepo.GetByIdAsync(companyId, managerUserId.Value)
+            ?? throw Bad($"Không tìm thấy người dùng (user_id={managerUserId}) trong công ty.");
+
+        if (!string.Equals(user.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            throw Bad($"Tài khoản '{user.Email}' đang bị khóa — không gán làm quản lý phòng ban được.");
+
+        var allowed = string.Equals(user.Role, RoleConstants.DepartmentManager, StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(user.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase);
+        if (!allowed)
+            throw Bad($"'{user.Email}' đang là {user.Role} — quản lý phòng ban phải là DepartmentManager hoặc Admin.");
+
+        return user.UserId;
+    }
+
     private static string NormalizeStatus(string? status)
     {
         var s = (status ?? "Active").Trim();
@@ -120,13 +148,16 @@ public class DepartmentService : BaseService<DepartmentService>, IDepartmentServ
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-    private static DepartmentDto Map(DepartmentEntity d, int jobCount) => new()
+    private static DepartmentDto Map(DepartmentEntity d, int jobCount, string? managerName, string? managerEmail) => new()
     {
         DepartmentId = d.DepartmentId,
         Name = d.Name,
         Description = d.Description,
         Status = d.Status,
         JobCount = jobCount,
+        ManagerUserId = d.ManagerUserId,
+        // full_name hay để trống -> rơi về email cho FE khỏi hiện ô rỗng.
+        ManagerName = string.IsNullOrWhiteSpace(managerName) ? managerEmail : managerName,
         CreatedAt = d.CreatedAt,
         UpdatedAt = d.UpdatedAt
     };

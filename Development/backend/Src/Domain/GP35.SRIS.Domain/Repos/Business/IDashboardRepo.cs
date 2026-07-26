@@ -17,7 +17,11 @@ public record KanbanCard(
     string CurrentState,
     decimal? AiMatchScore,
     DateTime AppliedAt,
-    DateTime? StageUpdatedAt);
+    DateTime? StageUpdatedAt,
+    // V023: phòng ban + DM của job — để màn "Quyết định tuyển dụng" của DM chỉ hiện hồ sơ
+    // thuộc phòng mình. Chỉ Kanban điền, các query recent khác để mặc định null.
+    string? Department = null,
+    long? DepartmentManagerId = null);
 
 /// <summary>1 hồ sơ theo phòng ban (đếm hired/total — tiến độ tuyển theo phòng ban).</summary>
 public record DepartmentCount(string Department, int Hired, int Total);

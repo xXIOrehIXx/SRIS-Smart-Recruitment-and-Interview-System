@@ -4,6 +4,7 @@ using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
+using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -26,10 +27,12 @@ public class OfferService : BaseService<OfferService>, IOfferService
     private readonly IMagicLinkService _magicLink;
     private readonly INotificationService _notification;
     private readonly IActivityLogRepo _activityLogRepo;
+    private readonly IContextData _contextData;
     private readonly ILogger _logger;
 
     public OfferService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
+        _contextData = serviceProvider.GetRequiredService<IContextData>();
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
         _offerRepo = serviceProvider.GetRequiredService<IOfferRepo>();
@@ -53,7 +56,8 @@ public class OfferService : BaseService<OfferService>, IOfferService
         // Phân quyền: chỉ Department Manager của job quyết; job không gán DM -> Recruiter (bất kỳ user) quyết (5.14).
         var job = await _jobRepo.GetByIdAsync(companyId, app.JobId)
             ?? throw NotFound("Không tìm thấy vị trí (job) của hồ sơ.");
-        if (job.DepartmentManagerId is long dmId && dmId != userId)
+        var isAdmin = string.Equals(_contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase);
+        if (!isAdmin && job.DepartmentManagerId is long dmId && dmId != userId)
             throw Forbidden("Chỉ Department Manager của vị trí này mới được quyết offer.");
 
         // Quyết tuyển = đẩy INTERVIEW->OFFER. State machine kiểm forward-only + Guard G2 (≥1 phiếu chấm đã nộp).
@@ -76,18 +80,9 @@ public class OfferService : BaseService<OfferService>, IOfferService
         offer.OfferId = await _offerRepo.InsertAsync(companyId, offer);
 
         // Phát magic link OFFER_RESPONSE cho ứng viên (token gốc chỉ có ở đây — gửi qua email).
+        // IssueAsync ĐÃ tự gửi email kèm nút (5.13 "Actionable Email") và tự nuốt lỗi gửi mail
+        // -> KHÔNG gọi SendMagicLinkAsync lần nữa ở đây, không thì ứng viên nhận 2 mail giống hệt.
         var issued = await _magicLink.IssueAsync(companyId, applicationId, Purpose, TimeSpan.FromDays(ttlDays));
-
-        // Gửi email cho ứng viên với magic link
-        try
-        {
-            await _notification.SendMagicLinkAsync(companyId, applicationId, Purpose, issued.RawToken, issued.ExpiresAt);
-        }
-        catch (Exception ex)
-        {
-            // Best-effort: lỗi gửi mail không ảnh hưởng đến việc tạo offer
-            _logger.Warning(ex, "Offer: không gửi được email OFFER_RESPONSE cho app={AppId}", applicationId);
-        }
 
         await _activityLogRepo.InsertAsync(companyId, new ActivityLog
         {

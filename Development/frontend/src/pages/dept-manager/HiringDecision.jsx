@@ -31,7 +31,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { dashboardAPI, applicationAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import '../Dashboard.css';
+
+// Thông báo lỗi từ BE (ErrorObjectCommon) — hiện đúng câu BE trả về, ví dụ 403 khi
+// DM bấm duyệt hồ sơ thuộc phòng ban khác.
+const apiMessage = (error, fallback) =>
+  error?.response?.data?.userMsg || error?.response?.data?.UserMsg || fallback;
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -41,6 +47,7 @@ const MATCHA_GREEN = '#5D8C3E';
 
 const HiringDecision = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState([]);
   
@@ -65,12 +72,20 @@ const HiringDecision = () => {
       const offerColumn = res.data.columns.find(c => c.state === 'OFFER');
       
       if (offerColumn) {
-        const formattedData = offerColumn.cards.map(c => ({
+        // V023: DM chỉ thấy hồ sơ mình được quyền chốt — job gán đúng mình, hoặc job chưa gán DM
+        // (đường mặc định công ty nhỏ, ai cũng chốt được). Admin xem hết.
+        const myId = Number(user?.userId);
+        const isAdmin = user?.role === 'Admin';
+        const visible = offerColumn.cards.filter(
+          (c) => isAdmin || c.departmentManagerId == null || Number(c.departmentManagerId) === myId
+        );
+
+        const formattedData = visible.map(c => ({
           id: c.applicationId,
           candidateName: c.candidateName,
           candidateEmail: c.candidateEmail,
           position: c.jobTitle,
-          department: 'N/A',
+          department: c.department || 'Chưa gán phòng ban',
           requestTitle: c.jobTitle,
           appliedDate: c.appliedAt,
           interviewScore: c.aiMatchScore, // Sử dụng tạm AiMatchScore hoặc fetch chi tiết
@@ -79,14 +94,14 @@ const HiringDecision = () => {
           candidateId: c.candidateId,
           jobId: c.jobId,
         }));
-        
+
         setCandidates(formattedData);
       } else {
         setCandidates([]);
       }
     } catch (error) {
       console.error('Lỗi khi tải danh sách ứng viên:', error);
-      message.error('Không thể tải danh sách quyết định tuyển dụng');
+      message.error(apiMessage(error, 'Không thể tải danh sách quyết định tuyển dụng'));
     } finally {
       setLoading(false);
     }
@@ -94,7 +109,8 @@ const HiringDecision = () => {
 
   useEffect(() => {
     fetchCandidates();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
 
   const getStatusTag = (status) => {
     const config = {
@@ -218,7 +234,7 @@ const HiringDecision = () => {
       fetchCandidates();
     } catch (error) {
       console.error(error);
-      message.error('Lỗi khi duyệt ứng viên');
+      message.error(apiMessage(error, 'Lỗi khi duyệt ứng viên'));
     } finally {
       setActionLoading(false);
     }
@@ -242,7 +258,7 @@ const HiringDecision = () => {
       fetchCandidates();
     } catch (error) {
       console.error(error);
-      message.error('Lỗi khi từ chối ứng viên');
+      message.error(apiMessage(error, 'Lỗi khi từ chối ứng viên'));
     } finally {
       setActionLoading(false);
     }

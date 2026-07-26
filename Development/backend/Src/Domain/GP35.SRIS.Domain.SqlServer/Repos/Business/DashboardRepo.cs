@@ -96,7 +96,9 @@ public class DashboardRepo : IDashboardRepo
                 a.CurrentState,
                 a.AiMatchScore,
                 a.CreatedAt,
-                a.StageUpdatedAt
+                a.StageUpdatedAt,
+                j.Department,
+                j.DepartmentManagerId
             })
             .ToListAsync();
 
@@ -112,7 +114,9 @@ public class DashboardRepo : IDashboardRepo
                 x.CurrentState,
                 x.AiMatchScore,
                 x.CreatedAt ?? DateTime.MinValue,
-                x.StageUpdatedAt))
+                x.StageUpdatedAt,
+                x.Department,
+                x.DepartmentManagerId))
             .OrderByDescending(c => c.StageUpdatedAt ?? c.AppliedAt)
             .ToList();
     }
