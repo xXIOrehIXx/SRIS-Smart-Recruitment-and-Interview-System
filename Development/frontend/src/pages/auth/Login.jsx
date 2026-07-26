@@ -7,30 +7,9 @@ import "./css/Auth.css";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
-  const [email, setEmail] = useState("");
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { login, getDashboardRoute } = useAuth();
-
-  // Bước 1: Validate email
-  const handleNext = async () => {
-    try {
-      const values = await form.validateFields(["email"]);
-      setEmail(values.email);
-      setStep(2);
-      setTimeout(() => {
-        form.setFieldsValue({ password: "" });
-      }, 100);
-    } catch (err) {
-      console.log("Validation failed:", err);
-    }
-  };
-
-  // Quay lại bước 1
-  const handleBack = () => {
-    setStep(1);
-  };
 
   // Bước 2: Submit form
   const onFinish = async (values) => {
@@ -40,8 +19,8 @@ const Login = () => {
       const userData = await login(values.email, values.password);
       message.success("Đăng nhập thành công!");
 
-      // Sử dụng getDashboardRoute từ context thay vì hardcode
-      const redirectPath = getDashboardRoute();
+      // Sử dụng getDashboardRoute từ context thay vì hardcode, truyền role vào để lấy route ngay lập tức
+      const redirectPath = getDashboardRoute(userData.role);
 
       console.log(
         "Login success, user role:",
@@ -52,15 +31,25 @@ const Login = () => {
       navigate(redirectPath, { replace: true });
     } catch (err) {
       console.error("Login error:", err);
-      if (err.response?.data?.message) {
-        message.error(err.response.data.message);
-      } else if (err.message) {
-        message.error(err.message);
-      } else {
-        message.error("Mật khẩu không đúng");
+      let errorMessage = "Tài khoản hoặc mật khẩu không đúng";
+      if (err.response?.data?.userMsg) {
+        errorMessage = err.response.data.userMsg;
+      } else if (err.response?.data?.UserMsg) {
+        errorMessage = err.response.data.UserMsg;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.title) {
+        errorMessage = err.response.data.title;
       }
-      // Reset password field khi sai
-      form.setFieldsValue({ password: "" });
+      
+      // Hiển thị lỗi ngay dưới ô nhập password
+      form.setFields([
+        {
+          name: 'password',
+          errors: [errorMessage],
+          value: '', // Reset lại giá trị
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -77,99 +66,51 @@ const Login = () => {
           onFinish={onFinish}
           layout="vertical"
           requiredMark={false}
-          initialValues={{ email: email }}
         >
-          {/* Bước 1: Email */}
-          {step === 1 && (
-            <>
-              <Form.Item
-                name="email"
-                label={<span className="dark-label">Email</span>}
-                rules={[
-                  { required: true, message: "Vui lòng nhập email!" },
-                  { type: "email", message: "Email không hợp lệ!" },
-                ]}
-              >
-                <Input
-                  placeholder="name@company.com"
-                  className="dark-input"
-                  size="large"
-                  autoFocus
-                />
-              </Form.Item>
+          <Form.Item
+            name="email"
+            label={<span className="dark-label">Email</span>}
+            rules={[
+              { required: true, message: "Vui lòng nhập email!" },
+              { type: "email", message: "Email không hợp lệ!" },
+            ]}
+          >
+            <Input
+              placeholder="name@company.com"
+              className="dark-input"
+              size="large"
+              autoFocus
+            />
+          </Form.Item>
 
-              <Button
-                type="primary"
-                block
-                size="large"
-                onClick={handleNext}
-                className="dark-btn"
-              >
-                Next
-              </Button>
-            </>
-          )}
+          <Form.Item
+            name="password"
+            label={<span className="dark-label">Password</span>}
+            rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
+          >
+            <Input.Password
+              placeholder="Enter your password"
+              className="dark-input"
+              size="large"
+            />
+          </Form.Item>
 
-          {/* Bước 2: Password */}
-          {step === 2 && (
-            <>
-              <div className="email-display">
-                <span className="email-display-label">{email}</span>
-                <button
-                  type="button"
-                  className="edit-email-btn"
-                  onClick={handleBack}
-                >
-                  Edit
-                </button>
-              </div>
+          <div className="forgot-row">
+            <Link to="/forgot-password" className="forgot-link-light">
+              Forgot password?
+            </Link>
+          </div>
 
-              <Form.Item style={{ display: "none" }}>
-                <Input name="email" type="hidden" />
-              </Form.Item>
-
-              <Form.Item
-                name="email"
-                rules={[
-                  { required: true, message: "Vui lòng nhập email!" },
-                  { type: "email", message: "Email không hợp lệ!" },
-                ]}
-                style={{ display: "none" }}
-              >
-                <Input />
-              </Form.Item>
-
-              <Form.Item
-                name="password"
-                label={<span className="dark-label">Password</span>}
-                rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
-              >
-                <Input.Password
-                  placeholder="Enter your password"
-                  className="dark-input"
-                  size="large"
-                  autoFocus
-                />
-              </Form.Item>
-
-              <div className="forgot-row">
-                <Link to="/forgot-password" className="forgot-link-light">
-                  Forgot password?
-                </Link>
-              </div>
-
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                size="large"
-                loading={loading}
-                className="dark-btn"
-              >
-                Sign in
-              </Button>
-            </>
-          )}
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            size="large"
+            loading={loading}
+            className="dark-btn"
+          >
+            Sign in
+          </Button>
         </Form>
 
         <div className="dark-footer">

@@ -102,7 +102,7 @@ const CreateRecruitmentRequest = () => {
     }
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async () => {
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
       return;
@@ -110,6 +110,7 @@ const CreateRecruitmentRequest = () => {
 
     setLoading(true);
     try {
+      const values = form.getFieldsValue(true);
       // RecruitmentRequestInputDto — skills không có cột riêng, gộp vào requirements
       const requirementsText = [
         values.requirements,
@@ -518,18 +519,19 @@ const CreateRecruitmentRequest = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <div>
               {currentStep > 0 && (
-                <Button onClick={() => setCurrentStep(currentStep - 1)} size="large">
+                <Button htmlType="button" onClick={() => setCurrentStep(currentStep - 1)} size="large">
                   <ArrowLeftOutlined /> Quay lại
                 </Button>
               )}
             </div>
             <Space>
-              <Button onClick={() => navigate('/dept/dashboard')} size="large">
+              <Button htmlType="button" onClick={() => navigate('/dept/dashboard')} size="large">
                 Hủy
               </Button>
               {currentStep < 2 ? (
                 <Button
                   type="primary"
+                  htmlType="button"
                   size="large"
                   onClick={() => {
                     if (currentStep === 0 && !validateStep0()) {
