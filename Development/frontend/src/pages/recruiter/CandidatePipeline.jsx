@@ -14,6 +14,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import { jobsAPI, applicationAPI, cvScoringAPI } from '../../services/api';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import './css/CandidatePipeline.css';
 
 const { Title, Text } = Typography;
@@ -36,6 +37,12 @@ const CandidatePipeline = () => {
       fetchApplications();
     }
   }, [jobId]);
+
+  // State đổi ở nơi khác (duyệt tiêu chí, mời phỏng vấn, gửi offer, DM duyệt tuyển) -> quay lại
+  // tab này là board tự khớp lại, khỏi F5.
+  // Bọc trong arrow: fetchApplications là `const` khai báo BÊN DƯỚI, truyền thẳng sẽ chạm
+  // temporal dead zone ngay lúc render.
+  useRefreshOnFocus(() => fetchApplications(), { enabled: !!jobId });
 
   const fetchJobDetails = async () => {
     try {

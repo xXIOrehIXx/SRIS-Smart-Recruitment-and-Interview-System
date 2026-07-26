@@ -101,7 +101,6 @@ const App = () => {
         />
         <Route path="/criteria" element={<Criteria />} />
         <Route path="/mail-templates" element={<MailTemplates />} />
-        <Route path="/offers" element={<OfferManagement />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/analytics/cv-scoring" element={<CVScoring />} />
         <Route path="/talent-pool" element={<TalentPool />} />
@@ -124,6 +123,19 @@ const App = () => {
           element={<InterviewerInterviewDetail />}
         />
         <Route path="/interviewer/grading/:id" element={<Grading />} />
+      </Route>
+
+      {/* Offers — cửa INTERVIEW→OFFER. Job CÓ gán DM thì chỉ DM đó chốt được, job KHÔNG gán DM
+          thì Recruiter chốt (docs 5.14/5.15) -> cả 2 role đều phải vào được màn này.
+          Backend OfferController cũng gate [WithRole(Recruiter, DepartmentManager)]. */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.RECRUITER, ROLES.DEPARTMENT_MANAGER]}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/offers" element={<OfferManagement />} />
       </Route>
 
       <Route

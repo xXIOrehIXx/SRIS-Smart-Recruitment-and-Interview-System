@@ -166,7 +166,13 @@ const OfferManagement = () => {
       fetchOffers(selectedJobId);
     } catch (error) {
       console.error('Error creating offer:', error);
-      message.error(error?.response?.data?.message || 'Không thể tạo offer');
+      // BE trả ErrorObjectCommon (userMsg/UserMsg), không phải `message` — ví dụ 403
+      // "Chỉ Department Manager của vị trí này mới được quyết offer." phải hiện đúng cho người dùng.
+      message.error(
+        error?.response?.data?.userMsg ||
+          error?.response?.data?.UserMsg ||
+          'Không thể tạo offer',
+      );
     } finally {
       setSubmitting(false);
     }

@@ -99,12 +99,11 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
 
         var applicationId = result.ApplicationId ?? 0;
 
-        // Phát magic link STATUS để ứng viên theo dõi trạng thái
+        // Phát magic link STATUS để ứng viên theo dõi trạng thái.
+        // IssueAsync đã tự gửi email kèm nút (5.13) -> không gửi lại, tránh 2 mail trùng.
         try
         {
-            var issued = await _magicLink.IssueAsync(companyId, applicationId, StatusPurpose, TimeSpan.FromDays(StatusLinkTtlDays));
-            // Gửi email xác nhận kèm link xem trạng thái
-            await _notification.SendMagicLinkAsync(companyId, applicationId, StatusPurpose, issued.RawToken, issued.ExpiresAt);
+            await _magicLink.IssueAsync(companyId, applicationId, StatusPurpose, TimeSpan.FromDays(StatusLinkTtlDays));
         }
         catch (Exception ex)
         {

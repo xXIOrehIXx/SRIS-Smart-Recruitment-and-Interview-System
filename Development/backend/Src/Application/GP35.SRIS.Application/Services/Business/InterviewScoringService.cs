@@ -160,6 +160,14 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
 
         var panelAvg = totals.Count == 0 ? 0m : Math.Round(totals.Average(t => t.WeightedTotal), 2);
 
+        // Tên người chấm (blind đã mở vì chỉ lấy phiếu SUBMITTED) — DM cần biết ai cho điểm nào.
+        var names = await GetInterviewerNamesAsync(companyId, interviewerIds);
+        foreach (var c in critDtos)
+            foreach (var s in c.Scores)
+                s.InterviewerName = names.GetValueOrDefault(s.InterviewerId);
+        foreach (var t in totals)
+            t.InterviewerName = names.GetValueOrDefault(t.InterviewerId);
+
         return new ScheduleAggregateDto
         {
             ScheduleId = scheduleId,
@@ -170,7 +178,44 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         };
     }
 
+    public async Task<IReadOnlyList<ScheduleAggregateDto>> GetAggregatesByApplicationAsync(
+        long companyId, long applicationId)
+    {
+        _ = await _appRepo.GetByIdAsync(companyId, applicationId)
+            ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={applicationId}).");
+
+        var schedules = await _schedulingRepo.GetSchedulesByApplicationAsync(companyId, applicationId);
+
+        var result = new List<ScheduleAggregateDto>(schedules.Count);
+        foreach (var s in schedules)
+        {
+            var agg = await GetAggregateAsync(companyId, s.ScheduleId);
+            agg.RoundNumber = s.RoundNumber;
+            agg.ScheduleStatus = s.Status;
+            agg.ScheduledAt = s.ConfirmedSlotId is long slotId
+                ? (await _schedulingRepo.GetSlotAsync(companyId, slotId))?.StartTime
+                : null;
+            result.Add(agg);
+        }
+
+        return result;
+    }
+
     // ============================================================
+
+    /// <summary>user_id -> tên hiển thị (full_name, rơi về email). Rỗng khi không có ai chấm.</summary>
+    private async Task<Dictionary<long, string>> GetInterviewerNamesAsync(
+        long companyId, IReadOnlyList<long> interviewerIds)
+    {
+        if (interviewerIds.Count == 0) return new Dictionary<long, string>();
+
+        var users = await _serviceProvider.GetRequiredService<IUserRepo>()
+            .GetNamesByIdsAsync(companyId, interviewerIds);
+
+        return users.ToDictionary(
+            u => u.UserId,
+            u => string.IsNullOrWhiteSpace(u.FullName) ? u.Email : u.FullName!);
+    }
 
     private async Task EnsureAssignedAsync(long companyId, long scheduleId, long interviewerId)
     {

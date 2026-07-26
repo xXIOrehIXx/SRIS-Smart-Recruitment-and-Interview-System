@@ -29,6 +29,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useNavigate } from "react-router-dom";
 import { dashboardAPI, applicationAPI, jobsAPI } from "../../services/api";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import "./css/Dashboard.css";
 
 const { Title, Text } = Typography;
@@ -70,6 +71,12 @@ const RecruiterDashboard = () => {
     fetchJobs();
     fetchKanbanData();
   }, []);
+
+  // Quay lại tab: đồng bộ lại board + KPI (state có thể đã đổi ở màn Offers / Quyết định tuyển dụng).
+  useRefreshOnFocus(() => {
+    fetchDashboardOverview();
+    fetchKanbanData(selectedJob);
+  });
 
   const fetchDashboardOverview = async () => {
     try {
