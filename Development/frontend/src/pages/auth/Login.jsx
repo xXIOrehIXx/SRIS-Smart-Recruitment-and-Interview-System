@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, message } from 'antd';
+import { Form, Input, Button, message, Alert } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
 import './css/Auth.css';
 
@@ -8,7 +8,9 @@ import './css/Auth.css';
  * Trang đăng nhập.
  *
  * Validate 2 lớp:
- *  1. Form rules (required, email format) — chặn request nếu input lỗi.
+ *  1. Form rules (required, email format, password min length) — chặn request
+ *     ngay tại client nếu input lỗi. onFinish CHỈ chạy khi mọi rule pass,
+ *     nên BE chỉ nhận request khi form hợp lệ.
  *  2. BE response (sai mật khẩu / tài khoản không tồn tại) — hiển thị
  *     field-level error (dưới ô password) + toast góc trên để user chắc chắn thấy.
  *
@@ -23,12 +25,15 @@ import './css/Auth.css';
  */
 const Login = () => {
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState(null);
   const [form] = Form.useForm();
   const passwordInputRef = useRef(null);
   const navigate = useNavigate();
   const { login, getDashboardRoute } = useAuth();
 
   const onFinish = async (values) => {
+    // Mọi rule đã pass → onFinish mới chạy → BE được phép nhận request.
+    setFormError(null);
     setLoading(true);
 
     try {
@@ -43,7 +48,6 @@ const Login = () => {
       // Tách 2 trường hợp: network (BE không phản hồi) vs BE trả lỗi (401/400/...).
       let errorMessage = 'Tài khoản hoặc mật khẩu không đúng';
       if (!err.response) {
-        // Không có response → server down, timeout, DNS fail, v.v.
         errorMessage =
           err.code === 'ECONNABORTED'
             ? 'Máy chủ phản hồi quá lâu. Vui lòng thử lại.'
@@ -53,10 +57,11 @@ const Login = () => {
         errorMessage = d.userMsg || d.UserMsg || d.message || d.title || errorMessage;
       }
 
-      // Hiển thị toast góc — dễ thấy hơn field-level error.
+      // Alert ngay đầu form — khó miss nhất.
+      setFormError(errorMessage);
+      // Toast góc — phòng user scroll xuống dưới không thấy.
       message.error({ content: errorMessage, duration: 4 });
 
-      // Set lỗi dưới ô password + reset value, focus lại để user nhập ngay.
       form.setFields([
         {
           name: 'password',
@@ -65,12 +70,28 @@ const Login = () => {
         },
       ]);
 
-      // Focus vào password input (sau khi Antd cập nhật state).
+      // Focus + scroll tới field lỗi để user nhập ngay.
       requestAnimationFrame(() => {
         passwordInputRef.current?.focus();
+        passwordInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Chạy khi user submit form mà rule fail — dùng để hiển thị Alert & focus field đầu tiên bị lỗi.
+  const onFinishFailed = ({ errorFields }) => {
+    const firstField = errorFields?.[0];
+    const messages = (errorFields || []).flatMap((f) => f.errors || []);
+    setFormError(
+      messages[0] || 'Vui lòng kiểm tra lại các trường được đánh dấu đỏ.',
+    );
+    if (firstField?.name && form) {
+      form.scrollToField(firstField.name, { block: 'center', behavior: 'smooth' });
+      try {
+        form.getFieldInstance(firstField.name)?.focus?.();
+      } catch {}
     }
   };
 
@@ -79,7 +100,13 @@ const Login = () => {
     const value = e?.target?.value ?? '';
     if (value) {
       form.setFields([{ name: 'password', errors: [], value }]);
+      // Tắt Alert tổng khi user bắt đầu sửa — kết quả sẽ rõ sau khi submit.
+      if (formError) setFormError(null);
     }
+  };
+
+  const handleEmailChange = () => {
+    if (formError) setFormError(null);
   };
 
   return (
@@ -91,18 +118,35 @@ const Login = () => {
           form={form}
           name="login"
           onFinish={onFinish}
+          onFinishFailed={onFinishFailed}
           layout="vertical"
           requiredMark={false}
           disabled={loading}
-          // Tự kích hoạt validate mỗi khi nhập — không chỉ khi submit.
+          // Validate mỗi lần nhập/khỏi field — giúp user sửa ngay chứ không phải chờ submit.
           validateTrigger={['onBlur', 'onChange']}
+          scrollToFirstError={{ block: 'center', behavior: 'smooth' }}
         >
+          {formError && (
+            <Alert
+              type="error"
+              message={formError}
+              showIcon
+              closable
+              onClose={() => setFormError(null)}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
           <Form.Item
             name="email"
             label={<span className="dark-label">Email</span>}
             rules={[
               { required: true, message: 'Vui lòng nhập email!' },
               { type: 'email', message: 'Email không hợp lệ!' },
+              {
+                whitespace: true,
+                message: 'Email không được chỉ chứa khoảng trắng!',
+              },
             ]}
           >
             <Input
@@ -111,13 +155,18 @@ const Login = () => {
               size="large"
               autoFocus
               autoComplete="email"
+              onChange={handleEmailChange}
             />
           </Form.Item>
 
           <Form.Item
             name="password"
             label={<span className="dark-label">Password</span>}
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập mật khẩu!' },
+              { min: 6, message: 'Mật khẩu tối thiểu 6 ký tự!' },
+              { whitespace: true, message: 'Mật khẩu không hợp lệ!' },
+            ]}
           >
             <Input.Password
               ref={passwordInputRef}
