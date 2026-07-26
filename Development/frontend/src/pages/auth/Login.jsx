@@ -1,57 +1,84 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Form, Input, Button, message } from "antd";
-import { MailOutlined } from "@ant-design/icons";
-import { useAuth } from "../../contexts/AuthContext";
-import "./css/Auth.css";
+import React, { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Form, Input, Button, message } from 'antd';
+import { useAuth } from '../../contexts/AuthContext';
+import './css/Auth.css';
 
+/**
+ * Trang đăng nhập.
+ *
+ * Validate 2 lớp:
+ *  1. Form rules (required, email format) — chặn request nếu input lỗi.
+ *  2. BE response (sai mật khẩu / tài khoản không tồn tại) — hiển thị
+ *     field-level error (dưới ô password) + toast góc trên để user chắc chắn thấy.
+ *
+ * Khi login fail:
+ *  - Email được GIỮ (user không phải gõ lại).
+ *  - Password bị reset + focus lại để nhập ngay.
+ *  - Field error tự clear khi user gõ — tránh bị "lỗi mờ" ngay cả khi đã nhập đúng.
+ *  - Loading state luôn tắt qua `finally` dù BE có dừng / network fail.
+ *
+ * Network error (BE dừng / không truy cập được) được tách riêng với message
+ * "Không thể kết nối đến máy chủ" thay vì "Tài khoản hoặc mật khẩu không đúng".
+ */
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  const passwordInputRef = useRef(null);
   const navigate = useNavigate();
   const { login, getDashboardRoute } = useAuth();
 
-  // Bước 2: Submit form
   const onFinish = async (values) => {
     setLoading(true);
 
     try {
       const userData = await login(values.email, values.password);
-      message.success("Đăng nhập thành công!");
+      message.success('Đăng nhập thành công!');
 
-      // Sử dụng getDashboardRoute từ context thay vì hardcode, truyền role vào để lấy route ngay lập tức
       const redirectPath = getDashboardRoute(userData.role);
-
-      console.log(
-        "Login success, user role:",
-        userData.role,
-        "redirect to:",
-        redirectPath,
-      );
       navigate(redirectPath, { replace: true });
     } catch (err) {
-      console.error("Login error:", err);
-      let errorMessage = "Tài khoản hoặc mật khẩu không đúng";
-      if (err.response?.data?.userMsg) {
-        errorMessage = err.response.data.userMsg;
-      } else if (err.response?.data?.UserMsg) {
-        errorMessage = err.response.data.UserMsg;
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.data?.title) {
-        errorMessage = err.response.data.title;
+      console.error('Login error:', err);
+
+      // Tách 2 trường hợp: network (BE không phản hồi) vs BE trả lỗi (401/400/...).
+      let errorMessage = 'Tài khoản hoặc mật khẩu không đúng';
+      if (!err.response) {
+        // Không có response → server down, timeout, DNS fail, v.v.
+        errorMessage =
+          err.code === 'ECONNABORTED'
+            ? 'Máy chủ phản hồi quá lâu. Vui lòng thử lại.'
+            : 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.';
+      } else {
+        const d = err.response.data || {};
+        errorMessage = d.userMsg || d.UserMsg || d.message || d.title || errorMessage;
       }
-      
-      // Hiển thị lỗi ngay dưới ô nhập password
+
+      // Hiển thị toast góc — dễ thấy hơn field-level error.
+      message.error({ content: errorMessage, duration: 4 });
+
+      // Set lỗi dưới ô password + reset value, focus lại để user nhập ngay.
       form.setFields([
         {
           name: 'password',
           errors: [errorMessage],
-          value: '', // Reset lại giá trị
+          value: '',
         },
       ]);
+
+      // Focus vào password input (sau khi Antd cập nhật state).
+      requestAnimationFrame(() => {
+        passwordInputRef.current?.focus();
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Auto-clear field error khi user gõ lại — tránh thấy lỗi cũ dù đã nhập đúng.
+  const handleFieldChange = (e) => {
+    const value = e?.target?.value ?? '';
+    if (value) {
+      form.setFields([{ name: 'password', errors: [], value }]);
     }
   };
 
@@ -66,13 +93,16 @@ const Login = () => {
           onFinish={onFinish}
           layout="vertical"
           requiredMark={false}
+          disabled={loading}
+          // Tự kích hoạt validate mỗi khi nhập — không chỉ khi submit.
+          validateTrigger={['onBlur', 'onChange']}
         >
           <Form.Item
             name="email"
             label={<span className="dark-label">Email</span>}
             rules={[
-              { required: true, message: "Vui lòng nhập email!" },
-              { type: "email", message: "Email không hợp lệ!" },
+              { required: true, message: 'Vui lòng nhập email!' },
+              { type: 'email', message: 'Email không hợp lệ!' },
             ]}
           >
             <Input
@@ -80,18 +110,22 @@ const Login = () => {
               className="dark-input"
               size="large"
               autoFocus
+              autoComplete="email"
             />
           </Form.Item>
 
           <Form.Item
             name="password"
             label={<span className="dark-label">Password</span>}
-            rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
+            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
           >
             <Input.Password
+              ref={passwordInputRef}
               placeholder="Enter your password"
               className="dark-input"
               size="large"
+              autoComplete="current-password"
+              onChange={handleFieldChange}
             />
           </Form.Item>
 
