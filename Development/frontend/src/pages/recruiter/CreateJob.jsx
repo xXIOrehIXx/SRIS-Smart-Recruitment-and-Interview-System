@@ -11,21 +11,14 @@ import {
   InputNumber,
   Button,
   Typography,
-  Divider,
   Space,
   message,
-  Checkbox,
   Spin,
-  Tooltip,
-  ColorPicker,
 } from "antd";
 import {
   SaveOutlined,
   SendOutlined,
-  PlusOutlined,
-  DeleteOutlined,
   ArrowLeftOutlined,
-  EyeOutlined,
 } from "@ant-design/icons";
 import { jobsAPI, recruitmentRequestAPI, usersAPI, departmentAPI } from "../../services/api";
 import JobSetupSteps from "../../components/JobSetupSteps";
@@ -250,12 +243,6 @@ const CreateJob = () => {
     }
   };
 
-  const handlePreview = () => {
-    message.info(
-      "Xem trước trang đăng tuyển sẽ được mở trong bản cập nhật tiếp theo",
-    );
-  };
-
   const renderStepContent = () => {
     switch (currentStep) {
       case "posting":
@@ -423,72 +410,6 @@ const CreateJob = () => {
                 </Col>
               </Row>
             </Card>
-
-            <Card className="form-card" bordered={false}>
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Form.Item
-                    name="buttonText"
-                    label="Nội dung nút"
-                    rules={[{ max: 25, message: "Tối đa 25 ký tự" }]}
-                    className="button-text-field"
-                  >
-                    <Input
-                      placeholder="Ứng tuyển ngay"
-                      size="large"
-                      maxLength={25}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col xs={24} md={12}></Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="template"
-                    label="Mẫu trang đăng tuyển"
-                    initialValue="visual"
-                  >
-                    <Select size="large">
-                      <Select.Option value="visual">
-                        Visual (mặc định)
-                      </Select.Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col xs={24} md={12}>
-                  <Form.Item name="backgroundImage" label="Ảnh nền">
-                    <Input
-                      placeholder="https://example.com/bg.jpg"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item name="textColor" label="Màu chữ">
-                    <ColorPicker defaultValue="#FFFFFF" size="large" showText />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Card className="preview-card" bordered={false}>
-                <div className="preview-banner">
-                  <span>Website preview</span>
-                </div>
-                <div className="preview-content">
-                  <Title level={5} style={{ marginBottom: 8 }}>
-                    Senior Frontend Developer
-                  </Title>
-                  <Text type="secondary">
-                    Đây là bản xem trước mẫu trang đăng tuyển của bạn.
-                  </Text>
-                </div>
-              </Card>
-            </Card>
           </>
         );
       case "application":
@@ -613,13 +534,6 @@ const CreateJob = () => {
           <div></div>
         </Space>
         <Space>
-          <Tooltip title="Xem trước trang đăng tuyển">
-            <Button
-              icon={<EyeOutlined />}
-              onClick={handlePreview}
-              size="large"
-            />
-          </Tooltip>
           <Button
             icon={<SaveOutlined />}
             onClick={handleSaveDraft}

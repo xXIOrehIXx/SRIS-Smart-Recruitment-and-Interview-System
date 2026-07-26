@@ -42,7 +42,7 @@ const JobSetupSteps = ({ currentStep, onChange }) => {
                 <span
                   className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200 ${
                     isActive
-                      ? "border-transparent bg-[#FF2E7E]"
+                      ? "border-transparent bg-[#5d8c3e]"
                       : "border-[#D9D9D9] bg-white"
                   }`}
                 >
@@ -56,7 +56,7 @@ const JobSetupSteps = ({ currentStep, onChange }) => {
                 <Typography.Text
                   className={`text-sm ${
                     isActive
-                      ? "font-semibold text-[#FF2E7E]"
+                      ? "font-semibold text-[#5d8c3e]"
                       : "font-medium text-gray-500"
                   }`}
                 >
