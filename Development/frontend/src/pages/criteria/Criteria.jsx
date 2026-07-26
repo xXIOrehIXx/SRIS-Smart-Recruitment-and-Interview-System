@@ -18,6 +18,106 @@ const { Title, Text } = Typography;
 const MATCHA_GREEN = '#5D8C3E';
 
 /**
+ * Quy tắc validate dùng chung cho 4 form trong trang Criteria.
+ *  - TemplateName: max 200 ký tự (BE không giới hạn, đặt 200 cho an toàn UX)
+ *  - Description : max 500 ký tự
+ *  - CriterionName: max 200 ký tự
+ *  - Weight : 0.5 – 10 (trùng min/max của InputNumber) — không cho 0 vì tiêu chí
+ *    có trọng số 0 = không có ý nghĩa khi chấm
+ *  - MaxScore : 1 – 100
+ *  - Keywords  : chỉ cho phép khi criteriaType = HARD; pattern kiểm tra KHÔNG chứa
+ *    ký tự đặc biệt vì BE tách theo ';' (nếu có ';' trong keyword sẽ gãy split)
+ *  - Items     : tối thiểu 1 dòng (template rỗng vô nghĩa)
+ */
+const RULES = {
+  templateName: () => [
+    { required: true, message: 'Vui lòng nhập tên template' },
+    { whitespace: true, message: 'Tên không được chỉ chứa khoảng trắng' },
+    { min: 3, message: 'Tên tối thiểu 3 ký tự' },
+    { max: 200, message: 'Tên tối đa 200 ký tự' },
+  ],
+  templateDescription: () => [
+    { max: 500, message: 'Mô tả tối đa 500 ký tự' },
+  ],
+  criterionName: () => [
+    { required: true, message: 'Vui lòng nhập tên tiêu chí' },
+    { whitespace: true, message: 'Tên không được chỉ chứa khoảng trắng' },
+    { min: 3, message: 'Tên tối thiểu 3 ký tự' },
+    { max: 200, message: 'Tên tối đa 200 ký tự' },
+  ],
+  /**
+   * Validator cho weight. Ngoài min/max, thêm check không phải 0 vì 0 = bỏ qua.
+   * Có thể dùng hàm thường vì InputNumber đã ép min=0.5 ở UI.
+   */
+  weight: () => [
+    {
+      validator: (_, value) => {
+        if (value == null || value === '') return Promise.resolve();
+        if (typeof value === 'number' && value < 0.5) {
+          return Promise.reject(new Error('Trọng số tối thiểu 0.5'));
+        }
+        if (typeof value === 'number' && value > 10) {
+          return Promise.reject(new Error('Trọng số tối đa 10'));
+        }
+        return Promise.resolve();
+      },
+    },
+  ],
+  maxScore: () => [
+    {
+      validator: (_, value) => {
+        if (value == null || value === '') return Promise.resolve();
+        if (typeof value === 'number' && value < 1) {
+          return Promise.reject(new Error('Điểm tối đa tối thiểu 1'));
+        }
+        if (typeof value === 'number' && value > 100) {
+          return Promise.reject(new Error('Điểm tối đa tối đa 100'));
+        }
+        return Promise.resolve();
+      },
+    },
+  ],
+  /**
+   * Validator keywords: chỉ áp dụng khi HARD (theo trường criteriaType trong form).
+   * - HARD: bắt buộc có, không chỉ whitespace, mỗi từ khóa tối đa 50 ký tự,
+   *   không chứa ';' (BE tách theo ';').
+   * - SOFT: KHÔNG được nhập (BE lưu nhưng không dùng — gây hiểu nhầm).
+   */
+  keywords: ({ getFieldValue }) => ({
+    rules: [
+      {
+        validator: (_, value) => {
+          const type = getFieldValue('criteriaType') || 'SOFT';
+          const trimmed = (value || '').trim();
+          if (type === 'SOFT') {
+            if (trimmed) {
+              return Promise.reject(new Error('Tiêu chí SOFT không cần từ khóa — để trống.'));
+            }
+            return Promise.resolve();
+          }
+          // HARD
+          if (!trimmed) {
+            return Promise.reject(new Error('Tiêu chí HARD bắt buộc có từ khóa (phân tách bằng ;)'));
+          }
+          if (value.includes(';;')) {
+            return Promise.reject(new Error('Từ khóa không được chứa 2 dấu ";" liên tiếp'));
+          }
+          const tokens = value.split(';').map(s => s.trim()).filter(Boolean);
+          if (tokens.length === 0) {
+            return Promise.reject(new Error('Tiêu chí HARD bắt buộc có từ khóa'));
+          }
+          const tooLong = tokens.find(t => t.length > 50);
+          if (tooLong) {
+            return Promise.reject(new Error(`Từ khóa "${tooLong}" quá dài (max 50 ký tự)`));
+          }
+          return Promise.resolve();
+        },
+      },
+    ],
+  }),
+};
+
+/**
  * Trục tiêu chí (docs 5.17/5.18):
  * AI bóc tiêu chí từ JD → DRAFT → người duyệt rà + sửa → APPROVED → mới dùng để chấm CV
  * (HARD lọc rule/keyword, SOFT so vector; chỉ tiêu chí CvMatchable mới tính khi chấm CV).
@@ -317,6 +417,27 @@ const Criteria = () => {
     }
   };
 
+  /**
+   * Submit fail handler chung — scroll-to-first-error + toast góc trên.
+   * Mỗi Form trong Modal gắn handler này.
+   */
+  const makeOnFinishFailed = (form) => ({ errorFields }) => {
+    const first = errorFields?.[0];
+    if (!first) return;
+    const msg = first.errors?.[0];
+    if (msg) {
+      message.error(msg);
+    }
+    if (form?.scrollToField) {
+      // scrollToField có thể nhận path của Form.List (vd 'items', 0, 'name')
+      try {
+        form.scrollToField(first.name, { block: 'center', behavior: 'smooth' });
+      } catch {
+        // Ignore nếu path không scroll được (vd Form.List)
+      }
+    }
+  };
+
   // ===== Render helpers =====
 
   const typeTag = (type) =>
@@ -468,8 +589,21 @@ const Criteria = () => {
   );
 
   // Form.List dòng tiêu chí dùng chung cho tạo/sửa template
-  const templateItemsList = (
-    <Form.List name="items" initialValue={[{}]}>
+  const templateItemsList = (form) => (
+    <Form.List
+      name="items"
+      initialValue={[{}]}
+      rules={[
+        {
+          validator: async (_, value) => {
+            if (!value || value.length < 1) {
+              return Promise.reject(new Error('Template phải có ít nhất 1 tiêu chí'));
+            }
+            return Promise.resolve();
+          },
+        },
+      ]}
+    >
       {(fields, { add, remove }) => (
         <>
           <Text strong>Các tiêu chí trong template:</Text>
@@ -477,18 +611,32 @@ const Criteria = () => {
             <Space key={field.key} align="baseline" style={{ display: 'flex', marginTop: 8 }}>
               <Form.Item
                 name={[field.name, 'name']}
-                rules={[{ required: true, message: 'Nhập tên tiêu chí' }]}
+                rules={RULES.criterionName()}
                 style={{ marginBottom: 8 }}
               >
                 <Input placeholder="Tên tiêu chí" style={{ width: 240 }} />
               </Form.Item>
-              <Form.Item name={[field.name, 'weight']} initialValue={1} style={{ marginBottom: 8 }}>
+              <Form.Item
+                name={[field.name, 'weight']}
+                initialValue={1}
+                rules={RULES.weight()}
+                style={{ marginBottom: 8 }}
+              >
                 <InputNumber min={0.5} max={10} step={0.5} placeholder="Trọng số" style={{ width: 100 }} />
               </Form.Item>
-              <Form.Item name={[field.name, 'maxScore']} initialValue={10} style={{ marginBottom: 8 }}>
+              <Form.Item
+                name={[field.name, 'maxScore']}
+                initialValue={10}
+                rules={RULES.maxScore()}
+                style={{ marginBottom: 8 }}
+              >
                 <InputNumber min={1} max={100} placeholder="Điểm max" style={{ width: 100 }} />
               </Form.Item>
-              {fields.length > 1 && <MinusCircleOutlined onClick={() => remove(field.name)} />}
+              {fields.length > 1 && (
+                <Tooltip title="Xóa dòng này">
+                  <MinusCircleOutlined onClick={() => remove(field.name)} />
+                </Tooltip>
+              )}
             </Space>
           ))}
           <Button type="dashed" icon={<PlusOutlined />} onClick={() => add()} block style={{ marginTop: 8 }}>
@@ -500,12 +648,12 @@ const Criteria = () => {
   );
 
   // Form fields dùng chung cho thêm/sửa tiêu chí per-job
-  const criterionFormFields = (isEdit) => (
+  const criterionFormFields = (form, isEdit) => (
     <>
       <Form.Item
         label="Tên tiêu chí"
         name="name"
-        rules={[{ required: true, message: 'Vui lòng nhập tên tiêu chí' }]}
+        rules={RULES.criterionName()}
       >
         <Input placeholder="VD: 2 năm kinh nghiệm Java" />
       </Form.Item>
@@ -518,18 +666,37 @@ const Criteria = () => {
             ]}
           />
         </Form.Item>
-        <Form.Item label="Trọng số" name="weight" initialValue={1}>
+        <Form.Item label="Trọng số" name="weight" initialValue={1} rules={RULES.weight()}>
           <InputNumber min={0.5} max={10} step={0.5} style={{ width: 100 }} />
         </Form.Item>
-        <Form.Item label="Điểm tối đa" name="maxScore" initialValue={10}>
+        <Form.Item label="Điểm tối đa" name="maxScore" initialValue={10} rules={RULES.maxScore()}>
           <InputNumber min={1} max={100} style={{ width: 100 }} />
         </Form.Item>
       </Space>
       <Form.Item
         label="Từ khóa nhận diện (chỉ dùng cho HARD, phân tách bằng ';')"
         name="keywords"
+        dependencies={['criteriaType']}
+        rules={RULES.keywords({ getFieldValue: form.getFieldValue }).rules}
       >
         <Input placeholder="VD: java; spring boot; jpa (trống = dùng tên tiêu chí)" />
+      </Form.Item>
+      <Form.Item shouldUpdate noStyle>
+        {() => {
+          const t = form.getFieldValue('criteriaType') || 'SOFT';
+          return (
+            <Alert
+              type={t === 'HARD' ? 'warning' : 'info'}
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                t === 'HARD'
+                  ? 'HARD bắt buộc có từ khóa — hệ thống lọc CV theo từ khóa (tách bằng dấu ";")'
+                  : 'SOFT dùng để so khớp ngữ nghĩa bằng vector — để trống từ khóa.'
+              }
+            />
+          );
+        }}
       </Form.Item>
       <Space size={24}>
         <Form.Item
@@ -699,8 +866,16 @@ const Criteria = () => {
         width={560}
         destroyOnClose
       >
-        <Form form={criterionForm} layout="vertical" onFinish={handleAddCriterion} style={{ marginTop: 16 }}>
-          {criterionFormFields(false)}
+        <Form
+          form={criterionForm}
+          layout="vertical"
+          onFinish={handleAddCriterion}
+          onFinishFailed={makeOnFinishFailed(criterionForm)}
+          scrollToFirstError={{ block: 'center', behavior: 'smooth' }}
+          validateTrigger={['onBlur', 'onChange']}
+          style={{ marginTop: 16 }}
+        >
+          {criterionFormFields(criterionForm, false)}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button onClick={() => { setAddCriterionModalOpen(false); criterionForm.resetFields(); }}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={submitting}
@@ -720,8 +895,16 @@ const Criteria = () => {
         width={560}
         destroyOnClose
       >
-        <Form form={editCriterionForm} layout="vertical" onFinish={handleUpdateCriterion} style={{ marginTop: 16 }}>
-          {criterionFormFields(true)}
+        <Form
+          form={editCriterionForm}
+          layout="vertical"
+          onFinish={handleUpdateCriterion}
+          onFinishFailed={makeOnFinishFailed(editCriterionForm)}
+          scrollToFirstError={{ block: 'center', behavior: 'smooth' }}
+          validateTrigger={['onBlur', 'onChange']}
+          style={{ marginTop: 16 }}
+        >
+          {criterionFormFields(editCriterionForm, true)}
           {selectedCriterion?.status === 'DRAFT' && (
             <Alert
               type="info"
@@ -752,7 +935,14 @@ const Criteria = () => {
           style={{ margin: '16px 0' }}
           message="Từng dòng của template sẽ được sao chép thành tiêu chí APPROVED của vị trí (sửa per-job không ảnh hưởng template gốc)."
         />
-        <Form form={applyForm} layout="vertical" onFinish={handleApplyTemplate}>
+        <Form
+          form={applyForm}
+          layout="vertical"
+          onFinish={handleApplyTemplate}
+          onFinishFailed={makeOnFinishFailed(applyForm)}
+          scrollToFirstError={{ block: 'center', behavior: 'smooth' }}
+          validateTrigger={['onBlur', 'onChange']}
+        >
           <Form.Item
             label="Chọn template"
             name="templateId"
@@ -765,6 +955,7 @@ const Criteria = () => {
               options={templates
                 .filter(t => t.active !== false)
                 .map(t => ({ value: t.templateId, label: `${t.name} (${t.itemCount ?? 0} tiêu chí)` }))}
+              notFoundContent="Chưa có template đang hoạt động"
             />
           </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -786,18 +977,30 @@ const Criteria = () => {
         width={620}
         destroyOnClose
       >
-        <Form form={templateForm} layout="vertical" onFinish={handleCreateTemplate} style={{ marginTop: 16 }}>
+        <Form
+          form={templateForm}
+          layout="vertical"
+          onFinish={handleCreateTemplate}
+          onFinishFailed={makeOnFinishFailed(templateForm)}
+          scrollToFirstError={{ block: 'center', behavior: 'smooth' }}
+          validateTrigger={['onBlur', 'onChange']}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             label="Tên template"
             name="name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên template' }]}
+            rules={RULES.templateName()}
           >
             <Input placeholder="VD: Bộ tiêu chí Kế toán tổng hợp" />
           </Form.Item>
-          <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={2} placeholder="Mô tả ngắn về template..." />
+          <Form.Item
+            label="Mô tả"
+            name="description"
+            rules={RULES.templateDescription()}
+          >
+            <Input.TextArea rows={2} placeholder="Mô tả ngắn về template..." maxLength={500} showCount />
           </Form.Item>
-          {templateItemsList}
+          {templateItemsList(templateForm)}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
             <Button onClick={() => { setCreateModalOpen(false); templateForm.resetFields(); }}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={submitting}
@@ -817,21 +1020,33 @@ const Criteria = () => {
         width={620}
         destroyOnClose
       >
-        <Form form={editTemplateForm} layout="vertical" onFinish={handleUpdateTemplate} style={{ marginTop: 16 }}>
+        <Form
+          form={editTemplateForm}
+          layout="vertical"
+          onFinish={handleUpdateTemplate}
+          onFinishFailed={makeOnFinishFailed(editTemplateForm)}
+          scrollToFirstError={{ block: 'center', behavior: 'smooth' }}
+          validateTrigger={['onBlur', 'onChange']}
+          style={{ marginTop: 16 }}
+        >
           <Form.Item
             label="Tên template"
             name="name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên template' }]}
+            rules={RULES.templateName()}
           >
             <Input />
           </Form.Item>
-          <Form.Item label="Mô tả" name="description">
-            <Input.TextArea rows={2} />
+          <Form.Item
+            label="Mô tả"
+            name="description"
+            rules={RULES.templateDescription()}
+          >
+            <Input.TextArea rows={2} maxLength={500} showCount />
           </Form.Item>
           <Form.Item label="Đang hoạt động" name="active" valuePropName="checked">
             <Switch checkedChildren="Bật" unCheckedChildren="Ẩn" />
           </Form.Item>
-          {templateItemsList}
+          {templateItemsList(editTemplateForm)}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
             <Button onClick={() => { setEditTemplateModalOpen(false); setSelectedTemplate(null); }}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={submitting}>Lưu thay đổi</Button>
