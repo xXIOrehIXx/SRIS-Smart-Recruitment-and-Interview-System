@@ -2,6 +2,7 @@ using GP35.SRIS.Application.Contracts.Dtos.Business.Dashboard;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
+using GP35.SRIS.Domain.Shared.Context;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -14,25 +15,37 @@ namespace GP35.SRIS.Application.Services.Business;
 public class DashboardService : BaseService<DashboardService>, IDashboardService
 {
     private readonly IDashboardRepo _repo;
+    private readonly IContextData _contextData;
     private readonly ILogger _logger;
 
     public DashboardService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _repo = serviceProvider.GetRequiredService<IDashboardRepo>();
+        _contextData = serviceProvider.GetRequiredService<IContextData>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<DashboardService>();
     }
 
+    /// <summary>
+    /// Phạm vi dữ liệu của người đang đăng nhập (V023): DM chỉ thấy hồ sơ thuộc phòng ban mình
+    /// phụ trách (repo lo lọc); Admin/Recruiter/Interviewer thấy toàn công ty -> null.
+    /// </summary>
+    private long? DepartmentScope =>
+        string.Equals(_contextData.Role, RoleConstants.DepartmentManager, StringComparison.OrdinalIgnoreCase)
+            ? _contextData.UserId
+            : null;
+
     public async Task<DashboardOverviewDto> GetOverviewAsync(long companyId, long? jobId)
     {
-        var funnelRaw = await _repo.GetFunnelAsync(companyId, jobId);
-        var rejectRaw = await _repo.GetRejectReasonsAsync(companyId, jobId);
-        var sourceRaw = await _repo.GetSourceBreakdownAsync(companyId, jobId);
-        var offerRaw = await _repo.GetOfferStatusCountsAsync(companyId, jobId);
-        var hireDurations = await _repo.GetHireDurationDaysAsync(companyId, jobId);
-        var recentApps = await _repo.GetRecentApplicationsAsync(companyId, jobId, 8);
-        var recentDecisions = await _repo.GetRecentDecisionsAsync(companyId, jobId, 5);
-        var departmentProgress = await _repo.GetDepartmentProgressAsync(companyId);
-        var recentActivities = await _repo.GetRecentActivitiesAsync(companyId, 8);
+        var scope = DepartmentScope;
+        var funnelRaw = await _repo.GetFunnelAsync(companyId, jobId, scope);
+        var rejectRaw = await _repo.GetRejectReasonsAsync(companyId, jobId, scope);
+        var sourceRaw = await _repo.GetSourceBreakdownAsync(companyId, jobId, scope);
+        var offerRaw = await _repo.GetOfferStatusCountsAsync(companyId, jobId, scope);
+        var hireDurations = await _repo.GetHireDurationDaysAsync(companyId, jobId, scope);
+        var recentApps = await _repo.GetRecentApplicationsAsync(companyId, jobId, 8, scope);
+        var recentDecisions = await _repo.GetRecentDecisionsAsync(companyId, jobId, 5, scope);
+        var departmentProgress = await _repo.GetDepartmentProgressAsync(companyId, scope);
+        var recentActivities = await _repo.GetRecentActivitiesAsync(companyId, 8, scope);
 
         var byState = funnelRaw.ToDictionary(x => x.State, x => x.Count, StringComparer.OrdinalIgnoreCase);
         int CountOf(string state) => byState.TryGetValue(state, out var c) ? c : 0;
@@ -110,7 +123,7 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
 
     public async Task<KanbanBoardDto> GetKanbanBoardAsync(long companyId, long? jobId)
     {
-        var cards = await _repo.GetKanbanCardsAsync(companyId, jobId);
+        var cards = await _repo.GetKanbanCardsAsync(companyId, jobId, DepartmentScope);
 
         // 4 pha hiển thị của pipeline (QUIZ đã loại khỏi scope 07/2026)
         var kanbanStates = new[] { "NEW", "SCREENING", "INTERVIEW", "OFFER" };

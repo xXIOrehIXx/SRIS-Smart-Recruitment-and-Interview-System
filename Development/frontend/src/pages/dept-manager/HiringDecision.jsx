@@ -27,10 +27,16 @@ import {
   UserOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { dashboardAPI, applicationAPI } from '../../services/api';
+import {
+  dashboardAPI,
+  applicationAPI,
+  interviewAPI,
+  cvScoringAPI,
+} from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import '../Dashboard.css';
 
@@ -53,6 +59,12 @@ const HiringDecision = () => {
   
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  // Chi tiết để DM quyết: điểm TIÊU CHÍ phỏng vấn từng vòng + CV gốc.
+  // (Điểm CV/AI cố tình KHÔNG hiện ở đây — đó là công cụ sàng lọc của Recruiter.)
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [interviewRounds, setInterviewRounds] = useState([]);
+  const [appDetail, setAppDetail] = useState(null);
+  const [cvLoading, setCvLoading] = useState(false);
   
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
@@ -72,15 +84,9 @@ const HiringDecision = () => {
       const offerColumn = res.data.columns.find(c => c.state === 'OFFER');
       
       if (offerColumn) {
-        // V023: DM chỉ thấy hồ sơ mình được quyền chốt — job gán đúng mình, hoặc job chưa gán DM
-        // (đường mặc định công ty nhỏ, ai cũng chốt được). Admin xem hết.
-        const myId = Number(user?.userId);
-        const isAdmin = user?.role === 'Admin';
-        const visible = offerColumn.cards.filter(
-          (c) => isAdmin || c.departmentManagerId == null || Number(c.departmentManagerId) === myId
-        );
-
-        const formattedData = visible.map(c => ({
+        // V023: BE (DashboardRepo) đã thu hẹp về đúng phòng ban của DM đang đăng nhập —
+        // FE không lọc lại, tránh 2 nơi giữ cùng một luật.
+        const formattedData = offerColumn.cards.map(c => ({
           id: c.applicationId,
           candidateName: c.candidateName,
           candidateEmail: c.candidateEmail,
@@ -88,7 +94,6 @@ const HiringDecision = () => {
           department: c.department || 'Chưa gán phòng ban',
           requestTitle: c.jobTitle,
           appliedDate: c.appliedAt,
-          interviewScore: c.aiMatchScore, // Sử dụng tạm AiMatchScore hoặc fetch chi tiết
           status: 'PENDING',
           avatar: null,
           candidateId: c.candidateId,
@@ -122,11 +127,54 @@ const HiringDecision = () => {
     return <Tag color={c.color} icon={c.icon}>{c.label}</Tag>;
   };
 
-  const getScoreColor = (score) => {
-    if (!score) return '#999';
-    if (score >= 70) return '#52c41a';
-    if (score >= 50) return '#faad14';
+  // Điểm tiêu chí chấm trên thang maxScore (thường 10) — tô màu theo tỉ lệ, không theo thang 100.
+  const getRatioColor = (value, max) => {
+    if (value == null || !max) return '#999';
+    const pct = (Number(value) / Number(max)) * 100;
+    if (pct >= 70) return '#52c41a';
+    if (pct >= 50) return '#faad14';
     return '#f5222d';
+  };
+
+  const openDetail = async (record) => {
+    setSelectedRecord(record);
+    setDetailModalOpen(true);
+    setInterviewRounds([]);
+    setAppDetail(null);
+    setDetailLoading(true);
+    try {
+      const [roundsRes, appRes] = await Promise.all([
+        interviewAPI.getApplicationAggregate(record.id),
+        applicationAPI.getById(record.id),
+      ]);
+      setInterviewRounds(roundsRes.data || []);
+      setAppDetail(appRes.data || null);
+    } catch (error) {
+      console.error(error);
+      message.error(apiMessage(error, 'Không tải được chi tiết ứng viên'));
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // CV gốc nằm trên MinIO — BE trả URL presigned (~1h), mở tab mới để xem PDF.
+  const openCv = async () => {
+    if (!appDetail?.cvId) return;
+    try {
+      setCvLoading(true);
+      const res = await cvScoringAPI.getCvFileUrl(appDetail.cvId);
+      const url = res.data?.url;
+      if (!url) {
+        message.warning('Hồ sơ này không có file CV gốc.');
+        return;
+      }
+      window.open(url, '_blank', 'noopener');
+    } catch (error) {
+      console.error(error);
+      message.error(apiMessage(error, 'Không mở được file CV'));
+    } finally {
+      setCvLoading(false);
+    }
   };
 
   const columns = [
@@ -153,14 +201,12 @@ const HiringDecision = () => {
       width: 150,
     },
     {
-      title: 'Điểm',
-      key: 'score',
-      width: 100,
-      render: (_, record) => (
-        <Text strong style={{ color: getScoreColor(record.interviewScore) }}>
-          {record.interviewScore ? `${record.interviewScore}` : 'N/A'}
-        </Text>
-      ),
+      // Điểm CV/AI là công cụ sàng lọc của Recruiter — DM quyết theo tiêu chí phỏng vấn,
+      // xem trong modal chi tiết. Ở bảng chỉ cần biết hồ sơ thuộc phòng nào.
+      title: 'Phòng ban',
+      dataIndex: 'department',
+      key: 'department',
+      width: 160,
     },
     {
       title: 'Ngày ứng tuyển',
@@ -183,14 +229,7 @@ const HiringDecision = () => {
       width: 200,
       render: (_, record) => (
         <Space size={4}>
-          <Button
-            type="text"
-            icon={<EyeOutlined />}
-            onClick={() => {
-              setSelectedRecord(record);
-              setDetailModalOpen(true);
-            }}
-          />
+          <Button type="text" icon={<EyeOutlined />} onClick={() => openDetail(record)} />
           {record.status === 'PENDING' && (
             <>
               <Button
@@ -382,15 +421,133 @@ const HiringDecision = () => {
               <Descriptions.Item label="Vị trí ứng tuyển" span={2}>
                 <Text strong>{selectedRecord.position}</Text>
               </Descriptions.Item>
+              <Descriptions.Item label="Phòng ban">{selectedRecord.department}</Descriptions.Item>
               <Descriptions.Item label="Ngày ứng tuyển">
                 {dayjs(selectedRecord.appliedDate).format('DD/MM/YYYY')}
               </Descriptions.Item>
-              <Descriptions.Item label="Điểm CV (AiMatch)">
-                <Text strong style={{ color: getScoreColor(selectedRecord.interviewScore) }}>
-                  {selectedRecord.interviewScore ? `${selectedRecord.interviewScore}` : 'N/A'}
-                </Text>
+              <Descriptions.Item label="CV ứng viên" span={2}>
+                <Space>
+                  <Button
+                    icon={<FileTextOutlined />}
+                    onClick={openCv}
+                    loading={cvLoading}
+                    disabled={detailLoading || !appDetail?.cvId}
+                  >
+                    Xem CV gốc
+                  </Button>
+                  {appDetail?.cvFileName && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>{appDetail.cvFileName}</Text>
+                  )}
+                </Space>
               </Descriptions.Item>
             </Descriptions>
+
+            {/* Điểm phỏng vấn theo TIÊU CHÍ — căn cứ chính để DM quyết (docs 5.7/5.18). */}
+            <Title level={5} style={{ marginTop: 24 }}>Điểm phỏng vấn theo tiêu chí</Title>
+            {detailLoading ? (
+              <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+            ) : interviewRounds.length === 0 ? (
+              <Text type="secondary">Hồ sơ này chưa có buổi phỏng vấn nào.</Text>
+            ) : (
+              interviewRounds.map((round) => (
+                <Card
+                  key={round.scheduleId}
+                  size="small"
+                  style={{ marginBottom: 12 }}
+                  title={
+                    <Space wrap>
+                      <Text strong>Vòng {round.roundNumber ?? '-'}</Text>
+                      {round.scheduledAt && (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {dayjs(round.scheduledAt).format('DD/MM/YYYY HH:mm')}
+                        </Text>
+                      )}
+                      <Tag color={round.submittedInterviewers > 0 ? 'green' : 'default'}>
+                        {round.submittedInterviewers} phiếu đã nộp
+                      </Tag>
+                    </Space>
+                  }
+                  extra={
+                    round.submittedInterviewers > 0 && (
+                      <Text strong style={{ color: MATCHA_GREEN }}>
+                        TB có trọng số: {round.panelWeightedAverage}
+                      </Text>
+                    )
+                  }
+                >
+                  {round.submittedInterviewers === 0 ? (
+                    // Blind Review: điểm chỉ lộ khi interviewer đã NỘP phiếu.
+                    <Text type="secondary">
+                      Chưa có phiếu chấm nào được nộp — điểm còn ẩn (blind review).
+                    </Text>
+                  ) : (
+                    <Table
+                      size="small"
+                      pagination={false}
+                      rowKey="criteriaId"
+                      dataSource={round.criteria}
+                      columns={[
+                        {
+                          title: 'Tiêu chí',
+                          dataIndex: 'name',
+                          key: 'name',
+                          render: (name, c) => (
+                            <Space direction="vertical" size={0}>
+                              <Text>{name}</Text>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                Trọng số {c.weight} · thang {c.maxScore}
+                              </Text>
+                            </Space>
+                          ),
+                        },
+                        {
+                          title: 'Điểm TB',
+                          dataIndex: 'average',
+                          key: 'average',
+                          width: 110,
+                          render: (avg, c) => (
+                            <Text strong style={{ color: getRatioColor(avg, c.maxScore) }}>
+                              {avg} / {c.maxScore}
+                            </Text>
+                          ),
+                        },
+                        {
+                          title: 'Đồng thuận',
+                          key: 'consensus',
+                          width: 150,
+                          render: (_, c) =>
+                            c.needsDiscussion ? (
+                              <Tag color="warning">Lệch nhiều (σ {c.stdDev})</Tag>
+                            ) : (
+                              <Text type="secondary" style={{ fontSize: 12 }}>σ {c.stdDev}</Text>
+                            ),
+                        },
+                        {
+                          title: 'Từng người chấm',
+                          key: 'scores',
+                          render: (_, c) => (
+                            <Space direction="vertical" size={2}>
+                              {(c.scores || []).map((s) => (
+                                <div key={s.interviewerId}>
+                                  <Text style={{ fontSize: 12 }}>
+                                    {s.interviewerName || `#${s.interviewerId}`}: <strong>{s.score}</strong>
+                                  </Text>
+                                  {s.note && (
+                                    <div>
+                                      <Text type="secondary" style={{ fontSize: 12 }}>“{s.note}”</Text>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </Space>
+                          ),
+                        },
+                      ]}
+                    />
+                  )}
+                </Card>
+              ))
+            )}
           </div>
         )}
       </Modal>

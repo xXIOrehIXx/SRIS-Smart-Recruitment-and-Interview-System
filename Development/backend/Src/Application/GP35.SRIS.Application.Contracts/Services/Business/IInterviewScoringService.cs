@@ -22,4 +22,11 @@ public interface IInterviewScoringService : IBaseService
 
     /// <summary>Tổng hợp panel (chỉ phiếu đã nộp) — cho Recruiter/Department Manager đọc để quyết.</summary>
     Task<ScheduleAggregateDto> GetAggregateAsync(long companyId, long scheduleId);
+
+    /// <summary>
+    /// Tổng hợp điểm phỏng vấn của 1 HỒ SƠ, theo từng vòng (vòng nhỏ trước). Màn "Quyết định
+    /// tuyển dụng" của DM dùng cái này: 1 lần gọi ra đủ điểm từng tiêu chí của mọi vòng.
+    /// Buổi chưa ai nộp phiếu vẫn trả về (SubmittedInterviewers = 0) để DM biết là còn thiếu.
+    /// </summary>
+    Task<IReadOnlyList<ScheduleAggregateDto>> GetAggregatesByApplicationAsync(long companyId, long applicationId);
 }

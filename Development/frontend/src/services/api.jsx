@@ -230,6 +230,13 @@ export const interviewAPI = {
 
   getAggregate: (scheduleId) =>
     api.get(`/interview-schedules/${scheduleId}/aggregate`),
+
+  // Điểm phỏng vấn của CẢ hồ sơ, tách theo từng vòng — màn quyết định tuyển dụng của DM.
+  // Trả [{ scheduleId, roundNumber, scheduledAt, scheduleStatus, submittedInterviewers,
+  //        criteria: [{ name, weight, maxScore, average, stdDev, needsDiscussion, scores: [...] }],
+  //        interviewerTotals: [...], panelWeightedAverage }]
+  getApplicationAggregate: (applicationId) =>
+    api.get(`/applications/${applicationId}/interview-aggregate`),
 };
 
 // ==================== CANDIDATE (Magic Link) ====================

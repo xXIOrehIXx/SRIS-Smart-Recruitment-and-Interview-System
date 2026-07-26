@@ -93,6 +93,8 @@ public class ScoringSheetDto
 public class InterviewerScoreDto
 {
     public long InterviewerId { get; set; }
+    /// <summary>Tên người chấm (rơi về email khi chưa điền full_name) — DM cần biết ai chấm.</summary>
+    public string? InterviewerName { get; set; }
     public decimal? Score { get; set; }
     public string? Note { get; set; }
 }
@@ -121,6 +123,7 @@ public class AggregateCriterionDto
 public class InterviewerTotalDto
 {
     public long InterviewerId { get; set; }
+    public string? InterviewerName { get; set; }
     public decimal WeightedTotal { get; set; }
 }
 
@@ -134,4 +137,13 @@ public class ScheduleAggregateDto
 
     /// <summary>Trung bình điểm tổng có trọng số của cả panel.</summary>
     public decimal PanelWeightedAverage { get; set; }
+
+    /// <summary>Vòng phỏng vấn (InterviewSchedule.round_number) — chỉ điền khi xem theo hồ sơ.</summary>
+    public int? RoundNumber { get; set; }
+
+    /// <summary>Giờ phỏng vấn đã chốt (slot) — chỉ điền khi xem theo hồ sơ.</summary>
+    public DateTime? ScheduledAt { get; set; }
+
+    /// <summary>PENDING | CONFIRMED | CANCELLED | NO_SLOT_FITS.</summary>
+    public string? ScheduleStatus { get; set; }
 }

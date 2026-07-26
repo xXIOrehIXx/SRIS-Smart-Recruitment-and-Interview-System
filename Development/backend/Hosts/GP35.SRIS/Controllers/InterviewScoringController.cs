@@ -64,4 +64,15 @@ public class InterviewScoringController : ControllerBase
     {
         return Ok(await _scoringService.GetAggregateAsync(_contextData.CompanyId, scheduleId));
     }
+
+    /// <summary>
+    /// Tổng hợp điểm phỏng vấn của cả hồ sơ, theo từng vòng — màn "Quyết định tuyển dụng" của DM
+    /// đọc trước khi chốt tuyển/loại.
+    /// </summary>
+    [HttpGet("api/applications/{applicationId:long}/interview-aggregate")]
+    [WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+    public async Task<IActionResult> AggregateByApplication(long applicationId)
+    {
+        return Ok(await _scoringService.GetAggregatesByApplicationAsync(_contextData.CompanyId, applicationId));
+    }
 }

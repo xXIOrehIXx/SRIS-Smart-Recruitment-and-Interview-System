@@ -198,6 +198,16 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .FirstOrDefaultAsync();
     }
 
+    public async Task<IReadOnlyList<InterviewSchedule>> GetSchedulesByApplicationAsync(long companyId, long applicationId)
+    {
+        return await _db.InterviewSchedules
+            .AsNoTracking()
+            .Where(s => s.ApplicationId == applicationId)
+            .OrderBy(s => s.RoundNumber)
+            .ThenBy(s => s.ScheduleId)
+            .ToListAsync();
+    }
+
     public async Task<InterviewSchedule?> GetScheduleByIdAsync(long companyId, long scheduleId)
     {
         return await _db.InterviewSchedules

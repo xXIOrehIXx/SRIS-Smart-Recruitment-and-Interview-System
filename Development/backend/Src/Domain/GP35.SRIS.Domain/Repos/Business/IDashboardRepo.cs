@@ -33,36 +33,42 @@ public record ActivityRow(long ApplicationId, string CandidateName, string Actio
 /// <summary>
 /// Truy vấn tổng hợp cho Dashboard/Analytics (docs 4, M7). Mọi truy vấn tự kèm company_id
 /// (Global Query Filter) — cô lập tenant. jobId null = toàn công ty; có giá trị = lọc theo 1 job.
+/// <para>
+/// V023 — <c>departmentManagerId</c>: giới hạn phạm vi về "phòng ban của DM này" = job gán đúng
+/// DM đó + job chưa gán DM (đường mặc định công ty nhỏ, Recruiter quyết nên ai cũng nhìn).
+/// Null = không giới hạn (Admin/Recruiter nhìn toàn công ty). Lọc ở ĐÂY chứ không ở FE để
+/// không rò hồ sơ phòng khác qua response.
+/// </para>
 /// </summary>
 public interface IDashboardRepo
 {
     /// <summary>Phễu tuyển dụng: số hồ sơ theo từng state.</summary>
-    Task<IReadOnlyList<StateCount>> GetFunnelAsync(long companyId, long? jobId);
+    Task<IReadOnlyList<StateCount>> GetFunnelAsync(long companyId, long? jobId, long? departmentManagerId = null);
 
     /// <summary>Phân rã lý do loại (chỉ hồ sơ REJECTED có reject_reason) — dashboard "tại sao rớt".</summary>
-    Task<IReadOnlyList<LabelCount>> GetRejectReasonsAsync(long companyId, long? jobId);
+    Task<IReadOnlyList<LabelCount>> GetRejectReasonsAsync(long companyId, long? jobId, long? departmentManagerId = null);
 
     /// <summary>Phân rã nguồn ứng viên (Candidate.source).</summary>
-    Task<IReadOnlyList<LabelCount>> GetSourceBreakdownAsync(long companyId, long? jobId);
+    Task<IReadOnlyList<LabelCount>> GetSourceBreakdownAsync(long companyId, long? jobId, long? departmentManagerId = null);
 
     /// <summary>Số offer theo trạng thái (PENDING/ACCEPTED/DECLINED) — tính offer acceptance rate.</summary>
-    Task<IReadOnlyList<LabelCount>> GetOfferStatusCountsAsync(long companyId, long? jobId);
+    Task<IReadOnlyList<LabelCount>> GetOfferStatusCountsAsync(long companyId, long? jobId, long? departmentManagerId = null);
 
     /// <summary>Số ngày từ lúc nộp (created_at) -> tuyển (hired_at) của mỗi hồ sơ HIRED — tính time-to-hire.</summary>
-    Task<IReadOnlyList<double>> GetHireDurationDaysAsync(long companyId, long? jobId);
+    Task<IReadOnlyList<double>> GetHireDurationDaysAsync(long companyId, long? jobId, long? departmentManagerId = null);
 
     /// <summary>Lấy danh sách ứng viên theo state cho Kanban board.</summary>
-    Task<IReadOnlyList<KanbanCard>> GetKanbanCardsAsync(long companyId, long? jobId);
+    Task<IReadOnlyList<KanbanCard>> GetKanbanCardsAsync(long companyId, long? jobId, long? departmentManagerId = null);
 
     /// <summary>Hồ sơ mới nộp gần nhất (mọi state, mới nhất trước).</summary>
-    Task<IReadOnlyList<KanbanCard>> GetRecentApplicationsAsync(long companyId, long? jobId, int take);
+    Task<IReadOnlyList<KanbanCard>> GetRecentApplicationsAsync(long companyId, long? jobId, int take, long? departmentManagerId = null);
 
     /// <summary>Quyết định gần nhất (HIRED/REJECTED, theo stage_updated_at mới nhất trước).</summary>
-    Task<IReadOnlyList<KanbanCard>> GetRecentDecisionsAsync(long companyId, long? jobId, int take);
+    Task<IReadOnlyList<KanbanCard>> GetRecentDecisionsAsync(long companyId, long? jobId, int take, long? departmentManagerId = null);
 
     /// <summary>Tiến độ theo phòng ban: số hồ sơ HIRED / tổng hồ sơ của các job trong phòng ban.</summary>
-    Task<IReadOnlyList<DepartmentCount>> GetDepartmentProgressAsync(long companyId);
+    Task<IReadOnlyList<DepartmentCount>> GetDepartmentProgressAsync(long companyId, long? departmentManagerId = null);
 
-    /// <summary>Hoạt động gần đây toàn công ty (ActivityLog mới nhất trước).</summary>
-    Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, int take);
+    /// <summary>Hoạt động gần đây (ActivityLog mới nhất trước), giới hạn theo phạm vi DM nếu có.</summary>
+    Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, int take, long? departmentManagerId = null);
 }

@@ -53,6 +53,12 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// <summary>Lịch mới nhất của hồ sơ ở BẤT KỲ trạng thái nào (để hiển thị trạng thái cho ứng viên).</summary>
     Task<InterviewSchedule?> GetLatestScheduleAsync(long companyId, long applicationId);
 
+    /// <summary>
+    /// Mọi buổi phỏng vấn của 1 hồ sơ, vòng nhỏ trước (multi-round = dữ liệu trong state INTERVIEW).
+    /// DM dùng để xem điểm từng vòng trước khi quyết tuyển.
+    /// </summary>
+    Task<IReadOnlyList<InterviewSchedule>> GetSchedulesByApplicationAsync(long companyId, long applicationId);
+
     /// <summary>Lấy 1 lịch theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<InterviewSchedule?> GetScheduleByIdAsync(long companyId, long scheduleId);
 
