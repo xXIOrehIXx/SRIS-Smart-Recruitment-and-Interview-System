@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Layout,
   Typography,
@@ -26,6 +27,7 @@ const { Title, Paragraph, Text } = Typography;
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user, getDashboardRoute } = useAuth();
 
   const stats = [
     { title: "Total Jobs", value: 24, suffix: "+", trend: "+12%" },
@@ -63,21 +65,37 @@ const Home = () => {
           <h2>SRIS</h2>
         </div>
         <div className="header-actions">
-          <Button
-            type="text"
-            className="login-btn"
-            onClick={() => (window.location.href = "/login")}
-          >
-            Log in
-          </Button>
-          <Button
-            type="primary"
-            shape="round"
-            className="demo-btn"
-            onClick={() => (window.location.href = "/register")}
-          >
-            Book a demo
-          </Button>
+          {isAuthenticated ? (
+            <Space size="middle">
+              <Text strong>{user?.fullName || user?.email}</Text>
+              <Button
+                type="primary"
+                shape="round"
+                className="dashboard-btn"
+                onClick={() => navigate(getDashboardRoute())}
+              >
+                Go to Dashboard
+              </Button>
+            </Space>
+          ) : (
+            <>
+              <Button
+                type="text"
+                className="login-btn"
+                onClick={() => navigate("/login")}
+              >
+                Log in
+              </Button>
+              <Button
+                type="primary"
+                shape="round"
+                className="demo-btn"
+                onClick={() => navigate("/register")}
+              >
+                Book a demo
+              </Button>
+            </>
+          )}
         </div>
       </Header>
 

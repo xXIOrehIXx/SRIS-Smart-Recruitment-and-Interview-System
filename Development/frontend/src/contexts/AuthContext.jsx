@@ -219,10 +219,10 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Tìm email - thử nhiều key
-      let email = payload.Email || payload.email || payload.Username || payload.username;
+      let email = payload.Email || payload.email || payload.Username || payload.username || payload.unique_name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
       
       // Tìm fullName - thử nhiều key  
-      let fullName = payload.FullName || payload.fullName || payload.Name || payload.name;
+      let fullName = payload.FullName || payload.fullName || payload.Name || payload.name || payload.full_name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
       if (!fullName) fullName = payload.Username || payload.username;
       
       // Tìm userId - thử nhiều key
@@ -297,9 +297,10 @@ export const AuthProvider = ({ children }) => {
     return ROLE_MENUS[normalizedRole] || [];
   };
 
-  const getDashboardRoute = () => {
-    if (!user?.role) return '/login';
-    const normalizedRole = normalizeRole(user.role);
+  const getDashboardRoute = (role = null) => {
+    const targetRole = role || user?.role;
+    if (!targetRole) return '/login';
+    const normalizedRole = normalizeRole(targetRole);
     return ROLE_ROUTES[normalizedRole] || '/';
   };
 
