@@ -20,6 +20,7 @@ import {
   Divider,
   Popconfirm,
   Badge,
+  Alert,
 } from "antd";
 import {
   PlusOutlined,
@@ -42,6 +43,24 @@ const { TextArea } = Input;
 
 const MATCHA_GREEN = "#5D8C3E";
 const DRAFT_KEY = "mail_template_draft";
+
+// BE TemplateRenderer chỉ hỗ trợ 5 placeholder này (xem NotificationService.cs).
+// Liệt kê trong UI để Recruiter khỏi gõ {{companyName}} / {{interviewDate}} sai.
+const SUPPORTED_VARIABLES = [
+  { key: "{{candidateName}}", desc: "Tên ứng viên" },
+  { key: "{{jobTitle}}",      desc: "Vị trí ứng tuyển" },
+  { key: "{{link}}",          desc: "Magic link (SCHEDULE / STATUS / OFFER_RESPONSE)" },
+  { key: "{{expiresAt}}",     desc: "Thời điểm link hết hạn (UTC, dd/MM/yyyy HH:mm)" },
+  { key: "{{startTime}}",     desc: "Giờ phỏng vấn (INTERVIEW_CONFIRMED — UTC)" },
+];
+const codeStyle = {
+  background: "#fff",
+  border: "1px solid #e7e7e6",
+  borderRadius: 4,
+  padding: "0 4px",
+  fontFamily: "monospace",
+  fontSize: 11,
+};
 
 // Custom hook for draft auto-save
 const useDraftSave = (storageKey) => {
@@ -123,6 +142,31 @@ const MailTemplates = () => {
     jobTitle: "Frontend Developer",
     companyName: "SRIS",
   };
+
+  // Danh sách 7 loại email template (khớp backend EmailTemplateType.cs).
+  // Đặt ở đầu component để mọi computed bên dưới (missingTypes, columns, stats) đều
+  // dùng được — nếu khai báo sau khi đã tham chiếu sẽ nổ TypeError.
+  const templateCategories = [
+    { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
+    { value: "OFFER_RESPONSE", label: "Phản hồi offer", color: "green" },
+    { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
+    { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
+    {
+      value: "HIRED",
+      label: "Thông báo nhận việc",
+      color: "gold",
+    },
+    {
+      value: "INTERVIEW_CONFIRMED",
+      label: "Xác nhận lịch phỏng vấn",
+      color: "orange",
+    },
+    {
+      value: "INTERVIEW_CANCELLED",
+      label: "Hủy lịch phỏng vấn",
+      color: "volcano",
+    },
+  ];
 
   useEffect(() => {
     // Check for draft on mount
@@ -310,35 +354,30 @@ const MailTemplates = () => {
       (t.subject || "").toLowerCase().includes(searchText.toLowerCase()),
   );
 
+  /**
+   * Mỗi trigger email gửi cho ứng viên cần tối thiểu 1 template active.
+   * Liệt kê các loại CHƯA có template active để Recruiter biết đường bổ sung —
+   * nếu không hệ thống sẽ fallback nội dung hard-coded, không đồng nhất giữa
+   * các trigger.
+   */
+  const missingTypes = templateCategories
+    .filter((cat) => !templates.some((t) => t.type === cat.value))
+    .map((cat) => cat);
+  const hasMissing = missingTypes.length > 0;
+
   const renderPreview = (body) => {
     let preview = body || "";
     Object.entries(previewData).forEach(([key, value]) => {
       preview = preview.replace(new RegExp(`{{${key}}}`, "g"), value);
     });
+    // BE hỗ trợ thêm các biến khác ({{link}}, {{expiresAt}}, {{startTime}}) — preview
+    // chỉ render biến có dữ liệu mẫu để Recruiter khỏi nhầm là biến hỏng.
+    preview = preview
+      .replace(/{{\s*link\s*}}/g, "https://example.com/schedule?token=xxx")
+      .replace(/{{\s*expiresAt\s*}}/g, "25/12/2026 23:59 UTC")
+      .replace(/{{\s*startTime\s*}}/g, "10:00 25/12/2026 (UTC)");
     return preview;
   };
-
-  const templateCategories = [
-    { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
-    { value: "OFFER_RESPONSE", label: "Phản hồi offer", color: "green" },
-    { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
-    { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
-    {
-      value: "HIRED",
-      label: "Thông báo nhận việc",
-      color: "gold",
-    },
-    {
-      value: "INTERVIEW_CONFIRMED",
-      label: "Xác nhận lịch phỏng vấn",
-      color: "orange",
-    },
-    {
-      value: "INTERVIEW_CANCELLED",
-      label: "Hủy lịch phỏng vấn",
-      color: "volcano",
-    },
-  ];
 
   const getCategoryTag = (category) => {
     const cat = templateCategories.find((c) => c.value === category);
@@ -477,6 +516,44 @@ const MailTemplates = () => {
           );
         })}
       </Row>
+
+      {hasMissing && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 24 }}
+          message={
+            <Space>
+              <Text strong>
+                {missingTypes.length} loại email CHƯA có template active
+              </Text>
+              <Text type="secondary">
+                Hệ thống sẽ gửi nội dung mặc định (hard-coded) cho các trigger này — nội
+                dung không đồng nhất giữa các trigger. Bổ sung template để đảm bảo
+                đồng nhất.
+              </Text>
+            </Space>
+          }
+          description={
+            <Space wrap style={{ marginTop: 4 }}>
+              {missingTypes.map((t) => (
+                <Tag
+                  key={t.value}
+                  color={t.color}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    form.resetFields();
+                    form.setFieldsValue({ type: t.value });
+                    setCreateModalOpen(true);
+                  }}
+                >
+                  + {t.label}
+                </Tag>
+              ))}
+            </Space>
+          }
+        />
+      )}
 
       <Card className="main-card" bordered={false}>
         <div
@@ -621,10 +698,16 @@ const MailTemplates = () => {
             }}
           >
             <Text type="secondary" style={{ fontSize: 12 }}>
-              <b>Biến sử dụng:</b> {"{{candidateName}}"} - Tên ứng viên,{" "}
-              {"{{jobTitle}}"} - Vị trí ứng tuyển, {"{{companyName}}"} - Tên
-              công ty, {"{{interviewDate}}"} - Ngày phỏng vấn,{" "}
-              {"{{interviewTime}}"} - Giờ phỏng vấn
+              <b>Biến được hỗ trợ (BE render bằng TemplateRenderer):</b>{" "}
+              <code style={codeStyle}>{"{{candidateName}}"}</code>,{" "}
+              <code style={codeStyle}>{"{{jobTitle}}"}</code>,{" "}
+              <code style={codeStyle}>{"{{link}}"}</code>,{" "}
+              <code style={codeStyle}>{"{{expiresAt}}"}</code>,{" "}
+              <code style={codeStyle}>{"{{startTime}}"}</code>{" "}
+              — tuỳ loại trigger mà BE sẽ truyền biến tương ứng.{" "}
+              <Text type="warning">Biến không có trong danh sách sẽ KHÔNG được thay</Text>
+              {" "}— Recruiter viết template mà không dùng đúng biến sẽ dẫn tới hệ thống
+              fallback sang nội dung mặc định, không đồng nhất giữa các trigger.
             </Text>
           </div>
 
@@ -821,8 +904,14 @@ const MailTemplates = () => {
 
           <div style={{ background: "#f5f5f4", padding: 12, borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              <b>Biến sử dụng:</b> {"{{candidateName}}"}, {"{{jobTitle}}"},{" "}
-              {"{{companyName}}"}, {"{{interviewDate}}"}, {"{{interviewTime}}"}
+              <b>Biến được hỗ trợ:</b>{" "}
+              {SUPPORTED_VARIABLES.map((v, idx) => (
+                <span key={v.key}>
+                  <code style={codeStyle}>{v.key}</code>
+                  {idx < SUPPORTED_VARIABLES.length - 1 ? ", " : ""}
+                </span>
+              ))}
+              {" "}— <Text type="warning">dùng sai biến sẽ không render</Text>.
             </Text>
           </div>
         </Form>

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Row, Col, Card, Typography, Avatar, Tag, Button, Tabs, Timeline,
-  Space, Divider, Spin, message, Table, Tooltip, Statistic, Empty, Alert
+  Space, Divider, Spin, message, Table, Tooltip, Statistic, Empty, Alert,
+  Modal, Input
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -124,6 +125,31 @@ const CandidateDetail = () => {
       message.error(error?.response?.data?.userMsg || 'Không thể phát magic link');
     } finally {
       setSendingLink(false);
+    }
+  };
+
+  // Từ chối hồ sơ — bắt buộc nhập lý do (backend validate). Hiển thị modal
+  // hỏi lý do rồi gọi applicationAPI.reject.
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      message.error('Vui lòng nhập lý do từ chối');
+      return;
+    }
+    setRejecting(true);
+    try {
+      await applicationAPI.reject(applicationId, rejectReason.trim());
+      message.success('Đã từ chối hồ sơ — email thông báo (nếu có template REJECTED) sẽ tự gửi.');
+      setRejectModalOpen(false);
+      setRejectReason('');
+      fetchApplicationDetails();
+    } catch (error) {
+      console.error('Error rejecting:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể từ chối hồ sơ');
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -407,6 +433,16 @@ const CandidateDetail = () => {
               >
                 Lên Lịch Phỏng Vấn
               </Button>
+              {application?.currentState !== 'REJECTED' && application?.currentState !== 'HIRED' && (
+                <Button
+                  block
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => setRejectModalOpen(true)}
+                >
+                  Từ chối hồ sơ
+                </Button>
+              )}
             </Space>
           </Card>
         </Col>
@@ -417,6 +453,34 @@ const CandidateDetail = () => {
           </Card>
         </Col>
       </Row>
+
+      <Modal
+        title={<Space><CloseCircleOutlined style={{ color: '#ff4d4f' }} />Từ chối hồ sơ</Space>}
+        open={rejectModalOpen}
+        onCancel={() => { setRejectModalOpen(false); setRejectReason(''); }}
+        onOk={handleReject}
+        confirmLoading={rejecting}
+        okText="Từ chối"
+        okButtonProps={{ danger: true }}
+        cancelText="Hủy"
+      >
+        <Typography.Paragraph type="secondary">
+          Hồ sơ của <Text strong>{application?.candidateName}</Text> sẽ chuyển sang trạng thái
+          <Tag color="red" style={{ marginLeft: 6 }}>Từ chối</Tag>
+          và ứng viên sẽ nhận email thông báo (nếu có template REJECTED đang hoạt động).
+        </Typography.Paragraph>
+        <Typography.Paragraph>
+          <Text type="danger">*</Text> Lý do từ chối (bắt buộc, hiển thị cho cả team và ứng viên):
+        </Typography.Paragraph>
+        <Input.TextArea
+          rows={4}
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          placeholder="VD: Chưa đáp ứng yêu cầu Java Spring Boot ≥ 3 năm..."
+          maxLength={500}
+          showCount
+        />
+      </Modal>
     </div>
   );
 };

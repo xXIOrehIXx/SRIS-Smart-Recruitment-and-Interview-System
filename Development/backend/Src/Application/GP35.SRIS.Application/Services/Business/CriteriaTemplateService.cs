@@ -85,6 +85,9 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
         await _criteriaRepo.DeleteByJobAndNamesAsync(companyId, jobId, names);
 
         // 2. Clone từng dòng thành EvaluationCriteria mới.
+        //    Khớp tinh thần "template đã được duyệt rồi": áp vào job = clone thẳng
+        //    APPROVED, không phải DRAFT (AI bóc từ JD mới cần qua bước duyệt). Việc
+        //    Recruiter đã chọn template hợp lệ đồng nghĩa với chấp nhận bộ tiêu chí.
         var created = new List<CriteriaDto>();
         foreach (var item in found.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.ItemId))
         {
@@ -95,7 +98,7 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
                 Weight = item.Weight,
                 MaxScore = item.MaxScore,
                 Active = true,
-                Status = CriteriaStatus.Draft
+                Status = CriteriaStatus.Approved
             };
             entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
 

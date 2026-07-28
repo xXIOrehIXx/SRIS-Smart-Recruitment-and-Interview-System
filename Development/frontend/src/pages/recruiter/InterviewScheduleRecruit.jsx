@@ -5,7 +5,7 @@ import {
 } from 'antd';
 import {
   PlusOutlined, CalendarOutlined, ReloadOutlined, DeleteOutlined,
-  UserAddOutlined, PhoneOutlined, MinusCircleOutlined
+  UserAddOutlined, PhoneOutlined, MinusCircleOutlined, CloseCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { interviewAPI, jobsAPI, applicationAPI, usersAPI } from '../../services/api';
@@ -122,9 +122,12 @@ const InterviewScheduleRecruit = () => {
     try {
       await interviewAPI.createPool(selectedJobId, {
         roundNumber: values.roundNumber || undefined,
+        // startTime gửi lên BE dạng ISO local (không có 'Z' / timezone) để giữ
+        // đúng giờ user chọn. Trước đây dùng toISOString() đổi sang UTC khiến giờ
+        // hiển thị ở FE lệch (vd user chọn 09:00 +07:00 → BE lưu 02:00 UTC).
         slots: slots.map(s => ({
           interviewerIds: s.interviewerIds,
-          startTime: s.startTime.toISOString(),
+          startTime: s.startTime.format('YYYY-MM-DDTHH:mm:ss'),
         })),
       });
       message.success('Đã mở pool khung giờ phỏng vấn!');
@@ -207,12 +210,49 @@ const InterviewScheduleRecruit = () => {
     }
   };
 
+  // Từ chối 1 ứng viên đã mời (vd Recruiter nhận ra hồ sơ không phù hợp sau khi mời).
+  // Mở modal hỏi lý do rồi gọi applicationAPI.reject.
+  const [rejectTarget, setRejectTarget] = useState(null); // { applicationId, name } | null
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const openRejectInvited = (record) => {
+    setRejectTarget({
+      applicationId: record.applicationId,
+      name: candidateLabel(record.applicationId),
+    });
+    setRejectReason('');
+  };
+  const cancelRejectInvited = () => {
+    setRejectTarget(null);
+    setRejectReason('');
+  };
+  const submitRejectInvited = async () => {
+    if (!rejectTarget) return;
+    if (!rejectReason.trim()) {
+      message.error('Vui lòng nhập lý do từ chối');
+      return;
+    }
+    setRejecting(true);
+    try {
+      await applicationAPI.reject(rejectTarget.applicationId, rejectReason.trim());
+      message.success(`Đã từ chối ${rejectTarget.name}`);
+      cancelRejectInvited();
+      fetchJobData(selectedJobId);
+    } catch (err) {
+      console.error('Error rejecting invited candidate:', err);
+      message.error(err?.response?.data?.userMsg || 'Không thể từ chối');
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   const handleManualConfirm = async (values) => {
     setSubmitting(true);
     try {
       await interviewAPI.manualConfirm(values.applicationId, {
         interviewerIds: values.interviewerIds,
-        startTime: values.startTime.toISOString(),
+        // Gửi local ISO không 'Z' để khớp giờ user chọn (xem comment ở handleCreatePool).
+        startTime: values.startTime.format('YYYY-MM-DDTHH:mm:ss'),
         roundNumber: values.roundNumber || undefined,
       });
       message.success('Đã chốt lịch tay cho ứng viên!');
@@ -311,6 +351,24 @@ const InterviewScheduleRecruit = () => {
         }
         return <Text type="secondary">—</Text>;
       },
+    },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 110,
+      render: (_, record) => (
+        <Tooltip title="Loại hồ sơ này khỏi pipeline (gửi email REJECTED nếu có template)">
+          <Button
+            size="small"
+            danger
+            icon={<CloseCircleOutlined />}
+            onClick={() => openRejectInvited(record)}
+            disabled={record.status === 'CANCELLED'}
+          >
+            Từ chối
+          </Button>
+        </Tooltip>
+      ),
     },
   ];
 
@@ -621,6 +679,36 @@ const InterviewScheduleRecruit = () => {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal từ chối ứng viên đã mời */}
+      <Modal
+        title={`Từ chối ${rejectTarget?.name || ''}`}
+        open={!!rejectTarget}
+        onCancel={cancelRejectInvited}
+        onOk={submitRejectInvited}
+        confirmLoading={rejecting}
+        okText="Từ chối"
+        okButtonProps={{ danger: true }}
+        cancelText="Hủy"
+      >
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Ứng viên sẽ chuyển sang trạng thái REJECTED, lời mời trong pool này sẽ bị hủy. Email thông báo sẽ tự gửi nếu có template REJECTED đang hoạt động."
+        />
+        <Typography.Paragraph>
+          <Text type="danger">*</Text> Lý do từ chối (bắt buộc):
+        </Typography.Paragraph>
+        <Input.TextArea
+          rows={4}
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          placeholder="Nhập lý do từ chối..."
+          maxLength={500}
+          showCount
+        />
       </Modal>
     </div>
   );

@@ -334,13 +334,16 @@ const CreateJob = () => {
 
       if (isEditMode && editingJobId) {
         await jobsAPI.update(editingJobId, data);
-        message.success("Cập nhật tin tuyển dụng thành công");
+        message.success("Cập nhật tin tuyển dụng thành công — bạn có thể tiếp tục chỉnh sửa.");
+        // QUAN TRỌNG: KHÔNG navigate sau khi update — user còn đang trong luồng edit. Trước
+        // đây navigate("/recruiter/jobs") làm user mất context, muốn sửa tiếp phải vào lại.
+        // Tạo mới (không phải edit) thì navigate tới JobDetail vừa tạo cho user xem lại.
       } else {
         const res = await jobsAPI.create(data);
         await linkToRequest(res.data?.jobId);
         message.success("Lưu nháp thành công");
+        navigate("/recruiter/jobs");
       }
-      navigate("/recruiter/jobs");
     } catch (error) {
       // Lỗi validate (title trống) — antd throw object có errorFields
       if (error?.errorFields) {
@@ -377,13 +380,14 @@ const CreateJob = () => {
 
       if (isEditMode && editingJobId) {
         await jobsAPI.update(editingJobId, data);
-        message.success("Cập nhật và đăng tin thành công!");
+        message.success("Cập nhật và đăng tin thành công! Tin đã hiển thị trên trang tuyển dụng.");
+        // Giữ nguyên trang edit để user có thể chỉnh tiếp — KHÔNG navigate (giống handleSaveDraft).
       } else {
         const res = await jobsAPI.create(data);
         await linkToRequest(res.data?.jobId);
         message.success("Tin tuyển dụng đã được đăng thành công!");
+        navigate("/recruiter/jobs");
       }
-      navigate("/recruiter/jobs");
     } catch (error) {
       if (error?.errorFields) {
         const first = error.errorFields[0];
@@ -722,6 +726,27 @@ const CreateJob = () => {
             // Validate mỗi lần blur/change — user sửa sẽ thấy lỗi tự biến mất.
             validateTrigger={["onBlur", "onChange"]}
           >
+            {isEditMode && editingJobId && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message={
+                  <Space>
+                    <Text strong>Đang chỉnh sửa tin tuyển dụng.</Text>
+                    <Text type="secondary">
+                      Sau khi bấm "Lưu nháp" hoặc "Đăng tin", trang sẽ giữ nguyên — bạn có thể
+                      tiếp tục chỉnh.
+                    </Text>
+                  </Space>
+                }
+                action={
+                  <Button size="small" onClick={() => navigate(`/recruiter/jobs/${editingJobId}`)}>
+                    Xem tin
+                  </Button>
+                }
+              />
+            )}
             {formError && (
               <Alert
                 type="error"
