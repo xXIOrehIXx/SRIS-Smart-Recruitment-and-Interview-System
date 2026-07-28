@@ -54,4 +54,15 @@ public interface IJobRepo : IBaseRepo<long, Job>
 
     /// <summary>Xóa toàn bộ quyền lợi cũ rồi chèn lại theo danh sách mới (transaction).</summary>
     Task ReplaceBenefitsAsync(long companyId, long jobId, IReadOnlyList<string> contents);
+
+    /// <summary>
+    /// Worker JobExpiry cần nhận diện các job Open đã quá hạn (deadline &lt; UTC hôm nay) của
+    /// MỌI công ty. Method này chạy trong scope đặc biệt KHÔNG có <c>companyId</c> tenant
+    /// (worker phải tự set trước khi gọi), nên dùng raw SQL bypass RLS. Trả danh sách kèm
+    /// companyId để worker loop từng entry và set tenant trước khi đóng job từng cái.
+    /// </summary>
+    Task<IReadOnlyList<ExpiredJobRef>> GetExpiredOpenJobsAsync(CancellationToken ct = default);
 }
+
+/// <summary>1 job Open đã quá hạn — cho JobExpiryWorker close hàng loạt.</summary>
+public record ExpiredJobRef(long CompanyId, long JobId, string Title, DateTime Deadline);

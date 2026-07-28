@@ -21,12 +21,13 @@ import {
   FilterOutlined,
   MoreOutlined,
   EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  PauseCircleOutlined,
+  StopOutlined,
+  ReloadOutlined,
   PlayCircleOutlined,
   ExportOutlined,
-  ReloadOutlined,
+  EyeOutlined,
+  PoweroffOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { jobsAPI } from "../../services/api";
@@ -83,15 +84,78 @@ const JobManagement = () => {
     });
   };
 
-  const handleDeleteJob = async (jobId) => {
+  /**
+   * Đóng job (soft-close) — gọi DELETE /api/jobs/{id}. BE JobService.CloseAsync set
+   * status='Closed' mà không xóa cứng. Sau khi đóng: job không còn trong career site và
+   * list mặc định, nhưng vẫn hiện khi filter 'Đã đóng' (giữ row cho analytics + hồ sơ).
+   * Yêu cầu xác nhận — đây là thao tác một chiều, Recruiter có thể "Mở lại" sau.
+   */
+  const handleCloseJob = async (record) => {
     try {
-      await jobsAPI.delete(jobId);
-      message.success("Xóa tin tuyển dụng thành công");
+      await jobsAPI.delete(record.jobId || record.id);
+      message.success(`Đã đóng tin "${record.title}" — job không còn hiện trên trang công khai.`);
       fetchJobs();
     } catch (error) {
-      console.error("Error deleting job:", error);
-      message.error("Không thể xóa tin tuyển dụng");
+      console.error("Error closing job:", error);
+      message.error(error?.response?.data?.userMsg || "Không thể đóng tin tuyển dụng");
     }
+  };
+
+  /**
+   * Mở lại job Closed -> Open bằng PUT /api/jobs/{id} { status: "Open" }. BE chấp nhận
+   * status "Open"/"Closed" trong regex ["Draft|Open|Closed"]. Trước đây menu "Kích hoạt
+   * lại" không có onClick — bug UX.
+   */
+  const handleReopenJob = async (record) => {
+    try {
+      const jobId = record.jobId || record.id;
+      // Lấy job hiện tại, đổi status, gửi PUT — tránh mất các field khác.
+      const res = await jobsAPI.getById(jobId);
+      const current = res.data || {};
+      await jobsAPI.update(jobId, { ...current, status: "Open" });
+      message.success(`Đã mở lại tin "${record.title}".`);
+      fetchJobs();
+    } catch (error) {
+      console.error("Error reopening job:", error);
+      message.error(error?.response?.data?.userMsg || "Không thể mở lại tin");
+    }
+  };
+
+  // Menu đổi trạng thái — BE hỗ trợ "Open"/"Closed" (đã bỏ "Paused"/"Draft" trong menu
+  // vì BE regex không chấp nhận). Toggle từ Open <-> Closed.
+  const statusMenuItem = (record) => {
+    const isOpen = (record.status || "").toLowerCase() === "open";
+    return isOpen
+      ? {
+          key: "close",
+          icon: <StopOutlined />,
+          label: "Đóng tin",
+          danger: true,
+          onClick: () => {
+            Modal.confirm({
+              title: `Đóng tin "${record.title}"?`,
+              icon: <ExclamationCircleOutlined />,
+              content: (
+                <div>
+                  <p>Tin sẽ chuyển sang trạng thái <b>Đã đóng</b> và không còn hiện trên trang tuyển dụng công khai.</p>
+                  <p style={{ marginBottom: 0 }}>
+                    Hồ sơ ứng viên <b>vẫn được giữ</b> để không mất dữ liệu. Có thể <b>Mở lại</b> sau.
+                  </p>
+                </div>
+              ),
+              okText: "Đóng tin",
+              okButtonProps: { danger: true },
+              cancelText: "Hủy",
+              onOk: () => handleCloseJob(record),
+            });
+          },
+        }
+      : {
+          key: "reopen",
+          icon: <PlayCircleOutlined />,
+          label: "Mở lại",
+          onClick: () => handleReopenJob(record),
+        };
   };
 
   const getMenuItems = (record) => {
@@ -118,26 +182,7 @@ const JobManagement = () => {
       {
         type: "divider",
       },
-      {
-        key:
-          (record.status || "").toLowerCase() === "open" ? "pause" : "resume",
-        icon:
-          (record.status || "").toLowerCase() === "open" ? (
-            <PauseCircleOutlined />
-          ) : (
-            <PlayCircleOutlined />
-          ),
-        label:
-          (record.status || "").toLowerCase() === "open"
-            ? "Tạm Dừng"
-            : "Kích Hoạt Lại",
-      },
-      {
-        key: "delete",
-        icon: <DeleteOutlined />,
-        label: "Xóa",
-        danger: true,
-      },
+      statusMenuItem(record),
     ];
   };
 

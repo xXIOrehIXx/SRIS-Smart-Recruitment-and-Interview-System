@@ -311,7 +311,7 @@ const Criteria = () => {
     try {
       setSubmitting(true);
       const response = await criteriaAPI.applyTemplateToJob(values.templateId, selectedJob);
-      message.success(`Đã áp template — thêm ${response.data?.length ?? ''} tiêu chí cho vị trí.`);
+      message.success(`Đã áp template — thêm ${response.data?.length ?? 0} tiêu chí APPROVED cho vị trí (dùng chấm CV ngay).`);
       setApplyModalOpen(false);
       applyForm.resetFields();
       fetchJobCriteria(selectedJob);
@@ -933,7 +933,7 @@ const Criteria = () => {
           type="info"
           showIcon
           style={{ margin: '16px 0' }}
-          message="Từng dòng của template sẽ được sao chép thành tiêu chí APPROVED của vị trí (sửa per-job không ảnh hưởng template gốc)."
+          message="Từng dòng của template sẽ được sao chép thành tiêu chí APPROVED của vị trí (dùng chấm CV được ngay, sửa per-job không ảnh hưởng template gốc)."
         />
         <Form
           form={applyForm}
