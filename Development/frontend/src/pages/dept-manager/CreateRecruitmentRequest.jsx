@@ -129,7 +129,7 @@ const CreateRecruitmentRequest = () => {
         benefits: values.benefits,
         salaryMin: values.salaryMin,
         salaryMax: values.salaryMax,
-        expectedStartDate: values.startDate?.toISOString(),
+        expectedStartDate: values.startDate?.format('YYYY-MM-DDTHH:mm:ss'),
       };
 
       await recruitmentRequestAPI.create(payload);
