@@ -79,15 +79,27 @@ const HiringDecision = () => {
   const fetchCandidates = async () => {
     try {
       setLoading(true);
-      // Lấy danh sách từ Kanban, đặc biệt là cột OFFER
+      // Lấy danh sách từ Kanban, đặc biệt là cột INTERVIEW (chờ duyệt)
       const res = await dashboardAPI.getKanban();
       
-      const offerColumn = res.data.columns.find(c => c.state === 'OFFER');
+      const interviewColumn = res.data.columns.find(c => c.state === 'INTERVIEW');
       
-      if (offerColumn) {
+      if (interviewColumn) {
         // V023: BE (DashboardRepo) đã thu hẹp về đúng phòng ban của DM đang đăng nhập —
         // FE không lọc lại, tránh 2 nơi giữ cùng một luật.
-        const formattedData = offerColumn.cards.map(c => ({
+        
+        // Lọc thêm: chỉ lấy những ứng viên đã có điểm phỏng vấn (submittedInterviewers > 0)
+        const rawCandidates = interviewColumn.cards;
+        const aggregatesRes = await Promise.all(
+          rawCandidates.map(c => interviewAPI.getApplicationAggregate(c.applicationId).catch(() => ({ data: [] })))
+        );
+
+        const filteredCards = rawCandidates.filter((c, index) => {
+          const rounds = aggregatesRes[index].data || [];
+          return rounds.some(r => r.submittedInterviewers > 0);
+        });
+
+        const formattedData = filteredCards.map(c => ({
           id: c.applicationId,
           candidateName: c.candidateName,
           candidateEmail: c.candidateEmail,
@@ -123,7 +135,7 @@ const HiringDecision = () => {
 
   const getStatusTag = (status) => {
     const config = {
-      PENDING: { color: 'warning', label: 'Chờ duyệt (OFFER)', icon: <ClockCircleOutlined /> },
+      PENDING: { color: 'warning', label: 'Chờ duyệt (Phỏng vấn)', icon: <ClockCircleOutlined /> },
       APPROVED: { color: 'success', label: 'Đã duyệt', icon: <CheckCircleOutlined /> },
       REJECTED: { color: 'error', label: 'Từ chối', icon: <CloseCircleOutlined /> },
     };
@@ -267,7 +279,7 @@ const HiringDecision = () => {
   const handleApprove = async () => {
     try {
       setActionLoading(true);
-      await applicationAPI.transition(selectedRecord.id, 'HIRED');
+      await applicationAPI.transition(selectedRecord.id, 'OFFER');
       if (approveNote) {
         await applicationAPI.addNote(selectedRecord.id, `[QUYẾT ĐỊNH TUYỂN DỤNG] Đồng ý tuyển: ${approveNote}`);
       }
@@ -323,7 +335,7 @@ const HiringDecision = () => {
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">Quyết Định Tuyển Dụng</Title>
-          <Text type="secondary">Xét duyệt các ứng viên đã qua vòng phỏng vấn (Cột OFFER)</Text>
+          <Text type="secondary">Xét duyệt các ứng viên đã qua vòng phỏng vấn (Cột INTERVIEW)</Text>
         </div>
       </div>
 

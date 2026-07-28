@@ -52,8 +52,8 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
 
         var from = app.CurrentState;
 
-        // Rời state OFFER (→HIRED hoặc →REJECTED) = QUYẾT TUYỂN — chỉ DM của job được chốt.
-        await EnsureCanDecideAsync(companyId, userId, app.JobId, from);
+        // QUYẾT TUYỂN: Chuyển từ INTERVIEW -> OFFER (duyệt), hoặc rời state OFFER (thu hồi/từ chối) — chỉ DM được quyết.
+        await EnsureCanDecideAsync(companyId, userId, app.JobId, from, toState);
 
         var now = DateTime.UtcNow;
         string? rejectReason = null;
@@ -146,14 +146,18 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     // ============================================================
 
     /// <summary>
-    /// Chốt ở cửa OFFER (→HIRED / →REJECTED) là QUYẾT TUYỂN — chỉ DM được gán cho job đó quyết
-    /// (docs 5.14, cùng luật với <c>OfferService.MakeOfferAsync</c> ở cửa INTERVIEW→OFFER).
+    /// Chốt ở cửa INTERVIEW→OFFER (Duyệt ứng viên) hoặc rời cửa OFFER (→HIRED / →REJECTED) là QUYẾT TUYỂN 
+    /// — chỉ DM được gán cho job đó quyết (docs 5.14).
     /// Job không gán DM -> giữ đường mặc định của công ty nhỏ: Recruiter quyết.
     /// Admin là superuser -> bỏ qua.
     /// </summary>
-    private async Task EnsureCanDecideAsync(long companyId, long userId, long jobId, string from)
+    private async Task EnsureCanDecideAsync(long companyId, long userId, long jobId, string from, string to)
     {
-        if (!string.Equals(from, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase))
+        bool isInterviewToOffer = string.Equals(from, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase) && 
+                                  string.Equals(to, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase);
+        bool isLeavingOffer = string.Equals(from, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase);
+
+        if (!isInterviewToOffer && !isLeavingOffer)
             return;
 
         // userId = 0 -> không phải người dùng Portal mà là ỨNG VIÊN phản hồi offer qua magic link
@@ -170,7 +174,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
             ?? throw NotFound($"Không tìm thấy vị trí (job) của hồ sơ (job_id={jobId}).");
 
         if (job.DepartmentManagerId is long dmId && dmId != userId)
-            throw Forbidden("Chỉ Department Manager phụ trách vị trí này mới được quyết tuyển hồ sơ.");
+            throw Forbidden("Chỉ Department Manager phụ trách vị trí này mới được duyệt/quyết tuyển hồ sơ.");
     }
 
     /// <summary>Kiểm guard cần dữ liệu trước khi tiến.</summary>

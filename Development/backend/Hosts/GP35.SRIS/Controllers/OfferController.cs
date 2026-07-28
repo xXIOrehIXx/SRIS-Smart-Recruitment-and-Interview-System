@@ -9,14 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Offer — người quyết tuyển (docs 5.15). Tại cửa INTERVIEW->OFFER, Department Manager của job
-/// (job không gán DM -> Recruiter) chốt offer: đẩy state sang OFFER + tạo OfferDetail + phát link OFFER_RESPONSE.
-/// Service tự lọc DM theo job; ở đây chỉ chặn role được phép gọi (Recruiter / DepartmentManager).
+/// (job không gán DM -> Recruiter) chốt offer: đẩy state sang OFFER. Sau đó Recruiter 
+/// gọi API này để tạo OfferDetail + phát link OFFER_RESPONSE.
 /// </summary>
 [Route("api/applications/{applicationId:long}/offer")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.Recruiter)]
 public class OfferController : ControllerBase
 {
     private readonly IContextData _contextData;

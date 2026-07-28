@@ -483,7 +483,7 @@ const CandidatePipeline = () => {
                     setIsDetailModalOpen(false);
                   }}
                 >
-                  Chuyển sang {NEXT_LABEL[selectedCandidate.state]} →
+                  {selectedCandidate.state === 'INTERVIEW' ? 'Duyệt Ứng Viên (sang Offer) →' : `Chuyển sang ${NEXT_LABEL[selectedCandidate.state]} →`}
                 </Button>
               )}
             </div>
