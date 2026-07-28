@@ -77,10 +77,8 @@ export const ROLE_MENUS = {
     { key: '/dept/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/dept/requests', icon: 'FileTextOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/dept/interviews', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
-    // DM là NGƯỜI QUYẾT ở cửa INTERVIEW→OFFER (docs 5.14/5.15) nên phải tự chốt được offer;
-    // BE đã cho phép (OfferController: Recruiter + DepartmentManager) — job có gán DM thì
-    // Recruiter còn bị chặn, chỉ DM đó mới ra offer được.
-    { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
+    // DM duyệt ứng viên ở cửa INTERVIEW->OFFER thông qua Quyết Định Tuyển Dụng.
+    // Recruiter sẽ là người tạo OfferDetail.
     { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Quyết Định Tuyển Dụng' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],
@@ -115,7 +113,6 @@ export const hasPermission = (userRole, route) => {
     ],
     [ROLES.DEPARTMENT_MANAGER]: [
       '/dept',
-      '/offers',   // chốt offer ở cửa INTERVIEW→OFFER (BE: OfferController cho phép DM)
       '/settings',
     ],
   };

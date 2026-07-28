@@ -12,8 +12,8 @@ using Serilog;
 namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
-/// Offer (docs 5.15). Người quyết tuyển chốt offer tại cửa INTERVIEW->OFFER: đẩy state sang OFFER
-/// (state machine lo Guard G2) + tạo OfferDetail (PENDING) + phát magic link OFFER_RESPONSE.
+/// Offer (docs 5.15). Recruiter tạo OfferDetail (PENDING) cho hồ sơ đang ở trạng thái OFFER
+/// (đã được DM duyệt) + phát magic link OFFER_RESPONSE.
 /// </summary>
 public class OfferService : BaseService<OfferService>, IOfferService
 {
@@ -49,19 +49,12 @@ public class OfferService : BaseService<OfferService>, IOfferService
         var app = await _appRepo.GetByIdAsync(companyId, applicationId)
             ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={applicationId}).");
 
+        if (!string.Equals(app.CurrentState, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase))
+            throw Conflict("Hồ sơ chưa được Department Manager duyệt (phải ở trạng thái OFFER mới được tạo thư Offer).");
+
         // Một offer / một application (UNIQUE application_id — 5.15).
         if (await _offerRepo.GetByApplicationAsync(companyId, applicationId) is not null)
             throw Conflict("Hồ sơ này đã có offer.");
-
-        // Phân quyền: chỉ Department Manager của job quyết; job không gán DM -> Recruiter (bất kỳ user) quyết (5.14).
-        var job = await _jobRepo.GetByIdAsync(companyId, app.JobId)
-            ?? throw NotFound("Không tìm thấy vị trí (job) của hồ sơ.");
-        var isAdmin = string.Equals(_contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase);
-        if (!isAdmin && job.DepartmentManagerId is long dmId && dmId != userId)
-            throw Forbidden("Chỉ Department Manager của vị trí này mới được quyết offer.");
-
-        // Quyết tuyển = đẩy INTERVIEW->OFFER. State machine kiểm forward-only + Guard G2 (≥1 phiếu chấm đã nộp).
-        await _stateService.TransitionAsync(companyId, userId, applicationId, ApplicationState.Offer, null);
 
         var now = DateTime.UtcNow;
         var ttlDays = dto.ExpiresInDays is int d && d > 0 ? d : DefaultOfferTtlDays;

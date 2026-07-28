@@ -125,12 +125,10 @@ const App = () => {
         <Route path="/interviewer/grading/:id" element={<Grading />} />
       </Route>
 
-      {/* Offers — cửa INTERVIEW→OFFER. Job CÓ gán DM thì chỉ DM đó chốt được, job KHÔNG gán DM
-          thì Recruiter chốt (docs 5.14/5.15) -> cả 2 role đều phải vào được màn này.
-          Backend OfferController cũng gate [WithRole(Recruiter, DepartmentManager)]. */}
+      {/* Offers — Recruiter quản lý OfferDetail (sau khi DM đã duyệt ở bước INTERVIEW->OFFER). */}
       <Route
         element={
-          <ProtectedRoute allowedRoles={[ROLES.RECRUITER, ROLES.DEPARTMENT_MANAGER]}>
+          <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
             <AdminLayout />
           </ProtectedRoute>
         }

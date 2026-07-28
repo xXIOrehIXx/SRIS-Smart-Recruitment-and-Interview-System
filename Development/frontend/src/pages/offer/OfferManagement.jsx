@@ -88,7 +88,7 @@ const OfferManagement = () => {
           applicationStatus: app.currentState || app.status,
           appliedAt: app.appliedAt || app.createdAt,
         }))
-        .filter((app) => ['NEW', 'SCREENING', 'INTERVIEW', 'INTERVIEWING', 'OFFER'].includes(app.status));
+        .filter((app) => ['OFFER', 'HIRED'].includes(app.status));
 
       setApplications(offerableApps);
     } catch (error) {
@@ -329,7 +329,7 @@ const OfferManagement = () => {
       key: 'status',
       width: 150,
       render: (status, record) => {
-        if (record.applicationStatus) {
+        if (!status) {
           return getAppStatusTag(record.applicationStatus);
         }
         return getStatusTag(status);
@@ -380,6 +380,15 @@ const OfferManagement = () => {
               </Popconfirm>
             </>
           )}
+          {record.applicationStatus === 'OFFER' && !record.status && (
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => openCreateModal(record)}
+            >
+              Tạo Offer
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -398,7 +407,7 @@ const OfferManagement = () => {
       candidateEmail: app.candidateEmail || app.candidate?.email || '',
       position: selectedJob?.title || app.job?.title || app.jobTitle || 'N/A',
       jobId: app.jobId || selectedJobId,
-      status: matchedOffer?.status || 'PENDING',
+      status: matchedOffer ? matchedOffer.status : null,
       salary: matchedOffer?.salary ?? null,
       startDate: matchedOffer?.startDate ?? null,
       deadline: matchedOffer?.deadline ?? null,
@@ -426,14 +435,6 @@ const OfferManagement = () => {
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => { fetchApplications(selectedJobId); fetchOffers(selectedJobId); }} loading={loading}>
             Làm mới
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-            disabled={!selectedJobId}
-          >
-            Tạo Offer Mới
           </Button>
         </Space>
       </div>
@@ -556,7 +557,9 @@ const OfferManagement = () => {
                       });
                     }
                   }}
-                  options={applications.map(app => ({
+                  options={applications
+                    .filter(app => app.status === 'OFFER' && !offers.some(o => (o.applicationId || o.id) === app.id))
+                    .map(app => ({
                     value: app.id,
                     label: `${app.candidateName || app.candidate?.fullName || 'N/A'} - ${app.job?.title || app.jobTitle || 'N/A'}`,
                   }))}
