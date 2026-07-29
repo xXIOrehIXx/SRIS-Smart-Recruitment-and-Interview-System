@@ -35,14 +35,30 @@ const { TextArea } = Input;
 
 const MATCHA_GREEN = "#5D8C3E";
 
-// BE TemplateRenderer chỉ hỗ trợ 5 placeholder này (xem NotificationService.cs).
+// BE NotificationService.cs truyền các placeholder này theo từng trigger.
 // Liệt kê trong UI để Recruiter khỏi gõ {{companyName}} / {{interviewDate}} sai.
 const SUPPORTED_VARIABLES = [
-  { key: "{{candidateName}}", desc: "Tên ứng viên" },
-  { key: "{{jobTitle}}",      desc: "Vị trí ứng tuyển" },
-  { key: "{{link}}",          desc: "Magic link (SCHEDULE / STATUS / OFFER_RESPONSE)" },
-  { key: "{{expiresAt}}",     desc: "Thời điểm link hết hạn (UTC, dd/MM/yyyy HH:mm)" },
-  { key: "{{startTime}}",     desc: "Giờ phỏng vấn (INTERVIEW_CONFIRMED — UTC)" },
+  { key: "{{candidateName}}", desc: "Tên ứng viên — mọi loại email" },
+  { key: "{{jobTitle}}",      desc: "Vị trí ứng tuyển — mọi loại email" },
+  {
+    key: "{{link}}",
+    desc:
+      "Magic link cho SCHEDULE / STATUS / OFFER_RESPONSE; " +
+      "Google Calendar URL cho INTERVIEW_CONFIRMED (không phải magic link)",
+  },
+  {
+    key: "{{expiresAt}}",
+    desc:
+      "Thời điểm magic link hết hạn (UTC, dd/MM/yyyy HH:mm) — chỉ SCHEDULE / STATUS / OFFER_RESPONSE",
+  },
+  {
+    key: "{{startTime}}",
+    desc: "Giờ phỏng vấn (UTC, HH:mm dd/MM/yyyy) — chỉ INTERVIEW_CONFIRMED / INTERVIEW_CANCELLED",
+  },
+  {
+    key: "{{reason}}",
+    desc: "Lý do hủy (tùy chọn) — chỉ INTERVIEW_CANCELLED",
+  },
 ];
 const codeStyle = {
   background: "#fff",
