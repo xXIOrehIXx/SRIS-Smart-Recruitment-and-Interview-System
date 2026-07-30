@@ -1,0 +1,57 @@
+@startuml Feature1_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 1: Recruitment Request Management - Sequence: Create Request**
+
+actor DeptManager
+participant "DeptManager UI" as UI
+participant "<<controller>>\nRecruitmentRequestController" as Ctrl
+participant "<<service>>\nRecruitmentRequestService" as Svc
+participant "<<repository>>\nRequestRepository" as Repo
+participant "<<entity>>\nRecruitmentRequest" as Entity
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+DeptManager -> UI: Submit request form
+activate UI
+
+UI -> Ctrl: POST /api/recruitment-requests
+activate Ctrl
+
+Ctrl -> Svc: CreateAsync(userId, data)
+activate Svc
+
+Svc -> Repo: InsertAsync(requestData)
+activate Repo
+
+Repo -> Entity: Create RecruitmentRequest
+activate Entity
+Entity --> Repo: RecruitmentRequest object
+deactivate Entity
+
+Repo -> DbContext: Add(entity) & SaveChangesAsync()
+activate DbContext
+
+DbContext -> DB: Execute SQL INSERT
+activate DB
+DB --> DbContext: return success
+deactivate DB
+
+DbContext --> Repo: return success
+deactivate DbContext
+
+Repo --> Svc: return requestId
+deactivate Repo
+
+Svc --> Ctrl: return RequestDto
+deactivate Svc
+
+Ctrl --> UI: return JSON data
+deactivate Ctrl
+
+UI --> DeptManager: Display success message
+deactivate UI
+@enduml

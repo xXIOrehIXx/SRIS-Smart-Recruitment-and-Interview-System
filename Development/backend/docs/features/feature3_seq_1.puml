@@ -1,0 +1,71 @@
+@startuml Feature3_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 3: Candidate Schedule Booking - Sequence: Candidate Booking**
+
+actor Candidate
+participant "Candidate UI" as UI
+participant "<<controller>>\nCandidateScheduleController" as Ctrl
+participant "<<service>>\nCandidateScheduleService" as Svc
+participant "<<service>>\nMagicLinkService" as MagicLink
+participant "<<repository>>\nSchedulingRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+participant "<<service>>\nNotificationService" as Notify
+
+Candidate -> UI: Select slot & Book
+activate UI
+
+UI -> Ctrl: POST /api/candidate/schedule/book
+activate Ctrl
+
+Ctrl -> Svc: ConfirmAsync(rawToken, dto)
+activate Svc
+
+Svc -> MagicLink: ValidateAsync(rawToken)
+activate MagicLink
+MagicLink --> Svc: return TokenInfo
+deactivate MagicLink
+
+Svc -> Repo: GetLatestPendingScheduleAsync()
+activate Repo
+Repo -> DbContext: Query Schedule
+activate DbContext
+DbContext -> DB: SELECT
+activate DB
+DB --> DbContext: Data
+deactivate DB
+DbContext --> Repo: Data
+deactivate DbContext
+Repo --> Svc: return InterviewSchedule
+deactivate Repo
+
+Svc -> Repo: BookAndConfirmAsync(scheduleId, slotId)
+activate Repo
+Repo -> DbContext: Update(Schedule & Slot)
+activate DbContext
+DbContext -> DB: Execute SQL UPDATE
+activate DB
+DB --> DbContext: ok
+deactivate DB
+DbContext --> Repo: ok
+deactivate DbContext
+Repo --> Svc: return true
+deactivate Repo
+
+Svc -> MagicLink: MarkUsedAsync()
+
+Svc -> Notify: SendInterviewConfirmedAsync()
+
+Svc --> Ctrl: return ScheduleConfirmationDto
+deactivate Svc
+
+Ctrl --> UI: return JSON data
+deactivate Ctrl
+
+UI --> Candidate: Display booking confirmed
+deactivate UI
+@enduml

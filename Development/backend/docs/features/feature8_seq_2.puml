@@ -1,0 +1,52 @@
+@startuml Feature8_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 8: Job Management - Sequence: Close Job**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nJobController" as Ctrl
+participant "<<service>>\nJobService" as Svc
+participant "<<repository>>\nJobRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Click "Close Job"
+activate UI
+
+UI -> Ctrl: POST /api/jobs/{id}/close
+activate Ctrl
+
+Ctrl -> Svc: CloseAsync(companyId, jobId)
+activate Svc
+
+Svc -> Repo: GetByIdAsync(companyId, jobId)
+activate Repo
+Repo --> Svc: return Job entity
+deactivate Repo
+
+Svc -> Repo: UpdateAsync(companyId, jobId, ..., status="Closed")
+activate Repo
+Repo -> DbContext: Attach & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL UPDATE
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: success
+deactivate DbContext
+Repo --> Svc: ok
+deactivate Repo
+
+Svc --> Ctrl: return success
+deactivate Svc
+
+Ctrl --> UI: return 200 OK
+deactivate Ctrl
+
+UI --> Recruiter: Show Job Closed
+deactivate UI
+@enduml

@@ -1,0 +1,38 @@
+@startuml Feature4_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 4: Offer Management (Class Diagram)**
+
+class OfferController <<boundary>> {
+    - _offerService : OfferService
+    + MakeOfferAsync(appId : long, dto : Object) : Object
+}
+
+class OfferService <<control>> {
+    - _offerRepo : OfferRepository
+    - _magicLink : MagicLinkService
+    + MakeOfferAsync(companyId : long, userId : long, appId : long, dto : Object) : MakeOfferResultDto
+}
+
+class OfferDetail <<entity>> {
+    - offerId : long
+    - applicationId : long
+    - salaryAmount : decimal
+    - status : string
+}
+
+class Application <<entity>> {
+    - applicationId : long
+    - currentState : string
+}
+
+OfferController --> OfferService : Association
+
+Application "1" --> "1" OfferDetail : Association (Final Result)
+
+@enduml

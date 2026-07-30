@@ -1,0 +1,50 @@
+@startuml Feature9_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 9: Criteria Configuration (Class Diagram)**
+
+class CriteriaController <<boundary>> {
+    - _criteriaService : EvaluationCriteriaService
+    + CreateAsync(dto : Object) : Object
+    + ExtractDraftAsync(jobId : long) : Object
+    + ApproveDraftsAsync(jobId : long) : Object
+}
+
+class EvaluationCriteriaService <<control>> {
+    - _criteriaRepo : EvaluationCriteriaRepository
+    - _jobRepo : JobRepository
+    - _applicationRepo : ApplicationRepository
+    - _stateService : ApplicationStateService
+    - _extractionClient : CriteriaExtractionClient
+    + CreateAsync(companyId : long, jobId : long, dto : Object) : CriteriaDto
+    + ExtractDraftAsync(companyId : long, jobId : long) : List
+    + ApproveDraftsAsync(companyId : long, jobId : long, userId : long) : int
+}
+
+class CriteriaExtractionClient <<control>> {
+    + ExtractAsync(jdText : string) : List
+}
+
+class EvaluationCriteria <<entity>> {
+    - criteriaId : long
+    - jobId : long
+    - name : string
+    - weight : decimal
+    - maxScore : decimal
+    - criteriaType : string
+    - cvMatchable : bool
+    - keywords : string
+    - source : string
+    - status : string
+}
+
+CriteriaController --> EvaluationCriteriaService : Association
+EvaluationCriteriaService --> CriteriaExtractionClient : Association
+EvaluationCriteriaService --> EvaluationCriteria : Dependency
+
+@enduml

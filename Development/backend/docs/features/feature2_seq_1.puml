@@ -1,0 +1,74 @@
+@startuml Feature2_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 2: Automated Application Scoring - Sequence: Submit Application & Parse CV**
+
+actor Candidate
+participant "Career UI" as UI
+participant "<<controller>>\nPublicCareerController" as Ctrl
+participant "<<service>>\nCareerSiteService" as Svc
+participant "<<service>>\nCvScoringService" as CvSvc
+participant "<<service>>\nPdfTextExtractor" as Pdf
+participant "<<repository>>\nApplicationRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+participant "<<queue>>\nCvScoreQueue" as Queue
+participant "<<service>>\nMagicLinkService" as MagicLink
+
+Candidate -> UI: Upload CV & Submit
+activate UI
+
+UI -> Ctrl: POST /apply
+activate Ctrl
+
+Ctrl -> Svc: ApplyAsync(jobId, cvFile)
+activate Svc
+
+Svc -> CvSvc: ScoreUploadedCvAsync(cvFile)
+activate CvSvc
+
+CvSvc -> Pdf: Extract(fileBytes)
+activate Pdf
+Pdf --> CvSvc: return extractedText
+deactivate Pdf
+
+CvSvc -> Repo: InsertAsync(application)
+activate Repo
+Repo -> DbContext: Add(entity) & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL INSERT
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: success
+deactivate DbContext
+Repo --> CvSvc: return appId
+deactivate Repo
+
+CvSvc -> Queue: Enqueue(appId)
+note right of Queue: Triggers Background\nScoring (Seq 2)
+activate Queue
+Queue --> CvSvc: ok
+deactivate Queue
+
+CvSvc --> Svc: return CvScoreResultDto
+deactivate CvSvc
+
+Svc -> MagicLink: IssueAsync(appId, "STATUS")
+activate MagicLink
+note right of MagicLink: MagicLink Service internally\nsends Tracking Email
+MagicLink --> Svc: ok
+deactivate MagicLink
+
+Svc --> Ctrl: return PublicApplyResultDto
+deactivate Svc
+
+Ctrl --> UI: return JSON data
+deactivate Ctrl
+
+UI --> Candidate: Display success message
+deactivate UI
+@enduml

@@ -1,0 +1,44 @@
+@startuml Feature6_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 6: User Management (Class Diagram)**
+
+class UserManageController <<boundary>> {
+    - _userService : UserManageService
+    + CreateAsync(dto : Object) : Object
+    + UpdateAsync(id : long, dto : Object) : Object
+    + DisableAsync(id : long) : Object
+}
+
+class UserManageService <<control>> {
+    - _userRepo : UserRepository
+    - _encode : EncodeService
+    + CreateAsync(companyId : long, dto : Object) : UserListItemDto
+    + UpdateAsync(companyId : long, userId : long, dto : Object) : UserListItemDto
+    + DisableAsync(companyId : long, userId : long) : void
+}
+
+class EncodeService <<control>> {
+    + SHA256WithSalt(input : string, salt : string) : string
+}
+
+class User <<entity>> {
+    - userId : long
+    - email : string
+    - passwordHash : string
+    - fullName : string
+    - phone : string
+    - role : string
+    - status : string
+}
+
+UserManageController --> UserManageService : Association
+UserManageService --> EncodeService : Association
+UserManageService --> User : Dependency
+
+@enduml
