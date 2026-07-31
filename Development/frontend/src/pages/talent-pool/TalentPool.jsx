@@ -93,7 +93,7 @@ const TalentPool = () => {
       if (res.data?.sent) {
         message.success(`Đã gửi email mời ${record.candidateName} ứng tuyển`);
       } else {
-        const link = `${window.location.origin}/${companySlug || ''}/recruitment`;
+        const link = `${window.location.origin}/${companySlug || ''}/career`;
         Modal.info({
           title: 'SMTP chưa cấu hình — gửi tay giúp nhé',
           content: (

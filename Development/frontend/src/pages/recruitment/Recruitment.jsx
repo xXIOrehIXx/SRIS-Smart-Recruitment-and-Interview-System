@@ -73,10 +73,10 @@ const Recruitment = () => {
     try {
       if (!slug) {
         console.error(
-          "fetchJobs: thiếu slug — URL phải có dạng /{slug}/recruitment",
+          "fetchJobs: thiếu slug — URL phải có dạng /{slug}/career",
         );
         message.error(
-          "URL không hợp lệ: thiếu slug công ty. Vui lòng dùng /{slug}/recruitment.",
+          "URL không hợp lệ: thiếu slug công ty. Vui lòng dùng /{slug}/career.",
         );
         setLoading(false);
         return;
