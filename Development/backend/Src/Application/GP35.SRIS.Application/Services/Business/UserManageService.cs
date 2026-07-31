@@ -106,14 +106,29 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
         if (!string.IsNullOrWhiteSpace(role))
             ValidateRole(role);
 
-        var users = await _userRepo.GetListByCompanyAsync(companyId);
-        // Admin luôn nằm trong kết quả kể cả khi lọc role: Admin làm được mọi việc
-        // (công ty 1 người chỉ có tài khoản Admin vẫn tự gán mình làm interviewer/DM được).
-        return users
+        var active = (await _userRepo.GetListByCompanyAsync(companyId))
             .Where(u => u.Status == "Active")
-            .Where(u => string.IsNullOrWhiteSpace(role) ||
-                        string.Equals(u.Role, role, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(u.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            var matching = active
+                .Where(u => string.Equals(u.Role, role, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // Công ty đã có người ĐÚNG role -> chỉ trả những người đó. Trước đây Admin luôn bị
+            // nhét vào mọi bộ lọc, nên dropdown "chọn interviewer" hiện cả tài khoản Admin và
+            // dễ chọn nhầm (panel khung phỏng vấn gán trúng Admin thay vì Interviewer thật).
+            //
+            // Chỉ khi KHÔNG có ai mang role đó mới rơi về Admin — giữ đường của công ty 1 người
+            // chạy bằng đúng 1 tài khoản Admin (superuser), nếu không dropdown sẽ trống trơn và
+            // họ không đặt được lịch phỏng vấn.
+            active = matching.Count > 0
+                ? matching
+                : active.Where(u => string.Equals(u.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        return active
             .Select(u => new UserOptionDto
             {
                 UserId = u.UserId,

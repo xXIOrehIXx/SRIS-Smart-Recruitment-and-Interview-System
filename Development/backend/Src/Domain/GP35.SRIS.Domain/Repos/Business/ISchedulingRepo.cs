@@ -53,6 +53,12 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// <summary>Lịch mới nhất của hồ sơ ở BẤT KỲ trạng thái nào (để hiển thị trạng thái cho ứng viên).</summary>
     Task<InterviewSchedule?> GetLatestScheduleAsync(long companyId, long applicationId);
 
+    /// <summary>
+    /// Mọi buổi phỏng vấn của 1 hồ sơ, vòng nhỏ trước (multi-round = dữ liệu trong state INTERVIEW).
+    /// DM dùng để xem điểm từng vòng trước khi quyết tuyển.
+    /// </summary>
+    Task<IReadOnlyList<InterviewSchedule>> GetSchedulesByApplicationAsync(long companyId, long applicationId);
+
     /// <summary>Lấy 1 lịch theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<InterviewSchedule?> GetScheduleByIdAsync(long companyId, long scheduleId);
 
@@ -98,9 +104,16 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 
     /// <summary>Các buổi ĐÃ CHỐT giao cho 1 interviewer (interviewer của confirmed slot) — để hiện danh sách cần chấm.</summary>
     Task<IReadOnlyList<InterviewerScheduleRow>> GetSchedulesForInterviewerAsync(long companyId, long interviewerId);
+
+    /// <summary>Số interviewer trong panel của buổi (để hiển thị "số người tham gia" ở header phiếu chấm).</summary>
+    Task<int> GetPanelSizeAsync(long companyId, long scheduleId);
+
+    /// <summary>Giờ bắt đầu thực sự của buổi (từ slot đã chốt). Trả default nếu chưa chốt.</summary>
+    Task<DateTime> GetConfirmedSlotStartAsync(long companyId, long scheduleId);
 }
 
 /// <summary>1 buổi của interviewer kèm thông tin hiển thị (ứng viên + job + giờ hẹn).</summary>
 public record InterviewerScheduleRow(
     long ScheduleId, long ApplicationId, int RoundNumber, string Status,
-    DateTime StartTime, string CandidateName, string CandidateEmail, string JobTitle);
+    DateTime StartTime, string CandidateName, string CandidateEmail, string JobTitle,
+    string MySheetStatus);

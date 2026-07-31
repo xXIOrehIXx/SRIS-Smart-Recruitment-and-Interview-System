@@ -1,0 +1,54 @@
+@startuml Feature8_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 8: Job Management (Class Diagram)**
+
+class JobController <<boundary>> {
+    - _jobService : JobService
+    + CreateAsync(dto : Object) : Object
+    + UpdateAsync(id : long, dto : Object) : Object
+    + CloseAsync(id : long) : Object
+}
+
+class JobService <<control>> {
+    - _jobRepo : JobRepository
+    - _departmentRepo : DepartmentRepository
+    + CreateAsync(companyId : long, createdBy : long, dto : Object) : JobGetDto
+    + UpdateAsync(companyId : long, jobId : long, dto : Object) : JobGetDto
+    + CloseAsync(companyId : long, jobId : long) : void
+}
+
+class Job <<entity>> {
+    - jobId : long
+    - title : string
+    - jdText : string
+    - department : string
+    - departmentManagerId : long
+    - status : string
+    - deadline : DateTime
+}
+
+class JobRequirement <<entity>> {
+    - id : long
+    - jobId : long
+    - content : string
+}
+
+class JobBenefit <<entity>> {
+    - id : long
+    - jobId : long
+    - content : string
+}
+
+JobController --> JobService : Association
+JobService --> Job : Dependency
+
+Job "1" *--> "*" JobRequirement : Composition
+Job "1" *--> "*" JobBenefit : Composition
+
+@enduml

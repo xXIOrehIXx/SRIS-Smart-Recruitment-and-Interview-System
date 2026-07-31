@@ -1,0 +1,67 @@
+@startuml Feature9_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 9: Criteria Configuration - Sequence: AI Extract Draft Criteria**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nCriteriaController" as Ctrl
+participant "<<service>>\nEvaluationCriteriaService" as Svc
+participant "<<repository>>\nJobRepository" as JobRepo
+participant "<<service>>\nCriteriaExtractionClient" as AI
+participant "<<repository>>\nEvaluationCriteriaRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Click "Generate from JD"
+activate UI
+
+UI -> Ctrl: POST /api/jobs/{id}/criteria/extract
+activate Ctrl
+
+Ctrl -> Svc: ExtractDraftAsync(companyId, jobId)
+activate Svc
+
+Svc -> JobRepo: GetEmbeddingInfoAsync(companyId, jobId)
+activate JobRepo
+JobRepo --> Svc: return JobInfo (with JdText)
+deactivate JobRepo
+
+Svc -> AI: ExtractAsync(jdText)
+activate AI
+note right of AI: Calls External LLM\n(e.g., Ollama)
+AI --> Svc: return List<ExtractedCriterion>
+deactivate AI
+
+Svc -> Repo: DeleteDraftsAsync(companyId, jobId)
+activate Repo
+Repo --> Svc: ok
+deactivate Repo
+
+loop For each extracted criterion
+    Svc -> Repo: InsertAsync(criteriaEntity)
+    activate Repo
+    Repo -> DbContext: Add & SaveChanges
+    activate DbContext
+    DbContext -> DB: Execute SQL INSERT
+    activate DB
+    DB --> DbContext: ok
+    deactivate DB
+    DbContext --> Repo: ok
+    deactivate DbContext
+    Repo --> Svc: return criteriaId
+    deactivate Repo
+end
+
+Svc --> Ctrl: return List<CriteriaDto>
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Recruiter: Show Extracted Criteria
+deactivate UI
+@enduml

@@ -1,0 +1,60 @@
+@startuml Feature1_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 1: Recruitment Request Management (Class Diagram)**
+
+class RecruitmentRequestController <<boundary>> {
+    - _requestService : RecruitmentRequestService
+    + CreateAsync(dto : Object) : Object
+    + ReviewAsync(id : long, dto : Object) : Object
+    + ConvertAsync(id : long, dto : Object) : Object
+}
+
+class RecruitmentRequestService <<control>> {
+    - _requestRepo : RecruitmentRequestRepo
+    - _jobRepo : JobRepo
+    + CreateAsync(companyId : long, userId : long, dto : Object) : RecruitmentRequestDto
+    + ReviewAsync(companyId : long, userId : long, requestId : long, dto : Object) : RecruitmentRequestDto
+    + ConvertAsync(companyId : long, userId : long, requestId : long, dto : Object) : RecruitmentRequestDto
+}
+
+class User <<entity>> {
+    - userId : long
+    - role : string
+}
+
+class RecruitmentRequest <<entity>> {
+    - requestId : long
+    - department : string
+    - title : string
+    - quantity : int
+    - status : string
+    - jobId : long
+}
+
+class Job <<entity>> {
+    - jobId : long
+    - title : string
+    - status : string
+}
+
+class CriteriaTemplate <<entity>> {
+    - templateId : long
+    - jobId : long
+    - weight : int
+}
+
+RecruitmentRequestController --> RecruitmentRequestService : Association
+RecruitmentRequestService --> RecruitmentRequest : Dependency
+RecruitmentRequestService --> Job : Dependency
+
+User "1" --> "*" RecruitmentRequest : Association (CreatedBy)
+User "1" --> "*" RecruitmentRequest : Association (ReviewedBy)
+RecruitmentRequest "1" --> "0..1" Job : Association (Converted)
+Job "1" *--> "1" CriteriaTemplate : Composition
+@enduml

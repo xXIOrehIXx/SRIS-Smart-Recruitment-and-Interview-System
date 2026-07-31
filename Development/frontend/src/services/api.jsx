@@ -49,14 +49,14 @@ const normalizeApiError = (error) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      const isAuthPage = window.location.pathname === "/login" ||
-                          window.location.pathname === "/register" ||
-                          window.location.pathname === "/forgot-password";
-      if (!isAuthPage) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
+    if (error.response?.status === 401 && !error.config?.url?.includes('/account/login')) {
+      // Token hết hạn hoặc không hợp lệ
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Tránh reload vòng lặp vô hạn nếu đang ở /login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
     return normalizeApiError(error);
@@ -230,6 +230,13 @@ export const interviewAPI = {
 
   getAggregate: (scheduleId) =>
     api.get(`/interview-schedules/${scheduleId}/aggregate`),
+
+  // Điểm phỏng vấn của CẢ hồ sơ, tách theo từng vòng — màn quyết định tuyển dụng của DM.
+  // Trả [{ scheduleId, roundNumber, scheduledAt, scheduleStatus, submittedInterviewers,
+  //        criteria: [{ name, weight, maxScore, average, stdDev, needsDiscussion, scores: [...] }],
+  //        interviewerTotals: [...], panelWeightedAverage }]
+  getApplicationAggregate: (applicationId) =>
+    api.get(`/applications/${applicationId}/interview-aggregate`),
 };
 
 // ==================== CANDIDATE (Magic Link) ====================

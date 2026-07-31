@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Button, Tag, Typography, Descriptions, Tabs, Table, Avatar, Progress, Space, Modal, Select, DatePicker, Spin, message } from 'antd';
+import { Row, Col, Card, Button, Tag, Typography, Descriptions, Tabs, Table, Avatar, Progress, Space, Modal, Select, DatePicker, Spin, message, Input } from 'antd';
 import { 
   EditOutlined, 
   ShareAltOutlined, 
@@ -26,6 +26,39 @@ const JobDetail = () => {
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
+
+  // Reject per-row từ danh sách ứng viên
+  const [rejectTarget, setRejectTarget] = useState(null); // { id, name } | null
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+
+  const promptReject = (record) => {
+    setRejectTarget({ id: record.id, name: record.fullName || record.name || 'N/A' });
+    setRejectReason('');
+  };
+  const cancelReject = () => {
+    setRejectTarget(null);
+    setRejectReason('');
+  };
+  const submitReject = async () => {
+    if (!rejectTarget) return;
+    if (!rejectReason.trim()) {
+      message.error('Vui lòng nhập lý do từ chối');
+      return;
+    }
+    setRejecting(true);
+    try {
+      await applicationAPI.reject(rejectTarget.id, rejectReason.trim());
+      message.success(`Đã từ chối ${rejectTarget.name}`);
+      cancelReject();
+      fetchApplications();
+    } catch (err) {
+      console.error('Error rejecting:', err);
+      message.error(err?.response?.data?.userMsg || 'Không thể từ chối');
+    } finally {
+      setRejecting(false);
+    }
+  };
 
   useEffect(() => {
     if (jobId) {
@@ -164,10 +197,20 @@ const JobDetail = () => {
     {
       title: '',
       key: 'actions',
+      width: 220,
       render: (_, record) => (
-        <Space>
+        <Space size={4}>
           <Button size="small" onClick={() => navigate(`/recruiter/candidates/${record.id}`)}>Xem</Button>
           <Button size="small" type="primary" onClick={() => navigate('/interviews/schedule')}>Lịch</Button>
+          {record.state !== 'REJECTED' && record.state !== 'HIRED' && (
+            <Button
+              size="small"
+              danger
+              onClick={() => promptReject(record)}
+            >
+              Từ chối
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -369,6 +412,32 @@ const JobDetail = () => {
           </Card>
         </Col>
       </Row>
+
+      <Modal
+        title={`Từ chối hồ sơ — ${rejectTarget?.name || ''}`}
+        open={!!rejectTarget}
+        onCancel={cancelReject}
+        onOk={submitReject}
+        confirmLoading={rejecting}
+        okText="Từ chối"
+        okButtonProps={{ danger: true }}
+        cancelText="Hủy"
+      >
+        <Typography.Paragraph type="secondary">
+          Ứng viên sẽ nhận email thông báo (nếu có template REJECTED đang hoạt động).
+        </Typography.Paragraph>
+        <Typography.Paragraph>
+          <Text type="danger">*</Text> Lý do từ chối (bắt buộc):
+        </Typography.Paragraph>
+        <Input.TextArea
+          rows={4}
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          placeholder="Nhập lý do từ chối..."
+          maxLength={500}
+          showCount
+        />
+      </Modal>
 
     </div>
   );

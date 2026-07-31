@@ -1,0 +1,42 @@
+@startuml Feature11_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 11: Kanban Dashboard (Class Diagram)**
+
+class ApplicationQueryController <<boundary>> {
+    - _queryService : ApplicationQueryService
+    + GetBoardByJobAsync(jobId : long) : Object
+    + GetDetailAsync(id : long) : Object
+}
+
+class ApplicationQueryService <<control>> {
+    - _appRepo : ApplicationRepository
+    + GetBoardByJobAsync(companyId : long, jobId : long) : ApplicationBoardDto
+    + GetDetailAsync(companyId : long, applicationId : long) : ApplicationDetailDto
+}
+
+class Application <<entity>> {
+    - applicationId : long
+    - jobId : long
+    - candidateId : long
+    - currentState : string
+    - aiMatchScore : decimal
+    - criteriaScore : decimal
+}
+
+class Candidate <<entity>> {
+    - candidateId : long
+    - name : string
+    - email : string
+}
+
+ApplicationQueryController --> ApplicationQueryService : Association
+ApplicationQueryService --> Application : Dependency
+ApplicationQueryService --> Candidate : Dependency
+
+@enduml

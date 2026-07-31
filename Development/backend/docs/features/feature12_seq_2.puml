@@ -1,0 +1,57 @@
+@startuml Feature12_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 12: Interview Pool Management - Sequence: Invite Candidates**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nInterviewPoolController" as Ctrl
+participant "<<service>>\nInterviewPoolService" as Svc
+participant "<<service>>\nApplicationStateService" as StateSvc
+participant "<<repository>>\nSchedulingRepository" as Repo
+participant "<<service>>\nMagicLinkService" as MagicLink
+participant "Database" as DB
+
+Recruiter -> UI: Select Candidates & Click "Invite"
+activate UI
+
+UI -> Ctrl: POST /api/interview-pools/{id}/invite
+activate Ctrl
+
+Ctrl -> Svc: InviteAsync(companyId, userId, poolId, dto)
+activate Svc
+
+loop For each applicationId in dto.ApplicationIds
+    Svc -> StateSvc: AdvanceToAsync(..., "INTERVIEW")
+    activate StateSvc
+    StateSvc --> Svc: ok
+    deactivate StateSvc
+
+    Svc -> Repo: InsertInviteScheduleAsync(..., schedule)
+    activate Repo
+    Repo -> DB: INSERT Schedule
+    activate DB
+    DB --> Repo: return scheduleId
+    deactivate DB
+    Repo --> Svc: return scheduleId
+    deactivate Repo
+
+    Svc -> MagicLink: IssueAsync(..., "SCHEDULE")
+    activate MagicLink
+    note right of MagicLink: Generates Token & \nSends Email
+    MagicLink --> Svc: return (RawToken, ExpiresAt)
+    deactivate MagicLink
+end
+
+Svc --> Ctrl: return InviteResultDto
+deactivate Svc
+
+Ctrl --> UI: return JSON (Invited & Skipped list)
+deactivate Ctrl
+
+UI --> Recruiter: Show Invite Results
+deactivate UI
+@enduml

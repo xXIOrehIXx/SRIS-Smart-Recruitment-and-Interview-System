@@ -1,0 +1,43 @@
+@startuml Feature7_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 7: Department Management (Class Diagram)**
+
+class DepartmentController <<boundary>> {
+    - _departmentService : DepartmentService
+    + CreateAsync(dto : Object) : Object
+    + UpdateAsync(id : long, dto : Object) : Object
+}
+
+class DepartmentService <<control>> {
+    - _departmentRepo : DepartmentRepository
+    - _userRepo : UserRepository
+    + CreateAsync(companyId : long, dto : Object) : DepartmentDto
+    + UpdateAsync(companyId : long, departmentId : long, dto : Object) : DepartmentDto
+}
+
+class Department <<entity>> {
+    - departmentId : long
+    - name : string
+    - description : string
+    - status : string
+    - managerUserId : long
+}
+
+class User <<entity>> {
+    - userId : long
+    - role : string
+    - status : string
+}
+
+DepartmentController --> DepartmentService : Association
+DepartmentService --> Department : Dependency
+
+Department "1" --> "0..1" User : Association (ManagerUserId)
+
+@enduml

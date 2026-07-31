@@ -122,34 +122,6 @@
   border-color: #4a7230 !important;
 }
 
-.preview-card {
-  border-radius: 12px;
-  background: #f9fbf7;
-  border: 1px solid #e4eee0;
-  margin-top: 12px;
-}
-
-.preview-banner {
-  height: 120px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #5d8c3e 0%, #8bbf5f 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.preview-content {
-  padding-top: 12px;
-}
-
-.color-input {
-  padding: 4px !important;
-  height: 42px;
-}
-
 .wizard-footer {
   position: absolute;
   bottom: 16px;

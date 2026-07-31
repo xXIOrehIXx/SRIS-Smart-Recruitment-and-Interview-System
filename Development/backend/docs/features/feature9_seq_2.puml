@@ -1,0 +1,63 @@
+@startuml Feature9_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 9: Criteria Configuration - Sequence: Approve Drafts**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nCriteriaController" as Ctrl
+participant "<<service>>\nEvaluationCriteriaService" as Svc
+participant "<<repository>>\nEvaluationCriteriaRepository" as Repo
+participant "<<repository>>\nApplicationRepository" as AppRepo
+participant "<<service>>\nApplicationStateService" as StateSvc
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Review & Click "Approve All"
+activate UI
+
+UI -> Ctrl: POST /api/jobs/{id}/criteria/approve
+activate Ctrl
+
+Ctrl -> Svc: ApproveDraftsAsync(companyId, jobId, userId)
+activate Svc
+
+Svc -> Repo: ApproveDraftsAsync(companyId, jobId, userId)
+activate Repo
+Repo -> DbContext: ExecuteSql(Update Status='Approved')
+activate DbContext
+DbContext -> DB: SQL UPDATE
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: return count
+deactivate DbContext
+Repo --> Svc: return count
+deactivate Repo
+
+note right of Svc: Advance NEW applications\nto SCREENING state
+
+Svc -> AppRepo: GetBoardByJobAsync(companyId, jobId)
+activate AppRepo
+AppRepo --> Svc: return Applications
+deactivate AppRepo
+
+loop For each Application in "NEW" state
+    Svc -> StateSvc: AdvanceToAsync(companyId, userId, appId, "SCREENING")
+    activate StateSvc
+    StateSvc --> Svc: ok
+    deactivate StateSvc
+end
+
+Svc --> Ctrl: return ok
+deactivate Svc
+
+Ctrl --> UI: return 200 OK
+deactivate Ctrl
+
+UI --> Recruiter: Show success message
+deactivate UI
+@enduml

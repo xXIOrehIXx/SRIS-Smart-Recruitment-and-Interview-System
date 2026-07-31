@@ -1,0 +1,49 @@
+@startuml Feature10_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 10: Application Pipeline (Class Diagram)**
+
+class ApplicationPipelineController <<boundary>> {
+    - _stateService : ApplicationStateService
+    + AdvanceToAsync(id : long, dto : Object) : Object
+    + RejectAsync(id : long, dto : Object) : Object
+}
+
+class ApplicationStateService <<control>> {
+    - _appRepo : ApplicationRepository
+    - _jobRepo : JobRepository
+    - _activityLogRepo : ActivityLogRepository
+    - _notify : NotificationService
+    + TransitionAsync(companyId : long, userId : long, appId : long, toState : string) : ApplicationStateDto
+    + AdvanceToAsync(companyId : long, userId : long, appId : long, targetState : string) : void
+    + RejectAsync(companyId : long, userId : long, appId : long, reason : string) : ApplicationStateDto
+}
+
+class Application <<entity>> {
+    - applicationId : long
+    - jobId : long
+    - candidateId : long
+    - currentState : string
+    - rejectedAt : DateTime
+}
+
+class ActivityLog <<entity>> {
+    - logId : long
+    - applicationId : long
+    - userId : long
+    - action : string
+    - fromState : string
+    - toState : string
+}
+
+ApplicationPipelineController --> ApplicationStateService : Association
+ApplicationStateService --> Application : Dependency
+
+Application "1" *--> "*" ActivityLog : Composition
+
+@enduml

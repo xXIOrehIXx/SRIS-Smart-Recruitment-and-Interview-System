@@ -36,7 +36,7 @@ const normalizeRole = (role) => {
 export const ROLE_ROUTES = {
   [ROLES.ADMIN]: '/admin/dashboard',
   [ROLES.RECRUITER]: '/recruiter/dashboard',
-  [ROLES.INTERVIEWER]: '/interviewer/dashboard',
+  [ROLES.INTERVIEWER]: '/interviewer/incoming',
   [ROLES.DEPARTMENT_MANAGER]: '/dept/dashboard',
 };
 
@@ -70,8 +70,6 @@ export const ROLE_MENUS = {
     { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
   ],
   [ROLES.INTERVIEWER]: [
-    { key: '/interviewer/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
-    { key: '/interviewer/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     { key: '/interviewer/history', icon: 'HistoryOutlined', label: 'Lịch Sử Phỏng Vấn' },
     { key: '/interviewer/incoming', icon: 'VideoCameraOutlined', label: 'Phỏng Vấn Sắp Tới' },
   ],
@@ -79,6 +77,8 @@ export const ROLE_MENUS = {
     { key: '/dept/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/dept/requests', icon: 'FileTextOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/dept/interviews', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
+    // DM duyệt ứng viên ở cửa INTERVIEW->OFFER thông qua Quyết Định Tuyển Dụng.
+    // Recruiter sẽ là người tạo OfferDetail.
     { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Quyết Định Tuyển Dụng' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],
@@ -221,10 +221,10 @@ export const AuthProvider = ({ children }) => {
       }
       
       // Tìm email - thử nhiều key
-      let email = payload.Email || payload.email || payload.Username || payload.username;
+      let email = payload.Email || payload.email || payload.Username || payload.username || payload.unique_name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
       
       // Tìm fullName - thử nhiều key  
-      let fullName = payload.FullName || payload.fullName || payload.Name || payload.name;
+      let fullName = payload.FullName || payload.fullName || payload.Name || payload.name || payload.full_name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
       if (!fullName) fullName = payload.Username || payload.username;
       
       // Tìm userId - thử nhiều key
@@ -265,16 +265,32 @@ export const AuthProvider = ({ children }) => {
       const response = await authAPI.register(data);
       const responseData = response.data;
 
-      const token = responseData.token || responseData.accessToken;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(responseData.user || responseData));
+      // BE trả cùng shape với login: { companyId, accessToken, refreshToken } — role/email
+      // nằm trong JWT, phải decode như login (trước đây lưu nguyên response nên user thiếu role).
+      const accessToken =
+        responseData.accessToken || responseData.token || responseData.access_token;
+      const refreshToken = responseData.refreshToken || responseData.refresh_token;
 
-      setUser(responseData.user || responseData);
+      if (!accessToken) {
+        throw new Error('Không nhận được access token từ server');
+      }
+
+      localStorage.setItem('token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      const userData = parseJwt(accessToken);
+      userData.role = normalizeRole(userData.role);
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      setUser(userData);
       setIsAuthenticated(true);
 
-      return responseData;
+      return userData;
     } catch (error) {
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       throw error;
     }
@@ -299,9 +315,10 @@ export const AuthProvider = ({ children }) => {
     return ROLE_MENUS[normalizedRole] || [];
   };
 
-  const getDashboardRoute = () => {
-    if (!user?.role) return '/login';
-    const normalizedRole = normalizeRole(user.role);
+  const getDashboardRoute = (role = null) => {
+    const targetRole = role || user?.role;
+    if (!targetRole) return '/login';
+    const normalizedRole = normalizeRole(targetRole);
     return ROLE_ROUTES[normalizedRole] || '/';
   };
 

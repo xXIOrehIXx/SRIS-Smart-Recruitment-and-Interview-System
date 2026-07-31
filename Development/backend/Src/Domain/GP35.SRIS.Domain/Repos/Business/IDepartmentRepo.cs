@@ -2,8 +2,11 @@ using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
-/// <summary>1 dòng danh sách phòng ban kèm số job đang dùng (join Job theo tên).</summary>
-public record DepartmentRow(Department Department, int JobCount);
+/// <summary>
+/// 1 dòng danh sách phòng ban kèm số job đang dùng (join Job theo tên) và tên/email DM phụ trách
+/// (V023) — để FE hiển thị "phòng này ai duyệt" mà không phải gọi thêm API user.
+/// </summary>
+public record DepartmentRow(Department Department, int JobCount, string? ManagerName, string? ManagerEmail);
 
 public interface IDepartmentRepo : IBaseRepo<long, Department>
 {
@@ -21,6 +24,12 @@ public interface IDepartmentRepo : IBaseRepo<long, Department>
 
     /// <summary>Số job đang dùng tên phòng ban này (chặn xóa khi &gt; 0).</summary>
     Task<int> CountJobsUsingAsync(long companyId, string name);
+
+    /// <summary>
+    /// DM phụ trách phòng ban theo TÊN (V023) — dùng để tự điền Job.department_manager_id
+    /// khi Recruiter chọn phòng ban mà không chọn DM. Null = phòng ban không tồn tại / chưa gán DM.
+    /// </summary>
+    Task<long?> GetManagerByNameAsync(long companyId, string name);
 
     /// <summary>Đổi tên phòng ban -> đồng bộ tên trong Job + RecruitmentRequest (tham chiếu bằng tên).</summary>
     Task RenameReferencesAsync(long companyId, string oldName, string newName);

@@ -95,6 +95,10 @@ public class KanbanCardDto
     public decimal? AiMatchScore { get; set; }
     public DateTime AppliedAt { get; set; }
     public DateTime? StageUpdatedAt { get; set; }
+    /// <summary>Phòng ban của job (V023) — hiển thị ở màn quyết định tuyển dụng.</summary>
+    public string? Department { get; set; }
+    /// <summary>DM phụ trách job. Null = job chưa gán DM (Recruiter quyết — mặc định công ty nhỏ).</summary>
+    public long? DepartmentManagerId { get; set; }
 }
 
 /// <summary>1 cột trong Kanban board (theo state).</summary>

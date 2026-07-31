@@ -198,6 +198,16 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .FirstOrDefaultAsync();
     }
 
+    public async Task<IReadOnlyList<InterviewSchedule>> GetSchedulesByApplicationAsync(long companyId, long applicationId)
+    {
+        return await _db.InterviewSchedules
+            .AsNoTracking()
+            .Where(s => s.ApplicationId == applicationId)
+            .OrderBy(s => s.RoundNumber)
+            .ThenBy(s => s.ScheduleId)
+            .ToListAsync();
+    }
+
     public async Task<InterviewSchedule?> GetScheduleByIdAsync(long companyId, long scheduleId)
     {
         return await _db.InterviewSchedules
@@ -373,11 +383,56 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return await query.AnyAsync();
     }
 
+    /// <summary>
+    /// Số interviewer trong panel của buổi (đếm từ InterviewSlotInterviewer của slot đã chốt).
+    /// Trả 0 nếu buổi chưa CONFIRMED hoặc không tìm thấy.
+    /// </summary>
+    public async Task<int> GetPanelSizeAsync(long companyId, long scheduleId)
+    {
+        var query =
+            from s in _db.InterviewSchedules.AsNoTracking()
+            join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
+            join si in _db.InterviewSlotInterviewers.AsNoTracking() on sl.SlotId equals si.SlotId
+            where s.ScheduleId == scheduleId
+            select si.InterviewerId;
+        var ids = await query.Distinct().ToListAsync();
+        return ids.Count;
+    }
+
+    /// <summary>StartTime của slot đã chốt của buổi. Trả DateTime.MinValue nếu chưa chốt.</summary>
+    public async Task<DateTime> GetConfirmedSlotStartAsync(long companyId, long scheduleId)
+    {
+        var query =
+            from s in _db.InterviewSchedules.AsNoTracking()
+            join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
+            where s.ScheduleId == scheduleId
+            select sl.StartTime;
+        return await query.FirstOrDefaultAsync();
+    }
+
     public async Task<IReadOnlyList<InterviewerScheduleRow>> GetSchedulesForInterviewerAsync(
         long companyId, long interviewerId)
     {
         // Join Application/Candidate/Job để danh sách buổi cần chấm hiện được TÊN ứng viên +
         // vị trí + giờ hẹn (không bắt interviewer bấm vào từng buổi mới biết ai).
+        //
+        // LeftJoin InterviewScores (đã có DRAFT/SUBMITTED nào của CHÍNH interviewer này chưa) để
+        // FE biết buổi nào "đã nộp / đang nháp / chưa chấm" mà không cần gọi thêm API.
+        // - Có 1 row DRAFT → "DRAFT"
+        // - Có 1 row SUBMITTED → "SUBMITTED"
+        // - Không có row nào → "NOT_STARTED"
+        var scoreStatus =
+            from sc in _db.InterviewScores.AsNoTracking()
+            where sc.CompanyId == companyId && sc.InterviewerId == interviewerId
+            group sc by sc.ScheduleId into g
+            select new
+            {
+                ScheduleId = g.Key,
+                // Ưu tiên SUBMITTED > DRAFT (1 interviewer chỉ có 1 phiếu / criteria nhưng
+                // nếu lỡ có nhiều row lịch sử thì lấy mức cao nhất).
+                Status = g.Max(x => x.Status),
+            };
+
         var query =
             from s in _db.InterviewSchedules.AsNoTracking()
             join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
@@ -386,11 +441,14 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             join a in _db.Applications.AsNoTracking() on s.ApplicationId equals a.ApplicationId
             join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
             join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
+            join my in scoreStatus on s.ScheduleId equals my.ScheduleId into myJoin
+            from my in myJoin.DefaultIfEmpty()
             where si.InterviewerId == interviewerId
             orderby s.ScheduleId descending
             select new InterviewerScheduleRow(
                 s.ScheduleId, s.ApplicationId, s.RoundNumber, s.Status,
-                sl.StartTime, c.FullName, c.Email, j.Title);
+                sl.StartTime, c.FullName, c.Email, j.Title,
+                my.Status ?? "NOT_STARTED");
         return await query.ToListAsync();
     }
 }

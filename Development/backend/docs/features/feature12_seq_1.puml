@@ -1,0 +1,54 @@
+@startuml Feature12_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 12: Interview Pool Management - Sequence: Create Pool**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nInterviewPoolController" as Ctrl
+participant "<<service>>\nInterviewPoolService" as Svc
+participant "<<repository>>\nSchedulingRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Enter Pool details (slots, interviewers)
+activate UI
+
+UI -> Ctrl: POST /api/jobs/{id}/interview-pools
+activate Ctrl
+
+Ctrl -> Svc: CreatePoolAsync(companyId, userId, jobId, dto)
+activate Svc
+
+note right of Svc: ValidateSlots (ensure >0 slots,\nstartTime in future, panel <= 5)
+
+Svc -> Repo: InsertPoolWithSlotsAsync(companyId, pool, slots)
+activate Repo
+Repo -> DbContext: Add & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL INSERT (Pool & Slots)
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: return poolId
+deactivate DbContext
+Repo --> Svc: return poolId
+deactivate Repo
+
+Svc -> Repo: GetPoolByIdAsync(companyId, poolId)
+activate Repo
+Repo --> Svc: return InterviewSlotPool
+deactivate Repo
+
+Svc --> Ctrl: return PoolDto
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Recruiter: Show Pool Created
+deactivate UI
+@enduml

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Card,
   Typography,
@@ -12,131 +12,96 @@ import {
   Row,
   Col,
   Statistic,
+  Empty,
   message,
 } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  CloseCircleOutlined,
-  SearchOutlined,
-  TeamOutlined,
-  UserOutlined,
+  EditOutlined,
+  FileTextOutlined,
+  InfoCircleOutlined,
   ReloadOutlined,
+  TrophyOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { applicationAPI, jobsAPI } from '../../services/api';
+import { interviewAPI } from '../../services/api';
+import InterviewDetailModal from './InterviewDetailModal';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+/**
+ * Lịch sử phỏng vấn — dùng chung API `getMySchedules`, lọc các buổi:
+ *   - ĐÃ CHẤM (mySheetStatus === 'SUBMITTED') — ưu tiên
+ *   - HOẶC đã qua theo StartTime + có schedule CONFIRMED
+ *
+ * Mỗi row có 2 nút:
+ *   - "Chi tiết" → mở popup InterviewDetailModal
+ *   - "Xem / Sửa" → navigate sang /interviewer/grading/:id (load điểm đã nộp)
+ */
 const InterviewerInterviewHistory = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [applications, setApplications] = useState([]);
-  const [selectedJobId, setSelectedJobId] = useState(null);
-  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
-  const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [sheetFilter, setSheetFilter] = useState('all');
+  const [detailSchedule, setDetailSchedule] = useState(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
-  const getHistoryActionLabel = (action) => {
-    const labels = {
-      STATE_CHANGE: 'Thay đổi trạng thái',
-      CREATE: 'Tạo mới',
-      UPDATE: 'Cập nhật',
-      DELETE: 'Xóa',
-    };
-    return labels[action] || action || 'Không xác định';
-  };
-
-  const getHistoryStateLabel = (state) => {
-    const labels = {
-      NEW: 'Mới',
-      SCREENING: 'Sàng lọc',
-      QUIZ: 'Quiz',
-      INTERVIEW: 'Phỏng vấn',
-      OFFER: 'Offer',
-      HIRED: 'Đã tuyển',
-      REJECTED: 'Từ chối',
-      COMPLETED: 'Đã hoàn thành',
-      CANCELLED: 'Đã hủy',
-      MISSED: 'Bỏ lỡ',
-      PENDING: 'Chờ xử lý',
-    };
-    return labels[state] || state || 'Không xác định';
+  const normalize = (raw) => {
+    const data = Array.isArray(raw) ? raw : [];
+    return data
+      .map((item) => ({
+        id: item.scheduleId,
+        scheduleId: item.scheduleId,
+        applicationId: item.applicationId,
+        candidate: item.candidateName || 'N/A',
+        candidateName: item.candidateName || 'N/A',
+        candidateEmail: item.candidateEmail || '',
+        position: item.jobTitle || 'N/A',
+        jobTitle: item.jobTitle || 'N/A',
+        startTime: item.startTime,
+        level: item.roundNumber || 1,
+        roundNumber: item.roundNumber || 1,
+        status: item.status,
+        mySheetStatus: item.mySheetStatus || 'NOT_STARTED',
+      }))
+      // Lịch sử chỉ quan tâm các buổi đã có phiếu (DRAFT hoặc SUBMITTED),
+      // hoặc các buổi CONFIRMED đã qua StartTime.
+      .filter((i) => {
+        if (i.mySheetStatus === 'SUBMITTED' || i.mySheetStatus === 'DRAFT') return true;
+        if (i.startTime && dayjs(i.startTime).isBefore(dayjs())) return true;
+        return false;
+      })
+      .sort((a, b) => {
+        // SUBMITTED trước, sau đó DRAFT, cuối cùng là đã qua chưa chấm
+        const rank = (s) => (s === 'SUBMITTED' ? 0 : s === 'DRAFT' ? 1 : 2);
+        if (rank(a.mySheetStatus) !== rank(b.mySheetStatus)) {
+          return rank(a.mySheetStatus) - rank(b.mySheetStatus);
+        }
+        return dayjs(b.startTime).valueOf() - dayjs(a.startTime).valueOf();
+      });
   };
 
   const fetchHistory = async () => {
-    if (!selectedApplicationId) {
-      setHistory([]);
-      return;
-    }
-
     try {
       setLoading(true);
-      const response = await applicationAPI.getHistory(selectedApplicationId);
-      const data = response.data || [];
-
-      const normalized = data.map((item, index) => {
-        const isStateLog =
-          item &&
-          (item.logId !== undefined || item.action || item.fromState || item.toState || item.createdAt);
-
-        if (isStateLog) {
-          return {
-            id: item.logId || item.id || `${selectedApplicationId}-${index}`,
-            candidate: item.actorEmail || item.actor?.email || 'N/A',
-            position: item.detail || getHistoryStateLabel(item.toState) || 'N/A',
-            department: item.detail || 'N/A',
-            date: item.createdAt,
-            time: '',
-            type: getHistoryActionLabel(item.action),
-            level: 1,
-            status: item.toState || item.fromState || 'PENDING',
-            score: null,
-            maxScore: 50,
-            recommendation: null,
-            graded: false,
-            applicationId: selectedApplicationId || item.applicationId || item.id,
-            actorEmail: item.actorEmail || item.actor?.email || 'N/A',
-            fromState: item.fromState,
-            toState: item.toState,
-            detail: item.detail || '',
-            raw: item,
-          };
-        }
-
-        return {
-          id: item.applicationId || item.id || index,
-          candidate: item.candidateName || item.candidate || 'N/A',
-          position: item.positionTitle || item.jobTitle || item.position || 'N/A',
-          department: item.department || 'N/A',
-          date: item.interviewDate || item.scheduledDate || item.date,
-          time: item.interviewTime || item.scheduledTime || item.time || '',
-          type: item.interviewType || item.type || 'N/A',
-          level: item.round || item.interviewRound || item.level || 1,
-          status: item.status || 'PENDING',
-          score: item.score ?? null,
-          maxScore: item.maxScore || 50,
-          recommendation: item.recommendation || null,
-          graded: item.graded ?? (item.score !== null && item.score !== undefined),
-          applicationId: item.applicationId || item.id,
-          actorEmail: item.actorEmail || item.actor?.email || 'N/A',
-          fromState: item.fromState,
-          toState: item.toState,
-          detail: item.detail || '',
-          raw: item,
-        };
-      });
-
-      setHistory(normalized);
+      const response = await interviewAPI.getMySchedules();
+      console.log('[InterviewHistory] raw response:', response);
+      let data = response.data;
+      if (data === null || data === undefined || data === '') data = [];
+      else if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch { data = []; }
+      } else if (typeof data === 'object' && !Array.isArray(data)) {
+        data = data.interviews || data.schedules || data.items || data.data || [];
+      }
+      setHistory(normalize(data));
     } catch (error) {
       console.error('Error fetching interview history:', error);
       message.error('Không thể tải lịch sử phỏng vấn');
@@ -146,107 +111,50 @@ const InterviewerInterviewHistory = () => {
   };
 
   useEffect(() => {
-    fetchJobs();
+    fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (selectedJobId) {
-      fetchApplications(selectedJobId);
-    } else {
-      setApplications([]);
-      setSelectedApplicationId(null);
-    }
-  }, [selectedJobId]);
-
-  useEffect(() => {
-    fetchHistory();
-  }, [selectedApplicationId]);
-
-  const fetchJobs = async () => {
-    try {
-      const response = await jobsAPI.getAll();
-      const jobList = response.data || [];
-      setJobs(jobList);
-      const defaultJobId = jobList[0]?.jobId || jobList[0]?.id || null;
-      setSelectedJobId(defaultJobId);
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-      message.error('Không thể tải danh sách công việc');
-    }
+  const openDetail = (record) => {
+    setDetailSchedule(record);
+    setDetailOpen(true);
   };
 
-  const fetchApplications = async (jobId) => {
-    if (!jobId) {
-      setApplications([]);
-      setSelectedApplicationId(null);
-      return;
-    }
-
-    try {
-      setApplicationsLoading(true);
-      const response = await applicationAPI.getAll(jobId);
-      const payload = response.data || {};
-      const apps = Array.isArray(payload) ? payload : payload.applications || [];
-      const normalized = apps.map((app) => ({
-        id: app.applicationId || app.id,
-        candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
-        position: app.positionTitle || app.jobTitle || app.position || app.job?.title || 'N/A',
-        status: app.currentState || app.status || 'N/A',
-      }));
-      setApplications(normalized);
-      if (normalized.length > 0) {
-        setSelectedApplicationId(normalized[0].id);
-      } else {
-        setSelectedApplicationId(null);
-      }
-    } catch (error) {
-      console.error('Error fetching applications:', error);
-      message.error('Không thể tải danh sách ứng viên');
-      setApplications([]);
-      setSelectedApplicationId(null);
-    } finally {
-      setApplicationsLoading(false);
-    }
+  const navigateToGrading = (record) => {
+    navigate(`/interviewer/grading/${record.scheduleId}`, {
+      state: {
+        schedule: record,
+        candidate: {
+          candidateName: record.candidateName,
+          candidate: record.candidateName,
+          name: record.candidateName,
+          email: record.candidateEmail,
+          position: record.jobTitle,
+          jobTitle: record.jobTitle,
+          round: record.roundNumber,
+          startTime: record.startTime,
+        },
+        mode: record.mySheetStatus === 'SUBMITTED' ? 'view' : 'continue',
+      },
+    });
   };
 
-  const getStatusConfig = (status) => {
-    const configs = {
-      COMPLETED: { color: 'success', label: 'Đã hoàn thành', icon: <CheckCircleOutlined /> },
-      CANCELLED: { color: 'error', label: 'Đã hủy', icon: <CloseCircleOutlined /> },
-      MISSED: { color: 'warning', label: 'Bỏ lỡ', icon: <ClockCircleOutlined /> },
-      PENDING: { color: 'processing', label: 'Chờ xử lý', icon: <ClockCircleOutlined /> },
-      NEW: { color: 'default', label: 'Mới' },
-      SCREENING: { color: 'purple', label: 'Sàng lọc' },
-      QUIZ: { color: 'cyan', label: 'Quiz' },
-      INTERVIEW: { color: 'blue', label: 'Phỏng vấn' },
-      OFFER: { color: 'green', label: 'Offer' },
-      HIRED: { color: 'success', label: 'Đã tuyển' },
-      REJECTED: { color: 'error', label: 'Từ chối' },
-    };
-    return configs[status] || { color: 'default', label: status };
+  const sheetStatusTag = (s) => {
+    if (s === 'SUBMITTED') return <Tag color="success" icon={<CheckCircleOutlined />}>Đã nộp</Tag>;
+    if (s === 'DRAFT') return <Tag color="warning" icon={<EditOutlined />}>Đang nháp</Tag>;
+    return <Tag color="default" icon={<ClockCircleOutlined />}>Chưa chấm</Tag>;
   };
 
-  const getRecommendationConfig = (rec) => {
-    const configs = {
-      STRONG_HIRE: { color: '#52c41a', label: 'Trúng tuyển mạnh' },
-      HIRE: { color: '#73d13d', label: 'Trúng tuyển' },
-      CONSIDER: { color: '#faad14', label: 'Cân nhắc' },
-      NO_HIRE: { color: '#f5222d', label: 'Không trúng tuyển' },
-    };
-    return configs[rec] || { color: 'default', label: '-' };
-  };
-
-  const getScoreColor = (score, max) => {
-    if (score === null || score === undefined) return '#faad14';
-    const percent = (score / max) * 100;
-    if (percent >= 80) return '#52c41a';
-    if (percent >= 60) return '#faad14';
-    return '#f5222d';
+  const scheduleStatusTag = (s) => {
+    if (s === 'CONFIRMED') return <Tag color="processing">Đã chốt lịch</Tag>;
+    if (s === 'PENDING') return <Tag color="warning">Chờ ứng viên chốt</Tag>;
+    if (s === 'CANCELLED') return <Tag color="default">Đã hủy</Tag>;
+    return <Tag>{s}</Tag>;
   };
 
   const columns = [
     {
-      title: 'Người thực hiện',
+      title: 'Ứng viên',
       key: 'candidate',
       fixed: 'left',
       width: 240,
@@ -254,43 +162,80 @@ const InterviewerInterviewHistory = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
           <div>
-            <Text strong>{record.actorEmail || record.candidate}</Text>
+            <Text strong>{record.candidate}</Text>
             <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>{record.position || record.detail || 'Không có mô tả'}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>{record.position}</Text>
           </div>
         </div>
       ),
     },
     {
-      title: 'Hành động',
-      dataIndex: 'type',
-      key: 'type',
-      width: 170,
-      render: (type) => <Tag color="blue">{type}</Tag>,
+      title: 'Ngày & Giờ',
+      key: 'datetime',
+      width: 180,
+      render: (_, record) => (
+        <div>
+          <div>
+            <CalendarOutlined style={{ marginRight: 4, color: MATCHA_GREEN }} />
+            <Text>{record.startTime ? dayjs(record.startTime).format('DD/MM/YYYY') : '-'}</Text>
+          </div>
+          <div>
+            <ClockCircleOutlined style={{ marginRight: 4, color: '#faad14' }} />
+            <Text type="secondary">{record.startTime ? dayjs(record.startTime).format('HH:mm') : '-'}</Text>
+          </div>
+        </div>
+      ),
     },
     {
-      title: 'Trạng thái',
+      title: 'Vòng',
+      dataIndex: 'level',
+      key: 'level',
+      width: 90,
+      render: (level) => <Tag color="cyan">Vòng {level}</Tag>,
+    },
+    {
+      title: 'Trạng thái lịch',
       dataIndex: 'status',
       key: 'status',
+      width: 150,
+      render: scheduleStatusTag,
+    },
+    {
+      title: 'Phiếu chấm',
+      dataIndex: 'mySheetStatus',
+      key: 'sheet',
       width: 140,
-      render: (status) => {
-        const config = getStatusConfig(status);
-        return <Tag color={config.color} icon={config.icon}>{config.label}</Tag>;
-      },
+      render: sheetStatusTag,
     },
     {
-      title: 'Thời gian',
-      dataIndex: 'date',
-      key: 'date',
-      width: 180,
-      render: (date) => (date ? dayjs(date).format('DD/MM/YYYY HH:mm') : '-'),
-    },
-    {
-      title: 'Chi tiết',
-      dataIndex: 'detail',
-      key: 'detail',
-      width: 300,
-      render: (detail) => <Text type="secondary">{detail || '-'}</Text>,
+      title: 'Thao tác',
+      key: 'actions',
+      width: 240,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space>
+          <Button
+            size="small"
+            icon={<InfoCircleOutlined />}
+            onClick={() => openDetail(record)}
+          >
+            Chi tiết
+          </Button>
+          <Button
+            size="small"
+            type={record.mySheetStatus === 'SUBMITTED' ? 'default' : 'primary'}
+            icon={record.mySheetStatus === 'SUBMITTED' ? <CheckCircleOutlined /> : <EditOutlined />}
+            onClick={() => navigateToGrading(record)}
+            style={
+              record.mySheetStatus === 'SUBMITTED'
+                ? undefined
+                : { background: MATCHA_GREEN, borderColor: MATCHA_GREEN }
+            }
+          >
+            {record.mySheetStatus === 'SUBMITTED' ? 'Xem / Sửa' : 'Tiếp tục chấm'}
+          </Button>
+        </Space>
+      ),
     },
   ];
 
@@ -298,31 +243,23 @@ const InterviewerInterviewHistory = () => {
     const matchesSearch =
       !searchText ||
       (item.candidate || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.actorEmail || '').toLowerCase().includes(searchText.toLowerCase()) ||
-      (item.detail || '').toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
+      (item.position || '').toLowerCase().includes(searchText.toLowerCase());
+    const matchesSheet = sheetFilter === 'all' || item.mySheetStatus === sheetFilter;
+    return matchesSearch && matchesSheet;
   });
 
-  const totalInterviews = history.length;
-  const completedInterviews = history.filter((i) => i.status === 'COMPLETED').length;
-  const avgScore =
-    history.filter((i) => i.graded && i.score !== null).length > 0
-      ? Math.round(
-          history
-            .filter((i) => i.graded && i.score !== null)
-            .reduce((sum, i) => sum + i.score, 0) /
-            history.filter((i) => i.graded && i.score !== null).length
-        )
-      : 0;
+  const submittedCount = history.filter((i) => i.mySheetStatus === 'SUBMITTED').length;
+  const draftCount = history.filter((i) => i.mySheetStatus === 'DRAFT').length;
 
   return (
     <div className="interview-history-page">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Lịch Sử Phỏng Vấn</Title>
-          <Text type="secondary">Xem lại các buổi phỏng vấn đã thực hiện</Text>
+          <Title level={3} className="page-title">Lịch sử phỏng vấn</Title>
+          <Text type="secondary">
+            Danh sách các buổi bạn đã/đang chấm. Bấm "Chi tiết" để xem popup,
+            hoặc "Xem / Sửa" để mở lại phiếu chấm và chỉnh sửa.
+          </Text>
         </div>
         <Button icon={<ReloadOutlined />} onClick={fetchHistory} loading={loading}>
           Làm mới
@@ -333,8 +270,8 @@ const InterviewerInterviewHistory = () => {
         <Col xs={12} sm={8}>
           <Card className="stat-card" bordered={false}>
             <Statistic
-              title="Tổng phỏng vấn"
-              value={totalInterviews}
+              title="Tổng buổi"
+              value={history.length}
               prefix={<CalendarOutlined />}
               valueStyle={{ color: MATCHA_GREEN }}
             />
@@ -343,8 +280,8 @@ const InterviewerInterviewHistory = () => {
         <Col xs={12} sm={8}>
           <Card className="stat-card" bordered={false}>
             <Statistic
-              title="Đã hoàn thành"
-              value={completedInterviews}
+              title="Đã nộp"
+              value={submittedCount}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -353,71 +290,39 @@ const InterviewerInterviewHistory = () => {
         <Col xs={12} sm={8}>
           <Card className="stat-card" bordered={false}>
             <Statistic
-              title="Điểm TB"
-              value={avgScore}
-              suffix="/ 50"
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              title="Đang nháp"
+              value={draftCount}
+              prefix={<EditOutlined />}
+              valueStyle={{ color: '#faad14' }}
             />
           </Card>
         </Col>
       </Row>
 
       <Card className="main-card" bordered={false}>
-        <div className="table-toolbar">
-          <div className="toolbar-left">
-            <Select
-              value={selectedJobId}
-              onChange={(value) => setSelectedJobId(value)}
-              style={{ width: 260 }}
-              placeholder="Chọn công việc"
-              allowClear
-            >
-              {jobs.map((job) => (
-                <Option key={job.jobId || job.id} value={job.jobId || job.id}>
-                  {job.title || job.jobTitle || `Công việc #${job.jobId || job.id}`}
-                </Option>
-              ))}
-            </Select>
-            <Select
-              value={selectedApplicationId}
-              onChange={(value) => setSelectedApplicationId(value)}
-              style={{ width: 300 }}
-              placeholder="Chọn ứng dụng"
-              loading={applicationsLoading}
-              allowClear
-            >
-              {applications.map((app) => (
-                <Option key={app.id} value={app.id}>
-                  {app.candidateName} - {app.position}
-                </Option>
-              ))}
-            </Select>
-            <Input
-              placeholder="Tìm kiếm ứng viên, vị trí..."
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 260 }}
-              allowClear
-            />
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: 160 }}
-            >
-              <Option value="all">Tất cả trạng thái</Option>
-              <Option value="COMPLETED">Đã hoàn thành</Option>
-              <Option value="CANCELLED">Đã hủy</Option>
-              <Option value="MISSED">Bỏ lỡ</Option>
-              <Option value="NEW">Mới</Option>
-              <Option value="SCREENING">Sàng lọc</Option>
-              <Option value="QUIZ">Quiz</Option>
-              <Option value="INTERVIEW">Phỏng vấn</Option>
-            </Select>
-          </div>
-          <Text type="secondary">
-            {filteredData.length} buổi phỏng vấn
+        <div className="table-toolbar" style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          <Input
+            placeholder="Tìm theo tên ứng viên / vị trí..."
+            prefix={<FileTextOutlined />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 260 }}
+            allowClear
+          />
+          <Select
+            value={sheetFilter}
+            onChange={setSheetFilter}
+            style={{ width: 200 }}
+            placeholder="Phiếu chấm"
+            options={[
+              { value: 'all', label: 'Tất cả phiếu' },
+              { value: 'SUBMITTED', label: 'Đã nộp' },
+              { value: 'DRAFT', label: 'Đang nháp' },
+              { value: 'NOT_STARTED', label: 'Chưa chấm' },
+            ]}
+          />
+          <Text type="secondary" style={{ marginLeft: 'auto' }}>
+            {filteredData.length} buổi
           </Text>
         </div>
 
@@ -432,8 +337,32 @@ const InterviewerInterviewHistory = () => {
             showTotal: (total) => `Tổng ${total} buổi`,
           }}
           scroll={{ x: 1100 }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <div>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                      Bạn chưa có buổi phỏng vấn nào trong lịch sử.
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Sau khi bạn nộp phiếu chấm, buổi đó sẽ xuất hiện ở đây.
+                    </Text>
+                  </div>
+                }
+              />
+            ),
+          }}
         />
       </Card>
+
+      <InterviewDetailModal
+        schedule={detailSchedule}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        mode="history"
+      />
     </div>
   );
 };

@@ -1,41 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Card,
-  Table,
-  Tag,
   Avatar,
+  Badge,
   Button,
-  Typography,
-  Space,
+  Card,
   Input,
   Select,
-  Modal,
-  Descriptions,
-  Divider,
+  Space,
+  Table,
+  Tag,
+  Typography,
   message,
-  Row,
-  Badge,
 } from 'antd';
 import {
-  VideoCameraOutlined,
-  SearchOutlined,
   CalendarOutlined,
+  CheckCircleOutlined,
   ClockCircleOutlined,
-  UserOutlined,
-  TeamOutlined,
   EditOutlined,
-  PlusOutlined,
+  FileTextOutlined,
+  InfoCircleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { interviewAPI, applicationAPI } from '../../services/api';
+import { interviewAPI } from '../../services/api';
+import InterviewDetailModal from './InterviewDetailModal';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+// ====== Helpers =================================================
+const RECOMMENDATIONS = [
+  { key: 'STRONG_HIRE', label: 'Trúng tuyển mạnh', color: '#52c41a' },
+  { key: 'HIRE', label: 'Trúng tuyển', color: '#73d13d' },
+  { key: 'CONSIDER', label: 'Cân nhắc', color: '#faad14' },
+  { key: 'NO_HIRE', label: 'Không trúng tuyển', color: '#f5222d' },
+];
+
+// Status hiển thị cho lịch (PENDING|CONFIRMED|CANCELLED...).
+const statusConfig = {
+  PENDING: { color: 'warning', label: 'Chờ ứng viên chốt lịch' },
+  CONFIRMED: { color: 'processing', label: 'Đã chốt lịch' },
+  NO_SLOT_FITS: { color: 'error', label: 'Không khớp khung giờ' },
+  CANCELLED: { color: 'default', label: 'Đã hủy' },
+};
+
+// ====== Main page ==============================================
 const IncomingInterview = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -43,44 +55,53 @@ const IncomingInterview = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Modal states
-  const [candidateModalOpen, setCandidateModalOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
-  const [candidates, setCandidates] = useState([]);
-  const [loadingCandidates, setLoadingCandidates] = useState(false);
 
-  useEffect(() => {
-    fetchInterviews();
-  }, []);
+  const normalizeSchedules = (raw) => {
+    const data = Array.isArray(raw) ? raw : [];
+    return data
+      .map((item) => ({
+        id: item.scheduleId,
+        scheduleId: item.scheduleId,
+        applicationId: item.applicationId,
+        candidate: item.candidateName || 'N/A',
+        candidateName: item.candidateName || 'N/A',
+        candidateEmail: item.candidateEmail || '',
+        position: item.jobTitle || 'N/A',
+        jobTitle: item.jobTitle || 'N/A',
+        startTime: item.startTime,
+        level: item.roundNumber || 1,
+        roundNumber: item.roundNumber || 1,
+        status: item.status,
+        mySheetStatus: item.mySheetStatus || 'NOT_STARTED',
+      }))
+      .filter((i) => i.status === 'PENDING' || i.status === 'CONFIRMED')
+      .filter((i) => i.startTime && dayjs(i.startTime).isAfter(dayjs().subtract(1, 'day')))
+      .sort((a, b) => dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf());
+  };
 
   const fetchInterviews = async () => {
     try {
       setLoading(true);
       const response = await interviewAPI.getMySchedules();
+      console.log('[IncomingInterview] raw response:', response);
 
       let data = response.data;
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        data = data.interviews || data.schedules || data.items || [];
+      if (data === null || data === undefined || data === '') {
+        console.warn('[IncomingInterview] response body rỗng — BE có thể trả [] nhưng bị mất do middleware/serializer.');
+        data = [];
+      } else if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          data = [];
+        }
+      } else if (typeof data === 'object' && !Array.isArray(data)) {
+        data = data.interviews || data.schedules || data.items || data.data || [];
       }
-      data = data || [];
 
-      // MyScheduleDto: { scheduleId, applicationId, roundNumber, status, startTime, candidateName, candidateEmail, jobTitle }
-      const normalized = Array.isArray(data)
-        ? data.map((item) => ({
-            id: item.scheduleId,
-            applicationId: item.applicationId,
-            candidate: item.candidateName || 'N/A',
-            position: item.jobTitle || 'N/A',
-            startTime: item.startTime,
-            level: item.roundNumber || 1,
-            status: item.status,
-          }))
-        : [];
-
-      // Chỉ hiện lịch còn hiệu lực (PENDING = ứng viên chưa chốt slot, CONFIRMED = đã chốt)
-      setInterviews(normalized.filter(i =>
-        i.status === 'PENDING' || i.status === 'CONFIRMED'
-      ));
+      setInterviews(normalizeSchedules(data));
     } catch (error) {
       console.error('Error fetching interviews:', error);
       message.error('Không thể tải danh sách phỏng vấn');
@@ -89,117 +110,43 @@ const IncomingInterview = () => {
     }
   };
 
-  const fetchCandidatesBySchedule = async (applicationId) => {
-    // 1 buổi phỏng vấn gắn với đúng 1 hồ sơ (schedule.applicationId) — đọc chi tiết hồ sơ
-    // qua /applications/{id} (Interviewer có quyền; KHÔNG dùng /aggregate — đó là panel
-    // tổng hợp chỉ dành cho Recruiter/DM sau khi mở blind).
-    try {
-      setLoadingCandidates(true);
-      const response = await applicationAPI.getById(applicationId);
-      const app = response.data;
-      setCandidates(app ? [{
-        id: app.applicationId,
-        applicationId: app.applicationId,
-        name: app.candidateName,
-        candidateName: app.candidateName,
-        email: app.candidateEmail,
-        position: app.jobTitle,
-        currentState: app.currentState,
-        aiMatchScore: app.aiMatchScore,
-      }] : []);
-    } catch (error) {
-      console.error('Error fetching candidate:', error);
-      setCandidates([]);
-    } finally {
-      setLoadingCandidates(false);
-    }
-  };
+  useEffect(() => {
+    fetchInterviews();
+  }, []);
 
-  const handleShowCandidates = (record) => {
+  const openDetail = (record) => {
     setSelectedSchedule(record);
-    fetchCandidatesBySchedule(record.applicationId);
-    setCandidateModalOpen(true);
+    setDetailOpen(true);
   };
 
-  const handleGradeCandidate = (scheduleId, candidate) => {
-    setCandidateModalOpen(false);
-    navigate(`/interviewer/interview/${scheduleId}`, {
-      state: { scheduleId, candidate }
+  const navigateToGrading = (record) => {
+    navigate(`/interviewer/grading/${record.scheduleId}`, {
+      state: {
+        schedule: record,
+        candidate: {
+          candidateName: record.candidateName,
+          candidate: record.candidateName,
+          name: record.candidateName,
+          email: record.candidateEmail,
+          position: record.jobTitle,
+          jobTitle: record.jobTitle,
+          round: record.roundNumber,
+          startTime: record.startTime,
+        },
+        mode: record.mySheetStatus === 'SUBMITTED'
+          ? 'view'
+          : record.mySheetStatus === 'DRAFT'
+            ? 'continue'
+            : 'new',
+      },
     });
   };
 
-  const getStatusConfig = (status) => {
-    const configs = {
-      PENDING: { color: 'warning', label: 'Chờ ứng viên chốt lịch' },
-      CONFIRMED: { color: 'processing', label: 'Đã chốt lịch' },
-      NO_SLOT_FITS: { color: 'error', label: 'Không khớp khung giờ' },
-      CANCELLED: { color: 'default', label: 'Đã hủy' },
-    };
-    return configs[status] || { color: 'default', label: status };
+  const sheetStatusLabel = (s) => {
+    if (s === 'SUBMITTED') return { color: 'success', icon: <CheckCircleOutlined />, text: 'Đã nộp' };
+    if (s === 'DRAFT') return { color: 'warning', icon: <EditOutlined />, text: 'Đang nháp' };
+    return { color: 'default', icon: <EditOutlined />, text: 'Chưa chấm' };
   };
-
-  const candidateColumns = [
-    {
-      title: 'Ứng viên',
-      key: 'candidate',
-      render: (_, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar style={{ backgroundColor: MATCHA_GREEN }} icon={<UserOutlined />} />
-          <div>
-            <Text strong>{record.candidateName || record.candidate || record.name || 'N/A'}</Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.position || record.jobTitle || 'N/A'}
-            </Text>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      key: 'status',
-      width: 120,
-      render: (_, record) => {
-        const isGraded = record.hasGraded || record.isGraded || record.score !== null;
-        return isGraded
-          ? <Tag color="success">Đã chấm</Tag>
-          : <Tag color="warning">Chưa chấm</Tag>;
-      },
-    },
-    {
-      title: 'Điểm',
-      key: 'score',
-      width: 100,
-      render: (_, record) => (
-        record.score !== undefined && record.score !== null
-          ? <Text strong style={{ color: MATCHA_GREEN }}>{record.score}/{record.maxScore || 100}</Text>
-          : <Text type="secondary">-</Text>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 130,
-      render: (_, record) => {
-        const isGraded = record.hasGraded || record.isGraded || record.score !== null;
-        return (
-          <Button
-            type={isGraded ? 'default' : 'primary'}
-            size="small"
-            icon={isGraded ? <EditOutlined /> : <PlusOutlined />}
-            onClick={() => handleGradeCandidate(selectedSchedule?.id, record)}
-            style={{
-              background: isGraded ? undefined : MATCHA_GREEN,
-              borderColor: isGraded ? MATCHA_GREEN : undefined,
-              color: isGraded ? MATCHA_GREEN : '#fff',
-            }}
-          >
-            {isGraded ? 'Sửa' : 'Chấm điểm'}
-          </Button>
-        );
-      },
-    },
-  ];
 
   const columns = [
     {
@@ -207,7 +154,7 @@ const IncomingInterview = () => {
       key: 'candidate',
       render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar style={{ backgroundColor: MATCHA_GREEN }}>{record.candidate[0]}</Avatar>
+          <Avatar style={{ backgroundColor: MATCHA_GREEN }}>{(record.candidate || '?')[0]}</Avatar>
           <div>
             <Text strong>{record.candidate}</Text>
             <br />
@@ -219,6 +166,8 @@ const IncomingInterview = () => {
     {
       title: 'Ngày & Giờ',
       key: 'datetime',
+      sorter: (a, b) => dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf(),
+      defaultSortOrder: 'ascend',
       render: (_, record) => (
         <div>
           <div>
@@ -239,27 +188,46 @@ const IncomingInterview = () => {
       render: (level) => <Tag color="cyan">Vòng {level}</Tag>,
     },
     {
-      title: 'Trạng thái',
+      title: 'Trạng thái lịch',
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
-        const config = getStatusConfig(status);
-        return <Tag color={config.color}>{config.label}</Tag>;
+        const cfg = statusConfig[status] || { color: 'default', label: status };
+        return <Tag color={cfg.color}>{cfg.label}</Tag>;
+      },
+    },
+    {
+      title: 'Phiếu chấm',
+      key: 'sheet',
+      render: (_, record) => {
+        const cfg = sheetStatusLabel(record.mySheetStatus);
+        return <Tag color={cfg.color} icon={cfg.icon}>{cfg.text}</Tag>;
       },
     },
     {
       title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
-        <Space size={4}>
+        <Space>
+          <Button
+            size="small"
+            icon={<InfoCircleOutlined />}
+            onClick={() => openDetail(record)}
+          >
+            Chi tiết
+          </Button>
           <Button
             type="primary"
             size="small"
-            icon={<TeamOutlined />}
-            onClick={() => handleShowCandidates(record)}
+            icon={<EditOutlined />}
+            onClick={() => navigateToGrading(record)}
             style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
           >
-            DS Ứng viên
+            {record.mySheetStatus === 'SUBMITTED'
+              ? 'Xem / Sửa'
+              : record.mySheetStatus === 'DRAFT'
+                ? 'Tiếp tục'
+                : 'Chấm điểm'}
           </Button>
         </Space>
       ),
@@ -279,18 +247,15 @@ const IncomingInterview = () => {
     <div className="interviewer-dashboard">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Incoming Interviews</Title>
-          <Text type="secondary">Your scheduled interviews</Text>
+          <Title level={3} className="page-title">Phỏng vấn sắp tới</Title>
+          <Text type="secondary">
+            Danh sách các buổi được phân công — sắp xếp theo thời gian gần nhất. Bấm "Chi tiết" để xem popup,
+            hoặc "Chấm điểm" để vào trang chấm.
+          </Text>
         </div>
         <Space>
           <Badge count={interviews.length} style={{ backgroundColor: MATCHA_GREEN }}>
-            <Button
-              type="default"
-              icon={<CalendarOutlined />}
-              onClick={() => navigate('/interviewer/schedule')}
-            >
-              Xem Lịch Phỏng Vấn
-            </Button>
+            <Button icon={<CalendarOutlined />}>Buổi được phân công</Button>
           </Badge>
           <Button icon={<ReloadOutlined />} onClick={fetchInterviews} loading={loading}>
             Làm mới
@@ -301,8 +266,8 @@ const IncomingInterview = () => {
       <Card className="main-card" bordered={false}>
         <div className="toolbar" style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <Input
-            placeholder="Tìm kiếm..."
-            prefix={<SearchOutlined />}
+            placeholder="Tìm theo tên ứng viên / vị trí..."
+            prefix={<FileTextOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 260 }}
@@ -311,13 +276,14 @@ const IncomingInterview = () => {
           <Select
             value={statusFilter}
             onChange={setStatusFilter}
-            style={{ width: 200 }}
+            style={{ width: 220 }}
             placeholder="Trạng thái"
-          >
-            <Select.Option value="all">Tất cả</Select.Option>
-            <Select.Option value="PENDING">Chờ ứng viên chốt lịch</Select.Option>
-            <Select.Option value="CONFIRMED">Đã chốt lịch</Select.Option>
-          </Select>
+            options={[
+              { value: 'all', label: 'Tất cả' },
+              { value: 'PENDING', label: 'Chờ ứng viên chốt lịch' },
+              { value: 'CONFIRMED', label: 'Đã chốt lịch' },
+            ]}
+          />
         </div>
 
         <Table
@@ -325,77 +291,35 @@ const IncomingInterview = () => {
           dataSource={filteredData}
           rowKey="id"
           loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} lịch`,
+          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Tổng ${total} lịch` }}
+          locale={{
+            emptyText: (
+              <div style={{ padding: 24 }}>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                  Bạn chưa có buổi phỏng vấn nào được giao.
+                </Text>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                  Các buổi sẽ hiện ở đây sau khi:
+                  <ul style={{ marginTop: 8, paddingLeft: 24, textAlign: 'left' }}>
+                    <li>Recruiter mở pool khung giờ và gán panel có bạn.</li>
+                    <li>Ứng viên chốt 1 khung → schedule chuyển sang <Tag color="processing">CONFIRMED</Tag>.</li>
+                  </ul>
+                </Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Nếu đã có ứng viên chốt mà vẫn trống, mở DevTools → Console, kiểm tra log <code>[IncomingInterview] raw response</code> để xem API có trả dữ liệu không.
+                </Text>
+              </div>
+            ),
           }}
         />
       </Card>
 
-      {/* Modal Danh Sách Ứng Viên */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <TeamOutlined style={{ color: MATCHA_GREEN }} />
-            Danh sách ứng viên phỏng vấn
-          </div>
-        }
-        open={candidateModalOpen}
-        onCancel={() => {
-          setCandidateModalOpen(false);
-          setSelectedSchedule(null);
-          setCandidates([]);
-        }}
-        footer={null}
-        width={800}
-      >
-        {selectedSchedule && (
-          <div style={{ marginTop: 16 }}>
-            <Descriptions column={3} size="small" style={{ marginBottom: 16, background: '#f5f5f5', padding: 12, borderRadius: 8 }}>
-              <Descriptions.Item label="Buổi PV">
-                <Text strong>{selectedSchedule.candidate}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Vị trí">
-                {selectedSchedule.position}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày">
-                {selectedSchedule.date ? dayjs(selectedSchedule.date).format('DD/MM/YYYY') : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Giờ">
-                {selectedSchedule.time || '-'} - {selectedSchedule.endTime || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Loại">
-                <Tag color={getTypeColor(selectedSchedule.type)}>{selectedSchedule.type}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Vòng">
-                <Tag color="cyan">Vòng {selectedSchedule.level}</Tag>
-              </Descriptions.Item>
-            </Descriptions>
-
-            <Divider orientation="left">Danh sách cần chấm điểm</Divider>
-
-            {loadingCandidates ? (
-              <div style={{ textAlign: 'center', padding: 40 }}>
-                Đang tải...
-              </div>
-            ) : candidates.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
-                <UserOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-                <p>Chưa có ứng viên nào trong buổi phỏng vấn này</p>
-              </div>
-            ) : (
-              <Table
-                columns={candidateColumns}
-                dataSource={candidates}
-                rowKey="id"
-                pagination={false}
-                loading={loadingCandidates}
-              />
-            )}
-          </div>
-        )}
-      </Modal>
+      <InterviewDetailModal
+        schedule={selectedSchedule}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        mode="incoming"
+      />
     </div>
   );
 };

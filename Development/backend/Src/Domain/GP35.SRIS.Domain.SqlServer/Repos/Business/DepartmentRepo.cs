@@ -26,11 +26,14 @@ public class DepartmentRepo : BaseRepo<long, Department>, IDepartmentRepo
     public async Task<IReadOnlyList<DepartmentRow>> GetListAsync(long companyId)
     {
         // Global Query Filter tự kèm company_id; đếm job đang dùng theo tên (Job lưu tên, không FK).
+        // LEFT JOIN User để kèm tên DM phụ trách (manager_user_id có thể NULL).
         return await (
             from d in _db.Departments.AsNoTracking()
             join j in _db.Jobs.AsNoTracking() on d.Name equals j.Department into gj
+            join u in _db.Users.AsNoTracking() on d.ManagerUserId equals u.UserId into gu
+            from mgr in gu.DefaultIfEmpty()
             orderby d.Name
-            select new DepartmentRow(d, gj.Count()))
+            select new DepartmentRow(d, gj.Count(), mgr != null ? mgr.FullName : null, mgr != null ? mgr.Email : null))
             .ToListAsync();
     }
 
@@ -50,6 +53,15 @@ public class DepartmentRepo : BaseRepo<long, Department>, IDepartmentRepo
     public async Task<int> CountJobsUsingAsync(long companyId, string name)
     {
         return await _db.Jobs.CountAsync(j => j.Department == name);
+    }
+
+    public async Task<long?> GetManagerByNameAsync(long companyId, string name)
+    {
+        // Tên phòng ban UNIQUE theo company + so sánh theo collation DB (case-insensitive).
+        return await _db.Departments.AsNoTracking()
+            .Where(d => d.Name == name)
+            .Select(d => d.ManagerUserId)
+            .FirstOrDefaultAsync();
     }
 
     public async Task RenameReferencesAsync(long companyId, string oldName, string newName)

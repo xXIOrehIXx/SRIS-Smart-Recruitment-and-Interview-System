@@ -11,28 +11,144 @@ import {
   InputNumber,
   Button,
   Typography,
-  Divider,
   Space,
   message,
-  Checkbox,
   Spin,
-  Tooltip,
-  ColorPicker,
+  Alert,
 } from "antd";
 import {
   SaveOutlined,
   SendOutlined,
-  PlusOutlined,
-  DeleteOutlined,
   ArrowLeftOutlined,
-  EyeOutlined,
 } from "@ant-design/icons";
 import { jobsAPI, recruitmentRequestAPI, usersAPI, departmentAPI } from "../../services/api";
 import JobSetupSteps from "../../components/JobSetupSteps";
 import "./css/CreateJob.css";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { TextArea } = Input;
+
+/**
+ * Quy tắc validate cho từng field — đặt riêng để dễ tái sử dụng giữa
+ * "Lưu nháp" (chỉ check required cơ bản) và "Đăng tin" (check full).
+ *
+ * Các con số (min/max) phản ánh BE DTO đi kèm:
+ *  - JobCreateDto.Title: [Required, MaxLength(300)]
+ *  - JobCreateDto.Status: regex "Draft|Open|Closed"
+ *  - JobGetDto.Description: TextArea max 2000
+ *  - Job entity: quantity min 1, salary thuộc decimal (lớn)
+ *
+ * FE validate CHẶT hơn BE (vd: description min 50 ký tự) là chủ ý — muốn
+ * cảnh báo recruiter sớm vì JD ngắn quá hệ thống chấm CV vector sẽ kém chính xác.
+ */
+const FIELD_RULES = {
+  // Basic — luôn áp dụng kể cả Lưu nháp
+  title: () => [
+    { required: true, message: "Vui lòng nhập tiêu đề tin đăng" },
+    { whitespace: true, message: "Tiêu đề không được chỉ chứa khoảng trắng" },
+    { min: 5, message: "Tiêu đề tối thiểu 5 ký tự" },
+    { max: 300, message: "Tiêu đề tối đa 300 ký tự" },
+  ],
+  // Strict — chỉ áp dụng khi Đăng tin
+  description: () => [
+    { required: true, message: "Vui lòng nhập mô tả công việc" },
+    { whitespace: true, message: "Mô tả không được chỉ chứa khoảng trắng" },
+    { min: 50, message: "Mô tả tối thiểu 50 ký tự (JD quá ngắn sẽ ảnh hưởng chấm điểm CV)" },
+    { max: 2000, message: "Mô tả tối đa 2000 ký tự" },
+  ],
+  department: () => [
+    { required: true, message: "Vui lòng chọn phòng ban" },
+  ],
+  location: () => [
+    { required: true, message: "Vui lòng nhập địa điểm" },
+    { whitespace: true, message: "Địa điểm không được chỉ chứa khoảng trắng" },
+    { min: 2, message: "Địa điểm tối thiểu 2 ký tự" },
+    { max: 200, message: "Địa điểm tối đa 200 ký tự" },
+  ],
+  type: () => [
+    { required: true, message: "Vui lòng chọn loại công việc" },
+  ],
+  quantity: () => [
+    { type: "integer", min: 1, message: "Số lượng tối thiểu 1" },
+    { type: "integer", max: 999, message: "Số lượng tối đa 999" },
+  ],
+  skillTags: () => [
+    { max: 500, message: "Kỹ năng tối đa 500 ký tự" },
+  ],
+  expiresAt: () => [
+    {
+      validator: (_, value) => {
+        if (!value) return Promise.resolve();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (value.toDate() < today) {
+          return Promise.reject(new Error("Hạn nộp đơn phải từ hôm nay trở đi"));
+        }
+        return Promise.resolve();
+      },
+    },
+  ],
+  salaryMin: ({ getFieldValue }) => ({
+    rules: [
+      { required: true, message: "Vui lòng nhập lương tối thiểu" },
+      { type: "number", min: 0, message: "Lương tối thiểu phải ≥ 0" },
+      { type: "number", max: 10_000_000_000, message: "Lương tối thiểu quá lớn" },
+      {
+        validator: (_, value) => {
+          if (value == null) return Promise.resolve();
+          const max = getFieldValue("salaryMax");
+          if (max != null && value > max) {
+            return Promise.reject(new Error("Lương tối thiểu phải nhỏ hơn hoặc bằng lương tối đa"));
+          }
+          return Promise.resolve();
+        },
+      },
+    ],
+  }),
+  salaryMax: ({ getFieldValue }) => ({
+    rules: [
+      { required: true, message: "Vui lòng nhập lương tối đa" },
+      { type: "number", min: 0, message: "Lương tối đa phải ≥ 0" },
+      { type: "number", max: 10_000_000_000, message: "Lương tối đa quá lớn" },
+      {
+        validator: (_, value) => {
+          if (value == null) return Promise.resolve();
+          const min = getFieldValue("salaryMin");
+          if (min != null && value < min) {
+            return Promise.reject(new Error("Lương tối đa phải lớn hơn hoặc bằng lương tối thiểu"));
+          }
+          return Promise.resolve();
+        },
+      },
+    ],
+  }),
+};
+
+/**
+ * Trả về rules cho từng field theo chế độ:
+ *  - "draft": chỉ title (để user lưu dở dang)
+ *  - "publish": full validate
+ */
+const buildRules = (mode, form) => {
+  const isDraft = mode === "draft";
+  return {
+    title: FIELD_RULES.title(),
+    // Mô tả, lương, địa điểm — chỉ bắt buộc khi Đăng tin
+    description: isDraft ? [] : FIELD_RULES.description(),
+    department: isDraft ? [] : FIELD_RULES.department(),
+    location: isDraft ? [] : FIELD_RULES.location(),
+    type: isDraft ? [] : FIELD_RULES.type(),
+    quantity: isDraft ? [] : FIELD_RULES.quantity(),
+    skillTags: isDraft ? [] : FIELD_RULES.skillTags(),
+    expiresAt: isDraft ? [] : FIELD_RULES.expiresAt(),
+    salaryMin: isDraft
+      ? []
+      : FIELD_RULES.salaryMin({ getFieldValue: form.getFieldValue }).rules,
+    salaryMax: isDraft
+      ? []
+      : FIELD_RULES.salaryMax({ getFieldValue: form.getFieldValue }).rules,
+  };
+};
 
 const CreateJob = () => {
   const navigate = useNavigate();
@@ -47,6 +163,11 @@ const CreateJob = () => {
   const [currentStep, setCurrentStep] = useState("posting");
   const [dmOptions, setDmOptions] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
+  // mode hiện tại đang validate: "draft" (mặc định — cho phép thiếu field) hay "publish"
+  const [mode, setMode] = useState("draft");
+  const [formError, setFormError] = useState(null);
+  // Rules động — đổi khi mode đổi để Form re-render message phù hợp
+  const rules = buildRules(mode, form);
 
   useEffect(() => {
     // Dropdown "Người quyết tuyển" — DM (kèm Admin, đúng luật Admin làm được mọi việc)
@@ -202,31 +323,55 @@ const CreateJob = () => {
   };
 
   const handleSaveDraft = async () => {
+    setMode("draft");
+    setFormError(null);
     try {
-      await form.validateFields();
+      // Khi Lưu nháp: chỉ check title là bắt buộc. Các field khác OK để trống.
+      await form.validateFields(["title"]);
       setLoading(true);
       const values = form.getFieldsValue();
       const data = getFormData(values);
 
       if (isEditMode && editingJobId) {
         await jobsAPI.update(editingJobId, data);
-        message.success("Cập nhật tin tuyển dụng thành công");
+        message.success("Cập nhật tin tuyển dụng thành công — bạn có thể tiếp tục chỉnh sửa.");
+        // QUAN TRỌNG: KHÔNG navigate sau khi update — user còn đang trong luồng edit. Trước
+        // đây navigate("/recruiter/jobs") làm user mất context, muốn sửa tiếp phải vào lại.
+        // Tạo mới (không phải edit) thì navigate tới JobDetail vừa tạo cho user xem lại.
       } else {
         const res = await jobsAPI.create(data);
         await linkToRequest(res.data?.jobId);
         message.success("Lưu nháp thành công");
+        navigate("/recruiter/jobs");
       }
-      navigate("/recruiter/jobs");
     } catch (error) {
+      // Lỗi validate (title trống) — antd throw object có errorFields
+      if (error?.errorFields) {
+        setFormError("Vui lòng nhập tiêu đề để lưu nháp.");
+        form.scrollToField(error.errorFields[0].name, {
+          block: "center",
+          behavior: "smooth",
+        });
+        return;
+      }
+      // Lỗi từ BE
       console.error("Error saving job:", error);
-      message.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      const apiMessage =
+        error?.response?.data?.userMsg ||
+        error?.response?.data?.UserMsg ||
+        error?.response?.data?.message ||
+        error?.message;
+      setFormError(apiMessage || "Không thể lưu nháp. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
   const handlePublish = async () => {
+    setMode("publish");
+    setFormError(null);
     try {
+      // Validate TOÀN BỘ trước khi bay BE.
       await form.validateFields();
       setLoading(true);
       const values = form.getFieldsValue();
@@ -235,25 +380,51 @@ const CreateJob = () => {
 
       if (isEditMode && editingJobId) {
         await jobsAPI.update(editingJobId, data);
-        message.success("Cập nhật và đăng tin thành công!");
+        message.success("Cập nhật và đăng tin thành công! Tin đã hiển thị trên trang tuyển dụng.");
+        // Giữ nguyên trang edit để user có thể chỉnh tiếp — KHÔNG navigate (giống handleSaveDraft).
       } else {
         const res = await jobsAPI.create(data);
         await linkToRequest(res.data?.jobId);
         message.success("Tin tuyển dụng đã được đăng thành công!");
+        navigate("/recruiter/jobs");
       }
-      navigate("/recruiter/jobs");
     } catch (error) {
+      if (error?.errorFields) {
+        const first = error.errorFields[0];
+        const firstMsg = first?.errors?.[0];
+        setFormError(
+          firstMsg || "Vui lòng điền đầy đủ thông tin bắt buộc trước khi đăng tin.",
+        );
+        form.scrollToField(first.name, { block: "center", behavior: "smooth" });
+        return;
+      }
       console.error("Error publishing job:", error);
-      message.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      const apiMessage =
+        error?.response?.data?.userMsg ||
+        error?.response?.data?.UserMsg ||
+        error?.response?.data?.message ||
+        error?.message;
+      setFormError(apiMessage || "Không thể đăng tin. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePreview = () => {
-    message.info(
-      "Xem trước trang đăng tuyển sẽ được mở trong bản cập nhật tiếp theo",
-    );
+  /**
+   * Submit bằng Enter trong khi đang ở tab Lưu nháp — vẫn phải cho phép save dở dang.
+   * Khi user bấm "Đăng tin" mà fail validate, alert sẽ được set qua handlePublish.
+   */
+  const onFinishFailed = ({ errorFields }) => {
+    const first = errorFields?.[0];
+    if (!first) return;
+    const msg = first.errors?.[0];
+    setFormError(msg || "Vui lòng kiểm tra lại các trường được đánh dấu đỏ.");
+    form.scrollToField(first.name, { block: "center", behavior: "smooth" });
+  };
+
+  // Tắt Alert tổng khi user sửa bất kỳ field nào
+  const dismissFormError = () => {
+    if (formError) setFormError(null);
   };
 
   const renderStepContent = () => {
@@ -269,21 +440,27 @@ const CreateJob = () => {
               <Form.Item
                 name="title"
                 label="Tiêu đề tin đăng"
-                rules={[
-                  { required: true, message: "Vui lòng nhập tiêu đề tin đăng" },
-                ]}
+                rules={rules.title}
               >
-                <Input size="large" />
+                <Input
+                  size="large"
+                  placeholder="VD: Senior React Developer"
+                  onChange={dismissFormError}
+                />
               </Form.Item>
 
               <Form.Item
                 name="description"
                 label="Mô tả công việc"
-                rules={[
-                  { required: true, message: "Vui lòng nhập mô tả công việc" },
-                ]}
+                rules={rules.description}
               >
-                <TextArea rows={6} maxLength={2000} showCount />
+                <TextArea
+                  rows={6}
+                  maxLength={2000}
+                  showCount
+                  placeholder="Mô tả chi tiết về trách nhiệm, yêu cầu, quyền lợi..."
+                  onChange={dismissFormError}
+                />
               </Form.Item>
 
               <Row gutter={16}>
@@ -292,9 +469,7 @@ const CreateJob = () => {
                     name="department"
                     label="Phòng ban"
                     tooltip="Danh mục phòng ban do Admin quản lý (menu Phòng Ban)"
-                    rules={[
-                      { required: true, message: "Vui lòng chọn phòng ban" },
-                    ]}
+                    rules={rules.department}
                   >
                     <Select
                       showSearch
@@ -305,6 +480,7 @@ const CreateJob = () => {
                         label: d.name,
                       }))}
                       notFoundContent="Chưa có phòng ban — nhờ Admin tạo ở menu Phòng Ban"
+                      onChange={dismissFormError}
                     />
                   </Form.Item>
                 </Col>
@@ -333,11 +509,13 @@ const CreateJob = () => {
                   <Form.Item
                     name="location"
                     label="Địa điểm"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập địa điểm" },
-                    ]}
+                    rules={rules.location}
                   >
-                    <Input size="large" />
+                    <Input
+                      size="large"
+                      placeholder="VD: Hà Nội, TP.HCM, Remote..."
+                      onChange={dismissFormError}
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -345,16 +523,11 @@ const CreateJob = () => {
                     name="type"
                     label="Loại công việc"
                     initialValue="Full-time"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn loại công việc",
-                      },
-                    ]}
+                    rules={rules.type}
                   >
                     {/* defaultValue trên Select KHÔNG ghi vào Form store -> validate fail
                         dù ô đang hiển thị giá trị. Phải dùng initialValue của Form.Item. */}
-                    <Select size="large">
+                    <Select size="large" onChange={dismissFormError}>
                       <Select.Option value="Full-time">
                         Toàn thời gian
                       </Select.Option>
@@ -387,13 +560,14 @@ const CreateJob = () => {
 
               <Row gutter={16}>
                 <Col xs={24} md={8}>
-                  <Form.Item name="quantity" label="Số Lượng Tuyển">
+                  <Form.Item name="quantity" label="Số Lượng Tuyển" rules={rules.quantity}>
                     <InputNumber
                       size="large"
                       style={{ width: "100%" }}
                       min={1}
                       max={999}
                       placeholder="VD: 3"
+                      onChange={dismissFormError}
                     />
                   </Form.Item>
                 </Col>
@@ -401,10 +575,12 @@ const CreateJob = () => {
                   <Form.Item
                     name="skillTags"
                     label="Kỹ Năng (phân cách bằng dấu phẩy)"
+                    rules={rules.skillTags}
                   >
                     <Input
                       placeholder="VD: React, Node.js, TypeScript"
                       size="large"
+                      onChange={dismissFormError}
                     />
                   </Form.Item>
                 </Col>
@@ -412,82 +588,17 @@ const CreateJob = () => {
 
               <Row gutter={16}>
                 <Col xs={24} md={12}>
-                  <Form.Item name="expiresAt" label="Hạn nộp đơn">
+                  <Form.Item name="expiresAt" label="Hạn nộp đơn" rules={rules.expiresAt}>
                     <DatePicker
                       style={{ width: "100%" }}
                       size="large"
                       placeholder="Chọn hạn nộp"
                       format="DD/MM/YYYY"
+                      onChange={dismissFormError}
                     />
                   </Form.Item>
                 </Col>
               </Row>
-            </Card>
-
-            <Card className="form-card" bordered={false}>
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Form.Item
-                    name="buttonText"
-                    label="Nội dung nút"
-                    rules={[{ max: 25, message: "Tối đa 25 ký tự" }]}
-                    className="button-text-field"
-                  >
-                    <Input
-                      placeholder="Ứng tuyển ngay"
-                      size="large"
-                      maxLength={25}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col xs={24} md={12}></Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="template"
-                    label="Mẫu trang đăng tuyển"
-                    initialValue="visual"
-                  >
-                    <Select size="large">
-                      <Select.Option value="visual">
-                        Visual (mặc định)
-                      </Select.Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col xs={24} md={12}>
-                  <Form.Item name="backgroundImage" label="Ảnh nền">
-                    <Input
-                      placeholder="https://example.com/bg.jpg"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item name="textColor" label="Màu chữ">
-                    <ColorPicker defaultValue="#FFFFFF" size="large" showText />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Card className="preview-card" bordered={false}>
-                <div className="preview-banner">
-                  <span>Website preview</span>
-                </div>
-                <div className="preview-content">
-                  <Title level={5} style={{ marginBottom: 8 }}>
-                    Senior Frontend Developer
-                  </Title>
-                  <Text type="secondary">
-                    Đây là bản xem trước mẫu trang đăng tuyển của bạn.
-                  </Text>
-                </div>
-              </Card>
             </Card>
           </>
         );
@@ -503,7 +614,8 @@ const CreateJob = () => {
                   <Form.Item
                     name="salaryMin"
                     label="Lương tối thiểu"
-                    rules={[{ required: true, message: "Bắt buộc" }]}
+                    rules={rules.salaryMin}
+                    dependencies={["salaryMax"]}
                   >
                     <InputNumber
                       size="large"
@@ -513,6 +625,7 @@ const CreateJob = () => {
                       }
                       parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                       placeholder="Tối thiểu"
+                      onChange={dismissFormError}
                     />
                   </Form.Item>
                 </Col>
@@ -520,7 +633,8 @@ const CreateJob = () => {
                   <Form.Item
                     name="salaryMax"
                     label="Lương tối đa"
-                    rules={[{ required: true, message: "Bắt buộc" }]}
+                    rules={rules.salaryMax}
+                    dependencies={["salaryMin"]}
                   >
                     <InputNumber
                       size="large"
@@ -530,6 +644,7 @@ const CreateJob = () => {
                       }
                       parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
                       placeholder="Tối đa"
+                      onChange={dismissFormError}
                     />
                   </Form.Item>
                 </Col>
@@ -602,7 +717,46 @@ const CreateJob = () => {
         </aside>
 
         <div className="wizard-content">
-          <Form form={form} layout="vertical" className="job-form">
+          <Form
+            form={form}
+            layout="vertical"
+            className="job-form"
+            onFinishFailed={onFinishFailed}
+            scrollToFirstError={{ block: "center", behavior: "smooth" }}
+            // Validate mỗi lần blur/change — user sửa sẽ thấy lỗi tự biến mất.
+            validateTrigger={["onBlur", "onChange"]}
+          >
+            {isEditMode && editingJobId && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message={
+                  <Space>
+                    <Text strong>Đang chỉnh sửa tin tuyển dụng.</Text>
+                    <Text type="secondary">
+                      Sau khi bấm "Lưu nháp" hoặc "Đăng tin", trang sẽ giữ nguyên — bạn có thể
+                      tiếp tục chỉnh.
+                    </Text>
+                  </Space>
+                }
+                action={
+                  <Button size="small" onClick={() => navigate(`/recruiter/jobs/${editingJobId}`)}>
+                    Xem tin
+                  </Button>
+                }
+              />
+            )}
+            {formError && (
+              <Alert
+                type="error"
+                message={formError}
+                showIcon
+                closable
+                onClose={() => setFormError(null)}
+                style={{ marginBottom: 16 }}
+              />
+            )}
             {renderStepContent()}
           </Form>
         </div>
@@ -613,13 +767,6 @@ const CreateJob = () => {
           <div></div>
         </Space>
         <Space>
-          <Tooltip title="Xem trước trang đăng tuyển">
-            <Button
-              icon={<EyeOutlined />}
-              onClick={handlePreview}
-              size="large"
-            />
-          </Tooltip>
           <Button
             icon={<SaveOutlined />}
             onClick={handleSaveDraft}

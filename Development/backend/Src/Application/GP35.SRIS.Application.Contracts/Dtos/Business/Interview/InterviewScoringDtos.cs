@@ -7,6 +7,13 @@ public class MyScheduleDto
     public long ApplicationId { get; set; }
     public int RoundNumber { get; set; }
     public string Status { get; set; } = null!;
+
+    /// <summary>
+    /// Trạng thái phiếu chấm của CHÍNH interviewer này cho buổi:
+    /// NOT_STARTED | DRAFT | SUBMITTED. FE dùng để phân biệt "đã nộp / đang nháp / chưa chấm".
+    /// </summary>
+    public string MySheetStatus { get; set; } = "NOT_STARTED";
+
     /// <summary>Giờ hẹn (khung đã chốt).</summary>
     public DateTime StartTime { get; set; }
     public string CandidateName { get; set; } = null!;
@@ -39,6 +46,30 @@ public class ScoringSheetCriterionDto
     public string? MyNote { get; set; }
 }
 
+/// <summary>Thông tin buổi phỏng vấn — gọn để hiển thị ở header trang chấm.</summary>
+public class ScoringScheduleInfoDto
+{
+    public long ScheduleId { get; set; }
+    public long ApplicationId { get; set; }
+    public int RoundNumber { get; set; }
+    public string Status { get; set; } = null!;
+    public DateTime StartTime { get; set; }
+
+    /// <summary>Job mà buổi này phỏng vấn cho (chỉ summary — để FE có tiêu đề).</summary>
+    public string JobTitle { get; set; } = null!;
+
+    /// <summary>Số interviewer trong panel (để hiển thị "số người tham gia").</summary>
+    public int PanelSize { get; set; }
+}
+
+/// <summary>Thông tin ứng viên gọn — header trang chấm.</summary>
+public class ScoringCandidateInfoDto
+{
+    public long CandidateId { get; set; }
+    public string FullName { get; set; } = null!;
+    public string Email { get; set; } = null!;
+}
+
 /// <summary>Phiếu chấm của interviewer cho 1 buổi (chỉ thấy điểm CỦA MÌNH — Blind Review).</summary>
 public class ScoringSheetDto
 {
@@ -48,6 +79,12 @@ public class ScoringSheetDto
     public string MyStatus { get; set; } = null!;
 
     public List<ScoringSheetCriterionDto> Criteria { get; set; } = new();
+
+    /// <summary>Thông tin buổi (vòng, thời gian, số người panel) — FE bind cho header card.</summary>
+    public ScoringScheduleInfoDto? Schedule { get; set; }
+
+    /// <summary>Thông tin ứng viên của buổi.</summary>
+    public ScoringCandidateInfoDto? Candidate { get; set; }
 }
 
 // ----- Tổng hợp panel (sau khi đã SUBMITTED — blind mở) -----
@@ -56,6 +93,8 @@ public class ScoringSheetDto
 public class InterviewerScoreDto
 {
     public long InterviewerId { get; set; }
+    /// <summary>Tên người chấm (rơi về email khi chưa điền full_name) — DM cần biết ai chấm.</summary>
+    public string? InterviewerName { get; set; }
     public decimal? Score { get; set; }
     public string? Note { get; set; }
 }
@@ -84,6 +123,7 @@ public class AggregateCriterionDto
 public class InterviewerTotalDto
 {
     public long InterviewerId { get; set; }
+    public string? InterviewerName { get; set; }
     public decimal WeightedTotal { get; set; }
 }
 
@@ -97,4 +137,13 @@ public class ScheduleAggregateDto
 
     /// <summary>Trung bình điểm tổng có trọng số của cả panel.</summary>
     public decimal PanelWeightedAverage { get; set; }
+
+    /// <summary>Vòng phỏng vấn (InterviewSchedule.round_number) — chỉ điền khi xem theo hồ sơ.</summary>
+    public int? RoundNumber { get; set; }
+
+    /// <summary>Giờ phỏng vấn đã chốt (slot) — chỉ điền khi xem theo hồ sơ.</summary>
+    public DateTime? ScheduledAt { get; set; }
+
+    /// <summary>PENDING | CONFIRMED | CANCELLED | NO_SLOT_FITS.</summary>
+    public string? ScheduleStatus { get; set; }
 }

@@ -1,0 +1,66 @@
+@startuml Feature10_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 10: Application Pipeline - Sequence: Reject Application**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nApplicationPipelineController" as Ctrl
+participant "<<service>>\nApplicationStateService" as Svc
+participant "<<repository>>\nApplicationRepository" as Repo
+participant "<<repository>>\nActivityLogRepository" as LogRepo
+participant "<<service>>\nNotificationService" as Notify
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Click "Reject" & Enter reason
+activate UI
+
+UI -> Ctrl: POST /api/applications/{id}/reject
+activate Ctrl
+
+Ctrl -> Svc: RejectAsync(companyId, userId, appId, reason)
+activate Svc
+
+Svc -> Svc: TransitionAsync(..., "REJECTED", reason)
+
+Svc -> Repo: GetByIdAsync(companyId, appId)
+activate Repo
+Repo --> Svc: return Application
+deactivate Repo
+
+Svc -> Repo: TransitionStateAsync(..., "REJECTED", reason, rejectedAt=now)
+activate Repo
+Repo -> DbContext: Attach & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL UPDATE
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: success
+deactivate DbContext
+Repo --> Svc: return 1
+deactivate Repo
+
+Svc -> LogRepo: InsertAsync(activityLog)
+activate LogRepo
+LogRepo --> Svc: ok
+deactivate LogRepo
+
+Svc -> Notify: SendResultAsync(companyId, appId, "REJECTED")
+activate Notify
+Notify --> Svc: ok
+deactivate Notify
+
+Svc --> Ctrl: return ApplicationStateDto
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Recruiter: Move Application to Rejected list
+deactivate UI
+@enduml

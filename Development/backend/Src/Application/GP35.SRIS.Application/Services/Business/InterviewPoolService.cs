@@ -11,8 +11,11 @@ using Serilog;
 namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
-/// Đặt lịch phỏng vấn theo POOL dùng chung — Recruiter (Section 15). KÉO trước (card ở INTERVIEW),
-/// MỜI sau. Ai chốt trước lấy trước; các khung khác giữ OPEN cho người sau.
+/// Đặt lịch phỏng vấn theo POOL dùng chung — Recruiter (Section 15). Ai chốt trước lấy trước;
+/// các khung khác giữ OPEN cho người sau.
+///
+/// MỜI = hồ sơ đã sang bước Phỏng vấn: service tự đẩy state tới INTERVIEW (đi từng bước, có
+/// ActivityLog) thay vì bắt Recruiter sang Kanban kéo card trước rồi mới mời được.
 ///
 /// Mở rộng A: mỗi khung có 1..N interviewer (panel) — Recruiter có thể chọn 3–5 người cùng dự buổi phỏng vấn.
 /// </summary>
@@ -27,6 +30,7 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     private readonly IMagicLinkService _magicLink;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly INotificationService _notify;
+    private readonly IApplicationStateService _stateService;
     private readonly ILogger _logger;
 
     public InterviewPoolService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -37,6 +41,7 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _notify = serviceProvider.GetRequiredService<INotificationService>();
+        _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<InterviewPoolService>();
     }
 
@@ -83,13 +88,15 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
                 result.Skipped.Add(new InviteSkippedDto { ApplicationId = applicationId, Reason = "Không tìm thấy hồ sơ." });
                 continue;
             }
-            if (!string.Equals(app.CurrentState, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase))
+            // Mời phỏng vấn = hồ sơ đã sang bước Phỏng vấn -> tự đẩy state (NEW/SCREENING→INTERVIEW).
+            // Hồ sơ đã HIRED/REJECTED thì không đẩy được -> báo lý do, không mời.
+            try
             {
-                result.Skipped.Add(new InviteSkippedDto
-                {
-                    ApplicationId = applicationId,
-                    Reason = "Hồ sơ chưa ở bước INTERVIEW (kéo card sang INTERVIEW trước)."
-                });
+                await _stateService.AdvanceToAsync(companyId, userId, applicationId, ApplicationState.Interview);
+            }
+            catch (BaseException ex)
+            {
+                result.Skipped.Add(new InviteSkippedDto { ApplicationId = applicationId, Reason = ex.ErrorMessage });
                 continue;
             }
             if (await _schedulingRepo.HasActiveInviteInPoolAsync(companyId, poolId, applicationId))
@@ -180,8 +187,9 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     {
         var app = await _appRepo.GetByIdAsync(companyId, applicationId)
             ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={applicationId}).");
-        if (!string.Equals(app.CurrentState, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase))
-            throw Conflict("Chỉ chốt lịch tay khi hồ sơ đang ở bước INTERVIEW.");
+
+        // Chốt lịch tay cũng là "hồ sơ đã sang bước Phỏng vấn" -> tự đẩy state, khỏi kéo Kanban.
+        await _stateService.AdvanceToAsync(companyId, userId, applicationId, ApplicationState.Interview);
 
         if (dto.InterviewerIds is null || dto.InterviewerIds.Count == 0)
             throw Bad("Phải chọn ít nhất 1 interviewer cho panel.");

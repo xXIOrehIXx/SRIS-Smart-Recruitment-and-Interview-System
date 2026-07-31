@@ -122,9 +122,12 @@ const InterviewScheduleRecruit = () => {
     try {
       await interviewAPI.createPool(selectedJobId, {
         roundNumber: values.roundNumber || undefined,
+        // startTime gửi lên BE dạng ISO local (không có 'Z' / timezone) để giữ
+        // đúng giờ user chọn. Trước đây dùng toISOString() đổi sang UTC khiến giờ
+        // hiển thị ở FE lệch (vd user chọn 09:00 +07:00 → BE lưu 02:00 UTC).
         slots: slots.map(s => ({
           interviewerIds: s.interviewerIds,
-          startTime: s.startTime.toISOString(),
+          startTime: s.startTime.format('YYYY-MM-DDTHH:mm:ss'),
         })),
       });
       message.success('Đã mở pool khung giờ phỏng vấn!');
@@ -212,7 +215,8 @@ const InterviewScheduleRecruit = () => {
     try {
       await interviewAPI.manualConfirm(values.applicationId, {
         interviewerIds: values.interviewerIds,
-        startTime: values.startTime.toISOString(),
+        // Gửi local ISO không 'Z' để khớp giờ user chọn (xem comment ở handleCreatePool).
+        startTime: values.startTime.format('YYYY-MM-DDTHH:mm:ss'),
         roundNumber: values.roundNumber || undefined,
       });
       message.success('Đã chốt lịch tay cho ứng viên!');

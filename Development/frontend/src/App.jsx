@@ -101,7 +101,6 @@ const App = () => {
         />
         <Route path="/criteria" element={<Criteria />} />
         <Route path="/mail-templates" element={<MailTemplates />} />
-        <Route path="/offers" element={<OfferManagement />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/analytics/cv-scoring" element={<CVScoring />} />
         <Route path="/talent-pool" element={<TalentPool />} />
@@ -114,7 +113,6 @@ const App = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/interviewer/dashboard" element={<Dashboard />} />
         <Route path="/interviewer/incoming" element={<IncomingInterview />} />
         <Route
           path="/interviewer/history"
@@ -125,6 +123,17 @@ const App = () => {
           element={<InterviewerInterviewDetail />}
         />
         <Route path="/interviewer/grading/:id" element={<Grading />} />
+      </Route>
+
+      {/* Offers — Recruiter quản lý OfferDetail (sau khi DM đã duyệt ở bước INTERVIEW->OFFER). */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/offers" element={<OfferManagement />} />
       </Route>
 
       <Route

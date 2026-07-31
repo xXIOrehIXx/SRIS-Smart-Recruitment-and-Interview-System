@@ -1,0 +1,68 @@
+@startuml Feature3_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 4: Offer Management - Sequence: Create Offer**
+
+actor Recruiter
+participant "Recruiter UI" as UI
+participant "<<controller>>\nOfferController" as Ctrl
+participant "<<service>>\nOfferService" as Svc
+participant "<<repository>>\nApplicationRepository" as AppRepo
+participant "<<repository>>\nOfferRepository" as Repo
+participant "<<entity>>\nOfferDetail" as Entity
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+participant "<<service>>\nMagicLinkService" as MagicLink
+
+Recruiter -> UI: Submit offer details
+activate UI
+
+UI -> Ctrl: POST /api/offers
+activate Ctrl
+
+Ctrl -> Svc: MakeOfferAsync(appId, dto)
+activate Svc
+
+Svc -> AppRepo: GetByIdAsync(appId)
+activate AppRepo
+AppRepo --> Svc: return Application
+deactivate AppRepo
+
+Svc -> Repo: InsertAsync(offerData)
+activate Repo
+
+Repo -> Entity: Create OfferDetail
+activate Entity
+Entity --> Repo: OfferDetail object
+deactivate Entity
+
+Repo -> DbContext: Add(entity) & SaveChangesAsync()
+activate DbContext
+DbContext -> DB: Execute SQL INSERT
+activate DB
+DB --> DbContext: return success
+deactivate DB
+DbContext --> Repo: return success
+deactivate DbContext
+
+Repo --> Svc: return offerId
+deactivate Repo
+
+Svc -> MagicLink: IssueAsync(companyId, appId, "OFFER_RESPONSE")
+activate MagicLink
+note right of MagicLink: MagicLink Service internally\nsends the Offer Email
+MagicLink --> Svc: return IssuedToken
+deactivate MagicLink
+
+Svc --> Ctrl: return MakeOfferResultDto
+deactivate Svc
+
+Ctrl --> UI: return JSON data
+deactivate Ctrl
+
+UI --> Recruiter: Display success message
+deactivate UI
+@enduml

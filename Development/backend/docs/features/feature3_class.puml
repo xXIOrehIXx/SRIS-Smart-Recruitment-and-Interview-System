@@ -1,0 +1,48 @@
+@startuml Feature3_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 3: Candidate Schedule Booking (Class Diagram)**
+
+class CandidateScheduleController <<boundary>> {
+    - _candidateScheduleService : CandidateScheduleService
+    + ConfirmAsync(token : string, dto : Object) : Object
+}
+
+class CandidateScheduleService <<control>> {
+    - _magicLink : MagicLinkService
+    - _schedulingRepo : SchedulingRepository
+    + ConfirmAsync(rawToken : string, dto : Object) : ScheduleConfirmationDto
+}
+
+class InterviewSlotPool <<entity>> {
+    - poolId : long
+    - roundNumber : int
+    - status : string
+}
+
+class InterviewSlot <<entity>> {
+    - slotId : long
+    - poolId : long
+    - startTime : DateTime
+    - status : string
+}
+
+class InterviewSchedule <<entity>> {
+    - scheduleId : long
+    - applicationId : long
+    - poolId : long
+    - confirmedSlotId : long
+    - status : string
+}
+
+CandidateScheduleController --> CandidateScheduleService : Association
+
+InterviewSlotPool "1" *--> "*" InterviewSlot : Composition
+InterviewSlotPool "1" *--> "*" InterviewSchedule : Composition
+
+@enduml

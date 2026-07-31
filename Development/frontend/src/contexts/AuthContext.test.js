@@ -12,10 +12,10 @@ describe('ROLES / ROLE_ROUTES', () => {
     expect(ROLES.DEPARTMENT_MANAGER).toBe('DepartmentManager');
   });
 
-  test('mỗi role có dashboard riêng sau login', () => {
+  test('mỗi role có landing route riêng sau login (interviewer -> /interviewer/incoming)', () => {
     expect(ROLE_ROUTES[ROLES.ADMIN]).toBe('/admin/dashboard');
     expect(ROLE_ROUTES[ROLES.RECRUITER]).toBe('/recruiter/dashboard');
-    expect(ROLE_ROUTES[ROLES.INTERVIEWER]).toBe('/interviewer/dashboard');
+    expect(ROLE_ROUTES[ROLES.INTERVIEWER]).toBe('/interviewer/incoming');
     expect(ROLE_ROUTES[ROLES.DEPARTMENT_MANAGER]).toBe('/dept/dashboard');
   });
 });

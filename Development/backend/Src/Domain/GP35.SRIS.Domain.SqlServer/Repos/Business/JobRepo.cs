@@ -218,4 +218,30 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
         if (_db.JobBenefits.Local.Count > 0)
             await _db.SaveChangesAsync();
     }
+
+    public async Task<IReadOnlyList<ExpiredJobRef>> GetExpiredOpenJobsAsync(CancellationToken ct = default)
+    {
+        // Raw SQL bypass RLS — worker JobExpiry cần nhìn xuyên tenant (không có request HTTP
+        // để set SESSION_CONTEXT). Job trong bảng Job có company_id; đóng job từng cái bằng
+        // UpdateAsync thông thường sau khi worker tự set IContextData.CompanyId.
+        var rows = await _db.Database
+            .SqlQueryRaw<ExpiredJobRow>(
+                "SELECT company_id AS CompanyId, job_id AS JobId, title AS Title, deadline AS Deadline " +
+                "FROM dbo.Job " +
+                "WHERE status = 'Open' AND deadline IS NOT NULL AND deadline < CAST(SYSUTCDATETIME() AS DATE)")
+            .ToListAsync(ct);
+        return rows.Select(r => new ExpiredJobRef(r.CompanyId, r.JobId, r.Title, r.Deadline)).ToList();
+    }
+
+    /// <summary>
+    /// Wrapper riêng cho SqlQueryRaw — không thể dùng record <see cref="ExpiredJobRef"/> vì
+    /// property-name trong SQL phải khớp tên cột thuần (EF map theo PropertyInfo + value converter).
+    /// </summary>
+    private class ExpiredJobRow
+    {
+        public long CompanyId { get; set; }
+        public long JobId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public DateTime Deadline { get; set; }
+    }
 }

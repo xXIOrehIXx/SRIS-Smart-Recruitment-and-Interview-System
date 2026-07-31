@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import {
   Layout,
   Typography,
@@ -25,6 +26,7 @@ const { Title, Paragraph, Text } = Typography;
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user, getDashboardRoute } = useAuth();
 
   const stats = [
     { title: "Total Jobs", value: 24, suffix: "+", trend: "+12%" },
@@ -61,14 +63,7 @@ const Home = () => {
           </svg>
           <h2>SRIS</h2>
         </div>
-        <div className="nav-links">
-          <a href="#product">Product</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#resources">Resources</a>
-          <a href="#customers">Customers</a>
-        </div>
         <div className="header-actions">
-<<<<<<< Updated upstream
           <Button
             type="text"
             className="login-btn"
@@ -84,7 +79,7 @@ const Home = () => {
           >
             Book a demo
           </Button>
-=======
+
           {isAuthenticated ? (
             <Space size="middle">
               <Text strong>{user?.fullName || user?.email}</Text>
@@ -98,6 +93,7 @@ const Home = () => {
               </Button>
             </Space>
           ) : (
+
             <Button
               type="text"
               className="login-btn"
@@ -106,7 +102,16 @@ const Home = () => {
               Log in
             </Button>
           )}
->>>>>>> Stashed changes
+            <>
+              <Button
+                type="text"
+                className="login-btn"
+                onClick={() => navigate("/login")}
+              >
+                Log in
+              </Button>
+            </>
+
         </div>
       </Header>
 
@@ -132,36 +137,6 @@ const Home = () => {
               Hệ thống quản lý tuyển dụng và phỏng vấn thông minh. Thu hút, quản
               lý và tuyển dụng những ứng viên tốt nhất một cách dễ dàng.
             </Paragraph>
-<<<<<<< Updated upstream
-            <Space size="middle" className="hero-buttons">
-              <Button
-                type="primary"
-                size="large"
-                shape="round"
-                className="primary-btn"
-                icon={<RightOutlined />}
-                iconPosition="end"
-              >
-                Book a demo
-              </Button>
-              <Button
-                size="large"
-                shape="round"
-                className="secondary-btn"
-                onClick={() => navigate("/recruitment")}
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-hover) 100%)",
-                  borderColor: "var(--brand-color)",
-                  color: "white",
-                  fontWeight: 500,
-                }}
-              >
-                Khám phá việc làm
-              </Button>
-            </Space>
-=======
->>>>>>> Stashed changes
             <div className="hero-stats">
               <div className="stat-item">
                 <span className="stat-value">500+</span>

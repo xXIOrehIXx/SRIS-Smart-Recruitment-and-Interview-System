@@ -1,0 +1,52 @@
+@startuml Feature6_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 6: User Management - Sequence: Disable User (Toggle Status)**
+
+actor Admin
+participant "Web UI" as UI
+participant "<<controller>>\nUserManageController" as Ctrl
+participant "<<service>>\nUserManageService" as Svc
+participant "<<repository>>\nUserRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Admin -> UI: Click Disable User
+activate UI
+
+UI -> Ctrl: POST /api/users/{id}/disable
+activate Ctrl
+
+Ctrl -> Svc: DisableAsync(companyId, userId)
+activate Svc
+
+Svc -> Repo: GetByIdAsync(companyId, userId)
+activate Repo
+Repo --> Svc: return User
+deactivate Repo
+
+Svc -> Repo: UpdateAsync(companyId, userId, ..., "Disabled")
+activate Repo
+Repo -> DbContext: Attach & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL UPDATE
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: success
+deactivate DbContext
+Repo --> Svc: ok
+deactivate Repo
+
+Svc --> Ctrl: return success
+deactivate Svc
+
+Ctrl --> UI: return 200 OK
+deactivate Ctrl
+
+UI --> Admin: Show User Disabled
+deactivate UI
+@enduml

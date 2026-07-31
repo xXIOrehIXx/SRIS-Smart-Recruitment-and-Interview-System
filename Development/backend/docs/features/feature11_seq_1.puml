@@ -1,0 +1,49 @@
+@startuml Feature11_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 11: Kanban Dashboard - Sequence: Load Kanban Board**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nApplicationQueryController" as Ctrl
+participant "<<service>>\nApplicationQueryService" as Svc
+participant "<<repository>>\nApplicationRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Open Kanban Board for Job
+activate UI
+
+UI -> Ctrl: GET /api/jobs/{jobId}/board
+activate Ctrl
+
+Ctrl -> Svc: GetBoardByJobAsync(companyId, jobId)
+activate Svc
+
+Svc -> Repo: GetBoardByJobAsync(companyId, jobId)
+activate Repo
+Repo -> DbContext: Query Applications + Candidate info
+activate DbContext
+DbContext -> DB: SELECT ... JOIN Candidate
+activate DB
+DB --> DbContext: Rows (grouped by state in UI later)
+deactivate DB
+DbContext --> Repo: Data
+deactivate DbContext
+Repo --> Svc: return list of AppBoardRow
+deactivate Repo
+
+Svc -> Svc: Map to ApplicationBoardDto\n(List of ApplicationCardDto)
+
+Svc --> Ctrl: return ApplicationBoardDto
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Recruiter: Render Kanban columns
+deactivate UI
+@enduml

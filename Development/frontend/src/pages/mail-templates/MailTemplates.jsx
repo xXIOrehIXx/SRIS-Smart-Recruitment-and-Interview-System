@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -16,23 +16,16 @@ import {
   Col,
   Statistic,
   Descriptions,
-  InputNumber,
   Divider,
-  Popconfirm,
-  Badge,
+  Alert,
 } from "antd";
 import {
-  PlusOutlined,
   MailOutlined,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
   ReloadOutlined,
-  CopyOutlined,
-  FileTextOutlined,
   SearchOutlined,
-  SaveOutlined,
-  RestOutlined,
 } from "@ant-design/icons";
 import { mailTemplateAPI } from "../../services/api";
 import "./css/MailTemplates.css";
@@ -41,58 +34,39 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const MATCHA_GREEN = "#5D8C3E";
-const DRAFT_KEY = "mail_template_draft";
 
-// Custom hook for draft auto-save
-const useDraftSave = (storageKey) => {
-  const [hasDraft, setHasDraft] = useState(false);
-  const [draftData, setDraftData] = useState(null);
-
-  useEffect(() => {
-    const savedDraft = localStorage.getItem(storageKey);
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed && Object.keys(parsed).length > 0) {
-          setHasDraft(true);
-          setDraftData(parsed);
-        }
-      } catch (e) {
-        localStorage.removeItem(storageKey);
-      }
-    }
-  }, [storageKey]);
-
-  const saveDraft = useCallback(
-    (values) => {
-      if (values) {
-        localStorage.setItem(storageKey, JSON.stringify(values));
-        setHasDraft(true);
-        setDraftData(values);
-      }
-    },
-    [storageKey],
-  );
-
-  const clearDraft = useCallback(() => {
-    localStorage.removeItem(storageKey);
-    setHasDraft(false);
-    setDraftData(null);
-  }, [storageKey]);
-
-  const getDraft = useCallback(() => {
-    const savedDraft = localStorage.getItem(storageKey);
-    if (savedDraft) {
-      try {
-        return JSON.parse(savedDraft);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }, [storageKey]);
-
-  return { hasDraft, draftData, saveDraft, clearDraft, getDraft };
+// BE NotificationService.cs truyền các placeholder này theo từng trigger.
+// Liệt kê trong UI để Recruiter khỏi gõ {{companyName}} / {{interviewDate}} sai.
+const SUPPORTED_VARIABLES = [
+  { key: "{{candidateName}}", desc: "Tên ứng viên — mọi loại email" },
+  { key: "{{jobTitle}}",      desc: "Vị trí ứng tuyển — mọi loại email" },
+  {
+    key: "{{link}}",
+    desc:
+      "Magic link cho SCHEDULE / STATUS / OFFER_RESPONSE; " +
+      "Google Calendar URL cho INTERVIEW_CONFIRMED (không phải magic link)",
+  },
+  {
+    key: "{{expiresAt}}",
+    desc:
+      "Thời điểm magic link hết hạn (UTC, dd/MM/yyyy HH:mm) — chỉ SCHEDULE / STATUS / OFFER_RESPONSE",
+  },
+  {
+    key: "{{startTime}}",
+    desc: "Giờ phỏng vấn (UTC, HH:mm dd/MM/yyyy) — chỉ INTERVIEW_CONFIRMED / INTERVIEW_CANCELLED",
+  },
+  {
+    key: "{{reason}}",
+    desc: "Lý do hủy (tùy chọn) — chỉ INTERVIEW_CANCELLED",
+  },
+];
+const codeStyle = {
+  background: "#fff",
+  border: "1px solid #e7e7e6",
+  borderRadius: 4,
+  padding: "0 4px",
+  fontFamily: "monospace",
+  fontSize: 11,
 };
 
 const MailTemplates = () => {
@@ -100,23 +74,15 @@ const MailTemplates = () => {
   const [templates, setTemplates] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [showDraftModal, setShowDraftModal] = useState(false);
 
   // Modal states
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editConfirmModalOpen, setEditConfirmModalOpen] = useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
 
-  const [form] = Form.useForm();
   const [editForm] = Form.useForm();
-
-  // Draft auto-save hook
-  const { hasDraft, draftData, saveDraft, clearDraft, getDraft } =
-    useDraftSave(DRAFT_KEY);
-  const draftTimeoutRef = useRef(null);
 
   const previewData = {
     candidateName: "Nguyễn Văn A",
@@ -124,44 +90,34 @@ const MailTemplates = () => {
     companyName: "SRIS",
   };
 
+  // Danh sách 7 loại email template (khớp backend EmailTemplateType.cs).
+  // Đặt ở đầu component để mọi computed bên dưới (missingTypes, columns, stats) đều
+  // dùng được — nếu khai báo sau khi đã tham chiếu sẽ nổ TypeError.
+  const templateCategories = [
+    { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
+    { value: "OFFER_RESPONSE", label: "Phản hồi offer", color: "green" },
+    { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
+    { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
+    {
+      value: "HIRED",
+      label: "Thông báo nhận việc",
+      color: "gold",
+    },
+    {
+      value: "INTERVIEW_CONFIRMED",
+      label: "Xác nhận lịch phỏng vấn",
+      color: "orange",
+    },
+    {
+      value: "INTERVIEW_CANCELLED",
+      label: "Hủy lịch phỏng vấn",
+      color: "volcano",
+    },
+  ];
+
   useEffect(() => {
-    // Check for draft on mount
-    if (hasDraft) {
-      setShowDraftModal(true);
-    }
     fetchTemplates();
   }, []);
-
-  // Auto-save draft when form values change
-  const handleDraftAutoSave = useCallback(
-    (changedValues, allValues) => {
-      if (draftTimeoutRef.current) {
-        clearTimeout(draftTimeoutRef.current);
-      }
-      draftTimeoutRef.current = setTimeout(() => {
-        saveDraft(allValues);
-      }, 1000);
-    },
-    [saveDraft],
-  );
-
-  // Restore draft into form
-  const handleRestoreDraft = () => {
-    const savedValues = getDraft();
-    if (savedValues) {
-      form.setFieldsValue(savedValues);
-      message.success("Đã khôi phục dữ liệu đã lưu tạm");
-    }
-    setShowDraftModal(false);
-  };
-
-  // Discard draft and start fresh
-  const handleDiscardDraft = () => {
-    clearDraft();
-    form.resetFields();
-    message.info("Đã xóa dữ liệu tạm. Bắt đầu nhập mới.");
-    setShowDraftModal(false);
-  };
 
   const fetchTemplates = async () => {
     try {
@@ -266,43 +222,6 @@ const MailTemplates = () => {
     }
   };
 
-  // Create — Form.Item đã đặt name="type"/"body" khớp DTO EmailTemplateUpsertDto,
-  // nên gửi thẳng `values` lên BE. isActive luôn true.
-  const handleCreate = async (values) => {
-    try {
-      setSubmitting(true);
-      const payload = { ...values, isActive: true };
-      await mailTemplateAPI.create(payload);
-      message.success("Tạo mẫu email thành công!");
-      setCreateModalOpen(false);
-      clearDraft(); // Clear draft after successful submission
-      form.resetFields();
-      fetchTemplates();
-    } catch (error) {
-      console.error("Error creating template:", error);
-      const errMsg =
-        error.response?.data?.errorMessage ||
-        error.response?.data?.DevMsg ||
-        error.response?.data?.message ||
-        "Không thể tạo mẫu email";
-      message.error(errMsg);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Duplicate
-  const handleDuplicate = (record) => {
-    clearDraft(); // Clear old draft when duplicating
-    form.setFieldsValue({
-      name: `${record.name || ""} (Copy)`,
-      subject: record.subject,
-      type: record.type,
-      body: record.body,
-    });
-    setCreateModalOpen(true);
-  };
-
   const filteredTemplates = templates.filter(
     (t) =>
       !searchText ||
@@ -310,35 +229,30 @@ const MailTemplates = () => {
       (t.subject || "").toLowerCase().includes(searchText.toLowerCase()),
   );
 
+  /**
+   * Mỗi trigger email gửi cho ứng viên cần tối thiểu 1 template active.
+   * Liệt kê các loại CHƯA có template active để Recruiter biết đường bổ sung —
+   * nếu không hệ thống sẽ fallback nội dung hard-coded, không đồng nhất giữa
+   * các trigger.
+   */
+  const missingTypes = templateCategories
+    .filter((cat) => !templates.some((t) => t.type === cat.value))
+    .map((cat) => cat);
+  const hasMissing = missingTypes.length > 0;
+
   const renderPreview = (body) => {
     let preview = body || "";
     Object.entries(previewData).forEach(([key, value]) => {
       preview = preview.replace(new RegExp(`{{${key}}}`, "g"), value);
     });
+    // BE hỗ trợ thêm các biến khác ({{link}}, {{expiresAt}}, {{startTime}}) — preview
+    // chỉ render biến có dữ liệu mẫu để Recruiter khỏi nhầm là biến hỏng.
+    preview = preview
+      .replace(/{{\s*link\s*}}/g, "https://example.com/schedule?token=xxx")
+      .replace(/{{\s*expiresAt\s*}}/g, "25/12/2026 23:59 UTC")
+      .replace(/{{\s*startTime\s*}}/g, "10:00 25/12/2026 (UTC)");
     return preview;
   };
-
-  const templateCategories = [
-    { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
-    { value: "OFFER_RESPONSE", label: "Phản hồi offer", color: "green" },
-    { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
-    { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
-    {
-      value: "HIRED",
-      label: "Thông báo nhận việc",
-      color: "gold",
-    },
-    {
-      value: "INTERVIEW_CONFIRMED",
-      label: "Xác nhận lịch phỏng vấn",
-      color: "orange",
-    },
-    {
-      value: "INTERVIEW_CANCELLED",
-      label: "Hủy lịch phỏng vấn",
-      color: "volcano",
-    },
-  ];
 
   const getCategoryTag = (category) => {
     const cat = templateCategories.find((c) => c.value === category);
@@ -382,7 +296,7 @@ const MailTemplates = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 200,
+      width: 120,
       render: (_, record) => (
         <Space size={4}>
           <Tooltip title="Xem chi tiết">
@@ -391,14 +305,6 @@ const MailTemplates = () => {
               size="small"
               icon={<EyeOutlined />}
               onClick={() => handleViewDetail(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Sao chép">
-            <Button
-              type="text"
-              size="small"
-              icon={<CopyOutlined />}
-              onClick={() => handleDuplicate(record)}
             />
           </Tooltip>
           <Tooltip title="Chỉnh sửa">
@@ -440,14 +346,6 @@ const MailTemplates = () => {
           >
             Làm mới
           </Button>
-          <Button
-            type="primary"
-            icon={hasDraft ? <SaveOutlined /> : <PlusOutlined />}
-            onClick={() => setCreateModalOpen(true)}
-            style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-          >
-            Tạo Mẫu Mới {hasDraft && <Badge status="warning" />}
-          </Button>
         </Space>
       </div>
 
@@ -477,6 +375,34 @@ const MailTemplates = () => {
           );
         })}
       </Row>
+
+      {hasMissing && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 24 }}
+          message={
+            <Space>
+              <Text strong>
+                {missingTypes.length} loại email CHƯA có template active
+              </Text>
+              <Text type="secondary">
+                Hệ thống sẽ gửi nội dung mặc định (hard-coded) cho các trigger này — nội
+                dung không đồng nhất giữa các trigger. Liên hệ Admin để bổ sung template.
+              </Text>
+            </Space>
+          }
+          description={
+            <Space wrap style={{ marginTop: 4 }}>
+              {missingTypes.map((t) => (
+                <Tag key={t.value} color={t.color}>
+                  {t.label}
+                </Tag>
+              ))}
+            </Space>
+          }
+        />
+      )}
 
       <Card className="main-card" bordered={false}>
         <div
@@ -509,146 +435,6 @@ const MailTemplates = () => {
           locale={{ emptyText: "Chưa có mẫu email nào" }}
         />
       </Card>
-
-      {/* Modal Tạo Mẫu Email */}
-      <Modal
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <PlusOutlined style={{ color: MATCHA_GREEN }} />
-            Tạo mẫu email mới
-          </div>
-        }
-        open={createModalOpen}
-        onCancel={() => {
-          setCreateModalOpen(false);
-          // Don't clear form - keep draft
-        }}
-        footer={null}
-        width={640}
-      >
-        {hasDraft && (
-          <div
-            style={{
-              background: "#fffbe6",
-              border: "1px solid #ffe58f",
-              borderRadius: 6,
-              padding: "10px 12px",
-              marginBottom: 16,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text type="secondary">
-              <SaveOutlined style={{ color: "#faad14", marginRight: 8 }} />
-              Có dữ liệu được lưu tạm
-            </Text>
-            <Space>
-              <Button
-                size="small"
-                onClick={handleDiscardDraft}
-                icon={<RestOutlined />}
-              >
-                Xóa
-              </Button>
-              <Button
-                size="small"
-                type="primary"
-                onClick={handleRestoreDraft}
-                icon={<SaveOutlined />}
-              >
-                Khôi phục
-              </Button>
-            </Space>
-          </div>
-        )}
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCreate}
-          onValuesChange={handleDraftAutoSave}
-          style={{ marginTop: 16 }}
-        >
-          <Form.Item
-            label="Tên mẫu"
-            name="name"
-            rules={[{ required: true, message: "Vui lòng nhập tên mẫu" }]}
-          >
-            <Input placeholder="VD: Email mời phỏng vấn" />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Chủ đề email"
-                name="subject"
-                rules={[{ required: true, message: "Vui lòng nhập chủ đề" }]}
-              >
-                <Input placeholder="VD: Lời mời phỏng vấn tại SRIS" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Loại mẫu"
-                name="type"
-                rules={[{ required: true, message: "Vui lòng chọn loại mẫu" }]}
-              >
-                <Select placeholder="-- Chọn loại --">
-                  {templateCategories.map((cat) => (
-                    <Select.Option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            label="Nội dung email"
-            name="body"
-            rules={[{ required: true, message: "Vui lòng nhập nội dung" }]}
-          >
-            <TextArea rows={12} placeholder="Nhập nội dung email..." />
-          </Form.Item>
-
-          <div
-            style={{
-              background: "#f5f5f4",
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-            }}
-          >
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              <b>Biến sử dụng:</b> {"{{candidateName}}"} - Tên ứng viên,{" "}
-              {"{{jobTitle}}"} - Vị trí ứng tuyển, {"{{companyName}}"} - Tên
-              công ty, {"{{interviewDate}}"} - Ngày phỏng vấn,{" "}
-              {"{{interviewTime}}"} - Giờ phỏng vấn
-            </Text>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <Button
-              onClick={() => {
-                clearDraft();
-                setCreateModalOpen(false);
-                form.resetFields();
-              }}
-            >
-              Hủy
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={submitting}
-              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-            >
-              {submitting ? "Đang tạo..." : "Tạo mẫu"}
-            </Button>
-          </div>
-        </Form>
-      </Modal>
 
       {/* Modal Xem Chi Tiết */}
       <Modal
@@ -821,8 +607,14 @@ const MailTemplates = () => {
 
           <div style={{ background: "#f5f5f4", padding: 12, borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              <b>Biến sử dụng:</b> {"{{candidateName}}"}, {"{{jobTitle}}"},{" "}
-              {"{{companyName}}"}, {"{{interviewDate}}"}, {"{{interviewTime}}"}
+              <b>Biến được hỗ trợ:</b>{" "}
+              {SUPPORTED_VARIABLES.map((v, idx) => (
+                <span key={v.key}>
+                  <code style={codeStyle}>{v.key}</code>
+                  {idx < SUPPORTED_VARIABLES.length - 1 ? ", " : ""}
+                </span>
+              ))}
+              {" "}— <Text type="warning">dùng sai biến sẽ không render</Text>.
             </Text>
           </div>
         </Form>

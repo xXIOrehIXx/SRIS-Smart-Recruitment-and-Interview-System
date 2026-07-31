@@ -23,7 +23,7 @@ public class JobService : BaseService<JobService>, IJobService
         {
             Title = dto.Title.Trim(),
             JdText = dto.JdText,
-            DepartmentManagerId = dto.DepartmentManagerId,
+            DepartmentManagerId = await ResolveDepartmentManagerAsync(companyId, dto.Department, dto.DepartmentManagerId),
             CreatedBy = createdBy,
             Department = dto.Department,
             Location = dto.Location,
@@ -90,7 +90,7 @@ public class JobService : BaseService<JobService>, IJobService
         {
             Title = dto.Title.Trim(),
             JdText = dto.JdText,
-            DepartmentManagerId = dto.DepartmentManagerId,
+            DepartmentManagerId = await ResolveDepartmentManagerAsync(companyId, dto.Department, dto.DepartmentManagerId),
             Department = dto.Department,
             Location = dto.Location,
             EmploymentType = dto.EmploymentType,
@@ -121,6 +121,23 @@ public class JobService : BaseService<JobService>, IJobService
         // Soft close — giữ hồ sơ + analytics; không đổi JD nên không đụng embedding.
         await jobRepo.UpdateAsync(companyId, jobId, job.Title, job.JdText,
             job.DepartmentManagerId, "Closed", jdChanged: false);
+    }
+
+    /// <summary>
+    /// Người quyết tuyển của job (V023): Recruiter chọn tay thì tôn trọng lựa chọn đó; bỏ trống
+    /// thì lấy DM phụ trách phòng ban đã chọn. Phòng ban chưa gán DM -> vẫn null (Recruiter quyết,
+    /// đường mặc định của công ty nhỏ).
+    /// </summary>
+    private async Task<long?> ResolveDepartmentManagerAsync(long companyId, string? department, long? explicitManagerId)
+    {
+        if (explicitManagerId is > 0) return explicitManagerId;
+        if (string.IsNullOrWhiteSpace(department)) return null;
+
+        var departmentRepo = _serviceProvider.GetRequiredService<IDepartmentRepo>();
+        var managerId = await departmentRepo.GetManagerByNameAsync(companyId, department.Trim());
+        if (managerId is > 0)
+            Serilog.Log.Information("Job: tự gán DM {ManagerId} theo phòng ban '{Department}'.", managerId, department);
+        return managerId;
     }
 
     private static BaseException Bad(string msg) => new(msg)

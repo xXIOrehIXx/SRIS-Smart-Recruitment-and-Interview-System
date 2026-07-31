@@ -18,6 +18,8 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
 {
     private readonly IEvaluationCriteriaRepo _criteriaRepo;
     private readonly IJobRepo _jobRepo;
+    private readonly IApplicationRepo _applicationRepo;
+    private readonly IApplicationStateService _stateService;
     private readonly ICriteriaExtractionClient _extractionClient;
     private readonly ILogger _logger;
 
@@ -25,6 +27,8 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     {
         _criteriaRepo = serviceProvider.GetRequiredService<IEvaluationCriteriaRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
+        _applicationRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
+        _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _extractionClient = serviceProvider.GetRequiredService<ICriteriaExtractionClient>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<EvaluationCriteriaService>();
     }
@@ -138,7 +142,50 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
 
         _logger.Information("ApproveDrafts: user={UserId} duyệt {N} tiêu chí của job={JobId}.",
             userId, approved, jobId);
+
+        // Chốt tiêu chí = mở màn sàng lọc: hồ sơ còn ở "Hồ sơ mới" của job này tự sang "Sàng lọc"
+        // (chấm CV theo tiêu chí chỉ có nghĩa sau khi tiêu chí đã chốt — 5.17/5.18).
+        // Best-effort: một hồ sơ lỗi không được làm hỏng việc duyệt tiêu chí.
+        await AdvanceNewApplicationsToScreeningAsync(companyId, jobId, userId);
+
         return approved;
+    }
+
+    /// <summary>
+    /// Đẩy mọi hồ sơ NEW của job sang SCREENING sau khi tiêu chí được duyệt — để người dùng
+    /// không phải sang Kanban kéo tay từng card.
+    /// </summary>
+    private async Task AdvanceNewApplicationsToScreeningAsync(long companyId, long jobId, long userId)
+    {
+        try
+        {
+            var board = await _applicationRepo.GetBoardByJobAsync(companyId, jobId);
+            var newOnes = board
+                .Where(r => string.Equals(r.CurrentState, ApplicationState.New, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (newOnes.Count == 0) return;
+
+            var moved = 0;
+            foreach (var row in newOnes)
+            {
+                try
+                {
+                    await _stateService.AdvanceToAsync(companyId, userId, row.ApplicationId, ApplicationState.Screening);
+                    moved++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "ApproveDrafts: không đẩy được hồ sơ {AppId} sang SCREENING.", row.ApplicationId);
+                }
+            }
+
+            if (moved > 0)
+                _logger.Information("ApproveDrafts: job={JobId} -> {N} hồ sơ tự chuyển NEW→SCREENING.", jobId, moved);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "ApproveDrafts: bỏ qua bước tự chuyển hồ sơ sang SCREENING (job={JobId}).", jobId);
+        }
     }
 
     public async Task DeactivateAsync(long companyId, long criteriaId)

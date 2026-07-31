@@ -20,7 +20,7 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { departmentAPI } from "../../services/api";
+import { departmentAPI, usersAPI } from "../../services/api";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -30,6 +30,8 @@ const DepartmentManagement = () => {
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [searchText, setSearchText] = useState("");
+  // DM để chọn "ai duyệt tuyển cho phòng này" (V023) — job của phòng tự lấy DM này.
+  const [managers, setManagers] = useState([]);
 
   const [editModal, setEditModal] = useState(false);
   const [selected, setSelected] = useState(null); // null = tạo mới
@@ -49,8 +51,18 @@ const DepartmentManagement = () => {
     }
   };
 
+  const fetchManagers = async () => {
+    try {
+      const res = await usersAPI.getOptions("DepartmentManager");
+      setManagers(res.data || []);
+    } catch (error) {
+      console.error("Error fetching department managers:", error);
+    }
+  };
+
   useEffect(() => {
     fetchDepartments();
+    fetchManagers();
   }, []);
 
   const openCreate = () => {
@@ -66,6 +78,7 @@ const DepartmentManagement = () => {
       name: record.name,
       description: record.description,
       status: record.status,
+      managerUserId: record.managerUserId ?? undefined,
     });
     setEditModal(true);
   };
@@ -141,6 +154,20 @@ const DepartmentManagement = () => {
           )}
         </Space>
       ),
+    },
+    {
+      title: "Người duyệt tuyển (DM)",
+      dataIndex: "managerName",
+      key: "managerName",
+      width: 220,
+      render: (name) =>
+        name ? (
+          <Text>{name}</Text>
+        ) : (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Chưa gán
+          </Text>
+        ),
     },
     {
       title: "Số tin tuyển dụng",
@@ -247,6 +274,23 @@ const DepartmentManagement = () => {
           </Form.Item>
           <Form.Item name="description" label="Mô tả">
             <TextArea rows={3} maxLength={500} showCount />
+          </Form.Item>
+          <Form.Item
+            name="managerUserId"
+            label="Trưởng phòng / Người duyệt tuyển (DM)"
+            tooltip="Tin tuyển dụng chọn phòng ban này sẽ tự lấy DM đây làm người quyết tuyển ở bước Offer. Bỏ trống = tin phải chọn DM tay."
+          >
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="Bỏ trống = tin tuyển dụng tự chọn DM"
+              options={managers.map((u) => ({
+                value: u.userId,
+                label: `${u.fullName || u.email}${u.role === "Admin" ? " (Admin)" : ""}`,
+              }))}
+              notFoundContent="Chưa có tài khoản Department Manager nào"
+            />
           </Form.Item>
           <Form.Item
             name="status"
