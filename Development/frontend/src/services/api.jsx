@@ -56,7 +56,8 @@ api.interceptors.response.use(
       
       // Tránh reload vòng lặp vô hạn nếu đang ở /login
       if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+        window.location.href = '/login'; 
+        
       }
     }
     return normalizeApiError(error);
