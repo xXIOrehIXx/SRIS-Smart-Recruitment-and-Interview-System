@@ -64,22 +64,6 @@ const Home = () => {
           <h2>SRIS</h2>
         </div>
         <div className="header-actions">
-          <Button
-            type="text"
-            className="login-btn"
-            onClick={() => navigate("/login")}
-          >
-            Log in
-          </Button>
-          <Button
-            type="primary"
-            shape="round"
-            className="demo-btn"
-            onClick={() => navigate("/register")}
-          >
-            Book a demo
-          </Button>
-
           {isAuthenticated ? (
             <Space size="middle">
               <Text strong>{user?.fullName || user?.email}</Text>
@@ -93,7 +77,6 @@ const Home = () => {
               </Button>
             </Space>
           ) : (
-
             <Button
               type="text"
               className="login-btn"
@@ -102,16 +85,6 @@ const Home = () => {
               Log in
             </Button>
           )}
-            <>
-              <Button
-                type="text"
-                className="login-btn"
-                onClick={() => navigate("/login")}
-              >
-                Log in
-              </Button>
-            </>
-
         </div>
       </Header>
 
@@ -123,7 +96,7 @@ const Home = () => {
           gutter={[64, 48]}
           className="hero-row"
         >
-          {/* Cột trái: Text & Nút bấm */}
+          {/* Cột trái: Text & Nội dung */}
           <Col xs={24} lg={11} className="hero-text-section">
             <div className="hero-badge">
               <span className="badge-dot"></span>
