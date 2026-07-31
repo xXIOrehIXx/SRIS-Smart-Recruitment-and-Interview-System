@@ -13,7 +13,6 @@ import {
   Statistic,
 } from "antd";
 import {
-  RightOutlined,
   UserOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
@@ -69,6 +68,7 @@ const Home = () => {
           <a href="#customers">Customers</a>
         </div>
         <div className="header-actions">
+<<<<<<< Updated upstream
           <Button
             type="text"
             className="login-btn"
@@ -84,6 +84,29 @@ const Home = () => {
           >
             Book a demo
           </Button>
+=======
+          {isAuthenticated ? (
+            <Space size="middle">
+              <Text strong>{user?.fullName || user?.email}</Text>
+              <Button
+                type="primary"
+                shape="round"
+                className="dashboard-btn"
+                onClick={() => navigate(getDashboardRoute())}
+              >
+                Go to Dashboard
+              </Button>
+            </Space>
+          ) : (
+            <Button
+              type="text"
+              className="login-btn"
+              onClick={() => navigate("/login")}
+            >
+              Log in
+            </Button>
+          )}
+>>>>>>> Stashed changes
         </div>
       </Header>
 
@@ -109,6 +132,7 @@ const Home = () => {
               Hệ thống quản lý tuyển dụng và phỏng vấn thông minh. Thu hút, quản
               lý và tuyển dụng những ứng viên tốt nhất một cách dễ dàng.
             </Paragraph>
+<<<<<<< Updated upstream
             <Space size="middle" className="hero-buttons">
               <Button
                 type="primary"
@@ -136,6 +160,8 @@ const Home = () => {
                 Khám phá việc làm
               </Button>
             </Space>
+=======
+>>>>>>> Stashed changes
             <div className="hero-stats">
               <div className="stat-item">
                 <span className="stat-value">500+</span>
