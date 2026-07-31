@@ -1,0 +1,49 @@
+@startuml Feature11_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 11: Kanban Dashboard - Sequence: View Application Detail**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nApplicationQueryController" as Ctrl
+participant "<<service>>\nApplicationQueryService" as Svc
+participant "<<repository>>\nApplicationRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Click on Application Card
+activate UI
+
+UI -> Ctrl: GET /api/applications/{id}/detail
+activate Ctrl
+
+Ctrl -> Svc: GetDetailAsync(companyId, appId)
+activate Svc
+
+Svc -> Repo: GetDetailAsync(companyId, appId)
+activate Repo
+Repo -> DbContext: Query Detailed Info (Job, Candidate, CV)
+activate DbContext
+DbContext -> DB: SELECT
+activate DB
+DB --> DbContext: Row
+deactivate DB
+DbContext --> Repo: ApplicationDetailRow
+deactivate DbContext
+Repo --> Svc: return ApplicationDetailRow
+deactivate Repo
+
+Svc -> Svc: Map to ApplicationDetailDto
+
+Svc --> Ctrl: return ApplicationDetailDto
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Recruiter: Render Detail Modal (CV, Scores, etc)
+deactivate UI
+@enduml

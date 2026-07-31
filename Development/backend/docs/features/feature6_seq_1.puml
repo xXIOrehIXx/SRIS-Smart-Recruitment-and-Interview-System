@@ -1,0 +1,58 @@
+@startuml Feature6_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 6: User Management - Sequence: Create User**
+
+actor Admin
+participant "Web UI" as UI
+participant "<<controller>>\nUserManageController" as Ctrl
+participant "<<service>>\nUserManageService" as Svc
+participant "<<service>>\nEncodeService" as Encode
+participant "<<repository>>\nUserRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Admin -> UI: Fill User details & Create
+activate UI
+
+UI -> Ctrl: POST /api/users
+activate Ctrl
+
+Ctrl -> Svc: CreateAsync(companyId, dto)
+activate Svc
+
+Svc -> Repo: EmailExistsAsync(companyId, email)
+activate Repo
+Repo --> Svc: return false
+deactivate Repo
+
+Svc -> Encode: SHA256WithSalt(password, "salt")
+activate Encode
+Encode --> Svc: return passwordHash
+deactivate Encode
+
+Svc -> Repo: InsertAsync(user)
+activate Repo
+Repo -> DbContext: Add & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL INSERT
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: return userId
+deactivate DbContext
+Repo --> Svc: return userId
+deactivate Repo
+
+Svc --> Ctrl: return UserListItemDto
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Admin: Show success message
+deactivate UI
+@enduml

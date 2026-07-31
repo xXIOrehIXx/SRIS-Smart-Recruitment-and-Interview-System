@@ -1,0 +1,72 @@
+@startuml Feature5_Seq_2
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 5: Authentication - Sequence: Refresh Token**
+
+actor User
+participant "Web UI" as UI
+participant "<<controller>>\nAuthController" as Ctrl
+participant "<<service>>\nAuthService" as Svc
+participant "<<repository>>\nUserAuthTokenRepository" as TokenRepo
+participant "<<repository>>\nUserRepository" as UserRepo
+participant "<<service>>\nJwtService" as Jwt
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+User -> UI: App loads (or access token expires)
+activate UI
+
+UI -> Ctrl: POST /api/auth/refresh
+activate Ctrl
+
+Ctrl -> Svc: RefreshAsync(refreshToken)
+activate Svc
+
+Svc -> TokenRepo: GetByHashAsync(hash(refreshToken), "REFRESH")
+activate TokenRepo
+TokenRepo -> DbContext: Query Token
+activate DbContext
+DbContext -> DB: SELECT
+activate DB
+DB --> DbContext: Data
+deactivate DB
+DbContext --> TokenRepo: TokenEntity
+deactivate DbContext
+TokenRepo --> Svc: return TokenEntity
+deactivate TokenRepo
+
+note right of Svc: Validate Expiry\nand UsedAt
+
+Svc -> UserRepo: GetByIdCrossTenantAsync(userId)
+activate UserRepo
+UserRepo --> Svc: return User
+deactivate UserRepo
+
+Svc -> TokenRepo: MarkUsedAsync(tokenId)
+activate TokenRepo
+TokenRepo --> Svc: ok
+deactivate TokenRepo
+
+Svc -> Svc: IssueTokensAsync(user)
+Svc -> Jwt: GenerateTokens(...)
+activate Jwt
+Jwt --> Svc: return (newAccessToken, newRefreshToken)
+deactivate Jwt
+
+Svc -> TokenRepo: InsertAsync(newTokenEntity)
+activate TokenRepo
+TokenRepo --> Svc: ok
+deactivate TokenRepo
+
+Svc --> Ctrl: return LoginResult
+deactivate Svc
+
+Ctrl --> UI: return new JSON (Access/Refresh Tokens)
+deactivate Ctrl
+
+UI --> User: Resume app usage
+deactivate UI
+@enduml

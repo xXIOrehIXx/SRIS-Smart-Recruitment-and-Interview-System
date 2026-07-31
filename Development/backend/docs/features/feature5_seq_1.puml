@@ -1,0 +1,74 @@
+@startuml Feature5_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 5: Authentication - Sequence: Login & Token Generation**
+
+actor User
+participant "Web UI" as UI
+participant "<<controller>>\nAuthController" as Ctrl
+participant "<<service>>\nAuthService" as Svc
+participant "<<service>>\nEncodeService" as Encode
+participant "<<service>>\nJwtService" as Jwt
+participant "<<repository>>\nUserRepository" as UserRepo
+participant "<<repository>>\nUserAuthTokenRepository" as TokenRepo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+User -> UI: Enter Email & Password
+activate UI
+
+UI -> Ctrl: POST /api/auth/login
+activate Ctrl
+
+Ctrl -> Svc: LoginAsync(email, password)
+activate Svc
+
+Svc -> UserRepo: GetByEmail(email)
+activate UserRepo
+UserRepo --> Svc: return User
+deactivate UserRepo
+
+Svc -> Encode: SHA256WithSalt(password, "salt")
+activate Encode
+Encode --> Svc: return passwordHash
+deactivate Encode
+
+note right of Svc: Validate passwordHash\nand check Status != Disabled
+
+Svc -> UserRepo: TouchLastLoginAsync(userId)
+activate UserRepo
+UserRepo --> Svc: ok
+deactivate UserRepo
+
+Svc -> Svc: IssueTokensAsync(user)
+
+Svc -> Jwt: GenerateTokens(userId, email, roles...)
+activate Jwt
+Jwt --> Svc: return (accessToken, refreshToken)
+deactivate Jwt
+
+Svc -> TokenRepo: InsertAsync(tokenEntity)
+activate TokenRepo
+TokenRepo -> DbContext: Add & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL INSERT
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> TokenRepo: success
+deactivate DbContext
+TokenRepo --> Svc: success
+deactivate TokenRepo
+
+Svc --> Ctrl: return LoginResult
+deactivate Svc
+
+Ctrl --> UI: return JSON (Access/Refresh Tokens)
+deactivate Ctrl
+
+UI --> User: Navigate to Dashboard
+deactivate UI
+@enduml

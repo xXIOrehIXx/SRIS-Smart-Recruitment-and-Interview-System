@@ -1,0 +1,64 @@
+@startuml Feature2_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 2: Automated Application Scoring (Class Diagram)**
+
+class PublicCareerController <<boundary>> {
+    - _careerService : CareerSiteService
+    + ApplyAsync(dto : Object) : Object
+}
+
+class CareerSiteService <<control>> {
+    - _cvScoring : CvScoringService
+    - _magicLink : MagicLinkService
+    + ApplyAsync(companyId: long, jobId: long, cvFile: byte[]) : PublicApplyResultDto
+}
+
+class CvScoringService <<control>> {
+    - _pdfExtractor : PdfTextExtractor
+    - _embeddingClient : EmbeddingClient
+    - _cvScoreQueue : CvScoreQueue
+    + ScoreUploadedCvAsync(companyId: long, jobId: long, cvFile: byte[]) : CvScoreResultDto
+    + ScoreApplicationAsync(companyId: long, appId : long) : void
+}
+
+class Application <<entity>> {
+    - applicationId : long
+    - currentState : string
+    - overallScore : decimal
+}
+
+class CvDocument <<entity>> {
+    - cvId : long
+    - parseStatus : string
+    - fileUrl : string
+    - extractedText : string
+}
+
+class CvChunk <<entity>> {
+    - chunkId : long
+    - textContent : string
+    - vector : float[]
+}
+
+class ApplicationCriterionMatch <<entity>> {
+    - matchId : long
+    - applicationId : long
+    - criteriaItemId : long
+    - matchScore : decimal
+}
+
+PublicCareerController --> CareerSiteService : Association
+CareerSiteService --> CvScoringService : Association
+CvScoringService --> Application : Dependency
+
+Application "1" *--> "1" CvDocument : Composition
+CvDocument "1" *--> "*" CvChunk : Composition
+Application "1" *--> "*" ApplicationCriterionMatch : Composition
+
+@enduml

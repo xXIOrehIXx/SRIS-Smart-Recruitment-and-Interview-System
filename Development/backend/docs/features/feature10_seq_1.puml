@@ -1,0 +1,66 @@
+@startuml Feature10_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 10: Application Pipeline - Sequence: Advance State**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nApplicationPipelineController" as Ctrl
+participant "<<service>>\nApplicationStateService" as Svc
+participant "<<repository>>\nApplicationRepository" as Repo
+participant "<<repository>>\nActivityLogRepository" as LogRepo
+participant "<<service>>\nNotificationService" as Notify
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Drag & Drop Application to new Stage
+activate UI
+
+UI -> Ctrl: POST /api/applications/{id}/advance
+activate Ctrl
+
+Ctrl -> Svc: TransitionAsync(companyId, userId, appId, toState, reason)
+activate Svc
+
+Svc -> Repo: GetByIdAsync(companyId, appId)
+activate Repo
+Repo --> Svc: return Application
+deactivate Repo
+
+note right of Svc: Validate StateMachine Guard\n(e.g. Ensure Interview Score exists)
+
+Svc -> Repo: TransitionStateAsync(appId, toState, ...)
+activate Repo
+Repo -> DbContext: ExecuteSql(Update)
+activate DbContext
+DbContext -> DB: SQL UPDATE
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: success
+deactivate DbContext
+Repo --> Svc: return 1
+deactivate Repo
+
+Svc -> LogRepo: InsertAsync(activityLog)
+activate LogRepo
+LogRepo --> Svc: ok
+deactivate LogRepo
+
+Svc -> Notify: SendResultAsync(companyId, appId, toState)
+activate Notify
+Notify --> Svc: ok
+deactivate Notify
+
+Svc --> Ctrl: return ApplicationStateDto
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Recruiter: Update Kanban Board
+deactivate UI
+@enduml

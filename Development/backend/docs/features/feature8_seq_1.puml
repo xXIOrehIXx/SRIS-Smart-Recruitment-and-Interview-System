@@ -1,0 +1,80 @@
+@startuml Feature8_Seq_1
+skinparam maxMessageSize 150
+skinparam sequenceMessageAlign center
+skinparam roundcorner 5
+skinparam minClassWidth 100
+
+title **Feature 8: Job Management - Sequence: Create Job**
+
+actor Recruiter
+participant "Web UI" as UI
+participant "<<controller>>\nJobController" as Ctrl
+participant "<<service>>\nJobService" as Svc
+participant "<<repository>>\nDepartmentRepository" as DeptRepo
+participant "<<repository>>\nJobRepository" as Repo
+participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "Database" as DB
+
+Recruiter -> UI: Enter Job details & Submit
+activate UI
+
+UI -> Ctrl: POST /api/jobs
+activate Ctrl
+
+Ctrl -> Svc: CreateAsync(companyId, userId, dto)
+activate Svc
+
+Svc -> DeptRepo: GetManagerByNameAsync(companyId, dto.Department)
+activate DeptRepo
+DeptRepo --> Svc: return managerId
+deactivate DeptRepo
+
+Svc -> Repo: InsertAsync(companyId, jobEntity)
+activate Repo
+Repo -> DbContext: Add & SaveChanges
+activate DbContext
+DbContext -> DB: Execute SQL INSERT
+activate DB
+DB --> DbContext: success
+deactivate DB
+DbContext --> Repo: return jobId
+deactivate DbContext
+Repo --> Svc: return jobId
+deactivate Repo
+
+alt Has Requirements
+    Svc -> Repo: ReplaceRequirementsAsync(jobId, requirements)
+    activate Repo
+    Repo -> DbContext: Delete old & Insert new Requirements
+    activate DbContext
+    DbContext -> DB: Execute SQL
+    activate DB
+    DB --> DbContext: success
+    deactivate DB
+    DbContext --> Repo: success
+    deactivate DbContext
+    Repo --> Svc: ok
+    deactivate Repo
+end
+
+alt Has Benefits
+    Svc -> Repo: ReplaceBenefitsAsync(jobId, benefits)
+    activate Repo
+    Repo --> Svc: ok
+    deactivate Repo
+end
+
+Svc -> Repo: GetByIdAsync(companyId, jobId)
+activate Repo
+Repo --> Svc: return Job entity
+deactivate Repo
+
+Svc --> Ctrl: return JobGetDto
+deactivate Svc
+
+Ctrl --> UI: return JSON
+deactivate Ctrl
+
+UI --> Recruiter: Display success message
+deactivate UI
+@enduml

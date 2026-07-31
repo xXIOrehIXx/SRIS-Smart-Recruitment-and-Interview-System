@@ -1,0 +1,58 @@
+@startuml Feature5_Class
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+hide circle
+
+title **Feature 5: Authentication (Class Diagram)**
+
+class AuthController <<boundary>> {
+    - _authService : AuthService
+    + LoginAsync(dto : Object) : Object
+    + RefreshAsync(dto : Object) : Object
+    + RegisterCompanyAsync(dto : Object) : Object
+}
+
+class AuthService <<control>> {
+    - _userRepo : UserRepository
+    - _tokenRepo : UserAuthTokenRepository
+    - _jwt : JwtService
+    - _encode : EncodeService
+    + LoginAsync(email : string, password : string) : LoginResult
+    + RefreshAsync(refreshToken : string) : LoginResult
+    + IssueTokensAsync(user : User) : LoginResult
+}
+
+class JwtService <<control>> {
+    + GenerateTokens(userId : long, email : string) : Tuple
+}
+
+class EncodeService <<control>> {
+    + SHA256WithSalt(input : string, salt : string) : string
+}
+
+class User <<entity>> {
+    - userId : long
+    - email : string
+    - passwordHash : string
+    - role : string
+    - status : string
+}
+
+class UserAuthToken <<entity>> {
+    - tokenId : long
+    - userId : long
+    - tokenHash : string
+    - purpose : string
+    - expiresAt : DateTime
+}
+
+AuthController --> AuthService : Association
+AuthService --> JwtService : Association
+AuthService --> EncodeService : Association
+
+User "1" *--> "*" UserAuthToken : Composition
+
+@enduml
