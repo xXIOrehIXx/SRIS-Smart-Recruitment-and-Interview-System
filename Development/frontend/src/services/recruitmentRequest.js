@@ -74,6 +74,35 @@ const labelOf = (list, value) => list.find((x) => x.value === value)?.label;
 /** "Mid" -> "Mid-level (2-4 năm)". Trả lại chính giá trị gốc nếu không có trong danh mục. */
 export const experienceLabel = (value) => (value ? labelOf(EXPERIENCE_LEVELS, value) || value : null);
 
+/**
+ * Số năm -> chữ hiển thị. 0 là giá trị THẬT ("nhận người chưa kinh nghiệm"), không phải
+ * "chưa nhập" — mọi chỗ kiểm phải dùng `!= null`, dùng falsy là hiểu sai ý DM.
+ */
+export const experienceYearsText = (years) => {
+  if (years == null) return null;
+  return years === 0 ? 'Không yêu cầu kinh nghiệm' : `Ít nhất ${years} năm`;
+};
+
+/**
+ * Chữ hiển thị kinh nghiệm của 1 yêu cầu: ưu tiên SỐ NĂM (V024), rơi về cấp bậc cho các
+ * yêu cầu tạo trước đó, cuối cùng là null để nơi gọi tự quyết chữ mặc định.
+ */
+export const experienceText = (yearsMin, level = null) =>
+  experienceYearsText(yearsMin) ?? experienceLabel(level);
+
+/**
+ * Số năm -> option của form Tin tuyển dụng (Fresher | 1+ | 2+ | 3+ | 5+).
+ * Lấy mốc SÁT DƯỚI để không siết chặt hơn ý DM: 4 năm -> "3+", không phải "5+".
+ */
+export const experienceYearsToJob = (years) => {
+  if (years == null) return undefined;
+  if (years <= 0) return 'Fresher';
+  if (years === 1) return '1+';
+  if (years === 2) return '2+';
+  if (years < 5) return '3+';
+  return '5+';
+};
+
 /** "FULL_TIME" -> "Toàn thời gian". */
 export const employmentLabel = (value) => (value ? labelOf(EMPLOYMENT_TYPES, value) || value : null);
 

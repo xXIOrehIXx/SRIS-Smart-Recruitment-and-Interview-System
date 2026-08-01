@@ -7,6 +7,8 @@ import {
   EXPERIENCE_LEVEL_TO_JOB,
   employmentLabel,
   experienceLabel,
+  experienceText,
+  experienceYearsToJob,
   formatSalaryRange,
   splitRequirements,
 } from './recruitmentRequest';
@@ -60,6 +62,36 @@ describe('nhãn hiển thị', () => {
   test('giá trị lạ -> trả lại chính nó, không hiện undefined', () => {
     expect(experienceLabel('Principal')).toBe('Principal');
     expect(experienceLabel(null)).toBeNull();
+  });
+});
+
+describe('số năm kinh nghiệm (V024)', () => {
+  test('DM nhập số năm -> "Ít nhất N năm"', () => {
+    expect(experienceText(2)).toBe('Ít nhất 2 năm');
+    expect(experienceText(3)).toBe('Ít nhất 3 năm');
+  });
+
+  test('0 năm là LỰA CHỌN THẬT, không phải bỏ trống', () => {
+    expect(experienceText(0)).toBe('Không yêu cầu kinh nghiệm');
+    // Bẫy falsy: 0 phải khác hẳn null.
+    expect(experienceText(null)).toBeNull();
+  });
+
+  test('yêu cầu cũ chưa có số năm -> rơi về cấp bậc', () => {
+    expect(experienceText(null, 'Senior')).toBe('Senior (4-7 năm)');
+  });
+
+  test('có cả hai thì số năm thắng (DM nhập tay chính xác hơn)', () => {
+    expect(experienceText(3, 'Senior')).toBe('Ít nhất 3 năm');
+  });
+
+  test('quy đổi sang option form tin: lấy mốc sát dưới, không siết chặt hơn ý DM', () => {
+    expect(experienceYearsToJob(0)).toBe('Fresher');
+    expect(experienceYearsToJob(1)).toBe('1+');
+    expect(experienceYearsToJob(2)).toBe('2+');
+    expect(experienceYearsToJob(4)).toBe('3+');
+    expect(experienceYearsToJob(7)).toBe('5+');
+    expect(experienceYearsToJob(null)).toBeUndefined();
   });
 });
 

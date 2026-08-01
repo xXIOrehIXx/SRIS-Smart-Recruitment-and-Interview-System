@@ -23,8 +23,13 @@ public class RecruitmentRequest : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
     public int Quantity { get; set; } = 1;
     [Column("employment_type")]
     public string? EmploymentType { get; set; }
+    /// <summary>Cấp bậc (Fresher/Junior/Mid/...) — dữ liệu cũ trước V024, giữ để hiển thị khi chưa có số năm.</summary>
     [Column("experience_level")]
     public string? ExperienceLevel { get; set; }
+
+    /// <summary>Số năm kinh nghiệm TỐI THIỂU (V024). 0 = nhận người chưa kinh nghiệm; null = không yêu cầu.</summary>
+    [Column("experience_years_min")]
+    public int? ExperienceYearsMin { get; set; }
     /// <summary>LOW | MEDIUM | HIGH.</summary>
     [Column("priority")]
     public string Priority { get; set; } = "MEDIUM";

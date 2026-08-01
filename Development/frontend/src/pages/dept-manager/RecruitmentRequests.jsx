@@ -34,7 +34,7 @@ import dayjs from 'dayjs';
 import { recruitmentRequestAPI } from '../../services/api';
 import {
   employmentLabel,
-  experienceLabel,
+  experienceText,
   formatSalaryRange,
 } from '../../services/recruitmentRequest';
 import { useAuth, ROLES } from '../../contexts/AuthContext';
@@ -75,7 +75,8 @@ const DeptRecruitmentRequests = () => {
         status: r.status,
         submittedBy: r.createdByName || 'N/A',
         employmentType: r.employmentType,
-        experienceLevel: r.experienceLevel || 'N/A',
+        experienceLevel: r.experienceLevel,
+        experienceYearsMin: r.experienceYearsMin,
         description: r.description,
         requirements: r.requirements,
         benefits: r.benefits,
@@ -196,10 +197,11 @@ const DeptRecruitmentRequests = () => {
     },
     {
       title: 'Kinh nghiệm',
-      dataIndex: 'experienceLevel',
-      key: 'experienceLevel',
-      width: 160,
-      render: (val) => experienceLabel(val) || <Text type="secondary">—</Text>,
+      key: 'experience',
+      width: 170,
+      render: (_, record) =>
+        experienceText(record.experienceYearsMin, record.experienceLevel)
+          || <Text type="secondary">—</Text>,
     },
     {
       title: 'Mức lương',
@@ -507,7 +509,8 @@ const DeptRecruitmentRequests = () => {
               <Descriptions.Item label="Phòng ban">{selectedRequest.department}</Descriptions.Item>
               <Descriptions.Item label="Số lượng">{selectedRequest.positions} vị trí</Descriptions.Item>
               <Descriptions.Item label="Kinh nghiệm">
-                {experienceLabel(selectedRequest.experienceLevel) || <Text type="secondary">Không yêu cầu cụ thể</Text>}
+                {experienceText(selectedRequest.experienceYearsMin, selectedRequest.experienceLevel)
+                  || <Text type="secondary">Không yêu cầu cụ thể</Text>}
               </Descriptions.Item>
               <Descriptions.Item label="Hình thức">
                 {employmentLabel(selectedRequest.employmentType) || <Text type="secondary">—</Text>}

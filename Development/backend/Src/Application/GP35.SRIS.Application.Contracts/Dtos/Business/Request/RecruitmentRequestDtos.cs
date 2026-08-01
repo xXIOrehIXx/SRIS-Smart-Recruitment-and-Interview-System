@@ -8,6 +8,9 @@ public class RecruitmentRequestInputDto
     public int Quantity { get; set; } = 1;
     public string? EmploymentType { get; set; }
     public string? ExperienceLevel { get; set; }
+
+    /// <summary>Số năm kinh nghiệm tối thiểu. 0 = nhận người chưa kinh nghiệm; null = không yêu cầu.</summary>
+    public int? ExperienceYearsMin { get; set; }
     /// <summary>LOW | MEDIUM | HIGH (mặc định MEDIUM).</summary>
     public string? Priority { get; set; }
     public string? Description { get; set; }
@@ -39,6 +42,9 @@ public class RecruitmentRequestDto
     public int Quantity { get; set; }
     public string? EmploymentType { get; set; }
     public string? ExperienceLevel { get; set; }
+
+    /// <summary>Số năm kinh nghiệm tối thiểu. 0 = nhận người chưa kinh nghiệm; null = không yêu cầu.</summary>
+    public int? ExperienceYearsMin { get; set; }
     public string Priority { get; set; } = "MEDIUM";
     public string? Description { get; set; }
     public string? Requirements { get; set; }

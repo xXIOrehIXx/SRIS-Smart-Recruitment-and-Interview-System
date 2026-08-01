@@ -39,6 +39,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
             Quantity = dto.Quantity > 0 ? dto.Quantity : 1,
             EmploymentType = Clean(dto.EmploymentType),
             ExperienceLevel = Clean(dto.ExperienceLevel),
+            ExperienceYearsMin = dto.ExperienceYearsMin,
             Priority = NormalizePriority(dto.Priority),
             Description = Clean(dto.Description),
             Requirements = Clean(dto.Requirements),
@@ -82,6 +83,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         request.Quantity = dto.Quantity > 0 ? dto.Quantity : 1;
         request.EmploymentType = Clean(dto.EmploymentType);
         request.ExperienceLevel = Clean(dto.ExperienceLevel);
+        request.ExperienceYearsMin = dto.ExperienceYearsMin;
         request.Priority = NormalizePriority(dto.Priority);
         request.Description = Clean(dto.Description);
         request.Requirements = Clean(dto.Requirements);
@@ -173,6 +175,10 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
             throw Bad("Tiêu đề yêu cầu tuyển dụng không được để trống.");
         if (dto.SalaryMin.HasValue && dto.SalaryMax.HasValue && dto.SalaryMin > dto.SalaryMax)
             throw Bad("Lương tối thiểu không được lớn hơn lương tối đa.");
+        // Khớp CK_RecruitReq_exp_years (V024) — chặn ở đây để trả 400 có thông điệp,
+        // không để DB ném CHECK violation thành 500.
+        if (dto.ExperienceYearsMin is < 0 or > 50)
+            throw Bad("Số năm kinh nghiệm phải trong khoảng 0–50.");
     }
 
     private static string NormalizePriority(string? priority)
@@ -191,6 +197,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         Quantity = r.Quantity,
         EmploymentType = r.EmploymentType,
         ExperienceLevel = r.ExperienceLevel,
+        ExperienceYearsMin = r.ExperienceYearsMin,
         Priority = r.Priority,
         Description = r.Description,
         Requirements = r.Requirements,

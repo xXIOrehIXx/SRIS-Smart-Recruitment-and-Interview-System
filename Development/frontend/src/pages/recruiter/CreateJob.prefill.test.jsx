@@ -68,6 +68,17 @@ test('?requestId -> quy đổi loại hình + cấp bậc sang từ vựng của
   expect(screen.getByTitle('2+ năm')).toBeInTheDocument();
 });
 
+test('?requestId -> số năm DM nhập thắng cấp bậc cũ khi quy đổi', async () => {
+  // Yêu cầu vừa có cấp bậc cũ (Mid -> "2+") vừa có số năm mới (5 -> "5+"): lấy số năm.
+  recruitmentRequestAPI.getById.mockResolvedValue({
+    data: { ...REQUEST, experienceYearsMin: 5 },
+  });
+
+  await renderFromRequest();
+
+  expect(screen.getByTitle('5+ năm')).toBeInTheDocument();
+});
+
 test('?requestId -> tách dòng "Kỹ năng yêu cầu" ra ô Kỹ Năng riêng', async () => {
   await renderFromRequest();
 
