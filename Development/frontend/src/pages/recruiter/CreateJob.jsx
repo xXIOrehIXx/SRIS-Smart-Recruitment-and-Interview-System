@@ -25,6 +25,7 @@ import { jobsAPI, recruitmentRequestAPI, usersAPI, departmentAPI } from "../../s
 import {
   EMPLOYMENT_TYPE_TO_JOB,
   EXPERIENCE_LEVEL_TO_JOB,
+  experienceYearsToJob,
   splitRequirements,
 } from "../../services/recruitmentRequest";
 import JobSetupSteps from "../../components/JobSetupSteps";
@@ -220,7 +221,10 @@ const CreateJob = () => {
         // Hai form dùng từ vựng khác nhau -> phải quy đổi, gán thẳng thì Select không khớp
         // option nào và ô hiện TRỐNG (HR tưởng hệ thống không điền gì).
         type: EMPLOYMENT_TYPE_TO_JOB[req.employmentType] || "Full-time",
-        experienceLevel: EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
+        // Số năm DM nhập là nguồn chính; yêu cầu cũ (trước V024) mới rơi về cấp bậc.
+        experienceLevel:
+          experienceYearsToJob(req.experienceYearsMin)
+          ?? EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
         quantity: req.quantity,
         skillTags: skills.length > 0 ? skills.join(", ") : undefined,
         description: req.description,

@@ -36,7 +36,7 @@ import dayjs from 'dayjs';
 import { recruitmentRequestAPI, departmentAPI } from '../../services/api';
 import {
   EMPLOYMENT_TYPES,
-  EXPERIENCE_LEVELS,
+  experienceText,
   SKILLS_PREFIX,
   splitRequirements,
 } from '../../services/recruitmentRequest';
@@ -96,6 +96,9 @@ const CreateRecruitmentRequest = () => {
           department: r.department,
           positions: r.quantity ?? 1,
           employmentType: r.employmentType,
+          experienceYearsMin: r.experienceYearsMin,
+          // Yêu cầu cũ (trước V024) chỉ có cấp bậc, không còn ô nhập nhưng vẫn nằm trong
+          // form store -> gửi lại nguyên vẹn khi lưu, không xóa mất dữ liệu cũ.
           experienceLevel: r.experienceLevel,
           priority: PRIORITY_FORM_VALUE[r.priority] || 'Medium',
           description: r.description,
@@ -119,7 +122,6 @@ const CreateRecruitmentRequest = () => {
 
   // Danh mục dùng CHUNG với màn duyệt yêu cầu — sửa nhãn ở một nơi, hai màn cùng đổi.
   const employmentTypes = EMPLOYMENT_TYPES;
-  const experienceLevels = EXPERIENCE_LEVELS;
 
   const priorityOptions = [
     { value: 'Low', label: 'Thấp', color: '#52c41a' },
@@ -165,6 +167,7 @@ const CreateRecruitmentRequest = () => {
         department: values.department,
         quantity: values.positions || 1,
         employmentType: values.employmentType,
+        experienceYearsMin: values.experienceYearsMin,
         experienceLevel: values.experienceLevel,
         priority: (values.priority || 'MEDIUM').toUpperCase(),
         description: values.description,
@@ -212,9 +215,10 @@ const CreateRecruitmentRequest = () => {
     const values = form.getFieldsValue([
       'description',
       'requirements',
-      'experienceLevel',
+      'experienceYearsMin',
     ]);
-    return values.description && values.requirements && values.experienceLevel;
+    // 0 năm ("nhận người chưa kinh nghiệm") là giá trị HỢP LỆ -> không kiểm bằng falsy.
+    return values.description && values.requirements && values.experienceYearsMin != null;
   };
 
   return (
@@ -256,7 +260,7 @@ const CreateRecruitmentRequest = () => {
             positions: 1,
             priority: 'Medium',
             employmentType: 'FULL_TIME',
-            experienceLevel: 'Mid',
+            // Không đặt sẵn số năm — bắt DM cân nhắc, tránh gửi đi con số họ chưa từng nhìn.
             urgency: 50,
           }}
         >
@@ -394,17 +398,20 @@ const CreateRecruitmentRequest = () => {
               <Row gutter={24}>
                 <Col xs={24} lg={12}>
                   <Form.Item
-                    label="Cấp bậc kinh nghiệm"
-                    name="experienceLevel"
-                    rules={[{ required: true, message: 'Vui lòng chọn cấp bậc' }]}
+                    label="Số năm kinh nghiệm tối thiểu"
+                    name="experienceYearsMin"
+                    tooltip="Nhập số năm ít nhất ứng viên cần có. Để 0 nếu nhận cả người chưa có kinh nghiệm."
+                    rules={[{ required: true, message: 'Vui lòng nhập số năm kinh nghiệm' }]}
                   >
-                    <Select placeholder="-- Chọn cấp bậc --" size="large">
-                      {experienceLevels.map((level) => (
-                        <Option key={level.value} value={level.value}>
-                          {level.label}
-                        </Option>
-                      ))}
-                    </Select>
+                    <InputNumber
+                      min={0}
+                      max={50}
+                      style={{ width: '100%' }}
+                      size="large"
+                      placeholder="VD: 2"
+                      addonBefore="Ít nhất"
+                      addonAfter="năm"
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} lg={12}>
@@ -490,10 +497,8 @@ const CreateRecruitmentRequest = () => {
                         </Tag>
                       </div>
                       <div>
-                        <Text type="secondary">Cấp bậc: </Text>
-                        <Text strong>
-                          {experienceLevels.find((l) => l.value === form.getFieldValue('experienceLevel'))?.label || '-'}
-                        </Text>
+                        <Text type="secondary">Kinh nghiệm: </Text>
+                        <Text strong>{experienceText(form.getFieldValue('experienceYearsMin'))}</Text>
                       </div>
                     </div>
                   </Card>
