@@ -513,6 +513,10 @@ export const publicCareerAPI = {
     api.post(`/public/${slug}/jobs/${jobId}/apply`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+
+  // Brand công khai (tên/logo/màu) để career site hiện đúng nhận diện của từng công ty.
+  // Dùng publicApi: khách vãng lai không có token, không được để interceptor đá về /login.
+  getBrand: (slug) => publicApi.get(`/public/${slug}/brand`),
 };
 
 export default api;
