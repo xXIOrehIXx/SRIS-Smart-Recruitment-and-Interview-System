@@ -77,7 +77,7 @@ TP/FP/FN/TN = 34/0/2/36 — **không có cặp sai nào bị nhận nhầm thàn
 ## Chạy lại
 
 ```bash
-cd "improve ai/exp_criteria_threshold"
+cd ai-experiments/exp_criteria_threshold
 python run.py             # cần AI service ở 127.0.0.1:8000
 python run_llm_judge.py   # cần Ollama + qwen2.5
 ```
