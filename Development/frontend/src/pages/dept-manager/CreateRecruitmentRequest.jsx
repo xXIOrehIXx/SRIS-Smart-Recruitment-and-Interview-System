@@ -34,6 +34,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { recruitmentRequestAPI, departmentAPI } from '../../services/api';
+import { SKILLS_PREFIX, splitRequirements } from '../../services/recruitmentRequest';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -41,22 +42,6 @@ const { TextArea } = Input;
 const { Option } = Select;
 
 const MATCHA_GREEN = '#5D8C3E';
-
-// RecruitmentRequestInputDto không có cột skills riêng -> gộp vào requirements bằng dòng có tiền tố này.
-// Tạo và sửa phải dùng CHUNG tiền tố, nếu không mở lại form sẽ mất tag kỹ năng.
-const SKILLS_PREFIX = 'Kỹ năng yêu cầu:';
-
-/// requirements (BE) -> { text, skills } cho form.
-const splitRequirements = (raw) => {
-  const lines = (raw || '').split('\n');
-  const skillLine = lines.find((l) => l.trim().startsWith(SKILLS_PREFIX));
-  return {
-    text: lines.filter((l) => l !== skillLine).join('\n').trim(),
-    skills: skillLine
-      ? skillLine.trim().slice(SKILLS_PREFIX.length).split(',').map((s) => s.trim()).filter(Boolean)
-      : [],
-  };
-};
 
 // BE lưu priority HOA (LOW/MEDIUM/HIGH), Radio.Group dùng dạng Title case.
 const PRIORITY_FORM_VALUE = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
