@@ -322,6 +322,18 @@ export const AuthProvider = ({ children }) => {
     return ROLE_ROUTES[normalizedRole] || '/';
   };
 
+  // Đồng bộ lại thông tin hiển thị sau khi user tự sửa hồ sơ ở màn Settings.
+  // Token không đổi (chỉ cấp lại khi đăng nhập), nên phải vá state + localStorage
+  // thì tên trên header mới đổi ngay thay vì phải đăng xuất/đăng nhập lại.
+  const updateUserProfile = (patch) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      localStorage.setItem('user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const value = {
     user,
     loading,
@@ -329,6 +341,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateUserProfile,
     getMenuItems,
     getDashboardRoute,
     hasPermission: (route) => hasPermission(user?.role, route),

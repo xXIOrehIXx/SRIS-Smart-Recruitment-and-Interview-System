@@ -12,6 +12,16 @@ const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+// Mốc "độ tươi" CV cho Recruiter tự chọn thay vì cứng 6 tháng.
+// CV càng cũ thì ứng viên càng có khả năng đã có việc -> quét hẹp = ít nhưng nóng,
+// quét rộng = nhiều nhưng nguội. Backend clamp trần 36 tháng.
+const FRESHNESS_OPTIONS = [
+  { value: 1, label: '1 tháng gần nhất' },
+  { value: 3, label: '3 tháng gần nhất' },
+  { value: 6, label: '6 tháng gần nhất' },
+];
+const DEFAULT_WITHIN_MONTHS = 6;
+
 /**
  * Talent Pool = reverse matching: JD của job đang chọn → quét kho CV cũ cùng công ty.
  * Backend chỉ có API theo TỪNG job: GET /jobs/{id}/talent-pool
@@ -25,20 +35,21 @@ const TalentPool = () => {
   const [result, setResult] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [companySlug, setCompanySlug] = useState(null);
+  const [withinMonths, setWithinMonths] = useState(DEFAULT_WITHIN_MONTHS);
 
   useEffect(() => {
     fetchJobs();
     companyAPI.get().then((r) => setCompanySlug(r.data?.slug)).catch(() => {});
   }, []);
 
-  const fetchSuggestions = useCallback(async (jobId) => {
+  const fetchSuggestions = useCallback(async (jobId, months) => {
     if (!jobId) {
       setResult(null);
       return;
     }
     try {
       setLoading(true);
-      const response = await talentPoolAPI.getSuggestions(jobId);
+      const response = await talentPoolAPI.getSuggestions(jobId, months);
       setResult(response.data || null);
     } catch (error) {
       console.error('Error fetching talent pool:', error);
@@ -49,9 +60,10 @@ const TalentPool = () => {
     }
   }, []);
 
+  // Đổi vị trí HOẶC đổi mốc độ tươi đều phải quét lại kho CV.
   useEffect(() => {
-    fetchSuggestions(selectedJobId);
-  }, [selectedJobId, fetchSuggestions]);
+    fetchSuggestions(selectedJobId, withinMonths);
+  }, [selectedJobId, withinMonths, fetchSuggestions]);
 
   const fetchJobs = async () => {
     try {
@@ -210,7 +222,20 @@ const TalentPool = () => {
             optionFilterProp="label"
             options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
           />
-          <Button icon={<ReloadOutlined />} onClick={() => fetchSuggestions(selectedJobId)} loading={loading}>
+          <Tooltip title="Chỉ quét CV nộp trong khoảng thời gian này. Hẹp = ít gợi ý nhưng ứng viên còn 'nóng'.">
+            <Select
+              value={withinMonths}
+              onChange={setWithinMonths}
+              style={{ width: 190 }}
+              options={FRESHNESS_OPTIONS}
+              suffixIcon={<ClockCircleOutlined />}
+            />
+          </Tooltip>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => fetchSuggestions(selectedJobId, withinMonths)}
+            loading={loading}
+          >
             Làm mới
           </Button>
         </Space>
@@ -256,7 +281,11 @@ const TalentPool = () => {
               showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} gợi ý`,
             }}
-            locale={{ emptyText: 'Chưa có CV cũ nào đủ khớp với JD này' }}
+            locale={{
+              emptyText: withinMonths < 6
+                ? `Không có CV nào trong ${withinMonths} tháng gần nhất — thử mở rộng khoảng thời gian`
+                : 'Chưa có CV cũ nào đủ khớp với JD này',
+            }}
           />
         ) : (
           <Empty description="Chọn một vị trí để xem gợi ý từ Talent Pool" />

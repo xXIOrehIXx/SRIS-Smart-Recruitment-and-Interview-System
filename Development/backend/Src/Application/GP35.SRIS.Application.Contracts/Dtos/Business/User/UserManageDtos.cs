@@ -33,6 +33,17 @@ public class UserUpdateDto
     public string Status { get; set; } = "Active";
 }
 
+/// <summary>
+/// Người đang đăng nhập tự sửa hồ sơ của CHÍNH MÌNH (màn Settings) — mọi role đều gọi được.
+/// Cố tình KHÔNG có Role/Status: tự sửa hồ sơ không được leo quyền hay tự mở khóa tài khoản.
+/// Email cũng không đổi (là định danh đăng nhập).
+/// </summary>
+public class ProfileUpdateDto
+{
+    public string? FullName { get; set; }
+    public string? Phone { get; set; }
+}
+
 /// <summary>Đổi mật khẩu 1 tài khoản (Admin reset).</summary>
 public class UserPasswordDto
 {
