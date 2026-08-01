@@ -1,14 +1,14 @@
 import React from "react";
-import { Layout, Button, Typography } from "antd";
-import { useNavigate } from "react-router-dom";
+import { Layout, Button, Typography, Avatar } from "antd";
+import { useNavigate, useParams } from "react-router-dom";
 
 const { Header, Footer } = Layout;
 const { Text } = Typography;
 
-/** Logo SRIS dùng chung cho header/footer của Career Site công khai. */
-const SrisLogo = ({ size = 36 }) => (
+/** Logo mặc định khi công ty chưa cấu hình logo riêng. */
+const FallbackMark = ({ size = 36 }) => (
   <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#5D8C3E" />
+    <rect width="48" height="48" rx="12" fill="var(--brand-color, #5D8C3E)" />
     <path
       d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
       stroke="white"
@@ -25,41 +25,34 @@ const SrisLogo = ({ size = 36 }) => (
   </svg>
 );
 
-/** Header dùng chung cho trang danh sách và trang chi tiết tin tuyển dụng. */
-export const CareerHeader = () => {
+const BrandMark = ({ brand, size = 36 }) =>
+  brand?.logoUrl ? (
+    <Avatar src={brand.logoUrl} size={size} shape="square" />
+  ) : (
+    <FallbackMark size={size} />
+  );
+
+/**
+ * Header của Career Site CÔNG KHAI.
+ * Đây là trang tuyển dụng CỦA CÔNG TY khách hàng, không phải trang bán SaaS:
+ * hiện tên + logo của tenant, và chỉ có đúng 1 lối đi là quay về danh sách vị trí.
+ * (Trước đây header hardcode "SRIS" kèm menu Product/Pricing — sai ngữ cảnh.)
+ */
+export const CareerHeader = ({ brand }) => {
   const navigate = useNavigate();
+  const { slug } = useParams();
+
+  const goToJobs = () => navigate(slug ? `/${slug}/career` : "/");
 
   return (
     <Header className="recruitment-page-header">
-      <div
-        className="header-logo"
-        onClick={() => navigate("/")}
-        style={{ cursor: "pointer" }}
-      >
-        <SrisLogo />
-        <span>SRIS</span>
-      </div>
-      <div className="nav-links">
-        <a href="#product">Product</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#resources">Resources</a>
-        <a href="#customers">Customers</a>
+      <div className="header-logo" onClick={goToJobs} style={{ cursor: "pointer" }}>
+        <BrandMark brand={brand} />
+        <span>{brand?.name || "Tuyển dụng"}</span>
       </div>
       <div className="header-actions">
-        <Button
-          type="text"
-          className="login-btn"
-          onClick={() => navigate("/login")}
-        >
-          Log in
-        </Button>
-        <Button
-          type="primary"
-          shape="round"
-          className="demo-btn"
-          onClick={() => navigate("/register")}
-        >
-          Book a demo
+        <Button type="primary" shape="round" onClick={goToJobs}>
+          Vị trí đang tuyển
         </Button>
       </div>
     </Header>
@@ -67,14 +60,16 @@ export const CareerHeader = () => {
 };
 
 /** Footer dùng chung cho Career Site công khai. */
-export const CareerFooter = () => (
+export const CareerFooter = ({ brand }) => (
   <Footer className="recruitment-page-footer">
     <div className="footer-inner">
       <div className="footer-brand">
-        <SrisLogo size={28} />
-        <span>SRIS</span>
+        <BrandMark brand={brand} size={28} />
+        <span>{brand?.name || "Tuyển dụng"}</span>
       </div>
-      <Text type="secondary">© 2026 SRIS. All rights reserved.</Text>
+      <Text type="secondary">
+        © {new Date().getFullYear()} {brand?.name || ""} · Trang tuyển dụng
+      </Text>
     </div>
   </Footer>
 );
