@@ -83,6 +83,28 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
         return Map(existing);
     }
 
+    public async Task<UserListItemDto> UpdateOwnProfileAsync(long companyId, long userId, ProfileUpdateDto dto)
+    {
+        var existing = await _userRepo.GetByIdAsync(companyId, userId)
+            ?? throw NotFound($"Không tìm thấy tài khoản (user_id={userId}).");
+
+        var fullName = string.IsNullOrWhiteSpace(dto.FullName) ? null : dto.FullName.Trim();
+        if (fullName is null)
+            throw Bad("Họ tên không được để trống.");
+
+        var phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
+        if (phone is not null && !IsValidPhone(phone))
+            throw Bad("Số điện thoại phải đúng 10 chữ số và bắt đầu bằng 0.");
+
+        // Giữ NGUYÊN Role/Status đang có: người dùng tự sửa hồ sơ không được đổi quyền của mình,
+        // cũng không được tự gỡ trạng thái Disabled do Admin đặt.
+        await _userRepo.UpdateAsync(companyId, userId, fullName, phone, existing.Role, existing.Status);
+
+        existing.FullName = fullName;
+        existing.Phone = phone;
+        return Map(existing);
+    }
+
     public async Task ResetPasswordAsync(long companyId, long userId, string newPassword)
     {
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
@@ -140,6 +162,10 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
     }
 
     // ============================================================
+
+    /// <summary>SĐT Việt Nam rút gọn: đúng 10 chữ số, bắt đầu bằng 0 (khớp rule đang validate ở FE).</summary>
+    private static bool IsValidPhone(string phone) =>
+        phone.Length == 10 && phone[0] == '0' && phone.All(char.IsAsciiDigit);
 
     private static void ValidateRole(string? role)
     {

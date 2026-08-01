@@ -14,6 +14,12 @@ public interface IUserManageService : IBaseService
     Task<UserListItemDto> UpdateAsync(long companyId, long userId, UserUpdateDto dto);
     Task ResetPasswordAsync(long companyId, long userId, string newPassword);
 
+    /// <summary>
+    /// Người đang đăng nhập tự sửa hồ sơ mình (tên + SĐT). Giữ nguyên Role/Status hiện có —
+    /// KHÔNG dùng UpdateAsync cho việc này vì DTO của Admin bắt buộc Role và mặc định Status="Active".
+    /// </summary>
+    Task<UserListItemDto> UpdateOwnProfileAsync(long companyId, long userId, ProfileUpdateDto dto);
+
     /// <summary>Vô hiệu tài khoản (soft — Status "Disabled"; không xóa cứng để giữ audit/lịch sử chấm).</summary>
     Task DisableAsync(long companyId, long userId);
 

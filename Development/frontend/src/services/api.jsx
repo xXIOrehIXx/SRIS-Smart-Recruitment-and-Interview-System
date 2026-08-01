@@ -88,6 +88,11 @@ export const authAPI = {
   me: () =>
     api.get('/account/me'),
 
+  // Tự sửa hồ sơ mình (tên + SĐT) — mọi role gọi được.
+  // KHÔNG dùng usersAPI.update: endpoint đó chỉ Admin vào được và bắt buộc role/status.
+  updateProfile: (data) =>
+    api.put('/account/me', data),
+
   logout: () =>
     api.post('/account/logout'),
 };
@@ -364,8 +369,11 @@ export const dashboardAPI = {
 // Reverse matching: JD của job → quét kho CvDocument cũ cùng tenant.
 // Chỉ có theo TỪNG job — trả { jobId, withinMonths, count, suggestions: [...] }.
 export const talentPoolAPI = {
-  getSuggestions: (jobId) =>
-    api.get(`/jobs/${jobId}/talent-pool`),
+  // withinMonths = độ tươi CV Recruiter chọn (1/3/6 tháng). Bỏ trống -> BE mặc định 6 tháng.
+  getSuggestions: (jobId, withinMonths) =>
+    api.get(withinMonths
+      ? `/jobs/${jobId}/talent-pool?withinMonths=${withinMonths}`
+      : `/jobs/${jobId}/talent-pool`),
 
   // Gửi email mời ứng tuyển từ backend (SMTP) — trả { sent }
   invite: (jobId, candidateEmail, candidateName) =>

@@ -24,7 +24,9 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | POST | `/api/Account/reset-password` | Anon | body `{ token, newPassword }` |
 | POST | `/api/Account/refresh-token` | Anon | body `{ refreshToken }` → cặp token mới (xoay vòng) |
 | POST | `/api/Account/logout` | *auth | JWT stateless — FE tự xóa token; endpoint chỉ để thống nhất |
-| GET | `/api/Account/me` | *auth | **MỚI 17/07** — hồ sơ người đang đăng nhập `{ userId, email, fullName, role, companyId }`. FE gọi sau login/refresh để route theo role |
+| POST | `/api/Account/change-password` | *auth | tự đổi mật khẩu, body `{ oldPassword, newPassword }` — thu hồi các phiên khác |
+| GET | `/api/Account/me` | *auth | **MỚI 17/07** — hồ sơ người đang đăng nhập `{ userId, email, fullName, phone, role, companyId }`. FE gọi sau login/refresh để route theo role. `fullName`/`phone` đọc từ DB (token chỉ đổi khi đăng nhập lại) |
+| PUT | `/api/Account/me` | *auth | **MỚI 01/08** — tự sửa hồ sơ mình, body `{ fullName, phone? }`. Giữ nguyên role/status (không leo quyền, không tự mở khóa). Màn Settings dùng cái này, KHÔNG dùng `PUT /api/users/{id}` (Admin-only) |
 
 ## 2. Quản lý người dùng — `users` (Admin)
 | Method | Path | Role | Ghi chú |
@@ -32,7 +34,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | GET | `/api/users` | Adm | danh sách user trong công ty |
 | GET | `/api/users/{userId}` | Adm | |
 | POST | `/api/users` | Adm | tạo user (gán role) |
-| PUT | `/api/users/{userId}` | Adm | cập nhật hồ sơ + role + status |
+| PUT | `/api/users/{userId}` | Adm | cập nhật hồ sơ + role + status. body BẮT BUỘC `role`, và thiếu `status` sẽ mặc định `Active` → chỉ dùng cho màn quản trị user; tự sửa hồ sơ mình dùng `PUT /api/Account/me` (§1) |
 | POST | `/api/users/{userId}/reset-password` | Adm | admin đặt lại mật khẩu user |
 | DELETE | `/api/users/{userId}` | Adm | vô hiệu hóa (soft, status=Disabled) |
 | GET | `/api/users/options?role=…` | Rec/DM | **MỚI 17/07** — dropdown chọn người (list rút gọn user Active). `?role=Interviewer` khi gán người chấm vào khung PV; `?role=DepartmentManager` khi chọn DM cho job; bỏ trống = tất cả. **Kết quả LUÔN kèm user Admin** kể cả khi lọc role (Admin làm được mọi việc — công ty 1 người tự gán mình được), FE cứ render thẳng list, không cần lọc lại |
@@ -88,7 +90,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 ## 8. Talent Pool (reverse matching) — `jobs/{jobId}/talent-pool`
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| GET | `/api/jobs/{jobId}/talent-pool` | Rec | quét kho CV cũ cùng tenant khớp JD mới |
+| GET | `/api/jobs/{jobId}/talent-pool?withinMonths=6&topN=10` | Rec | quét kho CV cũ cùng tenant khớp JD mới; `withinMonths` = độ tươi CV Recruiter chọn (FE: 1/3/6 tháng, mặc định 6, trần 36) |
 
 ## 9. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
 | Method | Path | Role | Ghi chú |

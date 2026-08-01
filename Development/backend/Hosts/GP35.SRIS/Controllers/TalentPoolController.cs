@@ -27,7 +27,6 @@ public class TalentPoolController : ControllerBase
         _talentPoolService = talentPoolService;
     }
 
-    /// <summary>Gợi ý CV từ kho cũ. withinMonths = độ tươi (mặc định 6 tháng); topN = số gợi ý (mặc định 10).</summary>
     /// <summary>
     /// Gửi email mời 1 ứng viên trong kho vào job này (kèm link career site).
     /// Trả { sent } — false khi SMTP chưa cấu hình để FE hiện link gửi tay.
@@ -40,6 +39,10 @@ public class TalentPoolController : ControllerBase
         return Ok(new { sent });
     }
 
+    /// <summary>
+    /// Gợi ý CV từ kho cũ. withinMonths = độ tươi Recruiter chọn (FE cho mốc 1/3/6 tháng,
+    /// mặc định 6; service clamp trần 36); topN = số gợi ý (mặc định 10).
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Suggest(
         long jobId, [FromQuery] int withinMonths = 6, [FromQuery] int topN = 10)

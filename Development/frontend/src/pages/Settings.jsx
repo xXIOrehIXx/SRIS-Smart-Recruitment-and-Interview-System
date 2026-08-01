@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, Typography, Form, Input, Button, Tabs, Avatar, message, Upload } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
-import { authAPI, usersAPI } from '../services/api';
+import { authAPI } from '../services/api';
 import './Settings.css';
 
 const { Title, Text } = Typography;
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -41,14 +41,22 @@ const Settings = () => {
     if (!user?.userId) return;
     try {
       setProfileLoading(true);
-      await usersAPI.update(user.userId, {
+      // PUT /account/me — tự sửa hồ sơ mình, mọi role đều được (không cần quyền Admin).
+      const response = await authAPI.updateProfile({
         fullName: values.fullName,
         phone: values.phone,
       });
+      const saved = response.data || {};
+      form.setFieldsValue({
+        fullName: saved.fullName ?? values.fullName,
+        phone: saved.phone ?? '',
+      });
+      // Header/avatar đang đọc user.fullName từ context -> vá lại để đổi ngay.
+      updateUserProfile({ fullName: saved.fullName ?? values.fullName });
       message.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
-      message.error('Failed to update profile');
+      message.error(error?.response?.data?.userMsg || 'Failed to update profile');
     } finally {
       setProfileLoading(false);
     }
