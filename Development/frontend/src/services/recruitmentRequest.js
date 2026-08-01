@@ -46,3 +46,45 @@ export const EXPERIENCE_LEVEL_TO_JOB = {
   Lead: '5+',
   Manager: '5+',
 };
+
+/**
+ * Cấp bậc kèm SỐ NĂM kinh nghiệm — form DM chọn, màn duyệt hiển thị.
+ * Lưu trong DB là mã trần ("Mid"); hiện mã trần cho người duyệt thì họ không biết
+ * DM đang cần bao nhiêu năm, nên mọi chỗ hiển thị phải đi qua bảng này.
+ */
+export const EXPERIENCE_LEVELS = [
+  { value: 'Fresher', label: 'Fresher (0-1 năm)' },
+  { value: 'Junior', label: 'Junior (1-2 năm)' },
+  { value: 'Mid', label: 'Mid-level (2-4 năm)' },
+  { value: 'Senior', label: 'Senior (4-7 năm)' },
+  { value: 'Lead', label: 'Lead/Principal (7+ năm)' },
+  { value: 'Manager', label: 'Manager/Director' },
+];
+
+export const EMPLOYMENT_TYPES = [
+  { value: 'FULL_TIME', label: 'Toàn thời gian' },
+  { value: 'PART_TIME', label: 'Bán thời gian' },
+  { value: 'CONTRACT', label: 'Hợp đồng' },
+  { value: 'INTERNSHIP', label: 'Thực tập' },
+  { value: 'REMOTE', label: 'Làm việc từ xa' },
+];
+
+const labelOf = (list, value) => list.find((x) => x.value === value)?.label;
+
+/** "Mid" -> "Mid-level (2-4 năm)". Trả lại chính giá trị gốc nếu không có trong danh mục. */
+export const experienceLabel = (value) => (value ? labelOf(EXPERIENCE_LEVELS, value) || value : null);
+
+/** "FULL_TIME" -> "Toàn thời gian". */
+export const employmentLabel = (value) => (value ? labelOf(EMPLOYMENT_TYPES, value) || value : null);
+
+/**
+ * Khoảng lương -> chuỗi đọc được. Lương là TÙY CHỌN với DM nên phải xử lý cả 3 trường hợp
+ * thiếu: chỉ có sàn, chỉ có trần, không có gì.
+ */
+export const formatSalaryRange = (min, max) => {
+  const money = (n) => `${Number(n).toLocaleString('vi-VN')} ₫`;
+  if (min != null && max != null) return `${money(min)} - ${money(max)}`;
+  if (min != null) return `Từ ${money(min)}`;
+  if (max != null) return `Tới ${money(max)}`;
+  return null;
+};
