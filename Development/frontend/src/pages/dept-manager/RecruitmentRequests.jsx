@@ -32,6 +32,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { recruitmentRequestAPI } from '../../services/api';
+import {
+  employmentLabel,
+  experienceLabel,
+  formatSalaryRange,
+} from '../../services/recruitmentRequest';
 import { useAuth, ROLES } from '../../contexts/AuthContext';
 import '../Dashboard.css';
 
@@ -190,10 +195,22 @@ const DeptRecruitmentRequests = () => {
       render: (val) => <Tag color={getPriorityColor(val)}>{val}</Tag>,
     },
     {
-      title: 'Cấp bậc',
+      title: 'Kinh nghiệm',
       dataIndex: 'experienceLevel',
       key: 'experienceLevel',
-      width: 100,
+      width: 160,
+      render: (val) => experienceLabel(val) || <Text type="secondary">—</Text>,
+    },
+    {
+      title: 'Mức lương',
+      key: 'salary',
+      width: 190,
+      render: (_, record) => {
+        const range = formatSalaryRange(record.salaryMin, record.salaryMax);
+        return range
+          ? <Text style={{ fontSize: 13 }}>{range}</Text>
+          : <Text type="secondary">Thỏa thuận</Text>;
+      },
     },
     {
       title: 'Người gửi',
@@ -489,8 +506,22 @@ const DeptRecruitmentRequests = () => {
             <Descriptions column={2} bordered size="small" style={{ marginBottom: 16 }}>
               <Descriptions.Item label="Phòng ban">{selectedRequest.department}</Descriptions.Item>
               <Descriptions.Item label="Số lượng">{selectedRequest.positions} vị trí</Descriptions.Item>
-              <Descriptions.Item label="Cấp bậc">{selectedRequest.experienceLevel}</Descriptions.Item>
-              <Descriptions.Item label="Hình thức">{selectedRequest.employmentType}</Descriptions.Item>
+              <Descriptions.Item label="Kinh nghiệm">
+                {experienceLabel(selectedRequest.experienceLevel) || <Text type="secondary">Không yêu cầu cụ thể</Text>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Hình thức">
+                {employmentLabel(selectedRequest.employmentType) || <Text type="secondary">—</Text>}
+              </Descriptions.Item>
+              {/* Lương DM đề xuất — HR cần thấy để cân đối trước khi ra tin đăng. */}
+              <Descriptions.Item label="Mức lương đề xuất" span={2}>
+                {formatSalaryRange(selectedRequest.salaryMin, selectedRequest.salaryMax)
+                  || <Text type="secondary">Thỏa thuận</Text>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày cần tuyển" span={2}>
+                {selectedRequest.expectedStartDate
+                  ? dayjs(selectedRequest.expectedStartDate).format('DD/MM/YYYY')
+                  : <Text type="secondary">Chưa xác định</Text>}
+              </Descriptions.Item>
               <Descriptions.Item label="Người gửi" span={2}>{selectedRequest.submittedBy}</Descriptions.Item>
               <Descriptions.Item label="Ngày gửi" span={2}>{dayjs(selectedRequest.submittedDate).format('DD/MM/YYYY')}</Descriptions.Item>
             </Descriptions>
@@ -504,6 +535,15 @@ const DeptRecruitmentRequests = () => {
                 <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>{selectedRequest.requirements}</pre>
               </Descriptions.Item>
             </Descriptions>
+
+            {/* DM nhập được quyền lợi nhưng trước đây không hiện ở đâu — HR cần để soạn tin đăng. */}
+            {selectedRequest.benefits && (
+              <Descriptions title="Quyền lợi" column={1} bordered size="small" style={{ marginTop: 16 }}>
+                <Descriptions.Item>
+                  <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'inherit' }}>{selectedRequest.benefits}</pre>
+                </Descriptions.Item>
+              </Descriptions>
+            )}
 
             {selectedRequest.reviewNote && (
               <Descriptions title="Ghi chú của người duyệt" column={1} bordered size="small" style={{ marginTop: 16 }}>

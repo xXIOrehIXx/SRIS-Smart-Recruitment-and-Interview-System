@@ -34,7 +34,12 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { recruitmentRequestAPI, departmentAPI } from '../../services/api';
-import { SKILLS_PREFIX, splitRequirements } from '../../services/recruitmentRequest';
+import {
+  EMPLOYMENT_TYPES,
+  EXPERIENCE_LEVELS,
+  SKILLS_PREFIX,
+  splitRequirements,
+} from '../../services/recruitmentRequest';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -112,22 +117,9 @@ const CreateRecruitmentRequest = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
-  const employmentTypes = [
-    { value: 'FULL_TIME', label: 'Toàn thời gian' },
-    { value: 'PART_TIME', label: 'Bán thời gian' },
-    { value: 'CONTRACT', label: 'Hợp đồng' },
-    { value: 'INTERNSHIP', label: 'Thực tập' },
-    { value: 'REMOTE', label: 'Làm việc từ xa' },
-  ];
-
-  const experienceLevels = [
-    { value: 'Fresher', label: 'Fresher (0-1 năm)' },
-    { value: 'Junior', label: 'Junior (1-2 năm)' },
-    { value: 'Mid', label: 'Mid-level (2-4 năm)' },
-    { value: 'Senior', label: 'Senior (4-7 năm)' },
-    { value: 'Lead', label: 'Lead/Principal (7+ năm)' },
-    { value: 'Manager', label: 'Manager/Director' },
-  ];
+  // Danh mục dùng CHUNG với màn duyệt yêu cầu — sửa nhãn ở một nơi, hai màn cùng đổi.
+  const employmentTypes = EMPLOYMENT_TYPES;
+  const experienceLevels = EXPERIENCE_LEVELS;
 
   const priorityOptions = [
     { value: 'Low', label: 'Thấp', color: '#52c41a' },
