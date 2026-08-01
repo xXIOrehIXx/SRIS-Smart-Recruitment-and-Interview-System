@@ -1,0 +1,73 @@
+﻿criterion,text,label,predicted
+Thành thạo nghiệp vụ kế toán tổng hợp,"Phụ trách hạch toán toàn bộ nghiệp vụ phát sinh, lập báo cáo tài chính quý và năm, đối chiếu công nợ với khách hàng.",1,1
+Thành thạo nghiệp vụ kế toán tổng hợp,"Lên sổ sách, quyết toán thuế TNDN và TNCN cuối năm, làm việc trực tiếp với đoàn kiểm toán.",1,1
+Thành thạo nghiệp vụ kế toán tổng hợp,Ba năm làm kế toán tổng hợp tại công ty sản xuất quy mô 200 nhân sự.,1,1
+Thành thạo nghiệp vụ kế toán tổng hợp,"Tốt nghiệp chuyên ngành Kế toán, điểm trung bình 3.2/4.0, chưa có kinh nghiệm đi làm.",0,0
+Thành thạo nghiệp vụ kế toán tổng hợp,Nhập liệu hóa đơn đầu vào và sắp xếp chứng từ theo hướng dẫn của kế toán trưởng.,0,0
+Thành thạo nghiệp vụ kế toán tổng hợp,"Thực tập 2 tháng tại phòng kế toán, chủ yếu photo và lưu trữ hồ sơ.",0,0
+Kinh nghiệm quản lý đội nhóm,"Quản lý nhóm 8 nhân viên kinh doanh, phân bổ chỉ tiêu và đánh giá hiệu suất hàng tháng.",1,1
+Kinh nghiệm quản lý đội nhóm,"Trưởng nhóm dự án gồm 5 lập trình viên, chịu trách nhiệm tiến độ và chất lượng bàn giao.",1,1
+Kinh nghiệm quản lý đội nhóm,"Đào tạo và kèm cặp nhân viên mới, xây dựng quy trình làm việc cho cả bộ phận.",1,1
+Kinh nghiệm quản lý đội nhóm,"Làm việc nhóm tốt, phối hợp hiệu quả với các phòng ban khác.",0,0
+Kinh nghiệm quản lý đội nhóm,Tham gia nhóm 6 người triển khai dự án ERP với vai trò thành viên.,0,0
+Kinh nghiệm quản lý đội nhóm,Mong muốn phát triển lên vị trí quản lý trong 2 năm tới.,0,0
+Kinh nghiệm bán hàng cho khách hàng doanh nghiệp,"Phát triển tệp khách hàng doanh nghiệp, ký hợp đồng cung cấp giải pháp cho hơn 20 công ty.",1,1
+Kinh nghiệm bán hàng cho khách hàng doanh nghiệp,"Tìm kiếm và tiếp cận doanh nghiệp vừa và nhỏ, đàm phán hợp đồng giá trị 300-800 triệu.",1,1
+Kinh nghiệm bán hàng cho khách hàng doanh nghiệp,"Phụ trách kênh B2B, doanh số trung bình 1,2 tỷ mỗi quý.",1,1
+Kinh nghiệm bán hàng cho khách hàng doanh nghiệp,"Bán hàng tại cửa hàng, tư vấn sản phẩm cho khách lẻ và chốt đơn tại quầy.",0,0
+Kinh nghiệm bán hàng cho khách hàng doanh nghiệp,"Chăm sóc khách hàng cá nhân qua tổng đài, xử lý khiếu nại về dịch vụ.",0,0
+Kinh nghiệm bán hàng cho khách hàng doanh nghiệp,Cộng tác viên bán hàng online trên các sàn thương mại điện tử.,0,0
+Kỹ năng phân tích dữ liệu,"Xây dựng báo cáo doanh thu bằng Power BI, phân tích xu hướng theo vùng để đề xuất chỉ tiêu.",1,1
+Kỹ năng phân tích dữ liệu,"Dùng SQL truy vấn kho dữ liệu bán hàng, tìm nguyên nhân sụt giảm đơn hàng theo từng kênh.",1,1
+Kỹ năng phân tích dữ liệu,Thành thạo pivot table và hàm nâng cao trong Excel để tổng hợp số liệu vận hành hàng tuần.,1,1
+Kỹ năng phân tích dữ liệu,Nhập số liệu bán hàng vào file Excel theo mẫu có sẵn.,0,0
+Kỹ năng phân tích dữ liệu,Sử dụng thành thạo Word và PowerPoint để soạn tài liệu.,0,0
+Kỹ năng phân tích dữ liệu,Có tư duy logic tốt và ham học hỏi công nghệ mới.,0,0
+Kinh nghiệm phát triển ứng dụng web,"Xây dựng API cho hệ thống quản lý kho bằng ASP.NET Core, tối ưu truy vấn SQL Server.",1,1
+Kinh nghiệm phát triển ứng dụng web,"Phát triển giao diện người dùng bằng React, tích hợp với backend qua REST API.",1,1
+Kinh nghiệm phát triển ứng dụng web,"Tham gia 3 dự án web nội bộ, phụ trách phần đăng nhập và phân quyền.",1,1
+Kinh nghiệm phát triển ứng dụng web,"Cài đặt và bảo trì máy tính, xử lý sự cố mạng LAN cho văn phòng.",0,0
+Kinh nghiệm phát triển ứng dụng web,"Đã học qua khóa HTML và CSS cơ bản trên mạng, chưa làm dự án thực tế.",0,0
+Kinh nghiệm phát triển ứng dụng web,Kiểm thử thủ công các chức năng của website theo kịch bản có sẵn.,0,0
+Khả năng giao tiếp tiếng Anh trong công việc,Trao đổi hàng ngày với khách hàng Singapore qua email và họp trực tuyến bằng tiếng Anh.,1,1
+Khả năng giao tiếp tiếng Anh trong công việc,Làm phiên dịch trong các buổi làm việc giữa ban giám đốc và đối tác nước ngoài.,1,1
+Khả năng giao tiếp tiếng Anh trong công việc,Viết tài liệu kỹ thuật và biên bản họp bằng tiếng Anh cho dự án outsourcing.,1,1
+Khả năng giao tiếp tiếng Anh trong công việc,"Đọc hiểu tài liệu tiếng Anh chuyên ngành, giao tiếp còn hạn chế.",0,0
+Khả năng giao tiếp tiếng Anh trong công việc,Đang theo học lớp tiếng Anh giao tiếp buổi tối tại trung tâm.,0,0
+Khả năng giao tiếp tiếng Anh trong công việc,"Thành thạo tiếng Nhật N2, từng làm việc với khách hàng Nhật Bản.",0,0
+Kinh nghiệm tuyển dụng và quản lý nhân sự,"Phụ trách tuyển dụng toàn công ty, trung bình 15 vị trí mỗi quý, từ đăng tin đến onboarding.",1,1
+Kinh nghiệm tuyển dụng và quản lý nhân sự,Xây dựng khung năng lực và quy trình đánh giá hiệu suất cho khối vận hành.,1,1
+Kinh nghiệm tuyển dụng và quản lý nhân sự,"Quản lý hồ sơ lao động, hợp đồng và thủ tục bảo hiểm xã hội cho 150 nhân viên.",1,1
+Kinh nghiệm tuyển dụng và quản lý nhân sự,Hỗ trợ phòng nhân sự sắp lịch phỏng vấn và chuẩn bị phòng họp.,0,0
+Kinh nghiệm tuyển dụng và quản lý nhân sự,Từng ứng tuyển và trải qua nhiều vòng phỏng vấn nên hiểu quy trình tuyển dụng.,0,0
+Kinh nghiệm tuyển dụng và quản lý nhân sự,Chấm công và tổng hợp bảng lương theo dữ liệu máy chấm công.,0,0
+Kỹ năng chăm sóc và xử lý khiếu nại khách hàng,"Tiếp nhận khiếu nại qua hotline, điều phối bộ phận liên quan và theo dõi tới khi khách hài lòng.",1,1
+Kỹ năng chăm sóc và xử lý khiếu nại khách hàng,"Xử lý các ca khách hàng phàn nàn về chất lượng dịch vụ, giữ được 80% khách sau sự cố.",1,1
+Kỹ năng chăm sóc và xử lý khiếu nại khách hàng,"Trực fanpage và inbox, giải đáp thắc mắc và xoa dịu khách hàng bức xúc.",1,1
+Kỹ năng chăm sóc và xử lý khiếu nại khách hàng,Gọi điện mời khách hàng tham dự sự kiện ra mắt sản phẩm.,0,0
+Kỹ năng chăm sóc và xử lý khiếu nại khách hàng,"Tính tình hòa nhã, kiên nhẫn, được đồng nghiệp quý mến.",0,0
+Kỹ năng chăm sóc và xử lý khiếu nại khách hàng,Nhập thông tin khách hàng vào hệ thống CRM sau mỗi cuộc gọi.,0,0
+Kinh nghiệm triển khai chiến dịch marketing số,"Chạy quảng cáo Facebook và Google Ads với ngân sách 200 triệu mỗi tháng, tối ưu chi phí trên đơn.",1,1
+Kinh nghiệm triển khai chiến dịch marketing số,"Lên kế hoạch và triển khai chiến dịch ra mắt sản phẩm trên đa kênh, đo lường bằng GA4.",1,1
+Kinh nghiệm triển khai chiến dịch marketing số,"Quản lý nội dung fanpage và email marketing, tăng tỷ lệ mở mail từ 12% lên 21%.",1,0
+Kinh nghiệm triển khai chiến dịch marketing số,Thiết kế banner và ấn phẩm truyền thông theo yêu cầu của phòng marketing.,0,0
+Kinh nghiệm triển khai chiến dịch marketing số,Phát tờ rơi và hỗ trợ dựng gian hàng tại hội chợ thương mại.,0,0
+Kinh nghiệm triển khai chiến dịch marketing số,"Yêu thích lĩnh vực marketing, thường xuyên theo dõi các trang tin về quảng cáo.",0,0
+Kinh nghiệm làm việc với phần mềm kế toán doanh nghiệp,"Sử dụng MISA hàng ngày để hạch toán, lên báo cáo và kết chuyển cuối kỳ.",1,1
+Kinh nghiệm làm việc với phần mềm kế toán doanh nghiệp,Triển khai chuyển đổi số liệu từ Fast sang hệ thống ERP mới cho toàn công ty.,1,0
+Kinh nghiệm làm việc với phần mềm kế toán doanh nghiệp,"Vận hành phân hệ kế toán trên SAP, xử lý bút toán và đối soát tự động.",1,1
+Kinh nghiệm làm việc với phần mềm kế toán doanh nghiệp,"Ghi chép thu chi bằng file Excel tự lập, chưa dùng phần mềm chuyên dụng.",0,0
+Kinh nghiệm làm việc với phần mềm kế toán doanh nghiệp,Biết sử dụng phần mềm quản lý bán hàng KiotViet tại cửa hàng.,0,0
+Kinh nghiệm làm việc với phần mềm kế toán doanh nghiệp,Đã được giới thiệu về phần mềm MISA trong môn học ở trường.,0,0
+Khả năng làm việc độc lập và chịu áp lực cao,"Tự chủ động xử lý toàn bộ sổ sách chi nhánh trong mùa quyết toán, thường xuyên hoàn thành đúng hạn.",1,1
+Khả năng làm việc độc lập và chịu áp lực cao,"Một mình phụ trách vận hành ca đêm, tự ra quyết định xử lý sự cố không cần chờ quản lý.",1,1
+Khả năng làm việc độc lập và chịu áp lực cao,"Quen với môi trường deadline gấp, từng chạy song song 4 dự án trong cùng một quý.",1,1
+Khả năng làm việc độc lập và chịu áp lực cao,Luôn hoàn thành công việc được giao theo hướng dẫn chi tiết của cấp trên.,0,0
+Khả năng làm việc độc lập và chịu áp lực cao,"Thích môi trường ổn định, ít thay đổi để tập trung chuyên môn.",0,0
+Khả năng làm việc độc lập và chịu áp lực cao,"Hòa đồng, luôn sẵn sàng hỗ trợ đồng nghiệp khi được nhờ.",0,0
+Kinh nghiệm quản lý dự án phần mềm,"Điều phối dự án 6 tháng cho khách hàng Nhật, quản lý phạm vi, tiến độ và rủi ro theo tuần.",1,1
+Kinh nghiệm quản lý dự án phần mềm,"Chạy Scrum cho đội 9 người, tổ chức sprint planning và retrospective đều đặn.",1,1
+Kinh nghiệm quản lý dự án phần mềm,Lập kế hoạch nguồn lực và theo dõi ngân sách cho ba dự án triển khai song song.,1,1
+Kinh nghiệm quản lý dự án phần mềm,Tham gia họp sprint hàng ngày và cập nhật trạng thái công việc của bản thân lên Jira.,0,0
+Kinh nghiệm quản lý dự án phần mềm,Viết tài liệu đặc tả yêu cầu theo phân công của trưởng nhóm phân tích nghiệp vụ.,0,0
+Kinh nghiệm quản lý dự án phần mềm,Có chứng chỉ PMP nhưng chưa từng tham gia dự án phần mềm thực tế.,0,0

@@ -161,9 +161,10 @@ const CandidateDetail = () => {
       render: (name, record) => (
         <Space size={6}>
           <Text strong>{name}</Text>
+          {/* Nhãn cho người đọc, không phải tên kỹ thuật HARD/SOFT trong DB. */}
           {record.type === 'HARD'
-            ? <Tag color="volcano" style={{ fontSize: 11 }}>HARD</Tag>
-            : <Tag color="geekblue" style={{ fontSize: 11 }}>SOFT</Tag>}
+            ? <Tag color="volcano" style={{ fontSize: 11 }}>Bắt buộc</Tag>
+            : <Tag color="geekblue" style={{ fontSize: 11 }}>Theo mức độ</Tag>}
         </Space>
       ),
     },
