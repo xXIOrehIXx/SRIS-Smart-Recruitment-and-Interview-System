@@ -86,3 +86,55 @@ test('?requestId -> tách dòng "Kỹ năng yêu cầu" ra ô Kỹ Năng riêng'
   // Dòng kỹ năng KHÔNG được lẫn vào phần yêu cầu dạng gạch đầu dòng.
   expect(screen.queryByDisplayValue(/Kỹ năng yêu cầu:/)).not.toBeInTheDocument();
 });
+
+/**
+ * Sửa tin đã có: /recruiter/jobs/create?edit=X.
+ * Hạn nộp từ API là CHUỖI ISO, còn <DatePicker> của antd v5 chỉ nhận object dayjs —
+ * gán thẳng chuỗi thì component throw và cả trang trắng xóa. Lỗi này nằm im cho tới
+ * khi có tin điền hạn nộp, nên phải có test giữ.
+ */
+const JOB_WITH_DEADLINE = {
+  jobId: 48,
+  title: 'Thực tập sinh Marketing',
+  department: 'Phòng Marketing',
+  employmentType: 'Internship',
+  experienceLevel: 'Không yêu cầu',
+  location: 'Hà Nội',
+  jdText: 'Hỗ trợ đội Marketing triển khai các hoạt động truyền thông.',
+  salaryMin: 4000000,
+  salaryMax: 6000000,
+  currency: 'VND',
+  deadline: '2026-08-31T00:00:00',
+  requirements: ['Sinh viên năm 3, năm 4'],
+  benefits: ['Trợ cấp thực tập theo tháng'],
+};
+
+const renderEdit = async (job) => {
+  const { jobsAPI } = await import('../../services/api');
+  jobsAPI.getById.mockResolvedValue({ data: job });
+
+  render(
+    <MemoryRouter initialEntries={['/recruiter/jobs/create?edit=48']}>
+      <CreateJob />
+    </MemoryRouter>
+  );
+  await waitFor(() => expect(jobsAPI.getById).toHaveBeenCalledWith('48'));
+};
+
+test('?edit -> tin CÓ hạn nộp vẫn render được (không trắng màn hình)', async () => {
+  await renderEdit(JOB_WITH_DEADLINE);
+
+  await waitFor(() =>
+    expect(screen.getByDisplayValue('Thực tập sinh Marketing')).toBeInTheDocument()
+  );
+  // Hạn nộp đổ đúng vào ô ngày thay vì làm sập trang.
+  expect(screen.getByDisplayValue('31/08/2026')).toBeInTheDocument();
+});
+
+test('?edit -> hạn nộp rỗng hoặc hỏng thì để trống, không sập', async () => {
+  await renderEdit({ ...JOB_WITH_DEADLINE, deadline: 'khong-phai-ngay' });
+
+  await waitFor(() =>
+    expect(screen.getByDisplayValue('Thực tập sinh Marketing')).toBeInTheDocument()
+  );
+});
