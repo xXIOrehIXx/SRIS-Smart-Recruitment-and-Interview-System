@@ -22,6 +22,11 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { jobsAPI, recruitmentRequestAPI, usersAPI, departmentAPI } from "../../services/api";
+import {
+  EMPLOYMENT_TYPE_TO_JOB,
+  EXPERIENCE_LEVEL_TO_JOB,
+  splitRequirements,
+} from "../../services/recruitmentRequest";
 import JobSetupSteps from "../../components/JobSetupSteps";
 import "./css/CreateJob.css";
 
@@ -205,15 +210,24 @@ const CreateJob = () => {
       setInitialLoading(true);
       const response = await recruitmentRequestAPI.getById(id);
       const req = response.data;
+
+      // Dòng "Kỹ năng yêu cầu: ..." DM gõ -> ô Kỹ Năng riêng, không để lẫn vào gạch đầu dòng.
+      const { text: requirementsText, skills } = splitRequirements(req.requirements);
+
       form.setFieldsValue({
         title: req.title,
         department: req.department,
-        type: req.employmentType,
+        // Hai form dùng từ vựng khác nhau -> phải quy đổi, gán thẳng thì Select không khớp
+        // option nào và ô hiện TRỐNG (HR tưởng hệ thống không điền gì).
+        type: EMPLOYMENT_TYPE_TO_JOB[req.employmentType] || "Full-time",
+        experienceLevel: EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
+        quantity: req.quantity,
+        skillTags: skills.length > 0 ? skills.join(", ") : undefined,
         description: req.description,
         salaryMin: req.salaryMin,
         salaryMax: req.salaryMax,
       });
-      if (req.requirements) setRequirements(req.requirements.split("\n").filter(Boolean));
+      if (requirementsText) setRequirements(requirementsText.split("\n").filter(Boolean));
       if (req.benefits) setBenefits(req.benefits.split("\n").filter(Boolean));
       message.info(`Đang tạo tin từ yêu cầu tuyển dụng của ${req.createdByName || "DM"} — "${req.title}"`);
     } catch (error) {

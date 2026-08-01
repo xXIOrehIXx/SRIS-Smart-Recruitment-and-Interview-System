@@ -365,13 +365,6 @@ const RecruiterDashboard = () => {
               </Option>
             ))}
           </Select>
-          <Button
-            icon={<PlusOutlined />}
-            type="primary"
-            onClick={() => navigate("/recruiter/jobs/create")}
-          >
-            Đăng Tin Mới
-          </Button>
         </div>
       </div>
 
