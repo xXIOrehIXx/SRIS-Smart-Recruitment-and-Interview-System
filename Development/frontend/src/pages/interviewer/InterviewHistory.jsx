@@ -71,6 +71,9 @@ const InterviewerInterviewHistory = () => {
         roundNumber: item.roundNumber || 1,
         status: item.status,
         mySheetStatus: item.mySheetStatus || 'NOT_STARTED',
+        // Hồ sơ đã OFFER/HIRED/REJECTED -> phiếu khóa, chỉ xem.
+        applicationState: item.applicationState,
+        isLocked: !!item.isLocked,
       }))
       // Lịch sử chỉ quan tâm các buổi đã có phiếu (DRAFT hoặc SUBMITTED),
       // hoặc các buổi CONFIRMED đã qua StartTime.
@@ -134,7 +137,7 @@ const InterviewerInterviewHistory = () => {
           round: record.roundNumber,
           startTime: record.startTime,
         },
-        mode: record.mySheetStatus === 'SUBMITTED' ? 'view' : 'continue',
+        mode: record.isLocked ? 'view' : 'continue',
       },
     });
   };
@@ -232,7 +235,11 @@ const InterviewerInterviewHistory = () => {
                 : { background: MATCHA_GREEN, borderColor: MATCHA_GREEN }
             }
           >
-            {record.mySheetStatus === 'SUBMITTED' ? 'Xem / Sửa' : 'Tiếp tục chấm'}
+            {record.isLocked
+              ? 'Xem phiếu'
+              : record.mySheetStatus === 'SUBMITTED'
+                ? 'Xem / Sửa'
+                : 'Tiếp tục chấm'}
           </Button>
         </Space>
       ),

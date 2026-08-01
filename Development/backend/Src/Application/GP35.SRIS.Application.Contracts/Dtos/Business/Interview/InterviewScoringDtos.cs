@@ -19,6 +19,12 @@ public class MyScheduleDto
     public string CandidateName { get; set; } = null!;
     public string CandidateEmail { get; set; } = null!;
     public string JobTitle { get; set; } = null!;
+
+    /// <summary>Trạng thái hồ sơ (NEW..REJECTED).</summary>
+    public string? ApplicationState { get; set; }
+
+    /// <summary>True khi hồ sơ đã sang OFFER/HIRED/REJECTED -> phiếu chấm không sửa được nữa.</summary>
+    public bool IsLocked { get; set; }
 }
 
 /// <summary>1 dòng interviewer nhập điểm + note cho 1 tiêu chí.</summary>
@@ -85,6 +91,18 @@ public class ScoringSheetDto
 
     /// <summary>Thông tin ứng viên của buổi.</summary>
     public ScoringCandidateInfoDto? Candidate { get; set; }
+
+    /// <summary>Trạng thái hồ sơ của buổi này (NEW..REJECTED) — nguồn của <see cref="IsLocked"/>.</summary>
+    public string? ApplicationState { get; set; }
+
+    /// <summary>
+    /// True khi hồ sơ đã sang OFFER/HIRED/REJECTED -> không sửa phiếu được nữa.
+    /// Nộp phiếu (SUBMITTED) KHÔNG khóa: interviewer vẫn sửa điểm / thêm note tới khi người quyết chốt.
+    /// </summary>
+    public bool IsLocked { get; set; }
+
+    /// <summary>Lý do khóa để FE hiển thị. Null khi chưa khóa.</summary>
+    public string? LockReason { get; set; }
 }
 
 // ----- Tổng hợp panel (sau khi đã SUBMITTED — blind mở) -----

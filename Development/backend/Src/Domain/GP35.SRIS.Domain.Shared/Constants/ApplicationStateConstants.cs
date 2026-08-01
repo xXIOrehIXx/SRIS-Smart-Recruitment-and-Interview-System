@@ -56,5 +56,24 @@ public static class ApplicationStateMachine
     public static bool RequiresGuardG2(string from, string to) =>
         Eq(from, ApplicationState.Interview) && Eq(to, ApplicationState.Offer);
 
+    /// <summary>
+    /// Hồ sơ đã sang bước quyết định (OFFER / HIRED / REJECTED) -> KHÓA phiếu chấm phỏng vấn.
+    /// Trước đó (kể cả khi phiếu đã SUBMITTED) interviewer vẫn sửa điểm / bổ sung note được:
+    /// nộp phiếu chỉ là "mở blind", không phải chốt sổ. Chốt sổ là lúc người quyết đã dùng điểm đó.
+    /// </summary>
+    public static bool IsScoringLocked(string? state) =>
+        state is not null &&
+        (Eq(state, ApplicationState.Offer) ||
+         Eq(state, ApplicationState.Hired) ||
+         Eq(state, ApplicationState.Rejected));
+
+    /// <summary>Lý do khóa phiếu chấm để hiển thị cho interviewer. Null nếu chưa khóa.</summary>
+    public static string? ScoringLockReason(string? state) =>
+        state is null ? null :
+        Eq(state, ApplicationState.Offer) ? "Hồ sơ đã chuyển sang bước ra quyết định (Offer) — phiếu chấm đã khóa." :
+        Eq(state, ApplicationState.Hired) ? "Ứng viên đã được chốt tuyển — phiếu chấm đã khóa." :
+        Eq(state, ApplicationState.Rejected) ? "Hồ sơ đã bị từ chối — phiếu chấm đã khóa." :
+        null;
+
     private static bool Eq(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 }

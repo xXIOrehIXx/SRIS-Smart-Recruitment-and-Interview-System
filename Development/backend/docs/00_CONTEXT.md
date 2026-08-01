@@ -165,6 +165,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 - Bộ tiêu chí chấm phỏng vấn = DÙNG CHUNG bộ tiêu chí của job (5.18): nhóm tiêu chí INTERVIEW_ONLY + có thể chấm lại cả nhóm CV_MATCHABLE ở mức người thật. Recruiter/DM tùy biến per-job, không hard-code.
 - Interviewer chấm trong Portal: Recruiter set up buổi PV + gán interviewer → interviewer login, thấy buổi được giao → trang chấm (tiêu chí + ô điểm + note từng tiêu chí) → submit. Sửa được điểm đến khi buổi/vòng khóa; xem lịch sử.
+- **Mốc khóa phiếu = trạng thái HỒ SƠ, không phải trạng thái phiếu:** submit chỉ MỞ BLIND, không chốt sổ — interviewer vẫn sửa điểm / bổ sung nhận xét khi nhớ ra ý. Phiếu khóa cứng khi hồ sơ sang OFFER / HIRED / REJECTED (người quyết đã dùng điểm đó để chốt). Ép ở service (`EnsureNotLockedAsync` chặn cả save lẫn submit), FE chỉ hiển thị theo cờ `isLocked` server trả.
 - Chấm LIVE trong buổi PV, KHÔNG dựa trí nhớ: trang mở từ đầu buổi, gõ điểm + note ngay; nháp TỰ LƯU ở server; cuối buổi Submit. Số hóa đúng thói quen as-is.
 - Blind Review (khi bật): mỗi interviewer chấm độc lập, nháp riêng tư, hệ thống chỉ MỞ BLIND sau khi đã submit. Chống bias hùa theo.
 - TÁCH BẠCH "chấm" vs "quyết định": chấm = INPUT (interviewer). Quyết = phán xét tuyển/loại (DM của job; không gán DM → Recruiter). Recruiter thao tác Kanban.

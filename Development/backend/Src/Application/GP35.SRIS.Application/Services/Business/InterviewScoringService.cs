@@ -51,7 +51,9 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             StartTime = s.StartTime,
             CandidateName = s.CandidateName,
             CandidateEmail = s.CandidateEmail,
-            JobTitle = s.JobTitle
+            JobTitle = s.JobTitle,
+            ApplicationState = s.ApplicationState,
+            IsLocked = ApplicationStateMachine.IsScoringLocked(s.ApplicationState)
         }).ToList();
     }
 
@@ -65,6 +67,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         long companyId, long interviewerId, long scheduleId, SaveScoreDraftDto dto)
     {
         await EnsureAssignedAsync(companyId, scheduleId, interviewerId);
+        await EnsureNotLockedAsync(companyId, scheduleId);
         var criteria = await GetActiveCriteriaAsync(companyId, scheduleId);
         var byId = criteria.ToDictionary(c => c.CriteriaId);
 
@@ -84,6 +87,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
     public async Task<ScoringSheetDto> SubmitAsync(long companyId, long interviewerId, long scheduleId)
     {
         await EnsureAssignedAsync(companyId, scheduleId, interviewerId);
+        await EnsureNotLockedAsync(companyId, scheduleId);
         var criteria = await GetActiveCriteriaAsync(companyId, scheduleId);
         if (criteria.Count == 0)
             throw Conflict("Job chưa có tiêu chí chấm nào — Recruiter cần cấu hình trước.");
@@ -224,13 +228,32 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             throw Forbidden("Bạn không được giao chấm buổi phỏng vấn này.");
     }
 
-    private async Task<IReadOnlyList<EvaluationCriteria>> GetActiveCriteriaAsync(long companyId, long scheduleId)
+    /// <summary>Hồ sơ của buổi phỏng vấn (đã lọc tenant) — nguồn của jobId + trạng thái khóa phiếu.</summary>
+    private async Task<(long JobId, string CurrentState)> GetApplicationOfScheduleAsync(
+        long companyId, long scheduleId)
     {
         var schedule = await _schedulingRepo.GetScheduleByIdAsync(companyId, scheduleId)
             ?? throw NotFound($"Không tìm thấy buổi phỏng vấn (schedule_id={scheduleId}).");
         var app = await _appRepo.GetByIdAsync(companyId, schedule.ApplicationId)
             ?? throw NotFound("Không tìm thấy hồ sơ của buổi phỏng vấn.");
-        return await _criteriaRepo.GetByJobAsync(companyId, app.JobId, activeOnly: true);
+        return (app.JobId, app.CurrentState);
+    }
+
+    /// <summary>
+    /// Phiếu chỉ khóa khi hồ sơ đã sang bước quyết định (OFFER/HIRED/REJECTED).
+    /// Nộp phiếu KHÔNG khóa — interviewer còn sửa điểm / bổ sung note tới khi người quyết chốt.
+    /// </summary>
+    private async Task EnsureNotLockedAsync(long companyId, long scheduleId)
+    {
+        var (_, state) = await GetApplicationOfScheduleAsync(companyId, scheduleId);
+        if (ApplicationStateMachine.IsScoringLocked(state))
+            throw Conflict(ApplicationStateMachine.ScoringLockReason(state)!);
+    }
+
+    private async Task<IReadOnlyList<EvaluationCriteria>> GetActiveCriteriaAsync(long companyId, long scheduleId)
+    {
+        var (jobId, _) = await GetApplicationOfScheduleAsync(companyId, scheduleId);
+        return await _criteriaRepo.GetByJobAsync(companyId, jobId, activeOnly: true);
     }
 
     /// <summary>
@@ -275,6 +298,11 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             FullName = candidate.FullName ?? string.Empty,
             Email = candidate.Email ?? string.Empty,
         };
+
+        // Khóa theo TRẠNG THÁI HỒ SƠ, không theo trạng thái phiếu: đã nộp vẫn sửa được.
+        coreDto.ApplicationState = app.CurrentState;
+        coreDto.IsLocked = ApplicationStateMachine.IsScoringLocked(app.CurrentState);
+        coreDto.LockReason = ApplicationStateMachine.ScoringLockReason(app.CurrentState);
 
         return coreDto;
     }
