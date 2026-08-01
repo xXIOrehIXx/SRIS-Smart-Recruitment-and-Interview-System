@@ -2,6 +2,7 @@ using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
@@ -314,6 +315,30 @@ public class ApplicationStateServiceTests
             () => service.AdvanceToAsync(CompanyId, UserId, AppId, "INTERVIEW"));
 
         Assert.Equal("INVALID_TRANSITION", ex.ErrorCode);
+    }
+
+    // ---------- Khóa phiếu chấm phỏng vấn theo trạng thái hồ sơ ----------
+
+    [Theory]
+    [InlineData("OFFER")]
+    [InlineData("HIRED")]
+    [InlineData("REJECTED")]
+    public void IsScoringLocked_AfterDecision_True(string state)
+    {
+        Assert.True(ApplicationStateMachine.IsScoringLocked(state));
+        Assert.False(string.IsNullOrWhiteSpace(ApplicationStateMachine.ScoringLockReason(state)));
+    }
+
+    [Theory]
+    [InlineData("NEW")]
+    [InlineData("SCREENING")]
+    [InlineData("INTERVIEW")]
+    [InlineData(null)]
+    public void IsScoringLocked_BeforeDecision_False(string? state)
+    {
+        // Phiếu đã SUBMITTED vẫn sửa được ở các state này — nộp chỉ mở blind, không chốt sổ.
+        Assert.False(ApplicationStateMachine.IsScoringLocked(state));
+        Assert.Null(ApplicationStateMachine.ScoringLockReason(state));
     }
 }
 

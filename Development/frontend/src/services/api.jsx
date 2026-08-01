@@ -4,6 +4,13 @@ import axios from 'axios';
 // reverse proxy khi deploy. Đặt REACT_APP_API_URL khi backend ở origin khác.
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+// Các trang KHÔNG cần đăng nhập (khớp route công khai trong App.jsx): career site theo slug
+// công ty + 3 trang ứng viên vào bằng magic link. Dùng để chặn interceptor 401 đá về /login.
+const isPublicPath = (pathname) =>
+  pathname === '/' ||
+  /^\/[^/]+\/career(\/|$)/.test(pathname) ||
+  ['/schedule', '/offer', '/status', '/candidate/offer-response'].includes(pathname);
+
 // Tạo axios instance
 const api = axios.create({
   baseURL: BASE_URL,
@@ -53,11 +60,12 @@ api.interceptors.response.use(
       // Token hết hạn hoặc không hợp lệ
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      
-      // Tránh reload vòng lặp vô hạn nếu đang ở /login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'; 
-        
+
+      // Tránh reload vòng lặp vô hạn nếu đang ở /login, VÀ không đá khách vãng lai ra khỏi
+      // các trang vốn không cần đăng nhập (career site, magic link ứng viên): ở đó một request
+      // 401 lạc là chuyện bình thường, không phải phiên hết hạn.
+      if (window.location.pathname !== '/login' && !isPublicPath(window.location.pathname)) {
+        window.location.href = '/login';
       }
     }
     return normalizeApiError(error);
@@ -87,6 +95,29 @@ export const authAPI = {
 
   me: () =>
     api.get('/account/me'),
+
+  // Tự sửa hồ sơ mình (tên + SĐT) — mọi role gọi được.
+  // KHÔNG dùng usersAPI.update: endpoint đó chỉ Admin vào được và bắt buộc role/status.
+  updateProfile: (data) =>
+    api.put('/account/me', data),
+
+  // Đổi ảnh đại diện — multipart, trường 'file'. Trả { avatarUrl } (presigned, có hạn).
+  //
+  // BẮT BUỘC ghi đè Content-Type ở đây: instance `api` mặc định 'application/json', mà
+  // axios 1.x gặp FormData kèm content-type JSON thì nó ĐỔI FormData thành JSON
+  // (formDataToJSON) -> file bay mất, server nhận body rỗng và trả 400 "Thiếu file ảnh".
+  // Đặt 'multipart/form-data' rồi adapter của axios sẽ tự bỏ header này để trình duyệt
+  // gắn boundary thật. Các endpoint upload khác trong file này cũng làm đúng như vậy.
+  uploadAvatar: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/account/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  removeAvatar: () =>
+    api.delete('/account/me/avatar'),
 
   logout: () =>
     api.post('/account/logout'),
@@ -364,8 +395,11 @@ export const dashboardAPI = {
 // Reverse matching: JD của job → quét kho CvDocument cũ cùng tenant.
 // Chỉ có theo TỪNG job — trả { jobId, withinMonths, count, suggestions: [...] }.
 export const talentPoolAPI = {
-  getSuggestions: (jobId) =>
-    api.get(`/jobs/${jobId}/talent-pool`),
+  // withinMonths = độ tươi CV Recruiter chọn (1/3/6 tháng). Bỏ trống -> BE mặc định 6 tháng.
+  getSuggestions: (jobId, withinMonths) =>
+    api.get(withinMonths
+      ? `/jobs/${jobId}/talent-pool?withinMonths=${withinMonths}`
+      : `/jobs/${jobId}/talent-pool`),
 
   // Gửi email mời ứng tuyển từ backend (SMTP) — trả { sent }
   invite: (jobId, candidateEmail, candidateName) =>
@@ -485,6 +519,10 @@ export const publicCareerAPI = {
     api.post(`/public/${slug}/jobs/${jobId}/apply`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+
+  // Brand công khai (tên/logo/màu) để career site hiện đúng nhận diện của từng công ty.
+  // Dùng publicApi: khách vãng lai không có token, không được để interceptor đá về /login.
+  getBrand: (slug) => publicApi.get(`/public/${slug}/brand`),
 };
 
 export default api;

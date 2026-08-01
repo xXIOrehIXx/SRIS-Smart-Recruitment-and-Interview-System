@@ -75,6 +75,9 @@ const IncomingInterview = () => {
         roundNumber: item.roundNumber || 1,
         status: item.status,
         mySheetStatus: item.mySheetStatus || 'NOT_STARTED',
+        // Hồ sơ đã OFFER/HIRED/REJECTED -> phiếu khóa, chỉ xem.
+        applicationState: item.applicationState,
+        isLocked: !!item.isLocked,
       }))
       .filter((i) => i.status === 'PENDING' || i.status === 'CONFIRMED')
       .filter((i) => i.startTime && dayjs(i.startTime).isAfter(dayjs().subtract(1, 'day')))
@@ -133,11 +136,11 @@ const IncomingInterview = () => {
           round: record.roundNumber,
           startTime: record.startTime,
         },
-        mode: record.mySheetStatus === 'SUBMITTED'
+        mode: record.isLocked
           ? 'view'
-          : record.mySheetStatus === 'DRAFT'
-            ? 'continue'
-            : 'new',
+          : record.mySheetStatus === 'NOT_STARTED'
+            ? 'new'
+            : 'continue',
       },
     });
   };
@@ -223,11 +226,13 @@ const IncomingInterview = () => {
             onClick={() => navigateToGrading(record)}
             style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
           >
-            {record.mySheetStatus === 'SUBMITTED'
-              ? 'Xem / Sửa'
-              : record.mySheetStatus === 'DRAFT'
-                ? 'Tiếp tục'
-                : 'Chấm điểm'}
+            {record.isLocked
+              ? 'Xem phiếu'
+              : record.mySheetStatus === 'SUBMITTED'
+                ? 'Xem / Sửa'
+                : record.mySheetStatus === 'DRAFT'
+                  ? 'Tiếp tục'
+                  : 'Chấm điểm'}
           </Button>
         </Space>
       ),

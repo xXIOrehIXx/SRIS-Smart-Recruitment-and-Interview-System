@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { Layout, Avatar, Dropdown, Button, Menu, message } from "antd";
 import {
@@ -22,6 +22,7 @@ import {
 } from "@ant-design/icons";
 import { useAuth, ROLES } from "../contexts/AuthContext";
 import { useCompany } from "../contexts/CompanyContext";
+import { authAPI } from "../services/api";
 import "./css/MainLayout.css";
 
 const { Header, Sider, Content } = Layout;
@@ -46,8 +47,26 @@ const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, getMenuItems, getDashboardRoute } = useAuth();
+  const { user, logout, getMenuItems, getDashboardRoute, updateUserProfile } = useAuth();
   const { company } = useCompany();
+
+  // URL ảnh đại diện là presigned có hạn (~1h), bản lưu trong localStorage dễ hết hạn.
+  // Lấy lại một lần khi vào khu vực đã đăng nhập để header luôn có link còn sống.
+  useEffect(() => {
+    let cancelled = false;
+    authAPI
+      .me()
+      .then((res) => {
+        if (!cancelled) updateUserProfile({ avatarUrl: res.data?.avatarUrl || null });
+      })
+      .catch(() => {
+        /* hồ sơ lỗi thì thôi, header rơi về avatar chữ cái đầu */
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const menuItems = getMenuItems().map((item) => ({
     key: item.key,
@@ -231,10 +250,11 @@ const AdminLayout = () => {
                 trigger={["click"]}
               >
                 <div className="user-dropdown">
+                  {/* Ảnh của CHÍNH người đang đăng nhập; chưa đặt thì mới rơi về logo công ty. */}
                   <Avatar
                     size={36}
                     icon={<UserOutlined />}
-                    src={company?.logoUrl}
+                    src={user?.avatarUrl || company?.logoUrl}
                     style={{ backgroundColor: company?.primaryColor || "#5D8C3E" }}
                   />
                   <div className="user-details">

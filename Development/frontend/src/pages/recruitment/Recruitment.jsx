@@ -1,998 +1,385 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Layout,
-  Typography,
-  Card,
-  Row,
-  Col,
-  Button,
-  Modal,
-  Descriptions,
-  Tag,
-  Space,
-  List,
-  Divider,
-  message,
   Input,
   Select,
-  Statistic,
+  Checkbox,
+  Button,
+  Empty,
   Spin,
-  Form,
-  Upload,
+  Alert,
+  Pagination,
 } from "antd";
 import {
   SearchOutlined,
   EnvironmentOutlined,
-  BankOutlined,
-  ClockCircleOutlined,
+  ApartmentOutlined,
   DollarOutlined,
-  FileTextOutlined,
-  UserOutlined,
-  SaveOutlined,
-  SendOutlined,
-  CheckCircleOutlined,
-  StarOutlined,
-  CloseOutlined,
-  ExclamationCircleOutlined,
-  UploadOutlined,
-  InboxOutlined,
+  ClockCircleOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { jobsAPI, publicCareerAPI } from "../../services/api";
+import { CareerHeader, CareerFooter } from "./CareerChrome";
+import { useBrandTheme } from "../../contexts/BrandThemeContext";
+import {
+  getJobId,
+  getJobDescription,
+  getJobType,
+  getLocation,
+  getDeadline,
+  formatSalary,
+  formatDate,
+} from "./jobFields";
 import "./Recruitment.css";
-import { useCompany } from "../../hooks/useCompany";
+import "./CareerSite.css";
 
-const { Dragger } = Upload;
+const { Content } = Layout;
 
-const { Header, Content, Footer } = Layout;
-const { Title, Text, Paragraph } = Typography;
-const { Search } = Input;
-const { Option } = Select;
+const PAGE_SIZE = 10;
 
+/** Gom giá trị duy nhất của 1 field trên toàn bộ job, bỏ rỗng, sắp A-Z. */
+const distinct = (jobs, read) =>
+  Array.from(
+    new Set(
+      jobs
+        .map(read)
+        .filter((v) => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim()),
+    ),
+  ).sort((a, b) => a.localeCompare(b, "vi"));
+
+/**
+ * Career Site công khai — danh sách vị trí đang tuyển của 1 công ty (/{slug}/career).
+ *
+ * Bộ lọc sinh option TỪ DỮ LIỆU THẬT của công ty đó (không hardcode danh sách
+ * địa điểm/cấp bậc): job của SRIS đến từ mọi ngành, mỗi công ty một kiểu dữ liệu,
+ * hardcode sẽ ra bộ lọc rỗng không chọn được gì. Nhóm nào không có dữ liệu thì ẩn hẳn.
+ */
 const Recruitment = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const { slug } = useParams();
+  const { updateBrandColor } = useBrandTheme();
+
   const [jobs, setJobs] = useState([]);
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("all");
-  const [appliedJobs, setAppliedJobs] = useState([]);
-  const [applyModalVisible, setApplyModalVisible] = useState(false);
-  const [applyingJob, setApplyingJob] = useState(null);
-  const [applyForm] = Form.useForm();
-  const [file, setFile] = useState(null);
+  const [brand, setBrand] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [keyword, setKeyword] = useState("");
+  const [location, setLocation] = useState(null);
+  const [levels, setLevels] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    let ignore = false;
 
-  const { slug } = useCompany();
-
-  const fetchJobs = async () => {
-    try {
+    const load = async () => {
       if (!slug) {
-        console.error(
-          "fetchJobs: thiếu slug — URL phải có dạng /{slug}/career",
-        );
-        message.error(
-          "URL không hợp lệ: thiếu slug công ty. Vui lòng dùng /{slug}/career.",
-        );
+        setError("URL không hợp lệ: thiếu slug công ty. Đường dẫn đúng là /{slug}/career.");
         setLoading(false);
         return;
       }
-      setLoading(true);
-      const response = await jobsAPI.getPublicJobsBySlug(slug);
-      const jobList = response.data?.data || response.data || [];
-      setJobs(jobList);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-      message.error("Không thể tải danh sách tin tuyển dụng");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const fetchJobDetail = async (job) => {
-    // Nếu job đã có đầy đủ thông tin, không cần gọi API
-    if (job.jdText || job.description || job.requirements) {
-      return job;
-    }
+      try {
+        setLoading(true);
+        setError(null);
+        const [jobsRes, brandRes] = await Promise.allSettled([
+          jobsAPI.getPublicJobsBySlug(slug),
+          publicCareerAPI.getBrand(slug),
+        ]);
 
-    try {
-      const jobId = getJobId(job);
-      if (slug) {
-        const response = await jobsAPI.getPublicJobBySlug(slug, jobId);
-        const jobData = response.data?.data || response.data;
-        return jobData || job;
-      } else {
-        const response = await jobsAPI.getPublicJobBySlug(slug, jobId);
-        const jobData =
-          response.data?.data || response.data?.items?.[0] || response.data;
-        return jobData || job;
+        if (ignore) return;
+
+        if (jobsRes.status === "rejected") throw jobsRes.reason;
+
+        const raw = jobsRes.value.data?.data || jobsRes.value.data || [];
+        setJobs(Array.isArray(raw) ? raw : []);
+
+        // Brand hỏng thì vẫn hiện được danh sách — chỉ mất logo/tên công ty.
+        const b = brandRes.status === "fulfilled" ? brandRes.value.data || null : null;
+        setBrand(b);
+
+        // Career site là trang công khai: CompanyContext (cần đăng nhập) không chạy,
+        // nên phải tự nhuộm màu brand của tenant vào --brand-color ở đây.
+        // Gọi KHÔNG điều kiện: updateBrandColor lưu màu vào localStorage, nên nếu chỉ
+        // gọi khi tenant có màu thì công ty chưa cấu hình sẽ mặc lại màu của công ty
+        // xem trước đó. Truyền null -> hàm tự rơi về màu mặc định.
+        updateBrandColor(b?.primaryColor);
+      } catch (err) {
+        console.error("Error fetching public jobs:", err);
+        if (!ignore) {
+          setError(
+            err?.response?.status === 404
+              ? `Không tìm thấy trang tuyển dụng của "${slug}".`
+              : "Không tải được danh sách vị trí. Vui lòng thử lại.",
+          );
+        }
+      } finally {
+        if (!ignore) setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching job detail:", error);
-      return job; // Fallback về job ban đầu
-    }
-  };
+    };
 
-  // Helper: lấy id từ job (hỗ trợ cả id và JobId)
-  const getJobId = (job) => job.jobId || job.id;
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [slug, updateBrandColor]);
 
-  // Lấy danh sách departments duy nhất
-  const departments = useMemo(() => {
-    const depts = [
-      ...new Set(jobs.map((job) => job.department).filter(Boolean)),
-    ];
-    return depts.sort();
-  }, [jobs]);
+  const locationOptions = useMemo(() => distinct(jobs, getLocation), [jobs]);
 
-  // Lọc jobs theo search và department
-  const filteredJobs = useMemo(() => {
+  // Hero khoe tối đa 3 địa điểm cho gọn một dòng, dư thì gộp thành "+N nơi khác".
+  const heroLocations = useMemo(() => {
+    if (locationOptions.length <= 3) return locationOptions;
+    return [...locationOptions.slice(0, 3), `+${locationOptions.length - 3} nơi khác`];
+  }, [locationOptions]);
+
+  const levelOptions = useMemo(() => distinct(jobs, (j) => j.experienceLevel), [jobs]);
+  const categoryOptions = useMemo(() => distinct(jobs, (j) => j.department), [jobs]);
+
+  const filtered = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
     return jobs.filter((job) => {
-      const matchesSearch =
-        (job.title || "").toLowerCase().includes(searchText.toLowerCase()) ||
-        (job.jdText || job.description || "")
-          .toLowerCase()
-          .includes(searchText.toLowerCase()) ||
-        (job.skills || []).some((skill) =>
-          (skill || "").toLowerCase().includes(searchText.toLowerCase()),
-        );
-      const matchesDepartment =
-        selectedDepartment === "all" || job.department === selectedDepartment;
-      return matchesSearch && matchesDepartment;
+      const matchesKeyword =
+        !kw ||
+        (job.title || "").toLowerCase().includes(kw) ||
+        getJobDescription(job).toLowerCase().includes(kw);
+      const matchesLocation = !location || getLocation(job) === location;
+      const matchesLevel = levels.length === 0 || levels.includes(job.experienceLevel);
+      const matchesCategory =
+        categories.length === 0 || categories.includes(job.department);
+      return matchesKeyword && matchesLocation && matchesLevel && matchesCategory;
     });
-  }, [jobs, searchText, selectedDepartment]);
+  }, [jobs, keyword, location, levels, categories]);
 
-  const handleViewDetails = async (job) => {
-    const jobDetail = await fetchJobDetail(job);
-    setSelectedJob(jobDetail);
-    setIsModalVisible(true);
+  // Lọc xong mà vẫn đứng ở trang 5 thì màn hình trống trơn -> luôn về trang 1.
+  useEffect(() => {
+    setPage(1);
+  }, [keyword, location, levels, categories]);
+
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const hasFilters =
+    keyword !== "" || location !== null || levels.length > 0 || categories.length > 0;
+
+  const clearFilters = () => {
+    setKeyword("");
+    setLocation(null);
+    setLevels([]);
+    setCategories([]);
   };
 
-  const handleCloseModal = () => {
-    setIsModalVisible(false);
-    setSelectedJob(null);
-  };
+  const openJob = (job) => navigate(`/${slug}/career/jobs/${getJobId(job)}`);
 
-  const handleApply = (job) => {
-    const jobId = getJobId(job);
-    if (appliedJobs.includes(jobId)) {
-      // Cho phép nộp lại (nộp nhầm CV -> nộp bản khác); backend tạo hồ sơ mới
-      message.info("Bạn đã ứng tuyển vị trí này — nộp lại sẽ tạo hồ sơ mới với CV mới.");
-    }
-    setApplyingJob(job);
-    setApplyModalVisible(true);
-  };
-
-  const handleSubmitApplication = async () => {
-    try {
-      const values = await applyForm.validateFields();
-
-      if (!file) {
-        message.error("Vui lòng upload CV (file PDF)");
-        return;
-      }
-
-      setApplyingJob({ ...applyingJob, submitting: true });
-
-      const formData = new FormData();
-      formData.append("candidateName", values.candidateName);
-      formData.append("candidateEmail", values.candidateEmail);
-      formData.append("candidatePhone", values.candidatePhone);
-      formData.append("file", file);
-
-      const jobId = getJobId(applyingJob);
-      await publicCareerAPI.apply(slug, jobId, formData);
-
-      message.success("Nộp CV thành công!");
-      setAppliedJobs([...appliedJobs, jobId]);
-      setApplyModalVisible(false);
-      applyForm.resetFields();
-      setFile(null);
-    } catch (error) {
-      if (error.errorFields) {
-        return; // Form validation failed
-      }
-      console.error("Error submitting application:", error);
-      message.error("Không thể nộp CV. Vui lòng thử lại.");
-    } finally {
-      setApplyingJob((prev) => (prev?.submitting ? null : prev));
-    }
-  };
-
-  const handleCancelApply = () => {
-    setApplyModalVisible(false);
-    applyForm.resetFields();
-    setFile(null);
-    setApplyingJob(null);
-  };
-
-  const getJobTypeColor = (type) => {
-    switch (type) {
-      case "Full-time":
-        return "green";
-      case "Part-time":
-        return "blue";
-      case "Contract":
-        return "orange";
-      case "Remote":
-        return "purple";
-      case "Internship":
-        return "cyan";
-      default:
-        return "default";
-    }
-  };
-
-  const getExperienceColor = (exp) => {
-    if (!exp) return "default";
-    if (exp.includes("5+")) return "red";
-    if (exp.includes("3+")) return "orange";
-    if (exp.includes("2+")) return "blue";
-    return "green";
-  };
-
-  const formatSalary = (job) => {
-    // Hỗ trợ nhiều trường salary
-    if (job.salary) return job.salary;
-    if (job.salaryRange) return job.salaryRange;
-    const currency = job.currency ? ` ${job.currency}` : "";
-    if (job.salaryMin && job.salaryMax) {
-      const format = (n) => new Intl.NumberFormat("vi-VN").format(n);
-      return `${format(job.salaryMin)} - ${format(job.salaryMax)}${currency}`;
-    }
-    if (job.salaryMin) {
-      const format = (n) => new Intl.NumberFormat("vi-VN").format(n);
-      return `Từ ${format(job.salaryMin)}${currency}`;
-    }
-    return "Thỏa thuận";
-  };
-
-  // Hàm lấy mô tả công việc
-  const getJobDescription = (job) => {
-    return (
-      job.jdText ||
-      job.jobDescription ||
-      job.description ||
-      job.JobDescription ||
-      ""
-    );
-  };
-
-  // Hàm lấy yêu cầu
-  const getRequirements = (job) => {
-    if (job.requirements) {
-      if (Array.isArray(job.requirements)) return job.requirements;
-      if (typeof job.requirements === "string")
-        return job.requirements.split("\n").filter((r) => r.trim());
-    }
-    if (job.JobRequirements) return job.JobRequirements;
-    return [];
-  };
-
-  // Hàm lấy quyền lợi
-  const getBenefits = (job) => {
-    if (job.benefits) {
-      if (Array.isArray(job.benefits)) return job.benefits;
-      if (typeof job.benefits === "string")
-        return job.benefits.split("\n").filter((b) => b.trim());
-    }
-    if (job.JobBenefits) return job.JobBenefits;
-    return [];
-  };
-
-  // Hàm lấy kỹ năng
-  const getSkills = (job) => {
-    if (job.skills) {
-      if (Array.isArray(job.skills)) return job.skills;
-      if (typeof job.skills === "string")
-        return job.skills
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s);
-    }
-    if (job.requiredSkills) return job.requiredSkills;
-    if (job.Skills) return job.Skills;
-    return [];
-  };
-
-  // Hàm lấy deadline
-  const getDeadline = (job) => {
-    return (
-      job.deadline ||
-      job.expiresAt ||
-      job.expiredAt ||
-      job.expirationDate ||
-      null
-    );
-  };
-
-  // Hàm lấy ngày tạo
-  const getCreatedDate = (job) => {
-    return (
-      job.createdAt || job.postedDate || job.createdDate || job.postedAt || null
-    );
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("vi-VN");
-  };
-
-  const renderJobCard = (job) => {
-    const jobId = getJobId(job);
-    const skills = getSkills(job);
+  const renderCard = (job) => {
+    const type = getJobType(job);
+    const jobLocation = getLocation(job);
     const deadline = getDeadline(job);
-    const description = getJobDescription(job);
 
     return (
-      <Card
-        className="job-card"
-        variant={false}
-        hoverable
-        onClick={() => handleViewDetails(job)}
+      <article
+        key={getJobId(job)}
+        className="cs-job-card"
+        role="link"
+        tabIndex={0}
+        onClick={() => openJob(job)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openJob(job);
+          }
+        }}
       >
-        <div className="job-card-header">
-          <div className="job-title-section">
-            <Title level={5} className="job-title">
-              {job.title || job.Title || "N/A"}
-            </Title>
-            <Space size="small">
-              {job.department && (
-                <Tag color="blue" icon={<BankOutlined />}>
-                  {job.department}
-                </Tag>
-              )}
-              {(job.employmentType || job.jobType || job.type) && (
-                <Tag
-                  color={getJobTypeColor(
-                    job.employmentType || job.jobType || job.type,
-                  )}
-                >
-                  {job.employmentType || job.jobType || job.type}
-                </Tag>
-              )}
-              {job.experienceLevel && (
-                <Tag color={getExperienceColor(job.experienceLevel)}>
-                  {job.experienceLevel}
-                </Tag>
-              )}
-            </Space>
-          </div>
-          <div className="job-salary">
-            <DollarOutlined className="salary-icon" />
-            <Text strong className="salary-text">
-              {formatSalary(job)}
-            </Text>
-          </div>
-        </div>
-
-        <div className="job-card-body">
-          <Paragraph ellipsis={{ rows: 2 }} className="job-description">
-            {description}
-          </Paragraph>
-
-          <Space size="middle" className="job-meta">
-            {(job.location || job.workLocation) && (
-              <span>
-                <EnvironmentOutlined /> {job.location || job.workLocation}
-              </span>
-            )}
-            {deadline && (
-              <span>
-                <ClockCircleOutlined /> Hạn: {formatDate(deadline)}
-              </span>
-            )}
-            {(job.applicationCount || job.applicantCount) && (
-              <span>
-                <UserOutlined /> {job.applicationCount || job.applicantCount}{" "}
-                ứng viên
-              </span>
-            )}
-          </Space>
-
-          {skills.length > 0 && (
-            <div className="job-skills">
-              {skills.slice(0, 4).map((skill, idx) => (
-                <Tag key={idx} className="skill-tag">
-                  {typeof skill === "string"
-                    ? skill
-                    : skill.name || skill.skill || ""}
-                </Tag>
-              ))}
-              {skills.length > 4 && <Tag>+{skills.length - 4}</Tag>}
-            </div>
+        <div className="cs-job-title-row">
+          <h2 className="cs-job-title">{job.title || "Vị trí chưa đặt tên"}</h2>
+          {job.experienceLevel && (
+            <span className="cs-level">
+              <span>{job.experienceLevel}</span>
+            </span>
           )}
         </div>
 
-        <Divider style={{ margin: "12px 0" }} />
-
-        <div className="job-card-footer">
-          <Space>
-            <Button
-              type="primary"
-              icon={<SendOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleApply(job);
-              }}
-              loading={applyingJob === jobId}
-              className={
-                appliedJobs.includes(jobId) ? "applied-btn" : "apply-btn"
-              }
-            >
-              {appliedJobs.includes(jobId) ? "Ứng tuyển lại" : "Apply ngay"}
-            </Button>
-            <Button
-              icon={<FileTextOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewDetails(job);
-              }}
-            >
-              Chi tiết
-            </Button>
-          </Space>
+        <div className="cs-job-info">
+          {type && <span className="cs-type">{type}</span>}
+          <span className="cs-salary">
+            <DollarOutlined /> Mức lương: <strong>{formatSalary(job)}</strong>
+          </span>
         </div>
-      </Card>
+
+        <div className="cs-job-meta">
+          {job.department && (
+            <span className="cs-meta-item">
+              <ApartmentOutlined /> {job.department}
+            </span>
+          )}
+          {jobLocation && (
+            <span className="cs-meta-item">
+              <EnvironmentOutlined /> {jobLocation}
+            </span>
+          )}
+          {deadline && (
+            <span className="cs-meta-item">
+              <ClockCircleOutlined /> Hạn nộp: {formatDate(deadline)}
+            </span>
+          )}
+        </div>
+      </article>
     );
   };
-
-  const renderJobDetail = () => {
-    if (!selectedJob) return null;
-
-    const jobId = getJobId(selectedJob);
-    const description = getJobDescription(selectedJob);
-    const requirements = getRequirements(selectedJob);
-    const benefits = getBenefits(selectedJob);
-    const skills = getSkills(selectedJob);
-    const deadline = getDeadline(selectedJob);
-    const createdDate = getCreatedDate(selectedJob);
-
-    return (
-      <div className="job-detail">
-        <div className="job-detail-header">
-          <div className="job-detail-title">
-            <Title level={3}>
-              {selectedJob.title || selectedJob.Title || "N/A"}
-            </Title>
-            <Space size="middle">
-              {selectedJob.department && (
-                <Tag color="blue" icon={<BankOutlined />}>
-                  {selectedJob.department}
-                </Tag>
-              )}
-              {(selectedJob.employmentType ||
-                selectedJob.jobType ||
-                selectedJob.type) && (
-                <Tag
-                  color={getJobTypeColor(
-                    selectedJob.employmentType ||
-                      selectedJob.jobType ||
-                      selectedJob.type,
-                  )}
-                >
-                  {selectedJob.employmentType ||
-                    selectedJob.jobType ||
-                    selectedJob.type}
-                </Tag>
-              )}
-              {selectedJob.experienceLevel && (
-                <Tag color={getExperienceColor(selectedJob.experienceLevel)}>
-                  {selectedJob.experienceLevel}
-                </Tag>
-              )}
-            </Space>
-          </div>
-          <div className="job-detail-actions">
-            <Button
-              type="primary"
-              size="large"
-              icon={<SendOutlined />}
-              onClick={() => handleApply(selectedJob)}
-              loading={applyingJob === jobId}
-              className={
-                appliedJobs.includes(jobId) ? "applied-btn" : "apply-btn-large"
-              }
-            >
-              {appliedJobs.includes(jobId) ? "Ứng tuyển lại" : "Apply ngay"}
-            </Button>
-          </div>
-        </div>
-
-        <div className="job-detail-meta">
-          <Row gutter={[24, 16]}>
-            <Col xs={24} sm={12} md={6}>
-              <Card size="small" variant={false} className="meta-card">
-                <Space>
-                  <DollarOutlined className="meta-icon" />
-                  <div>
-                    <Text type="secondary">Mức lương</Text>
-                    <div className="meta-value">
-                      {formatSalary(selectedJob)}
-                    </div>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card size="small" variant={false} className="meta-card">
-                <Space>
-                  <EnvironmentOutlined className="meta-icon" />
-                  <div>
-                    <Text type="secondary">Địa điểm</Text>
-                    <div className="meta-value">
-                      {selectedJob.location ||
-                        selectedJob.workLocation ||
-                        "N/A"}
-                    </div>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card size="small" variant={false} className="meta-card">
-                <Space>
-                  <ClockCircleOutlined className="meta-icon" />
-                  <div>
-                    <Text type="secondary">Hạn nộp</Text>
-                    <div className="meta-value">{formatDate(deadline)}</div>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Card size="small" variant={false} className="meta-card">
-                <Space>
-                  <UserOutlined className="meta-icon" />
-                  <div>
-                    <Text type="secondary">Ứng viên</Text>
-                    <div className="meta-value">
-                      {selectedJob.applicationCount ||
-                        selectedJob.applicantCount ||
-                        0}{" "}
-                      người
-                    </div>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-          </Row>
-        </div>
-
-        <Row gutter={[24, 24]}>
-          <Col xs={24} lg={14}>
-            <Card
-              title="Mô tả công việc"
-              variant={false}
-              className="detail-card"
-            >
-              {description ? (
-                <Paragraph>{description}</Paragraph>
-              ) : (
-                <Text type="secondary">Chưa có mô tả công việc</Text>
-              )}
-
-              {requirements.length > 0 && (
-                <>
-                  <Divider orientation="left">Yêu cầu</Divider>
-                  <List
-                    dataSource={requirements}
-                    renderItem={(req, index) => (
-                      <List.Item className="requirement-item">
-                        <CheckCircleOutlined className="check-icon" />
-                        <Text>
-                          {typeof req === "string"
-                            ? req
-                            : req.text || req.name || ""}
-                        </Text>
-                      </List.Item>
-                    )}
-                  />
-                </>
-              )}
-
-              {benefits.length > 0 && (
-                <>
-                  <Divider orientation="left">Quyền lợi</Divider>
-                  <List
-                    dataSource={benefits}
-                    renderItem={(benefit) => (
-                      <List.Item className="benefit-item">
-                        <StarOutlined className="star-icon" />
-                        <Text>
-                          {typeof benefit === "string"
-                            ? benefit
-                            : benefit.text || benefit.name || ""}
-                        </Text>
-                      </List.Item>
-                    )}
-                  />
-                </>
-              )}
-            </Card>
-          </Col>
-
-          <Col xs={24} lg={10}>
-            {skills.length > 0 && (
-              <Card
-                title="Kỹ năng yêu cầu"
-                variant={false}
-                className="detail-card"
-              >
-                <div className="skills-container">
-                  {skills.map((skill, idx) => (
-                    <Tag key={idx} color="blue" className="skill-tag-large">
-                      {typeof skill === "string"
-                        ? skill
-                        : skill.name || skill.skill || ""}
-                    </Tag>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            <Card
-              title="Thông tin thêm"
-              variant={false}
-              className="detail-card"
-              style={{ marginTop: 16 }}
-            >
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="Ngày đăng">
-                  {formatDate(createdDate)}
-                </Descriptions.Item>
-                <Descriptions.Item label="Phòng ban">
-                  {selectedJob.department || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Loại hình">
-                  {selectedJob.employmentType ||
-                    selectedJob.jobType ||
-                    selectedJob.type ||
-                    "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Kinh nghiệm">
-                  {selectedJob.experienceLevel || "N/A"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Hình thức">
-                  {selectedJob.workMode || selectedJob.workingMode || "N/A"}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </Col>
-        </Row>
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <Layout className="recruitment-layout">
-        <Header className="recruitment-page-header">
-          <div
-            className="header-logo"
-            onClick={() => navigate("/")}
-            style={{ cursor: "pointer" }}
-          >
-            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill="#5D8C3E" />
-              <path
-                d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-                stroke="white"
-                strokeWidth="2"
-              />
-              <path
-                d="M20 22L24 26L28 22"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M24 18V26"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span>SRIS</span>
-          </div>
-        </Header>
-        <Content
-          className="recruitment-content"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "60vh",
-          }}
-        >
-          <Spin size="large" />
-        </Content>
-      </Layout>
-    );
-  }
 
   return (
-    <Layout className="recruitment-layout">
-      <Header className="recruitment-page-header">
-        <div
-          className="header-logo"
-          onClick={() => navigate("/")}
-          style={{ cursor: "pointer" }}
-        >
-          <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill="#5D8C3E" />
-            <path
-              d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-              stroke="white"
-              strokeWidth="2"
-            />
-            <path
-              d="M20 22L24 26L28 22"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M24 18V26"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-          <span>SRIS</span>
-        </div>
-        <div className="nav-links">
-          <a href="#product">Product</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#resources">Resources</a>
-          <a href="#customers">Customers</a>
-        </div>
-        <div className="header-actions">
-          <Button
-            type="text"
-            className="login-btn"
-            onClick={() => navigate("/login")}
-          >
-            Log in
-          </Button>
-          <Button
-            type="primary"
-            shape="round"
-            className="demo-btn"
-            onClick={() => navigate("/register")}
-          >
-            Book a demo
-          </Button>
-        </div>
-      </Header>
+    <Layout className="recruitment-page career-site">
+      <CareerHeader brand={brand} />
 
-      <Content className="recruitment-content">
-        <div className="recruitment-header">
-          <div className="header-text">
-            <Title level={2} className="page-title">
-              Cơ Hội Nghề Nghiệp
-            </Title>
-            <Paragraph className="page-subtitle">
-              Khám phá các vị trí tuyển dụng phù hợp với bạn. Chúng tôi luôn tìm
-              kiếm những tài năng xuất sắc!
-            </Paragraph>
-          </div>
-          <div className="header-stats">
-            <Card className="stat-card" variant={false}>
-              <Statistic
-                title="Vị trí đang tuyển"
-                value={jobs.length}
-                suffix="việc"
-              />
-            </Card>
-            <Card className="stat-card" variant={false}>
-              <Statistic
-                title="Phòng ban"
-                value={departments.length}
-                suffix="bộ phận"
-              />
-            </Card>
-          </div>
-        </div>
-
-        <Card
-          className="filters-card"
-          variant={false}
-          style={{ marginBottom: 24 }}
-        >
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} md={12} lg={10}>
-              <Search
-                placeholder="Tìm kiếm vị trí, kỹ năng..."
-                allowClear
-                size="large"
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: "100%" }}
-              />
-            </Col>
-            <Col xs={24} md={12} lg={8}>
-              <Select
-                size="large"
-                value={selectedDepartment}
-                onChange={setSelectedDepartment}
-                placeholder="Chọn phòng ban"
-                style={{ width: "100%" }}
-              >
-                <Option value="all">Tất cả phòng ban</Option>
-                {departments.map((dept) => (
-                  <Option key={dept} value={dept}>
-                    {dept}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-            <Col xs={24} lg={6}>
-              <Text type="secondary">
-                Tìm thấy <Text strong>{filteredJobs.length}</Text> vị trí phù
-                hợp
-              </Text>
-            </Col>
-          </Row>
-        </Card>
-
-        {filteredJobs.length > 0 ? (
-          <Row gutter={[24, 24]}>
-            {filteredJobs.map((job) => (
-              <Col xs={24} md={12} xl={8} key={getJobId(job)}>
-                {renderJobCard(job)}
-              </Col>
-            ))}
-          </Row>
-        ) : (
-          <Card variant={false} className="no-results">
-            <div style={{ textAlign: "center", padding: "60px 20px" }}>
-              <SearchOutlined
-                style={{ fontSize: 64, color: "#d9d9d9", marginBottom: 16 }}
-              />
-              <Title level={4} type="secondary">
-                Không tìm thấy vị trí phù hợp
-              </Title>
-              <Paragraph type="secondary">
-                Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc để xem thêm cơ hội
-                nghề nghiệp.
-              </Paragraph>
+      <Content>
+        {!error && (
+          <section className="cs-hero">
+            <div className="cs-container">
+              <h1 className="cs-hero-title">
+                Cùng xây dựng sự nghiệp tại {brand?.name || "công ty chúng tôi"}
+              </h1>
+              <p className="cs-hero-sub">
+                Xem các vị trí đang tuyển bên dưới. Nộp hồ sơ chỉ mất vài phút — bạn
+                sẽ nhận được phản hồi qua email.
+              </p>
+              {/* Thống kê tính từ dữ liệu thật; chưa tải xong hoặc rỗng thì không hiện
+                  con số nào, tránh nhấp nháy "0 vị trí" rồi mới ra số đúng. */}
+              {!loading && jobs.length > 0 && (
+                <div className="cs-hero-stats">
+                  <span className="cs-hero-stat">
+                    <TeamOutlined /> {jobs.length} vị trí đang tuyển
+                  </span>
+                  {heroLocations.length > 0 && (
+                    <span className="cs-hero-stat">
+                      <EnvironmentOutlined /> {heroLocations.join(" · ")}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-          </Card>
+          </section>
         )}
 
-        <Modal
-          title={null}
-          open={isModalVisible}
-          onCancel={handleCloseModal}
-          width={1000}
-          footer={null}
-          className="job-detail-modal"
-          destroyOnHidden
-          closeIcon={<CloseOutlined />}
-        >
-          {selectedJob && renderJobDetail()}
-        </Modal>
+        <div className="cs-container">
+          {error ? (
+            <Alert
+              type="error"
+              showIcon
+              message="Không hiển thị được trang tuyển dụng"
+              description={error}
+              style={{ margin: "40px 0" }}
+            />
+          ) : (
+            <div className="cs-list-layout">
+              <aside className="cs-filter">
+                <div className="cs-filter-title">Bộ lọc</div>
 
-        <Modal
-          title="Nộp CV Ứng Tuyển"
-          open={applyModalVisible}
-          onCancel={handleCancelApply}
-          footer={[
-            <Button key="cancel" onClick={handleCancelApply}>
-              Hủy
-            </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              loading={applyingJob?.submitting}
-              onClick={handleSubmitApplication}
-            >
-              Nộp CV
-            </Button>,
-          ]}
-          width={500}
-        >
-          <Form form={applyForm} layout="vertical" style={{ marginTop: 20 }}>
-            <Form.Item
-              label="Họ và tên"
-              name="candidateName"
-              rules={[{ required: true, message: "Vui lòng nhập họ và tên!" }]}
-            >
-              <Input placeholder="Nhập họ và tên của bạn" size="large" />
-            </Form.Item>
+                <Input
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  placeholder="Tìm theo từ khóa..."
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
 
-            <Form.Item
-              label="Email"
-              name="candidateEmail"
-              rules={[
-                { required: true, message: "Vui lòng nhập email!" },
-                { type: "email", message: "Email không hợp lệ!" },
-              ]}
-            >
-              <Input placeholder="Nhập email của bạn" size="large" />
-            </Form.Item>
+                {locationOptions.length > 0 && (
+                  <div className="cs-filter-block">
+                    <div className="cs-filter-block-title">Địa điểm</div>
+                    <Select
+                      allowClear
+                      style={{ width: "100%" }}
+                      placeholder="Tất cả địa điểm"
+                      value={location}
+                      onChange={(v) => setLocation(v ?? null)}
+                      options={locationOptions.map((v) => ({ label: v, value: v }))}
+                    />
+                  </div>
+                )}
 
-            <Form.Item
-              label="Số điện thoại"
-              name="candidatePhone"
-              rules={[
-                { required: true, message: "Vui lòng nhập số điện thoại!" },
-                {
-                  pattern: /^0\d{9}$/,
-                  message: "Số điện thoại phải đúng 10 chữ số, bắt đầu bằng 0",
-                },
-              ]}
-            >
-              <Input placeholder="Nhập số điện thoại của bạn" size="large" maxLength={10} />
-            </Form.Item>
+                {levelOptions.length > 0 && (
+                  <div className="cs-filter-block">
+                    <div className="cs-filter-block-title">Kinh nghiệm</div>
+                    <Checkbox.Group
+                      value={levels}
+                      onChange={setLevels}
+                      options={levelOptions.map((v) => ({ label: v, value: v }))}
+                    />
+                  </div>
+                )}
 
-            <Form.Item label="Upload CV (PDF)">
-              <Dragger
-                name="file"
-                maxCount={1}
-                accept=".pdf"
-                beforeUpload={(f) => {
-                  if (!f.name.endsWith(".pdf")) {
-                    message.error("Chỉ chấp nhận file PDF!");
-                    return Upload.LIST_IGNORE;
-                  }
-                  setFile(f);
-                  return false;
-                }}
-                fileList={file ? [file] : []}
-                onRemove={() => setFile(null)}
-              >
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">
-                  Click hoặc kéo file vào đây để upload
-                </p>
-                <p className="ant-upload-hint">
-                  Chỉ chấp nhận file PDF, dung lượng tối đa 20MB
-                </p>
-              </Dragger>
-            </Form.Item>
-          </Form>
-        </Modal>
+                {categoryOptions.length > 0 && (
+                  <div className="cs-filter-block">
+                    <div className="cs-filter-block-title">Phòng ban</div>
+                    <Checkbox.Group
+                      value={categories}
+                      onChange={setCategories}
+                      options={categoryOptions.map((v) => ({ label: v, value: v }))}
+                    />
+                  </div>
+                )}
+
+                {hasFilters && (
+                  <div className="cs-filter-block">
+                    <Button block onClick={clearFilters}>
+                      Xóa bộ lọc
+                    </Button>
+                  </div>
+                )}
+              </aside>
+
+              <main>
+                <div className="cs-list-head">
+                  {/* h2: h1 của trang đã là tiêu đề trong dải hero phía trên. */}
+                  <h2 className="cs-list-title">Vị trí đang tuyển</h2>
+                  <div className="cs-list-count">
+                    <strong>{filtered.length}</strong> vị trí
+                    {filtered.length !== jobs.length && ` / ${jobs.length}`}
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div style={{ textAlign: "center", padding: "64px 0" }}>
+                    <Spin size="large" />
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <Empty
+                    description={
+                      jobs.length === 0
+                        ? "Hiện chưa có vị trí nào đang tuyển."
+                        : "Không có vị trí nào khớp bộ lọc."
+                    }
+                    style={{ padding: "48px 0" }}
+                  >
+                    {hasFilters && <Button onClick={clearFilters}>Xóa bộ lọc</Button>}
+                  </Empty>
+                ) : (
+                  <>
+                    <div className="cs-job-grid">{pageItems.map(renderCard)}</div>
+
+                    {filtered.length > PAGE_SIZE && (
+                      <div className="cs-pagination">
+                        <Pagination
+                          current={page}
+                          pageSize={PAGE_SIZE}
+                          total={filtered.length}
+                          showSizeChanger={false}
+                          onChange={(p) => {
+                            setPage(p);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </main>
+            </div>
+          )}
+        </div>
       </Content>
 
-      <Footer className="recruitment-page-footer">
-        <div className="footer-inner">
-          <div className="footer-brand">
-            <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill="#5D8C3E" />
-              <path
-                d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-                stroke="white"
-                strokeWidth="2"
-              />
-              <path
-                d="M20 22L24 26L28 22"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M24 18V26"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span>SRIS</span>
-          </div>
-          <Text type="secondary">© 2026 SRIS. All rights reserved.</Text>
-        </div>
-      </Footer>
+      <CareerFooter brand={brand} />
     </Layout>
   );
 };

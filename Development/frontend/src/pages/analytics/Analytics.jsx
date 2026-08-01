@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons';
 import { dashboardAPI, jobsAPI } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend } from 'recharts';
+import { APPLICATION_STATE_LABELS } from '../../components/ApplicationStateTag';
 import './css/Analytics.css';
 
 const { Title, Text } = Typography;
@@ -55,10 +56,8 @@ const Analytics = () => {
   const funnel = overview?.funnel || [];
   const sources = overview?.sources || [];
 
-  const STATE_LABELS = {
-    NEW: 'Hồ sơ mới', SCREENING: 'Sàng lọc', INTERVIEW: 'Phỏng vấn',
-    OFFER: 'Offer', HIRED: 'Đã tuyển', REJECTED: 'Từ chối',
-  };
+  // Nhãn trạng thái lấy từ nguồn dùng chung: components/ApplicationStateTag.jsx
+  const STATE_LABELS = APPLICATION_STATE_LABELS;
 
   const funnelConfig = {
     data: funnel.map(item => ({ stage: STATE_LABELS[item.state] || item.state, count: item.count })),

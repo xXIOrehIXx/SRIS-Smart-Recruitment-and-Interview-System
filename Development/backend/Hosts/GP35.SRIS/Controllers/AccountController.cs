@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
 using GP35.SRIS.Application.Contracts.Dtos.Auth;
+using GP35.SRIS.Application.Contracts.Dtos.Business.User;
+using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Lib.Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -77,20 +79,90 @@ namespace GP35.SRIS
     [HttpPost("logout")]
     public IActionResult Logout() => Ok(new { message = "Đã đăng xuất." });
 
-    /// <summary>Hồ sơ người đang đăng nhập (FE dùng route theo role sau khi login/refresh).</summary>
+    /// <summary>
+    /// Hồ sơ người đang đăng nhập (FE dùng route theo role sau khi login/refresh).
+    /// Tên + SĐT đọc từ DB chứ không từ token: token chỉ đổi khi đăng nhập lại, nên nếu lấy
+    /// theo claim thì màn Settings vừa lưu xong sẽ hiện lại giá trị cũ.
+    /// </summary>
     [Authorize]
     [HttpGet("me")]
-    public IActionResult Me()
+    public async Task<IActionResult> Me()
     {
       var ctx = HttpContext.RequestServices.GetRequiredService<GP35.SRIS.Domain.Shared.Context.IContextData>();
+      var userManage = HttpContext.RequestServices.GetRequiredService<IUserManageService>();
+      var profile = await userManage.GetByIdAsync(ctx.CompanyId, ctx.UserId);
       return Ok(new
       {
         userId = ctx.UserId,
         email = ctx.Email,
-        fullName = ctx.FullName,
+        fullName = profile.FullName ?? ctx.FullName,
+        phone = profile.Phone,
+        avatarUrl = profile.AvatarUrl,
         role = ctx.Role,
         companyId = ctx.CompanyId
       });
+    }
+
+    /// <summary>
+    /// Người đang đăng nhập tự sửa hồ sơ mình (tên + SĐT) — MỌI role gọi được.
+    /// Không dùng PUT /api/users/{id} vì endpoint đó chỉ Admin vào được và bắt buộc Role/Status.
+    /// </summary>
+    [Authorize]
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe([FromBody] ProfileUpdateDto dto)
+    {
+      var ctx = HttpContext.RequestServices.GetRequiredService<GP35.SRIS.Domain.Shared.Context.IContextData>();
+      var userManage = HttpContext.RequestServices.GetRequiredService<IUserManageService>();
+      var updated = await userManage.UpdateOwnProfileAsync(ctx.CompanyId, ctx.UserId, dto);
+      return Ok(new
+      {
+        userId = updated.UserId,
+        email = updated.Email,
+        fullName = updated.FullName,
+        phone = updated.Phone,
+        avatarUrl = updated.AvatarUrl,
+        role = updated.Role,
+        companyId = ctx.CompanyId
+      });
+    }
+
+    /// <summary>
+    /// Đổi ảnh đại diện của chính mình (multipart/form-data, trường 'file').
+    /// Trả { avatarUrl } — URL presigned xem được ngay, KHÔNG phải object key trong DB.
+    /// </summary>
+    [Authorize]
+    [HttpPost("me/avatar")]
+    [RequestSizeLimit(4 * 1024 * 1024)] // chặn sớm ở tầng Kestrel; giới hạn nghiệp vụ 2MB nằm trong service
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+    {
+      if (file is null || file.Length == 0)
+        return BadRequest(new { error = "Thiếu file ảnh (trường 'file')." });
+
+      var ctx = HttpContext.RequestServices.GetRequiredService<GP35.SRIS.Domain.Shared.Context.IContextData>();
+      var userManage = HttpContext.RequestServices.GetRequiredService<IUserManageService>();
+
+      byte[] bytes;
+      using (var ms = new MemoryStream())
+      {
+        await file.CopyToAsync(ms);
+        bytes = ms.ToArray();
+      }
+
+      var avatarUrl = await userManage.UpdateOwnAvatarAsync(
+        ctx.CompanyId, ctx.UserId, file.FileName, file.ContentType, bytes);
+
+      return Ok(new { avatarUrl });
+    }
+
+    /// <summary>Gỡ ảnh đại diện, quay về avatar mặc định.</summary>
+    [Authorize]
+    [HttpDelete("me/avatar")]
+    public async Task<IActionResult> RemoveAvatar()
+    {
+      var ctx = HttpContext.RequestServices.GetRequiredService<GP35.SRIS.Domain.Shared.Context.IContextData>();
+      var userManage = HttpContext.RequestServices.GetRequiredService<IUserManageService>();
+      await userManage.RemoveOwnAvatarAsync(ctx.CompanyId, ctx.UserId);
+      return Ok(new { avatarUrl = (string?)null });
     }
 
     [AllowAnonymous]

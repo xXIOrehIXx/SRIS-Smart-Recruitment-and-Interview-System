@@ -14,6 +14,7 @@ import {
   Input,
   Rate,
   Spin,
+  Alert,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -210,6 +211,8 @@ Nhận xét: ${feedback || 'Không có'}`;
   }
 
   const isSubmitted = sheet.myStatus === 'SUBMITTED';
+  // Khóa sửa theo trạng thái hồ sơ (OFFER/HIRED/REJECTED), không theo "đã nộp" — BE trả isLocked.
+  const isLocked = !!sheet.isLocked;
 
   return (
     <div className="interview-detail-page">
@@ -301,7 +304,7 @@ Nhận xét: ${feedback || 'Không có'}`;
                       count={5}
                       value={ratings[c.criteriaId] || 0}
                       onChange={(value) => handleRatingChange(c.criteriaId, value)}
-                      disabled={isSubmitted || submitting}
+                      disabled={isLocked || submitting}
                       style={{ fontSize: 20 }}
                     />
                   </div>
@@ -327,7 +330,7 @@ Nhận xét: ${feedback || 'Không có'}`;
             </div>
           </Card>
 
-          {!isSubmitted && (
+          {!isLocked && (
             <>
               <Card className="main-card" bordered={false} style={{ marginBottom: 20 }}>
                 <Title level={5}>Nhận Xét Chung (Lưu vào ghi chú nội bộ)</Title>
@@ -366,7 +369,7 @@ Nhận xét: ${feedback || 'Không có'}`;
                   onClick={handleSave}
                   loading={submitting}
                 >
-                  Lưu nháp
+                  {isSubmitted ? 'Lưu thay đổi' : 'Lưu nháp'}
                 </Button>
                 <Button
                   type="primary"
@@ -375,10 +378,19 @@ Nhận xét: ${feedback || 'Không có'}`;
                   loading={submitting}
                   style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                 >
-                  Gửi đánh giá
+                  {isSubmitted ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}
                 </Button>
               </div>
             </>
+          )}
+
+          {isLocked && (
+            <Alert
+              type="warning"
+              showIcon
+              message="Phiếu chấm đã khóa"
+              description={sheet.lockReason || 'Hồ sơ đã có quyết định (Offer / Tuyển / Từ chối) — không sửa phiếu được nữa.'}
+            />
           )}
         </Col>
 

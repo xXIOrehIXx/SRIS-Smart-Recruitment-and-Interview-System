@@ -28,6 +28,13 @@ public class User : BaseEntity<Guid>, IHasCreateInfo, IHasModifyInfo, IHasCompan
     [Column("phone")]
     public string? Phone { get; set; }
 
+    /// <summary>
+    /// Object key của ảnh đại diện trên storage (MinIO), KHÔNG phải URL xem được.
+    /// URL hiển thị là presigned có hạn, sinh lại mỗi lần đọc — như CvDocument.FileUrl.
+    /// </summary>
+    [Column("avatar_url")]
+    public string? AvatarUrl { get; set; }
+
     [Column("status")]
     public string Status { get; set; } = "Active";
 

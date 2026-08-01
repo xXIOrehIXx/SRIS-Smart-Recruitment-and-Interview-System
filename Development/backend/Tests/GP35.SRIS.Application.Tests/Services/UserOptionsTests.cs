@@ -3,6 +3,7 @@ using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Lib.Services;
+using GP35.SRIS.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
@@ -28,6 +29,9 @@ public class UserOptionsTests
         {
             s.AddSingleton(userRepo.Object);
             s.AddSingleton(Mock.Of<IEncodeService>());
+            // UserManageService còn lo ảnh đại diện (upload lên storage) -> ctor cần cả
+            // IFileStorageService, dù các test dropdown dưới đây không đụng tới nó.
+            s.AddSingleton(Mock.Of<IFileStorageService>());
         });
         return new UserManageService(provider);
     }

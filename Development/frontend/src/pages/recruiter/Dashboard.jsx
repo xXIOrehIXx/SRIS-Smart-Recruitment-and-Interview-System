@@ -30,6 +30,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useNavigate } from "react-router-dom";
 import { dashboardAPI, applicationAPI, jobsAPI } from "../../services/api";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
+import { APPLICATION_STATE_LABELS } from "../../components/ApplicationStateTag";
 import "./css/Dashboard.css";
 
 const { Title, Text } = Typography;
@@ -45,12 +46,8 @@ const STATE_COLORS = {
   OFFER: "#52c41a",
 };
 
-const STATE_LABELS = {
-  NEW: "Hồ sơ mới",
-  SCREENING: "Sàng lọc",
-  INTERVIEW: "Phỏng vấn",
-  OFFER: "Offer",
-};
+// Nhãn trạng thái lấy từ nguồn dùng chung: components/ApplicationStateTag.jsx
+const STATE_LABELS = APPLICATION_STATE_LABELS;
 
 const KANBAN_STATES = ["NEW", "SCREENING", "INTERVIEW", "OFFER"];
 
@@ -365,13 +362,6 @@ const RecruiterDashboard = () => {
               </Option>
             ))}
           </Select>
-          <Button
-            icon={<PlusOutlined />}
-            type="primary"
-            onClick={() => navigate("/recruiter/jobs/create")}
-          >
-            Đăng Tin Mới
-          </Button>
         </div>
       </div>
 

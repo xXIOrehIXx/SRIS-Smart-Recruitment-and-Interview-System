@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import dayjs from "dayjs";
 import {
   Row,
   Col,
@@ -22,10 +23,18 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { jobsAPI, recruitmentRequestAPI, usersAPI, departmentAPI } from "../../services/api";
+import {
+  EMPLOYMENT_TYPE_TO_JOB,
+  EXPERIENCE_LEVEL_TO_JOB,
+  experienceYearsToJob,
+  splitRequirements,
+} from "../../services/recruitmentRequest";
 import JobSetupSteps from "../../components/JobSetupSteps";
 import "./css/CreateJob.css";
 
-const { Title } = Typography;
+// Thiếu Text ở đây là trang SẬP TRẮNG khi vào chế độ sửa: JSX bên dưới có <Text>, không
+// destructure thì nó ăn vào class Text của DOM và React gọi class như hàm -> throw.
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 /**
@@ -41,6 +50,16 @@ const { TextArea } = Input;
  * FE validate CHẶT hơn BE (vd: description min 50 ký tự) là chủ ý — muốn
  * cảnh báo recruiter sớm vì JD ngắn quá hệ thống chấm CV vector sẽ kém chính xác.
  */
+/**
+ * Đổi giá trị ngày từ API sang thứ <DatePicker> nhận được (dayjs), an toàn với dữ liệu bẩn.
+ * Ngày rỗng/không parse được -> undefined: ô để trống, KHÔNG làm sập cả trang.
+ */
+const toDatePickerValue = (value) => {
+  if (!value) return undefined;
+  const d = dayjs(value);
+  return d.isValid() ? d : undefined;
+};
+
 const FIELD_RULES = {
   // Basic — luôn áp dụng kể cả Lưu nháp
   title: () => [
@@ -205,15 +224,27 @@ const CreateJob = () => {
       setInitialLoading(true);
       const response = await recruitmentRequestAPI.getById(id);
       const req = response.data;
+
+      // Dòng "Kỹ năng yêu cầu: ..." DM gõ -> ô Kỹ Năng riêng, không để lẫn vào gạch đầu dòng.
+      const { text: requirementsText, skills } = splitRequirements(req.requirements);
+
       form.setFieldsValue({
         title: req.title,
         department: req.department,
-        type: req.employmentType,
+        // Hai form dùng từ vựng khác nhau -> phải quy đổi, gán thẳng thì Select không khớp
+        // option nào và ô hiện TRỐNG (HR tưởng hệ thống không điền gì).
+        type: EMPLOYMENT_TYPE_TO_JOB[req.employmentType] || "Full-time",
+        // Số năm DM nhập là nguồn chính; yêu cầu cũ (trước V024) mới rơi về cấp bậc.
+        experienceLevel:
+          experienceYearsToJob(req.experienceYearsMin)
+          ?? EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
+        quantity: req.quantity,
+        skillTags: skills.length > 0 ? skills.join(", ") : undefined,
         description: req.description,
         salaryMin: req.salaryMin,
         salaryMax: req.salaryMax,
       });
-      if (req.requirements) setRequirements(req.requirements.split("\n").filter(Boolean));
+      if (requirementsText) setRequirements(requirementsText.split("\n").filter(Boolean));
       if (req.benefits) setBenefits(req.benefits.split("\n").filter(Boolean));
       message.info(`Đang tạo tin từ yêu cầu tuyển dụng của ${req.createdByName || "DM"} — "${req.title}"`);
     } catch (error) {
@@ -255,7 +286,11 @@ const CreateJob = () => {
           salaryMin: job.salaryMin,
           salaryMax: job.salaryMax,
           currency: job.currency || "VND",
-          expiresAt: job.deadline || job.expiresAt,
+          // PHẢI bọc dayjs: ô này là <DatePicker> của antd v5, nó gọi thẳng các hàm của
+          // dayjs lên giá trị nhận được. Gán chuỗi ISO từ API vào là component throw và
+          // React unmount cả trang -> người dùng thấy MÀN HÌNH TRẮNG. Chỉ job CÓ hạn nộp
+          // mới dính, nên lỗi này nằm im cho tới khi có job điền deadline.
+          expiresAt: toDatePickerValue(job.deadline || job.expiresAt),
         });
 
         if (job.requirements && job.requirements.length > 0) {

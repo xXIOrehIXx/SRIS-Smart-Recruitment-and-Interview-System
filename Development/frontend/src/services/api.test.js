@@ -62,6 +62,13 @@ describe('authAPI', () => {
     authAPI.refreshToken('rt-123');
     expect(apiInst.post).toHaveBeenCalledWith('/account/refresh-token', { refreshToken: 'rt-123' });
   });
+
+  // Trước đây màn Settings gọi PUT /users/{id} (chỉ Admin) -> mọi role khác 403,
+  // và thiếu role/status trong body nên Admin cũng 400. Self-service phải là /account/me.
+  test('updateProfile là self-service PUT /account/me (không phải /users/{id})', () => {
+    authAPI.updateProfile({ fullName: 'Khánh', phone: '0912345678' });
+    expect(apiInst.put).toHaveBeenCalledWith('/account/me', { fullName: 'Khánh', phone: '0912345678' });
+  });
 });
 
 describe('candidateAPI — token LUÔN qua query string (backend đọc [FromQuery])', () => {
@@ -140,6 +147,13 @@ describe('các endpoint đã xóa vì backend không có', () => {
     talentPoolAPI.getSuggestions(3);
     expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool');
   });
+
+  test('talentPoolAPI truyền mốc độ tươi CV do Recruiter chọn', () => {
+    talentPoolAPI.getSuggestions(3, 1);
+    expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool?withinMonths=1');
+    talentPoolAPI.getSuggestions(3, 3);
+    expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool?withinMonths=3');
+  });
 });
 
 describe('đường dẫn từng bị sai', () => {
@@ -174,6 +188,11 @@ describe('recruitmentRequestAPI (5.17)', () => {
   test('convert gắn jobId để truy vết', () => {
     recruitmentRequestAPI.convert(1, 17);
     expect(apiInst.post).toHaveBeenCalledWith('/recruitment-requests/1/convert', { jobId: 17 });
+  });
+
+  test('update PUT thẳng vào yêu cầu (DM sửa đề bài khi còn PENDING)', () => {
+    recruitmentRequestAPI.update(5, { title: 'Kế toán tổng hợp', quantity: 2 });
+    expect(apiInst.put).toHaveBeenCalledWith('/recruitment-requests/5', { title: 'Kế toán tổng hợp', quantity: 2 });
   });
 
   test('criteriaAPI có luồng AI extract/approve', () => {

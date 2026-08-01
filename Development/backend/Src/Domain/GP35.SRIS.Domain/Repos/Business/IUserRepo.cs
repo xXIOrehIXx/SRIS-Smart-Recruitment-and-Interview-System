@@ -49,4 +49,10 @@ public interface IUserRepo : IBaseRepo<Guid, User>
 
     /// <summary>Đổi mật khẩu (đã hash sẵn). Trả số dòng.</summary>
     Task<int> UpdatePasswordAsync(long companyId, long userId, string passwordHash);
+
+    /// <summary>
+    /// Gán object key ảnh đại diện (null = gỡ ảnh). Trả số dòng.
+    /// Tách riêng khỏi UpdateAsync để đổi ảnh không phải gửi kèm role/status.
+    /// </summary>
+    Task<int> UpdateAvatarAsync(long companyId, long userId, string? avatarObjectKey);
 }

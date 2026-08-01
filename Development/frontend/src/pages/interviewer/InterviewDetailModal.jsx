@@ -21,6 +21,7 @@ import {
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { applicationAPI } from '../../services/api';
+import ApplicationStateTag from '../../components/ApplicationStateTag';
 
 const { Title, Text } = Typography;
 
@@ -79,6 +80,8 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
   const sheetStatus = schedule.mySheetStatus || 'NOT_STARTED';
   const isSubmitted = sheetStatus === 'SUBMITTED';
   const isDraft = sheetStatus === 'DRAFT';
+  // Khóa sửa phiếu khi hồ sơ đã có quyết định (OFFER/HIRED/REJECTED) — BE trả cờ này theo từng buổi.
+  const isLocked = !!schedule.isLocked;
   const scheduleStatusCfg = STATUS_CONFIG[schedule.status] || { color: 'default', label: schedule.status };
   const sheetStatusCfg = SHEET_STATUS_CONFIG[sheetStatus] || SHEET_STATUS_CONFIG.NOT_STARTED;
 
@@ -99,7 +102,7 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
           round: schedule.roundNumber,
           startTime: schedule.startTime,
         },
-        mode: isSubmitted ? 'view' : isDraft ? 'continue' : 'new',
+        mode: isLocked ? 'view' : sheetStatus === 'NOT_STARTED' ? 'new' : 'continue',
       },
     });
   };
@@ -185,7 +188,7 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
               )}
               {application.currentState && (
                 <Descriptions.Item label="Trạng thái hồ sơ">
-                  <Tag>{application.currentState}</Tag>
+                  <ApplicationStateTag state={application.currentState} />
                 </Descriptions.Item>
               )}
               {application.departmentName && (
@@ -204,11 +207,13 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {isSubmitted
-              ? 'Bạn đã nộp phiếu — có thể mở lại để xem tổng hợp điểm panel (sau khi cả panel nộp).'
-              : isDraft
-                ? 'Bạn đang có bản nháp — có thể tiếp tục chấm.'
-                : 'Bạn chưa chấm buổi này.'}
+            {isLocked
+              ? 'Hồ sơ đã có quyết định — phiếu chấm đã khóa, chỉ xem lại được.'
+              : isSubmitted
+                ? 'Bạn đã nộp phiếu — vẫn sửa điểm / bổ sung nhận xét được cho tới khi hồ sơ có quyết định.'
+                : isDraft
+                  ? 'Bạn đang có bản nháp — có thể tiếp tục chấm.'
+                  : 'Bạn chưa chấm buổi này.'}
           </Text>
           <Space>
             <Button onClick={onClose}>Đóng</Button>
@@ -218,7 +223,7 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
               onClick={handleGrade}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
             >
-              {isSubmitted ? 'Xem / Sửa điểm' : isDraft ? 'Tiếp tục chấm' : 'Chấm điểm'}
+              {isLocked ? 'Xem phiếu' : isSubmitted ? 'Xem / Sửa điểm' : isDraft ? 'Tiếp tục chấm' : 'Chấm điểm'}
               <ArrowRightOutlined />
             </Button>
           </Space>

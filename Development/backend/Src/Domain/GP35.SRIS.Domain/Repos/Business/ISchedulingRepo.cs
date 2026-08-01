@@ -116,4 +116,4 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 public record InterviewerScheduleRow(
     long ScheduleId, long ApplicationId, int RoundNumber, string Status,
     DateTime StartTime, string CandidateName, string CandidateEmail, string JobTitle,
-    string MySheetStatus);
+    string MySheetStatus, string ApplicationState);

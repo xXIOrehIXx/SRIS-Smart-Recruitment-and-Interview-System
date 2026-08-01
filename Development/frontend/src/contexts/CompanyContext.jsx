@@ -10,6 +10,16 @@ const CompanyProviderInner = ({ children }) => {
   const { updateBrandColor } = useBrandTheme();
 
   const fetchCompany = useCallback(async () => {
+    // GET /api/company là endpoint CẦN đăng nhập. Provider này bọc TOÀN BỘ app (index.jsx),
+    // nên khi khách vãng lai mở trang career công khai (/{slug}/career) nó vẫn bắn request,
+    // ăn 401, và interceptor trong api.jsx đá thẳng về /login — trang công khai không bao giờ
+    // xem được. Chưa có token thì đơn giản là không gọi: brand của trang công khai lấy từ
+    // /api/public/{slug} chứ không phải từ đây.
+    if (!localStorage.getItem("token")) {
+      setCompany(null);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await companyAPI.get();
