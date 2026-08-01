@@ -5,7 +5,9 @@ using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Lib.Services;
+using GP35.SRIS.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using UserEntity = GP35.SRIS.Domain.Entities.User;
 
 namespace GP35.SRIS.Application.Services.Business;
@@ -16,13 +18,26 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
     // Cùng salt cố định với AuthService.LoginAsync — đổi thì cả 2 chỗ phải đổi.
     private const string PasswordSalt = "salt";
 
+    /// <summary>Ảnh đại diện: chỉ nhận ảnh thường gặp, tối đa 2MB (ảnh 100px trên UI, không cần hơn).</summary>
+    private const long MaxAvatarBytes = 2 * 1024 * 1024;
+
+    private static readonly HashSet<string> AllowedAvatarExtensions =
+        new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".webp" };
+
+    private static readonly HashSet<string> AllowedAvatarContentTypes =
+        new(StringComparer.OrdinalIgnoreCase) { "image/jpeg", "image/png", "image/webp" };
+
     private readonly IUserRepo _userRepo;
     private readonly IEncodeService _encode;
+    private readonly IFileStorageService _fileStorage;
+    private readonly ILogger _logger;
 
     public UserManageService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _userRepo = serviceProvider.GetRequiredService<IUserRepo>();
         _encode = serviceProvider.GetRequiredService<IEncodeService>();
+        _fileStorage = serviceProvider.GetRequiredService<IFileStorageService>();
+        _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<UserManageService>();
     }
 
     public async Task<IReadOnlyList<UserListItemDto>> GetListAsync(long companyId)
@@ -35,7 +50,9 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
     {
         var user = await _userRepo.GetByIdAsync(companyId, userId)
             ?? throw NotFound($"Không tìm thấy tài khoản (user_id={userId}).");
-        return Map(user);
+        var dto = Map(user);
+        dto.AvatarUrl = await ResolveAvatarUrlAsync(user.AvatarUrl);
+        return dto;
     }
 
     public async Task<UserListItemDto> CreateAsync(long companyId, UserCreateDto dto)
@@ -102,7 +119,64 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
 
         existing.FullName = fullName;
         existing.Phone = phone;
-        return Map(existing);
+        var result = Map(existing);
+        result.AvatarUrl = await ResolveAvatarUrlAsync(existing.AvatarUrl);
+        return result;
+    }
+
+    public async Task<string?> UpdateOwnAvatarAsync(
+        long companyId, long userId, string fileName, string? contentType, byte[] content)
+    {
+        if (content is null || content.Length == 0)
+            throw Bad("Chưa chọn file ảnh.");
+        if (content.Length > MaxAvatarBytes)
+            throw Bad($"Ảnh tối đa {MaxAvatarBytes / (1024 * 1024)}MB.");
+
+        var ext = Path.GetExtension(fileName ?? "");
+        if (!AllowedAvatarExtensions.Contains(ext))
+            throw Bad("Ảnh phải có đuôi .jpg, .jpeg, .png hoặc .webp.");
+
+        // Đuôi file do client đặt nên bịa được -> soi thêm content type VÀ magic bytes.
+        var mime = string.IsNullOrWhiteSpace(contentType) ? GuessContentType(ext) : contentType.Trim();
+        if (!AllowedAvatarContentTypes.Contains(mime))
+            throw Bad("File tải lên không phải ảnh JPG/PNG/WEBP.");
+        if (!LooksLikeImage(content))
+            throw Bad("Nội dung file không phải ảnh hợp lệ (JPG/PNG/WEBP).");
+
+        _ = await _userRepo.GetByIdAsync(companyId, userId)
+            ?? throw NotFound($"Không tìm thấy tài khoản (user_id={userId}).");
+
+        // Key có companyId + userId để dễ soi/dọn theo tenant; GUID tránh đè ảnh cũ và
+        // tránh trình duyệt cache nhầm ảnh cũ sau khi đổi.
+        var objectKey = $"avatar/{companyId}/{userId}/{Guid.NewGuid():N}{ext.ToLowerInvariant()}";
+
+        // Khác CV (lưu file lỗi vẫn chấm điểm tiếp): ở đây file CHÍNH LÀ kết quả người dùng
+        // muốn, lưu hỏng mà báo thành công thì họ thấy ảnh không đổi và không hiểu vì sao.
+        try
+        {
+            using var ms = new MemoryStream(content);
+            await _fileStorage.UploadAsync(objectKey, ms, content.Length, mime);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "UpdateOwnAvatar: đẩy ảnh đại diện lên storage thất bại (user_id={UserId}).", userId);
+            throw new BaseException("Upload avatar failed")
+            {
+                ErrorCode = "STORAGE_UNAVAILABLE",
+                ErrorMessage = "Không lưu được ảnh lên kho file. Vui lòng thử lại.",
+                HttpStatus = (int)HttpStatusCode.ServiceUnavailable
+            };
+        }
+
+        await _userRepo.UpdateAvatarAsync(companyId, userId, objectKey);
+        return await ResolveAvatarUrlAsync(objectKey);
+    }
+
+    public async Task RemoveOwnAvatarAsync(long companyId, long userId)
+    {
+        _ = await _userRepo.GetByIdAsync(companyId, userId)
+            ?? throw NotFound($"Không tìm thấy tài khoản (user_id={userId}).");
+        await _userRepo.UpdateAvatarAsync(companyId, userId, null);
     }
 
     public async Task ResetPasswordAsync(long companyId, long userId, string newPassword)
@@ -162,6 +236,47 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
     }
 
     // ============================================================
+
+    /// <summary>
+    /// Object key -> URL xem được (presigned ~1h). Storage hỏng thì trả null chứ KHÔNG ném:
+    /// thiếu ảnh đại diện không đáng làm hỏng cả màn hồ sơ (FE rơi về avatar chữ cái đầu).
+    /// </summary>
+    private async Task<string?> ResolveAvatarUrlAsync(string? objectKey)
+    {
+        if (string.IsNullOrWhiteSpace(objectKey)) return null;
+        try
+        {
+            return await _fileStorage.GetPresignedUrlAsync(objectKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Không tạo được URL ảnh đại diện cho object '{ObjectKey}'.", objectKey);
+            return null;
+        }
+    }
+
+    private static string GuessContentType(string ext) => ext.ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".webp" => "image/webp",
+        _ => "image/jpeg"
+    };
+
+    /// <summary>
+    /// Soi magic bytes đầu file: chặn trường hợp đổi tên .exe thành .jpg rồi khai content type ảnh.
+    /// JPEG FF D8 FF · PNG 89 50 4E 47 · WEBP "RIFF"...."WEBP".
+    /// </summary>
+    private static bool LooksLikeImage(byte[] bytes)
+    {
+        if (bytes.Length < 12) return false;
+
+        if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true;
+        if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return true;
+        if (bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F' &&
+            bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') return true;
+
+        return false;
+    }
 
     /// <summary>SĐT Việt Nam rút gọn: đúng 10 chữ số, bắt đầu bằng 0 (khớp rule đang validate ở FE).</summary>
     private static bool IsValidPhone(string phone) =>

@@ -84,6 +84,16 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
                 .SetProperty(u => u.UpdatedAt, DateTime.UtcNow));
     }
 
+    public async Task<int> UpdateAvatarAsync(long companyId, long userId, string? avatarObjectKey)
+    {
+        // Global Query Filter đã chặn theo company_id -> user công ty khác không lọt vào Where.
+        return await _db.Users
+            .Where(u => u.UserId == userId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.AvatarUrl, avatarObjectKey)
+                .SetProperty(u => u.UpdatedAt, DateTime.UtcNow));
+    }
+
     public async Task<long> InsertForNewCompanyAsync(long companyId, User user)
     {
         user.CompanyId = companyId;

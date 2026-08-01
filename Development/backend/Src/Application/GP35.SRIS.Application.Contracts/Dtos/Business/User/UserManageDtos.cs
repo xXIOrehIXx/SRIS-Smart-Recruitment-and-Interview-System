@@ -11,6 +11,12 @@ public class UserListItemDto
     public string Status { get; set; } = null!;
     public DateTime? LastLoginAt { get; set; }
     public DateTime? CreatedAt { get; set; }
+
+    /// <summary>
+    /// URL XEM ĐƯỢC của ảnh đại diện (presigned, hết hạn sau ~1h) — không phải object key
+    /// dưới DB. Null khi user chưa đặt ảnh hoặc storage đang lỗi.
+    /// </summary>
+    public string? AvatarUrl { get; set; }
 }
 
 /// <summary>Admin tạo tài khoản nội bộ mới (Recruiter/Interviewer/DepartmentManager/Admin).</summary>

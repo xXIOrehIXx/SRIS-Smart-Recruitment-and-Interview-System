@@ -106,7 +106,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("User"); // EF tự bọc [User] (từ khóa SQL)
             e.HasKey(x => x.UserId);
-            // full_name / phone / last_login_at: đã thêm ở migration V014.
+            // full_name / phone / last_login_at: đã thêm ở migration V014. avatar_url: V025.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             // Truy vấn User thường lọc theo company; login (GetByEmail) dùng IgnoreQueryFilters.
             e.HasQueryFilter(x => x.CompanyId == _companyId);

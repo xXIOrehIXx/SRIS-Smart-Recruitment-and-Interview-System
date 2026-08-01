@@ -4,6 +4,13 @@ import axios from 'axios';
 // reverse proxy khi deploy. Đặt REACT_APP_API_URL khi backend ở origin khác.
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+// Các trang KHÔNG cần đăng nhập (khớp route công khai trong App.jsx): career site theo slug
+// công ty + 3 trang ứng viên vào bằng magic link. Dùng để chặn interceptor 401 đá về /login.
+const isPublicPath = (pathname) =>
+  pathname === '/' ||
+  /^\/[^/]+\/career(\/|$)/.test(pathname) ||
+  ['/schedule', '/offer', '/status', '/candidate/offer-response'].includes(pathname);
+
 // Tạo axios instance
 const api = axios.create({
   baseURL: BASE_URL,
@@ -53,11 +60,12 @@ api.interceptors.response.use(
       // Token hết hạn hoặc không hợp lệ
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      
-      // Tránh reload vòng lặp vô hạn nếu đang ở /login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'; 
-        
+
+      // Tránh reload vòng lặp vô hạn nếu đang ở /login, VÀ không đá khách vãng lai ra khỏi
+      // các trang vốn không cần đăng nhập (career site, magic link ứng viên): ở đó một request
+      // 401 lạc là chuyện bình thường, không phải phiên hết hạn.
+      if (window.location.pathname !== '/login' && !isPublicPath(window.location.pathname)) {
+        window.location.href = '/login';
       }
     }
     return normalizeApiError(error);
@@ -92,6 +100,18 @@ export const authAPI = {
   // KHÔNG dùng usersAPI.update: endpoint đó chỉ Admin vào được và bắt buộc role/status.
   updateProfile: (data) =>
     api.put('/account/me', data),
+
+  // Đổi ảnh đại diện — multipart, trường 'file'. KHÔNG tự set Content-Type: để axios sinh
+  // boundary của multipart, gán tay 'multipart/form-data' là hỏng request.
+  // Trả { avatarUrl } (presigned, có hạn) chứ không phải đường dẫn cố định.
+  uploadAvatar: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/account/me/avatar', formData);
+  },
+
+  removeAvatar: () =>
+    api.delete('/account/me/avatar'),
 
   logout: () =>
     api.post('/account/logout'),
