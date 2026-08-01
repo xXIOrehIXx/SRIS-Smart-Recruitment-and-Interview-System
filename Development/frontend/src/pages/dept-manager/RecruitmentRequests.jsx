@@ -276,6 +276,16 @@ const DeptRecruitmentRequests = () => {
               Tạo tin
             </Button>
           )}
+          {/* DM: sửa lại đề bài khi Recruiter chưa duyệt (duyệt xong BE khóa để giữ audit) */}
+          {!isRecruiter && record.status === 'PENDING' && (
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined />}
+              title="Sửa yêu cầu"
+              onClick={() => navigate(`/dept/edit-request/${record.id}`)}
+            />
+          )}
           {/* DM: hủy yêu cầu của mình khi còn PENDING */}
           {!isRecruiter && record.status === 'PENDING' && (
             <Popconfirm
@@ -423,14 +433,42 @@ const DeptRecruitmentRequests = () => {
           selectedRequest?.status === 'PENDING' ? (
             <Space>
               <Button onClick={() => setDetailModal(false)}>Đóng</Button>
-              <Button danger icon={<CloseCircleOutlined />}>Từ chối</Button>
-              <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-              >
-                Phê duyệt
-              </Button>
+              {isRecruiter ? (
+                <>
+                  <Button
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => {
+                      const record = selectedRequest;
+                      setDetailModal(false);
+                      handleReview(record, false);
+                    }}
+                  >
+                    Từ chối
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                    onClick={() => {
+                      const record = selectedRequest;
+                      setDetailModal(false);
+                      handleReview(record, true);
+                    }}
+                  >
+                    Phê duyệt
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                  onClick={() => navigate(`/dept/edit-request/${selectedRequest.id}`)}
+                >
+                  Sửa yêu cầu
+                </Button>
+              )}
             </Space>
           ) : (
             <Button onClick={() => setDetailModal(false)}>Đóng</Button>

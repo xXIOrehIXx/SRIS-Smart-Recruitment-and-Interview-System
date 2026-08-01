@@ -190,6 +190,11 @@ describe('recruitmentRequestAPI (5.17)', () => {
     expect(apiInst.post).toHaveBeenCalledWith('/recruitment-requests/1/convert', { jobId: 17 });
   });
 
+  test('update PUT thẳng vào yêu cầu (DM sửa đề bài khi còn PENDING)', () => {
+    recruitmentRequestAPI.update(5, { title: 'Kế toán tổng hợp', quantity: 2 });
+    expect(apiInst.put).toHaveBeenCalledWith('/recruitment-requests/5', { title: 'Kế toán tổng hợp', quantity: 2 });
+  });
+
   test('criteriaAPI có luồng AI extract/approve', () => {
     criteriaAPI.extractFromJd(3);
     expect(apiInst.post).toHaveBeenCalledWith('/jobs/3/criteria/extract');

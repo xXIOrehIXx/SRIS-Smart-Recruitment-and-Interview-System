@@ -18,6 +18,7 @@ import {
   Radio,
   Slider,
   Tag,
+  Spin,
 } from 'antd';
 import {
   SaveOutlined,
@@ -30,7 +31,7 @@ import {
   FileTextOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { recruitmentRequestAPI, departmentAPI } from '../../services/api';
 import '../Dashboard.css';
@@ -41,10 +42,32 @@ const { Option } = Select;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+// RecruitmentRequestInputDto không có cột skills riêng -> gộp vào requirements bằng dòng có tiền tố này.
+// Tạo và sửa phải dùng CHUNG tiền tố, nếu không mở lại form sẽ mất tag kỹ năng.
+const SKILLS_PREFIX = 'Kỹ năng yêu cầu:';
+
+/// requirements (BE) -> { text, skills } cho form.
+const splitRequirements = (raw) => {
+  const lines = (raw || '').split('\n');
+  const skillLine = lines.find((l) => l.trim().startsWith(SKILLS_PREFIX));
+  return {
+    text: lines.filter((l) => l !== skillLine).join('\n').trim(),
+    skills: skillLine
+      ? skillLine.trim().slice(SKILLS_PREFIX.length).split(',').map((s) => s.trim()).filter(Boolean)
+      : [],
+  };
+};
+
+// BE lưu priority HOA (LOW/MEDIUM/HIGH), Radio.Group dùng dạng Title case.
+const PRIORITY_FORM_VALUE = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
+
 const CreateRecruitmentRequest = () => {
   const navigate = useNavigate();
+  const { requestId } = useParams();
+  const isEdit = !!requestId;
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [loadingRequest, setLoadingRequest] = useState(isEdit);
   const [currentStep, setCurrentStep] = useState(0);
   const [submitType, setSubmitType] = useState('draft');
   const [skills, setSkills] = useState([]);
@@ -60,6 +83,49 @@ const CreateRecruitmentRequest = () => {
       ))
       .catch(() => setDepartments([]));
   }, []);
+
+  // Chế độ sửa: nạp lại yêu cầu cũ vào form. BE chỉ cho sửa khi PENDING -> chặn sớm ở FE cho rõ lý do.
+  useEffect(() => {
+    if (!isEdit) return;
+    let cancelled = false;
+
+    recruitmentRequestAPI.getById(requestId)
+      .then((res) => {
+        if (cancelled) return;
+        const r = res.data || {};
+        if (r.status !== 'PENDING') {
+          message.warning('Yêu cầu đã được xử lý — không sửa được nữa.');
+          navigate('/dept/requests');
+          return;
+        }
+
+        const { text, skills: parsedSkills } = splitRequirements(r.requirements);
+        setSkills(parsedSkills);
+        form.setFieldsValue({
+          title: r.title,
+          department: r.department,
+          positions: r.quantity ?? 1,
+          employmentType: r.employmentType,
+          experienceLevel: r.experienceLevel,
+          priority: PRIORITY_FORM_VALUE[r.priority] || 'Medium',
+          description: r.description,
+          requirements: text,
+          benefits: r.benefits,
+          salaryMin: r.salaryMin,
+          salaryMax: r.salaryMax,
+          startDate: r.expectedStartDate ? dayjs(r.expectedStartDate) : null,
+        });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        message.error(err?.response?.data?.userMsg || 'Không tải được yêu cầu tuyển dụng');
+        navigate('/dept/requests');
+      })
+      .finally(() => { if (!cancelled) setLoadingRequest(false); });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestId]);
 
   const employmentTypes = [
     { value: 'FULL_TIME', label: 'Toàn thời gian' },
@@ -114,7 +180,7 @@ const CreateRecruitmentRequest = () => {
       // RecruitmentRequestInputDto — skills không có cột riêng, gộp vào requirements
       const requirementsText = [
         values.requirements,
-        skills.length > 0 ? `Kỹ năng yêu cầu: ${skills.join(', ')}` : null,
+        skills.length > 0 ? `${SKILLS_PREFIX} ${skills.join(', ')}` : null,
       ].filter(Boolean).join('\n');
 
       const payload = {
@@ -132,11 +198,16 @@ const CreateRecruitmentRequest = () => {
         expectedStartDate: values.startDate?.format('YYYY-MM-DDTHH:mm:ss'),
       };
 
-      await recruitmentRequestAPI.create(payload);
-      message.success('Đã gửi yêu cầu tuyển dụng — Recruiter sẽ duyệt và tạo tin đăng.');
+      if (isEdit) {
+        await recruitmentRequestAPI.update(requestId, payload);
+        message.success('Đã lưu thay đổi yêu cầu tuyển dụng.');
+      } else {
+        await recruitmentRequestAPI.create(payload);
+        message.success('Đã gửi yêu cầu tuyển dụng — Recruiter sẽ duyệt và tạo tin đăng.');
+      }
       navigate('/dept/requests');
     } catch (error) {
-      console.error('Error creating request:', error);
+      console.error('Error saving request:', error);
       message.error(error?.response?.data?.userMsg || 'Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setLoading(false);
@@ -176,16 +247,24 @@ const CreateRecruitmentRequest = () => {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/dept/dashboard')}
+            onClick={() => navigate(isEdit ? '/dept/requests' : '/dept/dashboard')}
           />
           <div>
-            <Title level={3} className="page-title">Tạo Yêu Cầu Tuyển Dụng</Title>
-            <Text type="secondary">Gửi yêu cầu tuyển dụng mới cho phòng ban của bạn</Text>
+            <Title level={3} className="page-title">
+              {isEdit ? 'Sửa Yêu Cầu Tuyển Dụng' : 'Tạo Yêu Cầu Tuyển Dụng'}
+            </Title>
+            <Text type="secondary">
+              {isEdit
+                ? 'Chỉnh sửa yêu cầu đang chờ duyệt — Recruiter duyệt xong sẽ không sửa được nữa'
+                : 'Gửi yêu cầu tuyển dụng mới cho phòng ban của bạn'}
+            </Text>
           </div>
         </div>
       </div>
 
       <Card className="main-card" bordered={false}>
+        {/* Spin BỌC (không thay thế) để Form luôn mounted — form.setFieldsValue khi nạp xong mới ăn. */}
+        <Spin spinning={loadingRequest}>
         <Steps
           current={currentStep}
           items={steps}
@@ -491,26 +570,29 @@ const CreateRecruitmentRequest = () => {
                 <TextArea rows={3} placeholder="Các lưu ý đặc biệt, yêu cầu riêng cho recruiter..." />
               </Form.Item>
 
-              <Form.Item label="Hành động">
-                <Radio.Group
-                  value={submitType}
-                  onChange={(e) => setSubmitType(e.target.value)}
-                  size="large"
-                >
-                  <Radio.Button value="draft" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
-                    <Space>
-                      <SaveOutlined />
-                      Lưu nháp
-                    </Space>
-                  </Radio.Button>
-                  <Radio.Button value="submit" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
-                    <Space>
-                      <SendOutlined />
-                      Gửi yêu cầu
-                    </Space>
-                  </Radio.Button>
-                </Radio.Group>
-              </Form.Item>
+              {/* Sửa thì chỉ có 1 hành động (lưu lại) — không có khái niệm nháp/gửi nữa. */}
+              {!isEdit && (
+                <Form.Item label="Hành động">
+                  <Radio.Group
+                    value={submitType}
+                    onChange={(e) => setSubmitType(e.target.value)}
+                    size="large"
+                  >
+                    <Radio.Button value="draft" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
+                      <Space>
+                        <SaveOutlined />
+                        Lưu nháp
+                      </Space>
+                    </Radio.Button>
+                    <Radio.Button value="submit" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
+                      <Space>
+                        <SendOutlined />
+                        Gửi yêu cầu
+                      </Space>
+                    </Radio.Button>
+                  </Radio.Group>
+                </Form.Item>
+              )}
             </div>
           )}
 
@@ -525,7 +607,7 @@ const CreateRecruitmentRequest = () => {
               )}
             </div>
             <Space>
-              <Button htmlType="button" onClick={() => navigate('/dept/dashboard')} size="large">
+              <Button htmlType="button" onClick={() => navigate(isEdit ? '/dept/requests' : '/dept/dashboard')} size="large">
                 Hủy
               </Button>
               {currentStep < 2 ? (
@@ -554,18 +636,19 @@ const CreateRecruitmentRequest = () => {
                   htmlType="submit"
                   loading={loading}
                   size="large"
-                  icon={submitType === 'draft' ? <SaveOutlined /> : <SendOutlined />}
+                  icon={isEdit || submitType === 'draft' ? <SaveOutlined /> : <SendOutlined />}
                   style={{
-                    background: submitType === 'submit' ? MATCHA_GREEN : undefined,
-                    borderColor: submitType === 'submit' ? MATCHA_GREEN : undefined,
+                    background: isEdit || submitType === 'submit' ? MATCHA_GREEN : undefined,
+                    borderColor: isEdit || submitType === 'submit' ? MATCHA_GREEN : undefined,
                   }}
                 >
-                  {submitType === 'draft' ? 'Lưu nháp' : 'Gửi yêu cầu'}
+                  {isEdit ? 'Lưu thay đổi' : submitType === 'draft' ? 'Lưu nháp' : 'Gửi yêu cầu'}
                 </Button>
               )}
             </Space>
           </div>
         </Form>
+        </Spin>
       </Card>
     </div>
   );
