@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth, ROLES } from "./contexts/AuthContext";
 import Home from "./pages/Home";
 import Recruitment from "./pages/recruitment/Recruitment";
+import PublicJobDetail from "./pages/recruitment/PublicJobDetail";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -172,6 +173,8 @@ const App = () => {
 
       <Route path="/" element={<Home />} />
       <Route path="/:slug/career" element={<Recruitment />} />
+      {/* Chi tiết tin tuyển dụng — trang riêng (trước đây là modal trong danh sách) */}
+      <Route path="/:slug/career/jobs/:jobId" element={<PublicJobDetail />} />
 
       <Route
         path="*"
