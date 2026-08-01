@@ -19,20 +19,14 @@ import {
   RobotOutlined
 } from '@ant-design/icons';
 import { applicationAPI, criteriaAPI, cvScoringAPI } from '../../services/api';
+import ApplicationStateTag, { stateLabel } from '../../components/ApplicationStateTag';
 import './css/CandidateDetail.css';
 
 const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
-const STAGE_LABELS = {
-  NEW: 'Hồ Sơ Mới', SCREENING: 'Sàng Lọc', INTERVIEW: 'Phỏng Vấn',
-  OFFER: 'Offer', HIRED: 'Đã Tuyển', REJECTED: 'Từ Chối',
-};
-const STAGE_COLORS = {
-  NEW: 'blue', SCREENING: 'purple', INTERVIEW: 'orange',
-  OFFER: 'green', HIRED: 'success', REJECTED: 'red',
-};
+// Nhãn + màu trạng thái dùng chung toàn app: components/ApplicationStateTag.jsx
 
 /**
  * Chi tiết 1 hồ sơ (ApplicationDetailDto) — màn sàng lọc của Recruiter:
@@ -288,7 +282,7 @@ const CandidateDetail = () => {
                     <div className="timeline-header">
                       <Text strong>{log.action}</Text>
                       {log.fromState && log.toState && (
-                        <Tag>{STAGE_LABELS[log.fromState] || log.fromState} → {STAGE_LABELS[log.toState] || log.toState}</Tag>
+                        <Tag>{stateLabel(log.fromState)} → {stateLabel(log.toState)}</Tag>
                       )}
                     </div>
                     {log.detail && <Text style={{ fontSize: 13 }}>{log.detail}</Text>}
@@ -370,9 +364,7 @@ const CandidateDetail = () => {
               <Text type="secondary">{application?.jobTitle || 'N/A'}</Text>
 
               <div className="profile-tags">
-                <Tag color={STAGE_COLORS[application?.currentState] || 'default'}>
-                  {STAGE_LABELS[application?.currentState] || application?.currentState || 'N/A'}
-                </Tag>
+                <ApplicationStateTag state={application?.currentState} />
                 {application?.aiMatchScore != null && (
                   <Tag color={application.aiMatchScore >= 80 ? 'success' : 'warning'}>
                     AI: {Math.round(application.aiMatchScore)}%

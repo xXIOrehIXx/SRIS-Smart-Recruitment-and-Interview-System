@@ -16,6 +16,7 @@ import {
   ApartmentOutlined,
   DollarOutlined,
   ClockCircleOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { jobsAPI, publicCareerAPI } from "../../services/api";
@@ -125,6 +126,13 @@ const Recruitment = () => {
   }, [slug, updateBrandColor]);
 
   const locationOptions = useMemo(() => distinct(jobs, getLocation), [jobs]);
+
+  // Hero khoe tối đa 3 địa điểm cho gọn một dòng, dư thì gộp thành "+N nơi khác".
+  const heroLocations = useMemo(() => {
+    if (locationOptions.length <= 3) return locationOptions;
+    return [...locationOptions.slice(0, 3), `+${locationOptions.length - 3} nơi khác`];
+  }, [locationOptions]);
+
   const levelOptions = useMemo(() => distinct(jobs, (j) => j.experienceLevel), [jobs]);
   const categoryOptions = useMemo(() => distinct(jobs, (j) => j.department), [jobs]);
 
@@ -223,6 +231,34 @@ const Recruitment = () => {
       <CareerHeader brand={brand} />
 
       <Content>
+        {!error && (
+          <section className="cs-hero">
+            <div className="cs-container">
+              <h1 className="cs-hero-title">
+                Cùng xây dựng sự nghiệp tại {brand?.name || "công ty chúng tôi"}
+              </h1>
+              <p className="cs-hero-sub">
+                Xem các vị trí đang tuyển bên dưới. Nộp hồ sơ chỉ mất vài phút — bạn
+                sẽ nhận được phản hồi qua email.
+              </p>
+              {/* Thống kê tính từ dữ liệu thật; chưa tải xong hoặc rỗng thì không hiện
+                  con số nào, tránh nhấp nháy "0 vị trí" rồi mới ra số đúng. */}
+              {!loading && jobs.length > 0 && (
+                <div className="cs-hero-stats">
+                  <span className="cs-hero-stat">
+                    <TeamOutlined /> {jobs.length} vị trí đang tuyển
+                  </span>
+                  {heroLocations.length > 0 && (
+                    <span className="cs-hero-stat">
+                      <EnvironmentOutlined /> {heroLocations.join(" · ")}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         <div className="cs-container">
           {error ? (
             <Alert
@@ -292,7 +328,8 @@ const Recruitment = () => {
 
               <main>
                 <div className="cs-list-head">
-                  <h1 className="cs-list-title">Vị trí đang tuyển</h1>
+                  {/* h2: h1 của trang đã là tiêu đề trong dải hero phía trên. */}
+                  <h2 className="cs-list-title">Vị trí đang tuyển</h2>
                   <div className="cs-list-count">
                     <strong>{filtered.length}</strong> vị trí
                     {filtered.length !== jobs.length && ` / ${jobs.length}`}

@@ -14,6 +14,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import { jobsAPI, applicationAPI } from '../../services/api';
+import ApplicationStateTag from '../../components/ApplicationStateTag';
 import './css/JobDetail.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -160,25 +161,7 @@ const JobDetail = () => {
       title: 'Trạng Thái',
       dataIndex: 'state',
       key: 'stage',
-      render: (stage) => {
-        const colors = {
-          NEW: 'blue',
-          SCREENING: 'purple',
-          INTERVIEW: 'orange',
-          OFFER: 'green',
-          HIRED: 'success',
-          REJECTED: 'error',
-        };
-        const stageText = {
-          NEW: 'Hồ sơ mới',
-          SCREENING: 'Sàng Lọc',
-          INTERVIEW: 'Phỏng Vấn',
-          OFFER: 'Offer',
-          HIRED: 'Đã tuyển',
-          REJECTED: 'Từ chối',
-        };
-        return <Tag color={colors[stage] || 'default'}>{stageText[stage] || stage || 'N/A'}</Tag>;
-      },
+      render: (stage) => <ApplicationStateTag state={stage} />,
     },
     {
       title: 'Điểm CV',
