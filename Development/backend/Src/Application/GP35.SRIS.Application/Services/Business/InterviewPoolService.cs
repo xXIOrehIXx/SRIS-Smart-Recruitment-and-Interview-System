@@ -49,10 +49,30 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     {
         ValidateSlots(dto.Slots);
 
+        var roundNumber = dto.RoundNumber ?? 1;
+        if (roundNumber < 1)
+            throw Bad("Vòng phỏng vấn phải từ 1 trở lên.");
+
+        // Một job chỉ được có 1 pool ĐANG MỞ cho mỗi vòng: mở hai pool cùng "vòng 1" thì
+        // ứng viên nhận hai lời mời cho cùng một vòng và recruiter không biết khung nào là thật.
+        // Chỉ chặn khi pool cũ còn OPEN — pool đã đóng/hủy thì mở lại cùng vòng là hợp lệ
+        // (đúng với thông báo "Pool không còn mở — hãy tạo pool mới" ở luồng mời).
+        var existingOpen = (await _schedulingRepo.GetPoolsByJobAsync(companyId, jobId))
+            .Select(p => p.Pool)
+            .FirstOrDefault(p =>
+                p.RoundNumber == roundNumber &&
+                string.Equals(p.Status, InterviewPoolStatus.Open, StringComparison.OrdinalIgnoreCase));
+
+        if (existingOpen is not null)
+            throw Conflict(
+                $"Vòng {roundNumber} của tin tuyển dụng này đã có pool khung đang mở " +
+                $"(pool #{existingOpen.PoolId}). Hãy thêm khung vào pool đó, đóng nó, " +
+                $"hoặc tạo vòng khác.");
+
         var pool = new InterviewSlotPool
         {
             JobId = jobId,
-            RoundNumber = dto.RoundNumber ?? 1,
+            RoundNumber = roundNumber,
             Status = InterviewPoolStatus.Open,
             CreatedBy = userId > 0 ? userId : null
         };

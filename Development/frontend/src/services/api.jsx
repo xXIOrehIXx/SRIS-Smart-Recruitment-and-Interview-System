@@ -101,13 +101,19 @@ export const authAPI = {
   updateProfile: (data) =>
     api.put('/account/me', data),
 
-  // Đổi ảnh đại diện — multipart, trường 'file'. KHÔNG tự set Content-Type: để axios sinh
-  // boundary của multipart, gán tay 'multipart/form-data' là hỏng request.
-  // Trả { avatarUrl } (presigned, có hạn) chứ không phải đường dẫn cố định.
+  // Đổi ảnh đại diện — multipart, trường 'file'. Trả { avatarUrl } (presigned, có hạn).
+  //
+  // BẮT BUỘC ghi đè Content-Type ở đây: instance `api` mặc định 'application/json', mà
+  // axios 1.x gặp FormData kèm content-type JSON thì nó ĐỔI FormData thành JSON
+  // (formDataToJSON) -> file bay mất, server nhận body rỗng và trả 400 "Thiếu file ảnh".
+  // Đặt 'multipart/form-data' rồi adapter của axios sẽ tự bỏ header này để trình duyệt
+  // gắn boundary thật. Các endpoint upload khác trong file này cũng làm đúng như vậy.
   uploadAvatar: (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post('/account/me/avatar', formData);
+    return api.post('/account/me/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
 
   removeAvatar: () =>
