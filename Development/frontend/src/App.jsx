@@ -153,6 +153,11 @@ const App = () => {
           path="/dept/create-request"
           element={<CreateRecruitmentRequest />}
         />
+        {/* Sửa yêu cầu — dùng chung form với tạo mới, chỉ khác chế độ (chỉ sửa được khi PENDING) */}
+        <Route
+          path="/dept/edit-request/:requestId"
+          element={<CreateRecruitmentRequest />}
+        />
       </Route>
 
       <Route
