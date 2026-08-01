@@ -52,6 +52,9 @@ const Grading = () => {
   const [saveConfirmModal, setSaveConfirmModal] = useState(false);
   const [submitConfirmModal, setSubmitConfirmModal] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  // Khóa sửa phiếu theo TRẠNG THÁI HỒ SƠ (OFFER/HIRED/REJECTED) — không phải theo "đã nộp".
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockReason, setLockReason] = useState('');
 
   // Get candidate info từ navigation state — fallback khi API trả candidate rỗng
   const candidateData = location.state?.candidate || {};
@@ -68,8 +71,10 @@ const Grading = () => {
       const response = await interviewAPI.getMySheet(scheduleId);
       const data = response.data || {};
 
-      // ScoringSheetDto: { scheduleId, myStatus, criteria: [...], schedule, candidate }
+      // ScoringSheetDto: { scheduleId, myStatus, isLocked, lockReason, criteria: [...], schedule, candidate }
       if (data.myStatus === 'SUBMITTED') setIsSubmitted(true);
+      setIsLocked(!!data.isLocked);
+      setLockReason(data.lockReason || '');
 
       if (Array.isArray(data.criteria)) {
         setCriteria(data.criteria.map((c) => ({
@@ -132,8 +137,8 @@ const Grading = () => {
   };
 
   const handleSaveDraft = () => {
-    if (isSubmitted) {
-      message.warning('Bạn đã submit rồi, không thể lưu nháp');
+    if (isLocked) {
+      message.warning(lockReason || 'Hồ sơ đã có quyết định — phiếu chấm đã khóa.');
       return;
     }
     setSaveConfirmModal(true);
@@ -327,7 +332,7 @@ const Grading = () => {
                         value={scores[item.id] || 0}
                         onChange={(e) => handleScoreChange(item.id, parseInt(e.target.value) || 0)}
                         style={{ width: 70, textAlign: 'center' }}
-                        disabled={isSubmitted}
+                        disabled={isLocked}
                       />
                       <Text type="secondary">/{item.maxScore}</Text>
                     </div>
@@ -339,7 +344,7 @@ const Grading = () => {
                     onChange={(value) => handleScoreChange(item.id, value)}
                     marks={{ 0: '0', [item.maxScore]: item.maxScore.toString() }}
                     className="score-slider"
-                    disabled={isSubmitted}
+                    disabled={isLocked}
                   />
                 </div>
               ))}
@@ -354,18 +359,18 @@ const Grading = () => {
                 placeholder="Nhập nhận xét chi tiết về ứng viên..."
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
-                disabled={isSubmitted}
+                disabled={isLocked}
               />
             </div>
 
-            {!isSubmitted && (
+            {!isLocked && (
               <div className="grading-actions">
                 <Button
                   icon={<SaveOutlined />}
                   onClick={handleSaveDraft}
                   loading={submitting}
                 >
-                  Lưu nháp
+                  {isSubmitted ? 'Lưu thay đổi' : 'Lưu nháp'}
                 </Button>
                 <Button
                   type="primary"
@@ -375,16 +380,26 @@ const Grading = () => {
                   className="submit-btn"
                   style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                 >
-                  Submit điểm
+                  {isSubmitted ? 'Cập nhật phiếu đã nộp' : 'Submit điểm'}
                 </Button>
               </div>
             )}
 
-            {isSubmitted && (
+            {isSubmitted && !isLocked && (
               <Alert
                 message="Điểm đã được submit"
-                description="Bạn không thể chỉnh sửa sau khi submit. Nếu cần thay đổi, vui lòng liên hệ quản lý."
+                description="Panel đã thấy điểm của bạn (blind đã mở). Bạn vẫn sửa điểm / bổ sung nhận xét được cho tới khi hồ sơ có quyết định tuyển."
                 type="info"
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            )}
+
+            {isLocked && (
+              <Alert
+                message="Phiếu chấm đã khóa"
+                description={lockReason || 'Hồ sơ đã có quyết định (Offer / Tuyển / Từ chối) — không sửa phiếu được nữa.'}
+                type="warning"
                 showIcon
                 style={{ marginTop: 16 }}
               />

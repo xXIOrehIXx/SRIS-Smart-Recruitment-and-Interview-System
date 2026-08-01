@@ -448,7 +448,9 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             select new InterviewerScheduleRow(
                 s.ScheduleId, s.ApplicationId, s.RoundNumber, s.Status,
                 sl.StartTime, c.FullName, c.Email, j.Title,
-                my.Status ?? "NOT_STARTED");
+                my.Status ?? "NOT_STARTED",
+                // Trạng thái hồ sơ -> FE biết buổi nào còn sửa phiếu được (OFFER trở đi là khóa).
+                a.CurrentState);
         return await query.ToListAsync();
     }
 }

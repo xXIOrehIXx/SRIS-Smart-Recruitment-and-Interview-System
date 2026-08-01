@@ -26,6 +26,7 @@ import {
   CheckCircleOutlined,
   EditOutlined,
   EyeInvisibleOutlined,
+  LockOutlined,
   SaveOutlined,
   SendOutlined,
   TeamOutlined,
@@ -149,6 +150,10 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
   const [feedback, setFeedback] = useState('');
   const [recommendation, setRecommendation] = useState(null);
   const [myStatus, setMyStatus] = useState('DRAFT');
+  // Khóa theo TRẠNG THÁI HỒ SƠ (OFFER/HIRED/REJECTED), không theo trạng thái phiếu:
+  // nộp phiếu chỉ mở blind, interviewer vẫn sửa điểm / bổ sung note tới khi người quyết chốt.
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockReason, setLockReason] = useState('');
 
   const [aggregate, setAggregate] = useState(null);
   const [aggregateLoading, setAggregateLoading] = useState(false);
@@ -189,8 +194,10 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
       setFeedback(parsed.feedback);
       setRecommendation(parsed.recommendation);
 
-      const status = data.myStatus || (data.isSubmitted || data.status === 'SUBMITTED' ? 'SUBMITTED' : 'DRAFT');
+      const status = data.myStatus || (data.status === 'SUBMITTED' ? 'SUBMITTED' : 'DRAFT');
       setMyStatus(status);
+      setIsLocked(!!data.isLocked);
+      setLockReason(data.lockReason || '');
 
       if (status === 'SUBMITTED') fetchAggregate();
     } catch (err) {
@@ -215,7 +222,7 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
   };
 
   const triggerAutoSave = (nextScores, nextNotes) => {
-    if (myStatus === 'SUBMITTED') return;
+    if (isLocked) return;
     dirtyRef.current = true;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
@@ -224,27 +231,27 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
   };
 
   const handleScoreChange = (cid, value) => {
-    if (myStatus === 'SUBMITTED') return;
+    if (isLocked) return;
     const next = { ...scores, [cid]: value };
     setScores(next);
     triggerAutoSave(next, notes);
   };
 
   const handleNoteChange = (cid, value) => {
-    if (myStatus === 'SUBMITTED') return;
+    if (isLocked) return;
     const next = { ...notes, [cid]: value };
     setNotes(next);
     triggerAutoSave(scores, next);
   };
 
   const handleFeedbackChange = (val) => {
-    if (myStatus === 'SUBMITTED') return;
+    if (isLocked) return;
     setFeedback(val);
     triggerAutoSave(scores, notes);
   };
 
   const handleRecommendationChange = (val) => {
-    if (myStatus === 'SUBMITTED') return;
+    if (isLocked) return;
     setRecommendation(val);
     triggerAutoSave(scores, notes);
   };
@@ -295,7 +302,11 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
           })),
       });
       await interviewAPI.submitMySheet(schedule.id);
-      message.success('Đã nộp phiếu — hệ thống mở blind và tổng hợp điểm các interviewer.');
+      message.success(
+        myStatus === 'SUBMITTED'
+          ? 'Đã cập nhật phiếu chấm.'
+          : 'Đã nộp phiếu — hệ thống mở blind và tổng hợp điểm các interviewer.'
+      );
       setMyStatus('SUBMITTED');
       dirtyRef.current = false;
       await fetchAggregate();
@@ -326,7 +337,8 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
     return totalWeight > 0 ? ((weightedSum / totalWeight) * 100).toFixed(1) : 0;
   }, [criteria, scores]);
 
-  const isLocked = myStatus === 'SUBMITTED';
+  // Đã nộp = blind đã mở (thấy tab Tổng hợp) — KHÁC với khóa sửa (isLocked, theo trạng thái hồ sơ).
+  const isSubmitted = myStatus === 'SUBMITTED';
 
   const aggregateRows = useMemo(() => {
     if (!aggregate?.criteriaAggregates) return [];
@@ -382,10 +394,18 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
                 <>
                   {isLocked ? (
                     <Alert
+                      type="warning"
+                      showIcon
+                      icon={<LockOutlined />}
+                      message={lockReason || 'Hồ sơ đã có quyết định — phiếu chấm đã khóa, không sửa được nữa.'}
+                      style={{ marginBottom: 16 }}
+                    />
+                  ) : isSubmitted ? (
+                    <Alert
                       type="success"
                       showIcon
                       icon={<CheckCircleOutlined />}
-                      message="Phiếu đã nộp — bạn không thể chỉnh sửa. Xem tab Tổng hợp để thấy điểm các interviewer khác (blind đã mở)."
+                      message="Phiếu đã nộp — blind đã mở (xem tab Tổng hợp). Bạn vẫn sửa điểm / bổ sung nhận xét được cho tới khi hồ sơ có quyết định tuyển."
                       style={{ marginBottom: 16 }}
                     />
                   ) : (
@@ -510,13 +530,13 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
                         loading={saving}
                         disabled={isLocked}
                       >
-                        Lưu nháp
+                        {isSubmitted ? 'Lưu thay đổi' : 'Lưu nháp'}
                       </Button>
                       {saving ? (
                         <Text type="secondary"><Spin size="small" /> Đang lưu...</Text>
                       ) : (
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          {isLocked ? 'Đã khóa' : 'Tự lưu nháp khi bạn gõ (sau 0.8s)'}
+                          {isLocked ? 'Đã khóa' : 'Tự lưu khi bạn gõ (sau 0.8s)'}
                         </Text>
                       )}
                     </Space>
@@ -528,7 +548,7 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
                       disabled={isLocked || totalCriteria === 0}
                       style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                     >
-                      Nộp phiếu chấm
+                      {isSubmitted ? 'Cập nhật phiếu đã nộp' : 'Nộp phiếu chấm'}
                     </Button>
                   </Space>
                 </>
@@ -539,12 +559,12 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
               label: (
                 <span>
                   <TrophyOutlined /> Tổng hợp
-                  {isLocked ? null : <EyeInvisibleOutlined style={{ marginLeft: 4 }} />}
+                  {isSubmitted ? null : <EyeInvisibleOutlined style={{ marginLeft: 4 }} />}
                 </span>
               ),
               children: (
                 <>
-                  {!isLocked ? (
+                  {!isSubmitted ? (
                     <Alert
                       type="info"
                       icon={<EyeInvisibleOutlined />}
