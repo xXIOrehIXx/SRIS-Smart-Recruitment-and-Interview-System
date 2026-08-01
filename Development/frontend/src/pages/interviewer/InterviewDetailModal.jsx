@@ -21,6 +21,7 @@ import {
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { applicationAPI } from '../../services/api';
+import ApplicationStateTag from '../../components/ApplicationStateTag';
 
 const { Title, Text } = Typography;
 
@@ -187,7 +188,7 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
               )}
               {application.currentState && (
                 <Descriptions.Item label="Trạng thái hồ sơ">
-                  <Tag>{application.currentState}</Tag>
+                  <ApplicationStateTag state={application.currentState} />
                 </Descriptions.Item>
               )}
               {application.departmentName && (

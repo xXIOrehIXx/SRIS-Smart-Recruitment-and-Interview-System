@@ -22,6 +22,61 @@
   padding: 0 20px;
 }
 
+/* ---------- Dải hero (chỉ trang danh sách) ----------
+   Mặt tiền thương hiệu của công ty — chỗ DUY NHẤT trên career site dùng nền màu đậm.
+   Phần danh sách bên dưới giữ nền trắng: đó là khu vực đọc dữ liệu, màu ở đó chỉ
+   làm khó đọc chứ không thêm thông tin gì. */
+
+.cs-hero {
+  background: var(--brand-color, #5d8c3e);
+  color: #fff;
+  padding: 56px 0;
+}
+
+.cs-hero-title {
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 12px;
+  color: #fff;
+  max-width: 20ch;
+}
+
+.cs-hero-sub {
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 20px;
+  max-width: 60ch;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.cs-hero-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cs-hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .cs-hero {
+    padding: 40px 0;
+  }
+
+  .cs-hero-title {
+    font-size: 27px;
+  }
+}
+
 /* ---------- Danh sách: 2 cột (sidebar lọc + list) ---------- */
 
 .cs-list-layout {

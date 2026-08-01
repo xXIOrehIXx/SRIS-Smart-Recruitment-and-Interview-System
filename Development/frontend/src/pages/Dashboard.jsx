@@ -21,16 +21,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLES } from '../contexts/AuthContext';
 import { dashboardAPI, interviewAPI, jobsAPI, applicationAPI, recruitmentRequestAPI } from '../services/api';
 import dayjs from 'dayjs';
+import ApplicationStateTag, { APPLICATION_STATE_LABELS } from '../components/ApplicationStateTag';
 import './Dashboard.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const MATCHA_GREEN = '#5D8C3E';
 
-const FUNNEL_LABELS = {
-  NEW: "Hồ sơ mới", SCREENING: "Sàng lọc", INTERVIEW: "Phỏng vấn",
-  OFFER: "Offer", HIRED: "Đã tuyển", REJECTED: "Từ chối",
-};
+// Nhãn trạng thái lấy từ nguồn dùng chung: components/ApplicationStateTag.jsx
+const FUNNEL_LABELS = APPLICATION_STATE_LABELS;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -402,7 +401,7 @@ const Dashboard = () => {
                       <div className="candidate-cell"><Avatar size={36} style={{ backgroundColor: MATCHA_GREEN }} icon={<TeamOutlined />} /><div><div className="candidate-name">{text}</div><Text type="secondary" style={{ fontSize: 12 }}>{record.candidateEmail}</Text></div></div>
                     )},
                     { title: 'Vị Trí', dataIndex: 'jobTitle', key: 'jobTitle', render: (text) => <span style={{ fontWeight: 500 }}>{text}</span> },
-                    { title: 'Trạng Thái', dataIndex: 'currentState', key: 'currentState', render: (state) => <Tag color={state === 'NEW' ? 'blue' : state === 'HIRED' ? 'green' : state === 'REJECTED' ? 'red' : state === 'OFFER' ? 'gold' : 'default'}>{FUNNEL_LABELS[state] || state}</Tag> },
+                    { title: 'Trạng Thái', dataIndex: 'currentState', key: 'currentState', render: (state) => <ApplicationStateTag state={state} /> },
                     { title: 'Ngày Nộp', dataIndex: 'appliedAt', key: 'appliedAt', render: (v) => <span style={{ color: '#8c8c8b', fontSize: 13 }}><ClockCircleOutlined style={{ marginRight: 4 }} />{v ? dayjs(v).format('DD/MM/YYYY HH:mm') : '-'}</span> },
                   ]}
                   dataSource={dashboardData?.recentApplications || []}
