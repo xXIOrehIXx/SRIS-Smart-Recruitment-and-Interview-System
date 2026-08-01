@@ -97,13 +97,15 @@ const Recruitment = () => {
         setJobs(Array.isArray(raw) ? raw : []);
 
         // Brand hỏng thì vẫn hiện được danh sách — chỉ mất logo/tên công ty.
-        if (brandRes.status === "fulfilled") {
-          const b = brandRes.value.data || null;
-          setBrand(b);
-          // Career site là trang công khai: CompanyContext (cần đăng nhập) không chạy,
-          // nên phải tự nhuộm màu brand của tenant vào --brand-color ở đây.
-          if (b?.primaryColor) updateBrandColor(b.primaryColor);
-        }
+        const b = brandRes.status === "fulfilled" ? brandRes.value.data || null : null;
+        setBrand(b);
+
+        // Career site là trang công khai: CompanyContext (cần đăng nhập) không chạy,
+        // nên phải tự nhuộm màu brand của tenant vào --brand-color ở đây.
+        // Gọi KHÔNG điều kiện: updateBrandColor lưu màu vào localStorage, nên nếu chỉ
+        // gọi khi tenant có màu thì công ty chưa cấu hình sẽ mặc lại màu của công ty
+        // xem trước đó. Truyền null -> hàm tự rơi về màu mặc định.
+        updateBrandColor(b?.primaryColor);
       } catch (err) {
         console.error("Error fetching public jobs:", err);
         if (!ignore) {

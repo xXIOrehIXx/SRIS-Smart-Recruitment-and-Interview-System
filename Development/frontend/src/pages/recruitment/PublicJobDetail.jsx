@@ -129,11 +129,12 @@ const PublicJobDetail = () => {
           else setNotFound(true);
         }
 
-        if (brandRes.status === "fulfilled") {
-          const b = brandRes.value.data || null;
-          setBrand(b);
-          if (b?.primaryColor) updateBrandColor(b.primaryColor);
-        }
+        // Gọi KHÔNG điều kiện (lý do đầy đủ ở Recruitment.jsx): màu brand nằm trong
+        // localStorage nên công ty chưa đặt màu phải được reset về mặc định,
+        // không mặc lại màu của công ty xem trước đó.
+        const b = brandRes.status === "fulfilled" ? brandRes.value.data || null : null;
+        setBrand(b);
+        updateBrandColor(b?.primaryColor);
 
         if (listRes.status === "fulfilled") {
           const list = listRes.value.data?.data || listRes.value.data || [];
