@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, Tabs, Avatar, message, Upload } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Card, Typography, Form, Input, Button, Tabs, Avatar, message, Upload, Space } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined, CameraOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
 import './Settings.css';
@@ -13,6 +13,8 @@ const Settings = () => {
   const [passwordForm] = Form.useForm();
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -30,6 +32,11 @@ const Settings = () => {
         email: data.email || user.email,
         phone: data.phone || '',
       });
+      setAvatarUrl(data.avatarUrl || null);
+      // Vá vào context để avatar trên header đổi ngay, khỏi phải F5.
+      // URL là presigned (~1h) nên bản lưu trong localStorage có thể hết hạn — chấp nhận được:
+      // AdminLayout gọi lại /account/me mỗi lần vào app, và antd Avatar tự rơi về icon nếu ảnh lỗi.
+      updateUserProfile({ avatarUrl: data.avatarUrl || null });
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
@@ -59,6 +66,54 @@ const Settings = () => {
       message.error(error?.response?.data?.userMsg || 'Failed to update profile');
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  // Chặn TRƯỚC khi gửi: antd Upload mặc định tự POST tới prop `action`, mà trang này không có
+  // action -> nó bắn POST vào URL hiện tại và ăn 404. Trả false để tự gọi API bằng tay.
+  const handleBeforeUpload = (file) => {
+    const isAllowedType = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+    if (!isAllowedType) {
+      message.error('Chỉ nhận ảnh JPG, PNG hoặc WEBP.');
+      return Upload.LIST_IGNORE;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      message.error('Ảnh tối đa 2MB.');
+      return Upload.LIST_IGNORE;
+    }
+
+    uploadAvatar(file);
+    return false;
+  };
+
+  const uploadAvatar = async (file) => {
+    try {
+      setAvatarLoading(true);
+      const response = await authAPI.uploadAvatar(file);
+      const url = response.data?.avatarUrl || null;
+      setAvatarUrl(url);
+      updateUserProfile({ avatarUrl: url });
+      message.success('Đã cập nhật ảnh đại diện');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      message.error(error?.response?.data?.userMsg || 'Không tải được ảnh lên');
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      setAvatarLoading(true);
+      await authAPI.removeAvatar();
+      setAvatarUrl(null);
+      updateUserProfile({ avatarUrl: null });
+      message.success('Đã gỡ ảnh đại diện');
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      message.error(error?.response?.data?.userMsg || 'Không gỡ được ảnh');
+    } finally {
+      setAvatarLoading(false);
     }
   };
 
@@ -94,10 +149,29 @@ const Settings = () => {
       children: (
         <Form layout="vertical" form={form} className="settings-form" onFinish={handleSaveProfile}>
           <div className="avatar-section">
-            <Avatar size={100} style={{ backgroundColor: '#5D8C3E' }} icon={<UserOutlined />} />
-            <Upload>
-              <Button>Change Photo</Button>
-            </Upload>
+            <Avatar
+              size={100}
+              src={avatarUrl}
+              style={{ backgroundColor: '#5D8C3E' }}
+              icon={<UserOutlined />}
+            />
+            <Space>
+              <Upload
+                accept="image/jpeg,image/png,image/webp"
+                showUploadList={false}
+                maxCount={1}
+                beforeUpload={handleBeforeUpload}
+              >
+                <Button icon={<CameraOutlined />} loading={avatarLoading}>
+                  Change Photo
+                </Button>
+              </Upload>
+              {avatarUrl && (
+                <Button danger onClick={handleRemoveAvatar} disabled={avatarLoading}>
+                  Gỡ ảnh
+                </Button>
+              )}
+            </Space>
           </div>
           <Form.Item label="Full Name" name="fullName" rules={[{ required: true, message: 'Please enter full name' }]}>
             <Input prefix={<UserOutlined />} />

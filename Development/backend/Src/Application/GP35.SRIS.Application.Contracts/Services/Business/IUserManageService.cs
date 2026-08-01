@@ -20,6 +20,19 @@ public interface IUserManageService : IBaseService
     /// </summary>
     Task<UserListItemDto> UpdateOwnProfileAsync(long companyId, long userId, ProfileUpdateDto dto);
 
+    /// <summary>
+    /// Người đang đăng nhập đổi ảnh đại diện của CHÍNH MÌNH: kiểm tra định dạng/kích thước,
+    /// đẩy file lên storage rồi lưu object key. Trả URL xem được (presigned) của ảnh mới.
+    /// </summary>
+    Task<string?> UpdateOwnAvatarAsync(
+        long companyId, long userId, string fileName, string? contentType, byte[] content);
+
+    /// <summary>
+    /// Gỡ ảnh đại diện (về mặc định chữ cái đầu). Chỉ xóa tham chiếu trong DB — file cũ để lại
+    /// trên storage, không xóa cứng (đúng nếp CV: giữ file cho audit, rẻ hơn là dọn ngay).
+    /// </summary>
+    Task RemoveOwnAvatarAsync(long companyId, long userId);
+
     /// <summary>Vô hiệu tài khoản (soft — Status "Disabled"; không xóa cứng để giữ audit/lịch sử chấm).</summary>
     Task DisableAsync(long companyId, long userId);
 
