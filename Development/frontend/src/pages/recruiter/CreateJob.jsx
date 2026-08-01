@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import dayjs from "dayjs";
 import {
   Row,
   Col,
@@ -31,7 +32,9 @@ import {
 import JobSetupSteps from "../../components/JobSetupSteps";
 import "./css/CreateJob.css";
 
-const { Title } = Typography;
+// Thiếu Text ở đây là trang SẬP TRẮNG khi vào chế độ sửa: JSX bên dưới có <Text>, không
+// destructure thì nó ăn vào class Text của DOM và React gọi class như hàm -> throw.
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 /**
@@ -47,6 +50,16 @@ const { TextArea } = Input;
  * FE validate CHẶT hơn BE (vd: description min 50 ký tự) là chủ ý — muốn
  * cảnh báo recruiter sớm vì JD ngắn quá hệ thống chấm CV vector sẽ kém chính xác.
  */
+/**
+ * Đổi giá trị ngày từ API sang thứ <DatePicker> nhận được (dayjs), an toàn với dữ liệu bẩn.
+ * Ngày rỗng/không parse được -> undefined: ô để trống, KHÔNG làm sập cả trang.
+ */
+const toDatePickerValue = (value) => {
+  if (!value) return undefined;
+  const d = dayjs(value);
+  return d.isValid() ? d : undefined;
+};
+
 const FIELD_RULES = {
   // Basic — luôn áp dụng kể cả Lưu nháp
   title: () => [
@@ -273,7 +286,11 @@ const CreateJob = () => {
           salaryMin: job.salaryMin,
           salaryMax: job.salaryMax,
           currency: job.currency || "VND",
-          expiresAt: job.deadline || job.expiresAt,
+          // PHẢI bọc dayjs: ô này là <DatePicker> của antd v5, nó gọi thẳng các hàm của
+          // dayjs lên giá trị nhận được. Gán chuỗi ISO từ API vào là component throw và
+          // React unmount cả trang -> người dùng thấy MÀN HÌNH TRẮNG. Chỉ job CÓ hạn nộp
+          // mới dính, nên lỗi này nằm im cho tới khi có job điền deadline.
+          expiresAt: toDatePickerValue(job.deadline || job.expiresAt),
         });
 
         if (job.requirements && job.requirements.length > 0) {
