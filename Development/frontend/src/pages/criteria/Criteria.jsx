@@ -91,20 +91,20 @@ const RULES = {
           const trimmed = (value || '').trim();
           if (type === 'SOFT') {
             if (trimmed) {
-              return Promise.reject(new Error('Tiêu chí SOFT không cần từ khóa — để trống.'));
+              return Promise.reject(new Error('Tiêu chí "Theo mức độ" không cần từ khóa — để trống.'));
             }
             return Promise.resolve();
           }
           // HARD
           if (!trimmed) {
-            return Promise.reject(new Error('Tiêu chí HARD bắt buộc có từ khóa (phân tách bằng ;)'));
+            return Promise.reject(new Error('Tiêu chí "Bắt buộc" phải có từ khóa (phân tách bằng ;)'));
           }
           if (value.includes(';;')) {
             return Promise.reject(new Error('Từ khóa không được chứa 2 dấu ";" liên tiếp'));
           }
           const tokens = value.split(';').map(s => s.trim()).filter(Boolean);
           if (tokens.length === 0) {
-            return Promise.reject(new Error('Tiêu chí HARD bắt buộc có từ khóa'));
+            return Promise.reject(new Error('Tiêu chí "Bắt buộc" phải có từ khóa'));
           }
           const tooLong = tokens.find(t => t.length > 50);
           if (tooLong) {
@@ -440,10 +440,18 @@ const Criteria = () => {
 
   // ===== Render helpers =====
 
+  // Nhãn hiển thị KHÔNG dùng chữ HARD/SOFT: đó là tên kỹ thuật nói về CÁCH MÁY KIỂM TRA,
+  // người làm tuyển dụng đọc không hiểu. Giá trị lưu DB/API vẫn là HARD/SOFT.
   const typeTag = (type) =>
-    type === 'HARD'
-      ? <Tooltip title="Yêu cầu cứng — lọc bằng rule/keyword"><Tag color="volcano">HARD</Tag></Tooltip>
-      : <Tooltip title="Kỹ năng — so khớp ngữ nghĩa bằng vector"><Tag color="geekblue">SOFT</Tag></Tooltip>;
+    type === 'HARD' ? (
+      <Tooltip title="Đạt hoặc không đạt — hệ thống dò từ khóa bạn khai trong CV ứng viên">
+        <Tag color="volcano">Bắt buộc</Tag>
+      </Tooltip>
+    ) : (
+      <Tooltip title="Chấm theo mức độ phù hợp — AI so ý nghĩa, ứng viên không cần viết trùng từ">
+        <Tag color="geekblue">Theo mức độ</Tag>
+      </Tooltip>
+    );
 
   const jobCriteriaColumns = [
     {
@@ -463,7 +471,10 @@ const Criteria = () => {
       key: 'type',
       width: 90,
       render: (_, record) => typeTag(record.criteriaType),
-      filters: [{ text: 'HARD', value: 'HARD' }, { text: 'SOFT', value: 'SOFT' }],
+      filters: [
+        { text: 'Bắt buộc', value: 'HARD' },
+        { text: 'Theo mức độ', value: 'SOFT' },
+      ],
       onFilter: (value, record) => record.criteriaType === value,
     },
     {
@@ -658,11 +669,17 @@ const Criteria = () => {
         <Input placeholder="VD: 2 năm kinh nghiệm Java" />
       </Form.Item>
       <Space size={16} style={{ display: 'flex' }}>
-        <Form.Item label="Loại" name="criteriaType" initialValue="SOFT" style={{ width: 160 }}>
+        <Form.Item
+          label="Loại tiêu chí"
+          name="criteriaType"
+          initialValue="SOFT"
+          style={{ width: 260 }}
+          tooltip="Bắt buộc: đạt/không đạt, dò từ khóa. Theo mức độ: AI chấm mức phù hợp, không cần trùng từ."
+        >
           <Select
             options={[
-              { value: 'SOFT', label: 'SOFT — so vector' },
-              { value: 'HARD', label: 'HARD — lọc rule' },
+              { value: 'SOFT', label: 'Theo mức độ (AI chấm)' },
+              { value: 'HARD', label: 'Bắt buộc (dò từ khóa)' },
             ]}
           />
         </Form.Item>
