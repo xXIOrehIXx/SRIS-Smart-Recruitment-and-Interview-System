@@ -13,7 +13,7 @@
  và CriteriaScoringService tính similarity = 1 - distance = cosine similarity.
 
  Chạy:
-   cd "improve ai/exp_criteria_threshold"
+   cd ai-experiments/exp_criteria_threshold
    python run.py                 # AI service phải đang chạy ở 127.0.0.1:8000
    python run.py --url http://127.0.0.1:8001
 ============================================================================
