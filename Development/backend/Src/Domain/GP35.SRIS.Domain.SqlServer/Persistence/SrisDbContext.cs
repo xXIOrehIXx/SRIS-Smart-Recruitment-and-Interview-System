@@ -79,6 +79,8 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.Quantity);
             e.Ignore(x => x.CvScoreThreshold);
             e.Ignore(x => x.ClosedAt);
+            e.Property(x => x.SalaryMin).HasColumnType("decimal(18,2)");
+            e.Property(x => x.SalaryMax).HasColumnType("decimal(18,2)");
             // V020: JobRequirement / JobBenefit (2 bảng 1-N) thêm sau.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
@@ -97,6 +99,8 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("Application");
             e.HasKey(x => x.ApplicationId);
+            e.Property(x => x.AiMatchScore).HasColumnType("decimal(6,2)");
+            e.Property(x => x.CriteriaScore).HasColumnType("decimal(6,2)");
             // stage_updated_at / rejected_at / hired_at: đã thêm ở migration V004.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
@@ -175,6 +179,8 @@ public class SrisDbContext : DbContext
             e.HasKey(x => x.CriteriaId);
             e.Ignore(x => x.Description);   // chưa có ở schema local
             e.Ignore(x => x.DisplayOrder);
+            e.Property(x => x.Weight).HasColumnType("decimal(6,2)");
+            e.Property(x => x.MaxScore).HasColumnType("decimal(6,2)");
             // Cột embedding VECTOR(1024) (V013) không có trên entity — xử lý bằng raw SQL (5.11).
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
@@ -193,6 +199,10 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("ApplicationCriterionMatch");
             e.HasKey(x => x.MatchId);
+            // similarity là decimal(6,4) ở DB (V013). Không khai ở đây thì EF mặc định
+            // decimal(18,2) và làm tròn tham số về 2 số lẻ TRƯỚC khi chạm cột — mất độ phân
+            // giải đúng chỗ so với ngưỡng khớp (AiService:CriteriaMatchThreshold).
+            e.Property(x => x.Similarity).HasColumnType("decimal(6,4)");
             // evaluated_at có DEFAULT ở DB nhưng service luôn set tường minh khi ghi.
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -209,6 +219,8 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("CriteriaTemplateItem");
             e.HasKey(x => x.ItemId);
+            e.Property(x => x.Weight).HasColumnType("decimal(9,2)");
+            e.Property(x => x.MaxScore).HasColumnType("decimal(9,2)");
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -218,6 +230,7 @@ public class SrisDbContext : DbContext
             e.ToTable("InterviewScore");
             e.HasKey(x => x.ScoreId);
             e.Ignore(x => x.SubmittedAt);   // chưa có ở schema local (suy từ status + updated_at)
+            e.Property(x => x.Score).HasColumnType("decimal(6,2)");
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -226,6 +239,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("OfferDetail");
             e.HasKey(x => x.OfferId);
+            e.Property(x => x.SalaryAmount).HasColumnType("decimal(18,2)");
             // decided_by / note / expires_at: đã thêm ở migration V005.
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
