@@ -13,12 +13,12 @@ import Dashboard from "./pages/Dashboard";
 import SubAccountManagement from "./pages/admin/SubAccountManagement";
 import CreateAccount from "./pages/admin/CreateAccount";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
+import EmploymentTypeManagement from "./pages/admin/EmploymentTypeManagement";
 import AdminLayout from "./layouts/AdminLayout";
 import RecruiterDashboard from "./pages/recruiter/Dashboard";
 import JobManagement from "./pages/recruiter/JobManagement";
 import JobDetail from "./pages/recruiter/JobDetail";
 import CreateJob from "./pages/recruiter/CreateJob";
-import CandidatePipeline from "./pages/recruiter/CandidatePipeline";
 import CandidateDetail from "./pages/recruiter/CandidateDetail";
 import IncomingInterview from "./pages/interviewer/IncomingInterview";
 import Grading from "./pages/interviewer/Grading";
@@ -76,6 +76,7 @@ const App = () => {
         <Route path="/admin/sub-accounts" element={<SubAccountManagement />} />
         <Route path="/admin/create-account" element={<CreateAccount />} />
         <Route path="/admin/departments" element={<DepartmentManagement />} />
+        <Route path="/admin/employment-types" element={<EmploymentTypeManagement />} />
         <Route path="/admin/company-branding" element={<CompanyBranding />} />
       </Route>
 
@@ -91,10 +92,6 @@ const App = () => {
         <Route path="/recruiter/jobs/:id" element={<JobDetail />} />
         <Route path="/recruiter/jobs/create" element={<CreateJob />} />
         <Route path="/recruiter/requests" element={<DeptRecruitmentRequests />} />
-        <Route
-          path="/recruiter/jobs/:id/candidates"
-          element={<CandidatePipeline />}
-        />
         <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
         <Route
           path="/interviews/schedule"

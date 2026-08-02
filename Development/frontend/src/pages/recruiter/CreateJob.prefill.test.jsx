@@ -14,16 +14,18 @@ vi.mock('../../services/api', () => ({
   jobsAPI: { getById: vi.fn(), create: vi.fn(), update: vi.fn() },
   usersAPI: { getOptions: vi.fn() },
   departmentAPI: { getAll: vi.fn() },
+  employmentTypeAPI: { getAll: vi.fn() },
 }));
 
-const { usersAPI, departmentAPI } = await import('../../services/api');
+const { usersAPI, departmentAPI, employmentTypeAPI } = await import('../../services/api');
 
 const REQUEST = {
   requestId: 7,
   title: 'Kế toán tổng hợp',
   department: 'Kế toán',
   quantity: 3,
-  employmentType: 'FULL_TIME',
+  // V027: hai form dùng chung danh mục hình thức làm việc -> lưu thẳng TÊN.
+  employmentType: 'Toàn thời gian',
   experienceLevel: 'Mid',
   description: 'Phụ trách sổ sách, báo cáo thuế hàng tháng.',
   requirements: 'Tốt nghiệp cao đẳng trở lên\nKỹ năng yêu cầu: Excel, MISA',
@@ -38,6 +40,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   usersAPI.getOptions.mockResolvedValue({ data: [] });
   departmentAPI.getAll.mockResolvedValue({ data: [{ id: 1, name: 'Kế toán', status: 'Active' }] });
+  employmentTypeAPI.getAll.mockResolvedValue({
+    data: [
+      { employmentTypeId: 1, name: 'Toàn thời gian', status: 'Active' },
+      { employmentTypeId: 2, name: 'Thực tập', status: 'Active' },
+    ],
+  });
   recruitmentRequestAPI.getById.mockResolvedValue({ data: REQUEST });
 });
 
@@ -60,10 +68,10 @@ test('?requestId -> điền sẵn tiêu đề, mô tả, số lượng DM đã n
   expect(screen.getByDisplayValue('3')).toBeInTheDocument();
 });
 
-test('?requestId -> quy đổi loại hình + cấp bậc sang từ vựng của form tin tuyển dụng', async () => {
+test('?requestId -> điền sẵn hình thức làm việc (danh mục chung) + quy đổi cấp bậc', async () => {
   await renderFromRequest();
 
-  // FULL_TIME -> "Toàn thời gian", Mid -> "2+ năm"; gán thẳng mã gốc thì Select hiện TRỐNG.
+  // Hình thức lấy thẳng từ danh mục chung; cấp bậc vẫn phải quy đổi (Mid -> "2+ năm").
   expect(screen.getByTitle('Toàn thời gian')).toBeInTheDocument();
   expect(screen.getByTitle('2+ năm')).toBeInTheDocument();
 });
@@ -85,6 +93,20 @@ test('?requestId -> tách dòng "Kỹ năng yêu cầu" ra ô Kỹ Năng riêng'
   expect(screen.getByDisplayValue('Excel, MISA')).toBeInTheDocument();
   // Dòng kỹ năng KHÔNG được lẫn vào phần yêu cầu dạng gạch đầu dòng.
   expect(screen.queryByDisplayValue(/Kỹ năng yêu cầu:/)).not.toBeInTheDocument();
+});
+
+test('?requestId -> người quyết tuyển điền sẵn chính DM đã ra đề', async () => {
+  // DM ra đề cũng là người chốt ở bước Offer — HR không phải tự nhớ chọn lại.
+  usersAPI.getOptions.mockResolvedValue({
+    data: [{ userId: 12, fullName: 'Trần Thị B', role: 'DepartmentManager' }],
+  });
+  recruitmentRequestAPI.getById.mockResolvedValue({
+    data: { ...REQUEST, createdBy: 12 },
+  });
+
+  await renderFromRequest();
+
+  await waitFor(() => expect(screen.getByTitle('Trần Thị B')).toBeInTheDocument());
 });
 
 /**

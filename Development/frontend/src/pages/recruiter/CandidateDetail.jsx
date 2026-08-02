@@ -122,16 +122,11 @@ const CandidateDetail = () => {
     }
   };
 
-  // Từ chối hồ sơ — bắt buộc nhập lý do (backend validate). Hiển thị modal
-  // hỏi lý do rồi gọi applicationAPI.reject.
+  // Từ chối hồ sơ — modal hỏi lý do (tùy chọn) rồi gọi applicationAPI.reject.
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
   const handleReject = async () => {
-    if (!rejectReason.trim()) {
-      message.error('Vui lòng nhập lý do từ chối');
-      return;
-    }
     setRejecting(true);
     try {
       await applicationAPI.reject(applicationId, rejectReason.trim());
@@ -463,7 +458,7 @@ const CandidateDetail = () => {
           và ứng viên sẽ nhận email thông báo (nếu có template REJECTED đang hoạt động).
         </Typography.Paragraph>
         <Typography.Paragraph>
-          <Text type="danger">*</Text> Lý do từ chối (bắt buộc, hiển thị cho cả team và ứng viên):
+          Lý do từ chối (không bắt buộc, hiển thị cho cả team và ứng viên):
         </Typography.Paragraph>
         <Input.TextArea
           rows={4}

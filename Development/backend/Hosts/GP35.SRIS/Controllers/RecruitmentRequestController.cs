@@ -67,7 +67,7 @@ public class RecruitmentRequestController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Recruiter duyệt: { approve, note } → APPROVED / REJECTED (từ chối bắt buộc note).</summary>
+    /// <summary>Recruiter duyệt: { approve, note } → APPROVED / REJECTED (note tùy chọn).</summary>
     [HttpPost("{requestId:long}/review")]
     [WithRole(RoleConstants.Recruiter)]
     public async Task<IActionResult> Review(long requestId, [FromBody] ReviewRequestDto dto)

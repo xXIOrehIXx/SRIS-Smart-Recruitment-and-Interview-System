@@ -19,6 +19,7 @@ import {
   MailOutlined,
   GlobalOutlined,
   ApartmentOutlined,
+  ScheduleOutlined,
 } from "@ant-design/icons";
 import { useAuth, ROLES } from "../contexts/AuthContext";
 import { useCompany } from "../contexts/CompanyContext";
@@ -41,6 +42,7 @@ const ICON_MAP = {
   MailOutlined: <MailOutlined />,
   GlobalOutlined: <GlobalOutlined />,
   ApartmentOutlined: <ApartmentOutlined />,
+  ScheduleOutlined: <ScheduleOutlined />,
 };
 
 const AdminLayout = () => {

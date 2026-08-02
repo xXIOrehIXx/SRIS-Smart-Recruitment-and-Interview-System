@@ -12,7 +12,7 @@ using Xunit;
 namespace GP35.SRIS.Application.Tests.Services;
 
 /// <summary>
-/// ApplicationStateService (docs 5.8): forward-only + reject bắt buộc reason +
+/// ApplicationStateService (docs 5.8): forward-only + reject (reason tùy chọn) +
 /// guard G2 (INTERVIEW→OFFER cần ≥1 phiếu chấm SUBMITTED) + ghi audit log.
 /// </summary>
 public class ApplicationStateServiceTests
@@ -154,15 +154,21 @@ public class ApplicationStateServiceTests
 
     // ===== Reject =====
 
-    [Fact]
-    public async Task Reject_WithoutReason_Throws400()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public async Task Reject_WithoutReason_Succeeds_AndPersistsNull(string? reason)
     {
+        // Lý do loại là TÙY CHỌN: bỏ trống vẫn loại được, cột reject_reason nhận null
+        // (không lưu chuỗi rỗng để dashboard "tại sao rớt" khỏi đếm nhầm nhóm rác).
         var service = CreateService("SCREENING");
 
-        var ex = await Assert.ThrowsAsync<BaseException>(
-            () => service.TransitionAsync(CompanyId, UserId, AppId, "REJECTED", "  "));
+        var result = await service.TransitionAsync(CompanyId, UserId, AppId, "REJECTED", reason);
 
-        Assert.Equal("BAD_REQUEST", ex.ErrorCode);
+        Assert.Equal("REJECTED", result.ToState);
+        _appRepo.Verify(r => r.TransitionStateAsync(
+            CompanyId, AppId, "REJECTED", null,
+            It.IsAny<DateTime>(), It.IsAny<DateTime?>(), null), Times.Once);
     }
 
     [Theory]

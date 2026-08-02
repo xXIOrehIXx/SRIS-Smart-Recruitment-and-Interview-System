@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
 import {
@@ -22,9 +22,14 @@ import {
   SendOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
-import { jobsAPI, recruitmentRequestAPI, usersAPI, departmentAPI } from "../../services/api";
 import {
-  EMPLOYMENT_TYPE_TO_JOB,
+  jobsAPI,
+  recruitmentRequestAPI,
+  usersAPI,
+  departmentAPI,
+  employmentTypeAPI,
+} from "../../services/api";
+import {
   EXPERIENCE_LEVEL_TO_JOB,
   experienceYearsToJob,
   splitRequirements,
@@ -182,6 +187,7 @@ const CreateJob = () => {
   const [currentStep, setCurrentStep] = useState("posting");
   const [dmOptions, setDmOptions] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
+  const [employmentOptions, setEmploymentOptions] = useState([]);
   // mode hiện tại đang validate: "draft" (mặc định — cho phép thiếu field) hay "publish"
   const [mode, setMode] = useState("draft");
   const [formError, setFormError] = useState(null);
@@ -197,6 +203,10 @@ const CreateJob = () => {
     departmentAPI.getAll()
       .then((r) => setDeptOptions((r.data || []).filter((d) => d.status === "Active")))
       .catch(() => setDeptOptions([]));
+    // Dropdown "Loại công việc" — danh mục EmploymentType (V027), dùng chung với form Yêu cầu
+    employmentTypeAPI.getAll()
+      .then((r) => setEmploymentOptions((r.data || []).filter((t) => t.status === "Active")))
+      .catch(() => setEmploymentOptions([]));
   }, []);
 
   const editJobId = searchParams.get("edit");
@@ -208,11 +218,16 @@ const CreateJob = () => {
     { key: "stages", title: "Giai đoạn" },
   ];
 
+  // StrictMode (dev) mount effect 2 lần -> prefill chạy 2 lượt, HR thấy toast lặp
+  // và ghi đè cả sửa tay giữa chừng. Ref nhớ đã prefill yêu cầu nào rồi.
+  const prefilledRequestIdRef = useRef(null);
+
   useEffect(() => {
     if (editJobId) {
       setIsEditMode(true);
       fetchJobDetails(editJobId);
-    } else if (requestId) {
+    } else if (requestId && prefilledRequestIdRef.current !== requestId) {
+      prefilledRequestIdRef.current = requestId;
       prefillFromRequest(requestId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,9 +246,10 @@ const CreateJob = () => {
       form.setFieldsValue({
         title: req.title,
         department: req.department,
-        // Hai form dùng từ vựng khác nhau -> phải quy đổi, gán thẳng thì Select không khớp
-        // option nào và ô hiện TRỐNG (HR tưởng hệ thống không điền gì).
-        type: EMPLOYMENT_TYPE_TO_JOB[req.employmentType] || "Full-time",
+        // DM ra đề thì cũng chính là người chốt ở bước Offer — điền sẵn, HR đổi được nếu cần.
+        departmentManagerId: req.createdBy || undefined,
+        // V027: hai form dùng CHUNG danh mục hình thức làm việc -> gán thẳng, không quy đổi.
+        type: req.employmentType || undefined,
         // Số năm DM nhập là nguồn chính; yêu cầu cũ (trước V024) mới rơi về cấp bậc.
         experienceLevel:
           experienceYearsToJob(req.experienceYearsMin)
@@ -523,13 +539,13 @@ const CreateJob = () => {
                   <Form.Item
                     name="departmentManagerId"
                     label="Người quyết tuyển (DM)"
-                    tooltip="DM sẽ là người CHỐT tuyển/loại ở bước Offer (docs 5.17). Bỏ trống = Recruiter tự quyết — đường mặc định của công ty nhỏ."
+                    tooltip="DM sẽ là người CHỐT tuyển/loại ở bước Offer."
                   >
                     <Select
                       allowClear
                       showSearch
                       optionFilterProp="label"
-                      placeholder="Bỏ trống = Recruiter tự quyết"
+                      placeholder="Chọn người quyết tuyển"
                       options={dmOptions.map((u) => ({
                         value: u.userId,
                         label: `${u.fullName || u.email}${u.role === "Admin" ? " (Admin)" : ""}`,
@@ -557,21 +573,20 @@ const CreateJob = () => {
                   <Form.Item
                     name="type"
                     label="Loại công việc"
-                    initialValue="Full-time"
                     rules={rules.type}
                   >
-                    {/* defaultValue trên Select KHÔNG ghi vào Form store -> validate fail
-                        dù ô đang hiển thị giá trị. Phải dùng initialValue của Form.Item. */}
-                    <Select size="large" onChange={dismissFormError}>
-                      <Select.Option value="Full-time">
-                        Toàn thời gian
-                      </Select.Option>
-                      <Select.Option value="Part-time">
-                        Bán thời gian
-                      </Select.Option>
-                      <Select.Option value="Contract">Hợp đồng</Select.Option>
-                      <Select.Option value="Internship">Thực tập</Select.Option>
-                    </Select>
+                    {/* Danh mục hình thức làm việc (V027) — Admin quản lý ở /admin/employment-types,
+                        dùng chung với form Yêu cầu tuyển dụng nên prefill khớp thẳng, không quy đổi. */}
+                    <Select
+                      size="large"
+                      placeholder="Chọn loại công việc"
+                      onChange={dismissFormError}
+                      options={employmentOptions.map((t) => ({
+                        value: t.name,
+                        label: t.name,
+                      }))}
+                      notFoundContent="Chưa có hình thức làm việc nào — Admin thêm ở mục Hình Thức Làm Việc"
+                    />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
@@ -624,11 +639,13 @@ const CreateJob = () => {
               <Row gutter={16}>
                 <Col xs={24} md={12}>
                   <Form.Item name="expiresAt" label="Hạn nộp đơn" rules={rules.expiresAt}>
+                    {/* Hạn nộp ở quá khứ = tin đăng ra đã hết hạn -> chặn ngay ở lịch. */}
                     <DatePicker
                       style={{ width: "100%" }}
                       size="large"
                       placeholder="Chọn hạn nộp"
                       format="DD/MM/YYYY"
+                      disabledDate={(current) => current && current < dayjs().startOf("day")}
                       onChange={dismissFormError}
                     />
                   </Form.Item>

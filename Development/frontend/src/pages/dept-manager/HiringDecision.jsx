@@ -296,15 +296,9 @@ const HiringDecision = () => {
   };
 
   const handleReject = async () => {
-    if (!rejectReason) {
-      message.error('Vui lòng nhập lý do từ chối');
-      return;
-    }
-    
     try {
       setActionLoading(true);
-      // Endpoint reject riêng — reason bắt buộc, được ghi vào reject_reason
-      // (transition REJECTED không kèm reason sẽ bị backend từ chối).
+      // Endpoint reject riêng — reason tùy chọn, ghi vào reject_reason nếu có nhập.
       await applicationAPI.reject(selectedRecord.id, rejectReason);
 
       message.success(`Đã từ chối ứng viên ${selectedRecord.candidateName}`);
@@ -608,7 +602,7 @@ const HiringDecision = () => {
           <Text strong>Lý do từ chối <span style={{ color: 'red' }}>*</span>:</Text>
           <TextArea
             rows={3}
-            placeholder="Nhập lý do từ chối (bắt buộc)..."
+            placeholder="Nhập lý do từ chối (không bắt buộc)..."
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             style={{ marginTop: 8 }}
