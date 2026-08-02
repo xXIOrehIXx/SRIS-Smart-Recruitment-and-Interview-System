@@ -3,8 +3,8 @@ using GP35.SRIS.Application.Contracts.Dtos.Business.Pipeline;
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
 /// <summary>
-/// State machine hồ sơ (docs 5.8): 6 state, forward-only, guard G2 (≥1 phiếu chấm SUBMITTED),
-/// reject bắt buộc reason. Mỗi transition ghi ActivityLog (audit).
+/// State machine hồ sơ (docs 5.8): 6 state, forward-only, guard G2 (≥1 phiếu chấm SUBMITTED).
+/// Lý do loại là tùy chọn. Mỗi transition ghi ActivityLog (audit).
 /// </summary>
 public interface IApplicationStateService : IBaseService
 {
@@ -12,8 +12,8 @@ public interface IApplicationStateService : IBaseService
     Task<ApplicationStateDto> TransitionAsync(
         long companyId, long userId, long applicationId, string toState, string? reason);
 
-    /// <summary>Loại hồ sơ (REJECTED) — tiện ích, reason bắt buộc.</summary>
-    Task<ApplicationStateDto> RejectAsync(long companyId, long userId, long applicationId, string reason);
+    /// <summary>Loại hồ sơ (REJECTED) — tiện ích, reason tùy chọn.</summary>
+    Task<ApplicationStateDto> RejectAsync(long companyId, long userId, long applicationId, string? reason);
 
     /// <summary>
     /// Đẩy hồ sơ TIẾN tới <paramref name="targetState"/>, đi từng bước một theo state machine

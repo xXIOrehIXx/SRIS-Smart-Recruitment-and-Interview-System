@@ -179,7 +179,7 @@ const OfferManagement = () => {
   };
 
   // Không có endpoint withdraw riêng — thu hồi offer = reject application
-  // (bắt buộc reason theo docs 5.7).
+  // (gắn sẵn lý do "Công ty thu hồi offer" cho dễ đọc lại về sau).
   // Hiện link magic (copy tay khi chưa cấu hình SMTP; email vẫn tự gửi nếu có SMTP)
   const showOfferLinkModal = (name, rawToken, expiresAt) => {
     if (!rawToken) return;

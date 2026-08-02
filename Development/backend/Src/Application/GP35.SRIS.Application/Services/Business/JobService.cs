@@ -17,6 +17,10 @@ public class JobService : BaseService<JobService>, IJobService
 
     public async Task<JobGetDto> CreateAsync(long companyId, long createdBy, JobCreateDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            throw Bad("Tiêu đề Job không được để trống.");
+        ValidateDeadline(dto.Deadline);
+
         var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
 
         var job = new Job
@@ -84,6 +88,11 @@ public class JobService : BaseService<JobService>, IJobService
         var existing = await jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
 
+        // Chỉ kiểm hạn nộp khi người dùng ĐỔI nó: tin cũ đã quá hạn vẫn phải sửa được
+        // (đóng tin, đổi mô tả...) mà không bị chặn vì cái hạn có sẵn.
+        if (dto.Deadline != existing.Deadline)
+            ValidateDeadline(dto.Deadline);
+
         var jdChanged = !string.Equals(existing.JdText ?? "", dto.JdText ?? "", StringComparison.Ordinal);
 
         var updatedJob = new Job
@@ -138,6 +147,17 @@ public class JobService : BaseService<JobService>, IJobService
         if (managerId is > 0)
             Serilog.Log.Information("Job: tự gán DM {ManagerId} theo phòng ban '{Department}'.", managerId, department);
         return managerId;
+    }
+
+    /// <summary>
+    /// Hạn nộp đơn không được ở quá khứ — tin đăng ra là đã hết hạn thì ứng viên không nộp
+    /// được, mà FE lại không chặn nên lỗi này chỉ lộ ra khi có người thật vào ứng tuyển.
+    /// So ở mức NGÀY (hạn nộp là ngày, không có giờ).
+    /// </summary>
+    private static void ValidateDeadline(DateTime? deadline)
+    {
+        if (deadline is { } d && d.Date < DateTime.UtcNow.Date)
+            throw Bad($"Hạn nộp đơn ({d:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
     }
 
     private static BaseException Bad(string msg) => new(msg)

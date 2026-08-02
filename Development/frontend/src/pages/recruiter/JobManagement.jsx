@@ -173,12 +173,8 @@ const JobManagement = () => {
         label: "Chỉnh Sửa",
         onClick: () => navigate(`/recruiter/jobs/create?edit=${jobId}`),
       },
-      {
-        key: "candidates",
-        icon: <EyeOutlined />,
-        label: "Xem Ứng Viên",
-        onClick: () => navigate(`/recruiter/jobs/${jobId}/candidates`),
-      },
+      // "Xem Ứng Viên" bỏ ở đây: màn chi tiết tin đã có danh sách ứng viên kèm trạng thái,
+      // hai lối vào cùng một thứ chỉ làm menu dài thêm.
       {
         type: "divider",
       },

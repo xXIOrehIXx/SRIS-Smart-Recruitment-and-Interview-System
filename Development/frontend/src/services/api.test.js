@@ -92,7 +92,7 @@ describe('candidateAPI — token LUÔN qua query string (backend đọc [FromQue
 });
 
 describe('applicationAPI', () => {
-  test('reject dùng endpoint riêng với reason bắt buộc', () => {
+  test('reject dùng endpoint riêng, gửi kèm reason nếu có', () => {
     applicationAPI.reject(9, 'Không đạt yêu cầu');
     expect(apiInst.post).toHaveBeenCalledWith('/applications/9/reject', { reason: 'Không đạt yêu cầu' });
   });

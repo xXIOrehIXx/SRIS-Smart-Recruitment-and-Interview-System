@@ -43,10 +43,6 @@ const JobDetail = () => {
   };
   const submitReject = async () => {
     if (!rejectTarget) return;
-    if (!rejectReason.trim()) {
-      message.error('Vui lòng nhập lý do từ chối');
-      return;
-    }
     setRejecting(true);
     try {
       await applicationAPI.reject(rejectTarget.id, rejectReason.trim());
@@ -410,7 +406,7 @@ const JobDetail = () => {
           Ứng viên sẽ nhận email thông báo (nếu có template REJECTED đang hoạt động).
         </Typography.Paragraph>
         <Typography.Paragraph>
-          <Text type="danger">*</Text> Lý do từ chối (bắt buộc):
+          Lý do từ chối (không bắt buộc):
         </Typography.Paragraph>
         <Input.TextArea
           rows={4}

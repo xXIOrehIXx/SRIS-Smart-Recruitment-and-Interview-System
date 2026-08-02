@@ -469,7 +469,6 @@ const Dashboard = () => {
                       <div><Text strong>{text}</Text><br /><Text type="secondary" style={{ fontSize: 12 }}>{record.department || '-'}</Text></div>
                     )},
                     { title: 'Số lượng', dataIndex: 'quantity', width: 100, render: (val) => <Tag color="blue">{val} vị trí</Tag> },
-                    { title: 'Mức ưu tiên', dataIndex: 'priority', width: 110, render: (val) => <Tag color={val === 'HIGH' ? 'error' : val === 'MEDIUM' ? 'warning' : 'success'}>{val === 'HIGH' ? 'Cao' : val === 'MEDIUM' ? 'Trung bình' : 'Thấp'}</Tag> },
                     { title: 'Ngày gửi', dataIndex: 'createdAt', width: 110, render: (v) => v ? dayjs(v).format('DD/MM/YYYY') : '-' },
                     { title: 'Thao tác', key: 'actions', width: 90, render: () => (
                       <Button type="link" size="small" onClick={() => navigate('/dept/requests')}>Xem</Button>

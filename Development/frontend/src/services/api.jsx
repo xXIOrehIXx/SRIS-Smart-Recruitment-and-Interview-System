@@ -199,11 +199,11 @@ export const applicationAPI = {
   getById: (id) =>
     api.get(`/applications/${id}`),
 
-  // reason bắt buộc khi toState = 'REJECTED'
+  // reason tùy chọn (kể cả khi toState = 'REJECTED')
   transition: (id, toState, reason) =>
     api.post(`/applications/${id}/transition`, { toState, reason }),
 
-  // Loại hồ sơ — reason BẮT BUỘC (backend từ chối nếu thiếu)
+  // Loại hồ sơ — reason tùy chọn (bỏ trống thì backend lưu null)
   reject: (id, reason) =>
     api.post(`/applications/${id}/reject`, { reason }),
 
@@ -480,11 +480,34 @@ export const departmentAPI = {
     api.delete(`/departments/${id}`),
 };
 
+// ============ EMPLOYMENT TYPES (Danh mục hình thức làm việc — V027) ============
+// Admin CRUD; mọi role đăng nhập gọi getAll để đổ dropdown. Tin tuyển dụng và Yêu cầu
+// tuyển dụng dùng CHUNG danh mục này (trước đây mỗi form một danh sách cứng).
+
+export const employmentTypeAPI = {
+  getAll: () =>
+    api.get('/employment-types'),
+
+  getById: (id) =>
+    api.get(`/employment-types/${id}`),
+
+  // data: { name, description?, status? ('Active' | 'Inactive') } — CHỈ Admin
+  create: (data) =>
+    api.post('/employment-types', data),
+
+  update: (id, data) =>
+    api.put(`/employment-types/${id}`, data),
+
+  // Chặn 409 khi còn job dùng → đổi status 'Inactive' thay thế
+  delete: (id) =>
+    api.delete(`/employment-types/${id}`),
+};
+
 // ==================== RECRUITMENT REQUESTS (Yêu cầu tuyển dụng — 5.17) ====================
 // DM "ra đề" (tùy chọn) → Recruiter duyệt → tạo Job từ yêu cầu (CONVERTED + jobId truy vết).
 
 export const recruitmentRequestAPI = {
-  // data: { title, department?, quantity, employmentType?, experienceLevel?, priority?,
+  // data: { title, department?, quantity, employmentType?, experienceLevel?,
   //         description?, requirements?, benefits?, salaryMin?, salaryMax?, expectedStartDate? }
   create: (data) =>
     api.post('/recruitment-requests', data),

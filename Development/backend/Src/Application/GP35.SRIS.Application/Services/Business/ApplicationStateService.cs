@@ -64,10 +64,10 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         {
             if (!ApplicationStateMachine.CanReject(from))
                 throw Conflict($"Không thể loại hồ sơ đang ở trạng thái {from}.");
-            if (string.IsNullOrWhiteSpace(reason))
-                throw Bad("Bắt buộc nhập lý do loại hồ sơ (reject_reason).");
 
-            rejectReason = reason.Trim();
+            // Lý do loại là TÙY CHỌN: ép nhập chỉ đẻ ra lý do rác ("ko phù hợp"), không giúp
+            // thống kê. Ai muốn ghi thì ghi; bỏ trống -> null (cột reject_reason vốn NULL được).
+            rejectReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
             rejectedAt = now;
         }
         else
@@ -113,7 +113,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         };
     }
 
-    public Task<ApplicationStateDto> RejectAsync(long companyId, long userId, long applicationId, string reason)
+    public Task<ApplicationStateDto> RejectAsync(long companyId, long userId, long applicationId, string? reason)
         => TransitionAsync(companyId, userId, applicationId, ApplicationState.Rejected, reason);
 
     public async Task AdvanceToAsync(long companyId, long userId, long applicationId, string targetState)

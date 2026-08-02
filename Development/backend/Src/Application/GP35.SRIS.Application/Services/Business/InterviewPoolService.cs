@@ -217,7 +217,8 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             throw Bad($"Panel tối đa {MaxPanelSize} interviewer.");
         if (dto.InterviewerIds.Distinct().Count() != dto.InterviewerIds.Count)
             throw Bad("Panel có interviewer bị trùng.");
-        if (dto.StartTime <= DateTime.UtcNow)
+        // Giờ chốt tay cũng là local naive từ FE -> so với giờ local server (xem ValidateSlots).
+        if (dto.StartTime <= DateTime.Now)
             throw Bad("Thời điểm phỏng vấn phải ở tương lai.");
 
         var round = dto.RoundNumber ?? await _schedulingRepo.GetNextRoundNumberAsync(companyId, applicationId);
@@ -305,7 +306,11 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         if (slots is null || slots.Count == 0)
             throw Bad("Phải mở ít nhất 1 khung giờ.");
 
-        var now = DateTime.UtcNow;
+        // FE gửi giờ NGƯỜI DÙNG CHỌN dạng local naive (không 'Z' — xem comment ở
+        // InterviewScheduleRecruit.jsx), nên phải so với giờ LOCAL của server. So với UtcNow
+        // là lệch đúng bằng offset múi giờ (VN: +7) -> khung 09:00 sáng nay lúc 15:00 chiều
+        // vẫn lọt qua vì 09:00 > 08:00 UTC.
+        var now = DateTime.Now;
         foreach (var s in slots)
         {
             if (s.InterviewerIds is null || s.InterviewerIds.Count == 0)
