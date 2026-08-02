@@ -114,9 +114,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
             ?? throw NotFound($"Không tìm thấy yêu cầu tuyển dụng (request_id={requestId}).");
         if (request.Status != "PENDING")
             throw Conflict($"Chỉ duyệt được yêu cầu đang PENDING (hiện tại: {request.Status}).");
-        if (!dto.Approve && string.IsNullOrWhiteSpace(dto.Note))
-            throw Bad("Từ chối yêu cầu cần ghi lý do (note).");
-
+        // Note tùy chọn (kể cả khi từ chối) — DM hỏi lại trực tiếp được, không cần ép nhập.
         request.Status = dto.Approve ? "APPROVED" : "REJECTED";
         request.ReviewNote = Clean(dto.Note);
         request.ReviewedBy = userId > 0 ? userId : null;
@@ -179,6 +177,10 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         // không để DB ném CHECK violation thành 500.
         if (dto.ExperienceYearsMin is < 0 or > 50)
             throw Bad("Số năm kinh nghiệm phải trong khoảng 0–50.");
+        // Ngày cần tuyển ở quá khứ là gõ nhầm năm/tháng — để lọt thì Recruiter đọc xong
+        // không biết deadline thật là bao giờ. So ở mức NGÀY (ô này không nhập giờ).
+        if (dto.ExpectedStartDate is { } start && start.Date < DateTime.UtcNow.Date)
+            throw Bad($"Ngày cần tuyển ({start:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
     }
 
     private static string NormalizePriority(string? priority)

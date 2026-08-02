@@ -171,13 +171,13 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - TÁCH BẠCH "chấm" vs "quyết định": chấm = INPUT (interviewer). Quyết = phán xét tuyển/loại (DM của job; không gán DM → Recruiter). Recruiter thao tác Kanban.
 - "Check" là MÁY làm: sau khi panel submit, hệ thống tổng hợp Radar (hình dạng mạnh/yếu) + standard deviation (đo đồng thuận). Lệch cao ở 1 trục → flag "cần bàn". Khi nào bàn mồm: CHỈ ở tiêu chí bị flag. → Luận điểm: hệ thống không thay phán xét con người, nó làm cuộc nói chuyện gọn + đúng trọng tâm.
 - Người quyết đọc bảng: cột đồng thuận trước → đào chỗ lệch (đọc note) → Radar tổng thể → quyết. Hệ thống KHÔNG auto-quyết (đã loại phương án AI hoà giải — Section 3 OUT).
-- reject_reason — bắt buộc nhưng 1-CHẠM: chip preset (Chuyên môn chưa đạt · Thiếu kinh nghiệm · Không hợp văn hóa · Lương không khớp · Đã chọn người khác · Khác). Tách 2 thứ: reject_reason (NỘI BỘ, analytics, ghi thật) ≠ email báo rớt (lịch sự chung chung). Reject hàng loạt ở SCREENING → tự điền "Điểm CV dưới ngưỡng".
+- reject_reason — TÙY CHỌN (chốt 02/08/2026: ép nhập chỉ đẻ lý do rác, ai muốn ghi thì ghi), gợi ý 1-CHẠM: chip preset (Chuyên môn chưa đạt · Thiếu kinh nghiệm · Không hợp văn hóa · Lương không khớp · Đã chọn người khác · Khác). Tách 2 thứ: reject_reason (NỘI BỘ, analytics, ghi thật) ≠ email báo rớt (lịch sự chung chung). Reject hàng loạt ở SCREENING → tự điền "Điểm CV dưới ngưỡng".
 
 ### 5.8 State Machine — 6 trạng thái NỘI BỘ, hiển thị 4 PHA
 6 trạng thái: NEW → SCREENING → INTERVIEW → OFFER → HIRED / REJECTED. 8 transition, forward-only. **GIỮ NGUYÊN làm lõi kỹ thuật — KHÔNG phơi ra người dùng/hội đồng.** Người dùng thấy 4 PHA (5.16): Hồ sơ mới (NEW) · Sàng lọc (SCREENING) · Phỏng vấn (INTERVIEW) · Quyết định (OFFER→HIRED/REJECTED).
 
 - Forward (4): NEW→SCREENING · SCREENING→INTERVIEW · INTERVIEW→OFFER (Guard G2: ≥1 phiếu chấm đã submit) · OFFER→HIRED. (Guard G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 để khớp tài liệu/chat cũ.)
-- Reject (4): từ NEW/SCREENING/INTERVIEW/OFFER → một REJECTED duy nhất, bắt buộc reject_reason.
+- Reject (4): từ NEW/SCREENING/INTERVIEW/OFFER → một REJECTED duy nhất; reject_reason tùy chọn.
 - Confirm marker trên transition tới hạn (vào OFFER, nhận việc, mọi reject). KHÔNG admin override.
 - Ai chạm hồ sơ ở từng stage: NEW: hệ thống (chấm theo tiêu chí tự động) + Recruiter. SCREENING: Recruiter sàng lọc trực tiếp, KHÔNG cổng duyệt riêng. INTERVIEW→OFFER: điểm quyết duy nhất — DM của job xem điểm/Radar rồi chốt; không DM → Recruiter.
 - forward-only ≠ cứng nhắc: reschedule + multi-round diễn ra BÊN TRONG stage INTERVIEW (5.12).
@@ -413,7 +413,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
   - Role: 4 role, mỗi user giữ ĐÚNG 1 role (công ty nhỏ dùng 1 tài khoản Admin — superuser bypass mọi quyền; tách vai = tạo thêm tài khoản); chỉ Candidate ẩn danh magic link. Câu thần chú: Recruiter lái · Interviewer chấm · DM quyết (và RA ĐỀ) · Candidate ứng tuyển · Admin dựng sân.
   - **Luồng tiêu chí (5.17, 5.18): DM tạo Yêu cầu tuyển dụng (tùy chọn) → Recruiter tạo Job → AI bóc tiêu chí DRAFT → người duyệt chốt → chấm CV THEO TỪNG tiêu chí (CV_MATCHABLE, HARD lọc rule/SOFT vector, khớp/thiếu + bằng chứng) → cùng bộ tiêu chí chấm phỏng vấn. KHÔNG ném cả JD↔CV. Phần 5.18 ĐÃ CODE (xem TRẠNG THÁI CODE trong 5.18) — chat mới ĐỪNG thiết kế lại; 5.17 (requisition) còn chờ chốt B3.**
   - Pipeline: hiển thị 4 pha (Hồ sơ mới · Sàng lọc · Phỏng vấn · Quyết định); **6 state nội bộ, 8 transition**, forward-only, guard G2 (5.8, 5.16). Bảng bật/tắt 5.16.
-  - Chấm vs quyết (5.7, 5.14): 1 người chấm mặc định; Blind + std dev + Radar tự bật khi >1. DM quyết chỉ ở OFFER; trống → Recruiter. reject_reason bắt buộc 1-chạm.
+  - Chấm vs quyết (5.7, 5.14): 1 người chấm mặc định; Blind + std dev + Radar tự bật khi >1. DM quyết chỉ ở OFFER; trống → Recruiter. reject_reason tùy chọn (1-chạm nếu muốn ghi).
   - Token (5.13): one-time = đốt khi CHỐT; **3 purpose**: SCHEDULE · STATUS · OFFER_RESPONSE. Web 2 site (5.10). Đặt lịch nội bộ + .ics (5.9, 15). Multi-round = dữ liệu trong INTERVIEW (5.12). Offer self-service (5.15).
   - Talent Pool = HERO smart feature (đã code — Section 3).
   - Số liệu: KHÔNG bịa; mọi As-Is chờ B2 (phỏng vấn sâu + form) hoặc trích desk research có nguồn (4.1).

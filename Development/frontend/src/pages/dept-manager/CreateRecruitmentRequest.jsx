@@ -33,9 +33,8 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { recruitmentRequestAPI, departmentAPI } from '../../services/api';
+import { recruitmentRequestAPI, departmentAPI, employmentTypeAPI } from '../../services/api';
 import {
-  EMPLOYMENT_TYPES,
   experienceText,
   SKILLS_PREFIX,
   splitRequirements,
@@ -47,9 +46,6 @@ const { TextArea } = Input;
 const { Option } = Select;
 
 const MATCHA_GREEN = '#5D8C3E';
-
-// BE lưu priority HOA (LOW/MEDIUM/HIGH), Radio.Group dùng dạng Title case.
-const PRIORITY_FORM_VALUE = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High' };
 
 const CreateRecruitmentRequest = () => {
   const navigate = useNavigate();
@@ -65,6 +61,8 @@ const CreateRecruitmentRequest = () => {
 
   // Danh mục phòng ban (V022) — Admin quản lý, chỉ hiện Active
   const [departments, setDepartments] = useState([]);
+  // Danh mục hình thức làm việc (V027) — dùng chung với form Tin tuyển dụng
+  const [employmentTypes, setEmploymentTypes] = useState([]);
 
   useEffect(() => {
     departmentAPI.getAll()
@@ -72,6 +70,11 @@ const CreateRecruitmentRequest = () => {
         (r.data || []).filter((d) => d.status === 'Active').map((d) => d.name)
       ))
       .catch(() => setDepartments([]));
+    employmentTypeAPI.getAll()
+      .then((r) => setEmploymentTypes(
+        (r.data || []).filter((t) => t.status === 'Active').map((t) => t.name)
+      ))
+      .catch(() => setEmploymentTypes([]));
   }, []);
 
   // Chế độ sửa: nạp lại yêu cầu cũ vào form. BE chỉ cho sửa khi PENDING -> chặn sớm ở FE cho rõ lý do.
@@ -100,7 +103,6 @@ const CreateRecruitmentRequest = () => {
           // Yêu cầu cũ (trước V024) chỉ có cấp bậc, không còn ô nhập nhưng vẫn nằm trong
           // form store -> gửi lại nguyên vẹn khi lưu, không xóa mất dữ liệu cũ.
           experienceLevel: r.experienceLevel,
-          priority: PRIORITY_FORM_VALUE[r.priority] || 'Medium',
           description: r.description,
           requirements: text,
           benefits: r.benefits,
@@ -119,15 +121,6 @@ const CreateRecruitmentRequest = () => {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
-
-  // Danh mục dùng CHUNG với màn duyệt yêu cầu — sửa nhãn ở một nơi, hai màn cùng đổi.
-  const employmentTypes = EMPLOYMENT_TYPES;
-
-  const priorityOptions = [
-    { value: 'Low', label: 'Thấp', color: '#52c41a' },
-    { value: 'Medium', label: 'Trung bình', color: '#faad14' },
-    { value: 'High', label: 'Cao', color: '#f5222d' },
-  ];
 
   const handleAddSkill = () => {
     if (skillInput.trim() && !skills.includes(skillInput.trim())) {
@@ -169,7 +162,6 @@ const CreateRecruitmentRequest = () => {
         employmentType: values.employmentType,
         experienceYearsMin: values.experienceYearsMin,
         experienceLevel: values.experienceLevel,
-        priority: (values.priority || 'MEDIUM').toUpperCase(),
         description: values.description,
         requirements: requirementsText || null,
         benefits: values.benefits,
@@ -206,9 +198,8 @@ const CreateRecruitmentRequest = () => {
       'department',
       'positions',
       'employmentType',
-      'priority',
     ]);
-    return values.title && values.department && values.positions && values.employmentType && values.priority;
+    return values.title && values.department && values.positions && values.employmentType;
   };
 
   const validateStep1 = () => {
@@ -258,8 +249,6 @@ const CreateRecruitmentRequest = () => {
           onFinish={handleSubmit}
           initialValues={{
             positions: 1,
-            priority: 'Medium',
-            employmentType: 'FULL_TIME',
             // Không đặt sẵn số năm — bắt DM cân nhắc, tránh gửi đi con số họ chưa từng nhìn.
             urgency: 50,
           }}
@@ -325,8 +314,8 @@ const CreateRecruitmentRequest = () => {
                   >
                     <Select placeholder="-- Chọn hình thức --" size="large">
                       {employmentTypes.map((type) => (
-                        <Option key={type.value} value={type.value}>
-                          {type.label}
+                        <Option key={type} value={type}>
+                          {type}
                         </Option>
                       ))}
                     </Select>
@@ -336,26 +325,14 @@ const CreateRecruitmentRequest = () => {
 
               <Row gutter={24}>
                 <Col xs={24} lg={12}>
-                  <Form.Item label="Mức ưu tiên" name="priority">
-                    <Radio.Group>
-                      {priorityOptions.map((opt) => (
-                        <Radio.Button key={opt.value} value={opt.value}>
-                          <Tag color={opt.color} style={{ marginRight: 4, marginBottom: 0 }}>
-                            ●
-                          </Tag>
-                          {opt.label}
-                        </Radio.Button>
-                      ))}
-                    </Radio.Group>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} lg={12}>
                   <Form.Item label="Ngày cần tuyển" name="startDate">
+                    {/* Ngày trong quá khứ là gõ nhầm — chặn luôn ở lịch cho khỏi phải báo lỗi sau. */}
                     <DatePicker
                       style={{ width: '100%' }}
                       size="large"
                       format="DD/MM/YYYY"
                       placeholder="Ngày bắt đầu tuyển"
+                      disabledDate={(current) => current && current < dayjs().startOf('day')}
                     />
                   </Form.Item>
                 </Col>
@@ -486,15 +463,7 @@ const CreateRecruitmentRequest = () => {
                       </div>
                       <div>
                         <Text type="secondary">Hình thức: </Text>
-                        <Text strong>
-                          {employmentTypes.find((t) => t.value === form.getFieldValue('employmentType'))?.label || '-'}
-                        </Text>
-                      </div>
-                      <div>
-                        <Text type="secondary">Mức ưu tiên: </Text>
-                        <Tag color={priorityOptions.find((p) => p.value === form.getFieldValue('priority'))?.color}>
-                          {form.getFieldValue('priority') || '-'}
-                        </Tag>
+                        <Text strong>{form.getFieldValue('employmentType') || '-'}</Text>
                       </div>
                       <div>
                         <Text type="secondary">Kinh nghiệm: </Text>

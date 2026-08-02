@@ -3,7 +3,6 @@
  * Lệch một trong các bảng này là HR phải gõ lại từ đầu hoặc đọc phải mã trần.
  */
 import {
-  EMPLOYMENT_TYPE_TO_JOB,
   EXPERIENCE_LEVEL_TO_JOB,
   employmentLabel,
   experienceLabel,
@@ -102,9 +101,15 @@ describe('quy đổi sang từ vựng form tin tuyển dụng', () => {
     );
   });
 
-  test('mọi loại hình DM chọn được đều có đích quy đổi', () => {
-    ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'REMOTE'].forEach((t) =>
-      expect(EMPLOYMENT_TYPE_TO_JOB[t]).toBeTruthy()
-    );
+  // V027: hình thức làm việc thành danh mục trong DB, hai form lưu thẳng TÊN nên không
+  // còn bảng quy đổi. Chỉ còn nghĩa vụ: dữ liệu cũ dạng mã vẫn phải hiện ra chữ đọc được.
+  test('dữ liệu cũ dạng mã vẫn hiển thị thành nhãn tiếng Việt', () => {
+    expect(employmentLabel('FULL_TIME')).toBe('Toàn thời gian');
+    expect(employmentLabel('Internship')).toBe('Thực tập');
+  });
+
+  test('tên lấy từ danh mục giữ nguyên, không bị bảng cũ nuốt mất', () => {
+    expect(employmentLabel('Thời vụ')).toBe('Thời vụ');
+    expect(employmentLabel(null)).toBeNull();
   });
 });

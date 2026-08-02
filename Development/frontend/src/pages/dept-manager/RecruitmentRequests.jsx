@@ -49,7 +49,6 @@ const DeptRecruitmentRequests = () => {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
   const [detailModal, setDetailModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
@@ -57,8 +56,6 @@ const DeptRecruitmentRequests = () => {
   const isRecruiter = user?.role === ROLES.RECRUITER || user?.role === ROLES.ADMIN;
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  const PRIORITY_LABEL = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
 
   const fetchRequests = async () => {
     try {
@@ -70,7 +67,6 @@ const DeptRecruitmentRequests = () => {
         title: r.title,
         department: r.department || 'N/A',
         positions: r.quantity,
-        priority: PRIORITY_LABEL[r.priority] || r.priority,
         submittedDate: r.createdAt,
         status: r.status,
         submittedBy: r.createdByName || 'N/A',
@@ -89,7 +85,7 @@ const DeptRecruitmentRequests = () => {
       })));
     } catch (error) {
       console.error('Error fetching requests:', error);
-      message.error(error?.response?.data?.userMsg || 'Khong the tai danh sach yeu cau tuyen dung');
+      message.error(error?.response?.data?.userMsg || 'Không thể tải danh sách yêu cầu tuyển dụng');
       setRequests([]);
     } finally {
       setLoading(false);
@@ -101,30 +97,26 @@ const DeptRecruitmentRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Recruiter duyet / tu choi (tu choi bat buoc ly do)
+  // Recruiter duyệt / từ chối (lý do từ chối tùy chọn)
   const handleReview = async (record, approve) => {
     if (!approve) {
       let note = '';
       Modal.confirm({
-        title: `Tu choi yeu cau "${record.title}"?`,
+        title: `Từ chối yêu cầu "${record.title}"?`,
         content: (
-          <Input.TextArea rows={3} placeholder="Ly do tu choi (bat buoc)..."
+          <Input.TextArea rows={3} placeholder="Lý do từ chối (không bắt buộc)..."
             onChange={(e) => { note = e.target.value; }} />
         ),
-        okText: 'Tu choi',
+        okText: 'Từ chối',
         okButtonProps: { danger: true },
-        cancelText: 'Huy',
+        cancelText: 'Hủy',
         onOk: async () => {
-          if (!note.trim()) {
-            message.error('Vui long nhap ly do tu choi');
-            return Promise.reject();
-          }
           try {
             await recruitmentRequestAPI.review(record.id, false, note.trim());
-            message.success('Da tu choi yeu cau');
+            message.success('Đã từ chối yêu cầu');
             fetchRequests();
           } catch (err) {
-            message.error(err?.response?.data?.userMsg || 'Khong the tu choi yeu cau');
+            message.error(err?.response?.data?.userMsg || 'Không thể từ chối yêu cầu');
             return Promise.reject();
           }
         },
@@ -133,21 +125,21 @@ const DeptRecruitmentRequests = () => {
     }
     try {
       await recruitmentRequestAPI.review(record.id, true);
-      message.success('Da phe duyet yeu cau — co the tao tin tuyen dung tu yeu cau nay.');
+      message.success('Đã phê duyệt yêu cầu — có thể tạo tin tuyển dụng từ yêu cầu này.');
       fetchRequests();
     } catch (error) {
-      message.error(error?.response?.data?.userMsg || 'Khong the phe duyet yeu cau');
+      message.error(error?.response?.data?.userMsg || 'Không thể phê duyệt yêu cầu');
     }
   };
 
-  // DM huy yeu cau cua minh (chi khi PENDING)
+  // DM hủy yêu cầu của mình (chỉ khi PENDING)
   const handleCancel = async (record) => {
     try {
       await recruitmentRequestAPI.cancel(record.id);
-      message.success('Da huy yeu cau');
+      message.success('Đã hủy yêu cầu');
       fetchRequests();
     } catch (error) {
-      message.error(error?.response?.data?.userMsg || 'Khong the huy yeu cau');
+      message.error(error?.response?.data?.userMsg || 'Không thể hủy yêu cầu');
     }
   };
 
@@ -160,11 +152,6 @@ const DeptRecruitmentRequests = () => {
       CANCELLED: { color: 'default', label: 'Đã hủy', icon: <CloseCircleOutlined /> },
     };
     return configs[status] || { color: 'default', label: status };
-  };
-
-  const getPriorityColor = (priority) => {
-    const colors = { High: 'error', Medium: 'warning', Low: 'success' };
-    return colors[priority] || 'default';
   };
 
   const columns = [
@@ -187,13 +174,6 @@ const DeptRecruitmentRequests = () => {
       key: 'positions',
       width: 90,
       render: (val) => <Tag color="blue">{val} vị trí</Tag>,
-    },
-    {
-      title: 'Mức ưu tiên',
-      dataIndex: 'priority',
-      key: 'priority',
-      width: 110,
-      render: (val) => <Tag color={getPriorityColor(val)}>{val}</Tag>,
     },
     {
       title: 'Kinh nghiệm',
@@ -329,8 +309,7 @@ const DeptRecruitmentRequests = () => {
       item.department.toLowerCase().includes(searchText.toLowerCase()) ||
       item.submittedBy.toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || item.priority === priorityFilter;
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus;
   });
 
   const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
@@ -411,12 +390,6 @@ const DeptRecruitmentRequests = () => {
               <Option value="APPROVED">Đã duyệt</Option>
               <Option value="REJECTED">Từ chối</Option>
               <Option value="DRAFT">Nháp</Option>
-            </Select>
-            <Select value={priorityFilter} onChange={setPriorityFilter} style={{ width: 130 }}>
-              <Option value="all">Tất cả</Option>
-              <Option value="High">Cao</Option>
-              <Option value="Medium">Trung bình</Option>
-              <Option value="Low">Thấp</Option>
             </Select>
           </div>
           <Text type="secondary">{filteredData.length} yêu cầu</Text>
@@ -500,7 +473,6 @@ const DeptRecruitmentRequests = () => {
             <div style={{ marginBottom: 16 }}>
               <Title level={4}>{selectedRequest.title}</Title>
               <Space>
-                <Tag color={getPriorityColor(selectedRequest.priority)}>{selectedRequest.priority}</Tag>
                 {(() => { const c = getStatusConfig(selectedRequest.status); return <Tag color={c.color} icon={c.icon}>{c.label}</Tag>; })()}
               </Space>
             </div>

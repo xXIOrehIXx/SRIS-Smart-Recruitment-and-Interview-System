@@ -126,7 +126,7 @@ Nguyên tắc thiết kế: **đơn giản là mặc định, phức tạp là t
 
 ### Pipeline: 6 state nội bộ, hiển thị 4 PHA
 NEW → SCREENING → INTERVIEW → OFFER → HIRED / REJECTED (8 transition)  
-Forward-only. Reject từ bất kỳ state nào → REJECTED (bắt buộc `reject_reason`).  
+Forward-only. Reject từ bất kỳ state nào → REJECTED (`reject_reason` TÙY CHỌN — chốt 02/08/2026, không ép nhập nữa).  
 Người dùng thấy **4 pha**: Hồ sơ mới (NEW) · Sàng lọc (SCREENING) · Phỏng vấn (INTERVIEW) · Quyết định (OFFER→HIRED/REJECTED). 6 state là chuyện nội bộ, không phơi ra UI/tài liệu.
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)

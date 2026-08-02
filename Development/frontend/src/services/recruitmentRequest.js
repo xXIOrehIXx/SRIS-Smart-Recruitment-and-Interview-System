@@ -22,18 +22,6 @@ export const splitRequirements = (raw) => {
 };
 
 /**
- * Loại hình: form Yêu cầu dùng SCREAMING_CASE, form Tin tuyển dụng dùng nhãn Title-case.
- * REMOTE không có ô tương ứng bên Tin -> coi là toàn thời gian, HR tự ghi rõ ở Địa điểm.
- */
-export const EMPLOYMENT_TYPE_TO_JOB = {
-  FULL_TIME: 'Full-time',
-  PART_TIME: 'Part-time',
-  CONTRACT: 'Contract',
-  INTERNSHIP: 'Internship',
-  REMOTE: 'Full-time',
-};
-
-/**
  * Cấp bậc: form Yêu cầu mô tả theo vai (Junior/Mid/...), form Tin mô tả theo số năm.
  * Quy đổi lấy MỐC DƯỚI của khoảng để không thổi phồng yêu cầu (Senior 4-7 năm -> "3+",
  * không phải "5+" — người 4 năm vẫn hợp lệ).
@@ -61,13 +49,22 @@ export const EXPERIENCE_LEVELS = [
   { value: 'Manager', label: 'Manager/Director' },
 ];
 
-export const EMPLOYMENT_TYPES = [
-  { value: 'FULL_TIME', label: 'Toàn thời gian' },
-  { value: 'PART_TIME', label: 'Bán thời gian' },
-  { value: 'CONTRACT', label: 'Hợp đồng' },
-  { value: 'INTERNSHIP', label: 'Thực tập' },
-  { value: 'REMOTE', label: 'Làm việc từ xa' },
-];
+/**
+ * Hình thức làm việc giờ là DANH MỤC trong DB (V027, Admin CRUD) — cả hai form đọc từ
+ * `employmentTypeAPI.getAll()` và lưu thẳng TÊN, không còn danh sách cứng lẫn bảng quy đổi.
+ * Bảng dưới chỉ để hiển thị đẹp cho dữ liệu cũ lỡ chưa được migration V027 chuẩn hóa.
+ */
+const LEGACY_EMPLOYMENT_LABEL = {
+  FULL_TIME: 'Toàn thời gian',
+  PART_TIME: 'Bán thời gian',
+  CONTRACT: 'Hợp đồng',
+  INTERNSHIP: 'Thực tập',
+  REMOTE: 'Làm việc từ xa',
+  'Full-time': 'Toàn thời gian',
+  'Part-time': 'Bán thời gian',
+  Contract: 'Hợp đồng',
+  Internship: 'Thực tập',
+};
 
 const labelOf = (list, value) => list.find((x) => x.value === value)?.label;
 
@@ -103,8 +100,8 @@ export const experienceYearsToJob = (years) => {
   return '5+';
 };
 
-/** "FULL_TIME" -> "Toàn thời gian". */
-export const employmentLabel = (value) => (value ? labelOf(EMPLOYMENT_TYPES, value) || value : null);
+/** Tên hình thức để hiển thị (dữ liệu cũ dạng mã -> nhãn tiếng Việt). */
+export const employmentLabel = (value) => (value ? LEGACY_EMPLOYMENT_LABEL[value] || value : null);
 
 /**
  * Khoảng lương -> chuỗi đọc được. Lương là TÙY CHỌN với DM nên phải xử lý cả 3 trường hợp

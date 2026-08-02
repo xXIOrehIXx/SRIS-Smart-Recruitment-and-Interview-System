@@ -22,7 +22,7 @@ public static class ApplicationState
 ///
 /// Forward (4): NEW→SCREENING · SCREENING→INTERVIEW ·
 ///   INTERVIEW→OFFER (G2: ≥1 phiếu chấm SUBMITTED) · OFFER→HIRED.
-/// Reject (4): NEW/SCREENING/INTERVIEW/OFFER → REJECTED (bắt buộc reject_reason).
+/// Reject (4): NEW/SCREENING/INTERVIEW/OFFER → REJECTED (reject_reason tùy chọn).
 /// (Guard G1 không còn — thuộc nhánh quiz đã loại khỏi scope; giữ tên G2 khớp tài liệu cũ.)
 /// </summary>
 public static class ApplicationStateMachine

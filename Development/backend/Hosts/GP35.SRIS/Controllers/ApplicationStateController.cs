@@ -27,7 +27,7 @@ public class ApplicationStateController : ControllerBase
         _stateService = stateService;
     }
 
-    /// <summary>Chuyển hồ sơ sang state đích (gồm REJECTED). Reason bắt buộc khi reject.</summary>
+    /// <summary>Chuyển hồ sơ sang state đích (gồm REJECTED). Reason tùy chọn.</summary>
     [HttpPost("transition")]
     public async Task<IActionResult> Transition(long applicationId, [FromBody] TransitionRequestDto dto)
     {
@@ -36,7 +36,7 @@ public class ApplicationStateController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Loại hồ sơ (REJECTED) — tiện ích, reason bắt buộc (5.7).</summary>
+    /// <summary>Loại hồ sơ (REJECTED) — tiện ích, reason tùy chọn (5.7).</summary>
     [HttpPost("reject")]
     public async Task<IActionResult> Reject(long applicationId, [FromBody] RejectRequestDto dto)
     {
