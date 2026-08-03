@@ -23,8 +23,12 @@ public interface IUserRepo : IBaseRepo<Guid, User>
     /// <summary>1 user theo id (lọc theo company). Null nếu không thuộc company.</summary>
     Task<User?> GetByIdAsync(long companyId, long userId);
 
-    /// <summary>Email đã tồn tại trong công ty chưa (UNIQUE theo company_id, email).</summary>
-    Task<bool> EmailExistsAsync(long companyId, string email, long? excludeUserId = null);
+    /// <summary>
+    /// Email đã có tài khoản chưa — kiểm tra XUYÊN tenant (V028: UQ_User_email UNIQUE (email)).
+    /// Không nhận companyId vì email là duy nhất toàn hệ thống: một email trùng ở công ty khác
+    /// vẫn phải bị từ chối, nếu chỉ soi trong công ty hiện tại thì insert sẽ vỡ ở tầng DB.
+    /// </summary>
+    Task<bool> EmailExistsAsync(string email, long? excludeUserId = null);
 
     /// <summary>Tạo user mới (set company_id), trả về user_id.</summary>
     Task<long> InsertAsync(long companyId, User user);
