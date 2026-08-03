@@ -63,8 +63,10 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
         if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)
             throw Bad("Mật khẩu phải từ 6 ký tự.");
         ValidateRole(dto.Role);
-        if (await _userRepo.EmailExistsAsync(companyId, email))
-            throw Conflict($"Email '{email}' đã tồn tại trong công ty.");
+        // Email là định danh đăng nhập duy nhất toàn hệ thống (V028) -> không nêu email đó đang
+        // thuộc công ty nào, vì người tạo tài khoản không có quyền biết dữ liệu tenant khác.
+        if (await _userRepo.EmailExistsAsync(email))
+            throw Conflict($"Email '{email}' đã được sử dụng cho một tài khoản khác.");
 
         var user = new UserEntity
         {
