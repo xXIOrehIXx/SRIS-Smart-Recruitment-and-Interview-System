@@ -78,6 +78,12 @@ public class AuthService : BaseService<AuthService>, IAuthService
         if (string.IsNullOrWhiteSpace(req.AdminPassword) || req.AdminPassword.Length < 6)
             throw Bad("Mật khẩu phải từ 6 ký tự.");
 
+        // Chặn email trùng TRƯỚC khi tạo Company: email duy nhất toàn hệ thống (V028) nên nếu
+        // để INSERT admin vỡ ở UQ_User_email thì Company vừa tạo ở dưới đã nằm lại trong DB —
+        // thành công ty mồ côi không có tài khoản nào vào được.
+        if (await _userRepo.EmailExistsAsync(email))
+            throw Conflict($"Email '{email}' đã được sử dụng cho một tài khoản khác.");
+
         // Slug: từ input hoặc tự sinh từ tên công ty; đảm bảo duy nhất (thêm hậu tố nếu trùng).
         var slug = Slugify(string.IsNullOrWhiteSpace(req.Slug) ? companyName : req.Slug!);
         if (string.IsNullOrWhiteSpace(slug)) slug = "company";
@@ -135,10 +141,9 @@ public class AuthService : BaseService<AuthService>, IAuthService
             var link = $"{baseUrl}/reset-password?token={Uri.EscapeDataString(raw)}";
 
             // KHÔNG lặp lại địa chỉ email trong thân thư: mail được gửi THẲNG tới chính địa chỉ
-            // đó nên nhắc lại là thừa. Thứ thật sự mơ hồ ở sản phẩm multi-tenant là CÔNG TY —
-            // UQ_User_company_email chỉ unique theo (company_id, email) nên cùng một email có
-            // thể là tài khoản ở nhiều công ty khác nhau. Nêu tên công ty (kiểu workspace của
-            // Slack/Atlassian) mới là thông tin giúp người nhận phân biệt.
+            // đó nên nhắc lại là thừa. Nêu tên CÔNG TY thay vào đó (kiểu workspace của
+            // Slack/Atlassian): từ V028 mỗi email chỉ có một tài khoản, nhưng người dùng vẫn cần
+            // biết mình đang đặt lại mật khẩu ở đâu — nhất là khi họ có mặt ở nhiều hệ thống.
             string? companyName = null;
             try { companyName = (await _companyRepo.GetByCompanyId(user.CompanyId))?.Name; }
             catch (Exception ex)
@@ -284,5 +289,10 @@ public class AuthService : BaseService<AuthService>, IAuthService
     private static BaseException Bad(string msg) => new(msg)
     {
         ErrorCode = "BAD_REQUEST", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.BadRequest
+    };
+
+    private static BaseException Conflict(string msg) => new(msg)
+    {
+        ErrorCode = "CONFLICT", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.Conflict
     };
 }
