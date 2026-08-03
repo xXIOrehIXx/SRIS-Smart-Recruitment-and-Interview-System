@@ -1,22 +1,28 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Form, Input, Button, Alert, Result } from "antd";
-import {
-  MailOutlined,
-  LockOutlined,
-  SafetyCertificateOutlined,
-} from "@ant-design/icons";
+import { MailOutlined } from "@ant-design/icons";
 import { authAPI } from "../../services/api";
 import "./css/Auth.css";
 
+/**
+ * Trang quên mật khẩu — luồng LINK, không phải OTP.
+ *
+ * BE (AuthService.ForgotPasswordAsync) gửi email chứa link
+ * {CandidatePortal.BaseUrl}/reset-password?token=... với token 43 ký tự URL-safe;
+ * DB chỉ giữ SHA-256 hash nên KHÔNG tồn tại "mã xác nhận" ngắn để người dùng gõ lại.
+ * Vì vậy trang này chỉ nhận email rồi báo "đã gửi" — việc đặt mật khẩu mới nằm ở
+ * ResetPassword.jsx, mở bằng chính link trong email.
+ *
+ * BE luôn trả 200 dù email không tồn tại (chống dò tài khoản), nên thông báo ở đây
+ * cố tình nói "nếu email tồn tại" thay vì khẳng định đã gửi.
+ */
 const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
-  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [form] = Form.useForm();
-  const navigate = useNavigate();
 
   const handleSendResetLink = async (values) => {
     setLoading(true);
@@ -25,64 +31,59 @@ const ForgotPassword = () => {
     try {
       await authAPI.forgotPassword(values.email);
       setEmail(values.email);
-      setStep(2);
-      form.resetFields();
+      setSent(true);
     } catch (err) {
       console.error("Forgot password error:", err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
+
+      if (!err.response) {
+        setError(
+          err.code === "ECONNABORTED"
+            ? "Máy chủ phản hồi quá lâu. Vui lòng thử lại."
+            : "Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng và thử lại.",
+        );
       } else {
-        setError("Không thể gửi yêu cầu. Vui lòng thử lại.");
+        const d = err.response.data || {};
+        setError(
+          d.userMsg || d.message || "Không thể gửi yêu cầu. Vui lòng thử lại.",
+        );
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async (values) => {
-    if (values.newPassword !== values.confirmPassword) {
-      setError("Mật khẩu mới không khớp");
-      return;
-    }
-
-    setLoading(true);
+  const handleUseAnotherEmail = () => {
+    setSent(false);
     setError("");
-
-    try {
-      await authAPI.resetPassword(values.token, values.newPassword);
-      setSuccess(true);
-    } catch (err) {
-      console.error("Reset password error:", err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError("Không thể đổi mật khẩu. Vui lòng thử lại.");
-      }
-    } finally {
-      setLoading(false);
-    }
+    form.setFieldsValue({ email });
   };
 
-  const handleResend = () => {
-    setStep(1);
-    setError("");
-    form.resetFields();
-  };
-
-  if (success) {
+  if (sent) {
     return (
       <div className="auth-page forgot-password-page">
         <Result
           status="success"
-          title="Đổi mật khẩu thành công!"
-          description="Mật khẩu của bạn đã được cập nhật. Bây giờ bạn có thể đăng nhập với mật khẩu mới."
+          title="Kiểm tra hộp thư của bạn"
+          description={
+            <>
+              Nếu <strong>{email}</strong> có tài khoản SRIS, chúng tôi đã gửi
+              một liên kết đặt lại mật khẩu tới đó. Liên kết có hiệu lực trong 1
+              giờ và chỉ dùng được một lần.
+              <br />
+              Không thấy email? Kiểm tra cả mục Spam / Quảng cáo.
+            </>
+          }
           extra={[
+            <Button
+              key="again"
+              className="auth-submit-btn"
+              block
+              onClick={handleUseAnotherEmail}
+            >
+              Gửi lại / dùng email khác
+            </Button>,
             <Link to="/login" key="login">
-              <Button type="primary" className="auth-submit-btn" block>
+              <Button type="link" block>
                 Quay lại đăng nhập
               </Button>
             </Link>,
@@ -96,11 +97,7 @@ const ForgotPassword = () => {
     <div className="auth-page forgot-password-page">
       <div className="auth-header">
         <h2>Quên mật khẩu</h2>
-        <p>
-          {step === 1
-            ? "Nhập email để nhận mã xác nhận đổi mật khẩu"
-            : "Nhập mã xác nhận và mật khẩu mới"}
-        </p>
+        <p>Nhập email tài khoản — chúng tôi sẽ gửi liên kết đặt lại mật khẩu.</p>
       </div>
 
       {error && (
@@ -108,6 +105,7 @@ const ForgotPassword = () => {
           message={error}
           type="error"
           showIcon
+          closable
           className="auth-alert"
           onClose={() => setError("")}
         />
@@ -116,109 +114,36 @@ const ForgotPassword = () => {
       <Form
         form={form}
         name="forgotPassword"
-        onFinish={step === 1 ? handleSendResetLink : handleResetPassword}
+        onFinish={handleSendResetLink}
         layout="vertical"
         size="large"
       >
-        {step === 1 && (
-          <>
-            <Form.Item
-              name="email"
-              rules={[
-                { required: true, message: "Vui lòng nhập email!" },
-                { type: "email", message: "Email không hợp lệ!" },
-              ]}
-            >
-              <Input
-                prefix={<MailOutlined style={{ color: "#8c8c8b" }} />}
-                placeholder="name@company.com"
-                className="auth-input"
-                autoFocus
-              />
-            </Form.Item>
+        <Form.Item
+          name="email"
+          rules={[
+            { required: true, message: "Vui lòng nhập email!" },
+            { type: "email", message: "Email không hợp lệ!" },
+          ]}
+        >
+          <Input
+            prefix={<MailOutlined style={{ color: "#8c8c8b" }} />}
+            placeholder="name@company.com"
+            className="auth-input"
+            autoFocus
+          />
+        </Form.Item>
 
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                className="auth-submit-btn"
-              >
-                Gửi mã xác nhận
-              </Button>
-            </Form.Item>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div className="email-display">
-              <span className="email-display-label">{email}</span>
-              <button
-                type="button"
-                className="edit-email-btn"
-                onClick={handleResend}
-              >
-                Đổi email
-              </button>
-            </div>
-
-            <Form.Item
-              name="token"
-              rules={[
-                { required: true, message: "Vui lòng nhập mã xác nhận!" },
-              ]}
-            >
-              <Input
-                prefix={
-                  <SafetyCertificateOutlined style={{ color: "#8c8c8b" }} />
-                }
-                placeholder="Nhập mã xác nhận"
-                className="auth-input"
-                autoFocus
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="newPassword"
-              rules={[
-                { required: true, message: "Vui lòng nhập mật khẩu mới!" },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: "#8c8c8b" }} />}
-                placeholder="Nhập mật khẩu mới"
-                className="auth-input"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              rules={[
-                { required: true, message: "Vui lòng xác nhận mật khẩu!" },
-              ]}
-            >
-              <Input.Password
-                prefix={<LockOutlined style={{ color: "#8c8c8b" }} />}
-                placeholder="Nhập lại mật khẩu mới"
-                className="auth-input"
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                className="auth-submit-btn"
-              >
-                Đổi mật khẩu
-              </Button>
-            </Form.Item>
-          </>
-        )}
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            block
+            className="auth-submit-btn"
+          >
+            Gửi liên kết đặt lại
+          </Button>
+        </Form.Item>
       </Form>
 
       <p className="auth-footer-text">
