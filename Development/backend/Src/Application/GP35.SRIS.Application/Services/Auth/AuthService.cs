@@ -133,15 +133,31 @@ public class AuthService : BaseService<AuthService>, IAuthService
         {
             var baseUrl = (_config.CandidatePortal?.BaseUrl ?? "http://localhost:3000").TrimEnd('/');
             var link = $"{baseUrl}/reset-password?token={Uri.EscapeDataString(raw)}";
-            // Ghi rõ tài khoản nào đang được đặt lại: SRIS đăng nhập bằng email nên một người
-            // có thể giữ nhiều tài khoản ở nhiều công ty; thiếu dòng này người nhận không biết
-            // link sẽ đổi mật khẩu của acc nào.
-            var body = $@"<p>Xin chào,</p>
-<p>Bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu tài khoản SRIS. Nhấn liên kết dưới đây để đặt mật khẩu mới
-(hiệu lực trong 1 giờ):</p>
-<p>Tài khoản: <strong>{user.Email}</strong></p>
+
+            // KHÔNG lặp lại địa chỉ email trong thân thư: mail được gửi THẲNG tới chính địa chỉ
+            // đó nên nhắc lại là thừa. Thứ thật sự mơ hồ ở sản phẩm multi-tenant là CÔNG TY —
+            // UQ_User_company_email chỉ unique theo (company_id, email) nên cùng một email có
+            // thể là tài khoản ở nhiều công ty khác nhau. Nêu tên công ty (kiểu workspace của
+            // Slack/Atlassian) mới là thông tin giúp người nhận phân biệt.
+            string? companyName = null;
+            try { companyName = (await _companyRepo.GetByCompanyId(user.CompanyId))?.Name; }
+            catch (Exception ex)
+            {
+                // Không để việc tra tên công ty làm hỏng cả email đặt lại mật khẩu.
+                _logger.Warning(ex, "ForgotPassword: không đọc được tên công ty {CompanyId} — gửi thư không kèm tên.",
+                    user.CompanyId);
+            }
+
+            var greeting = string.IsNullOrWhiteSpace(user.FullName) ? "Xin chào," : $"Xin chào {user.FullName},";
+            var scope = string.IsNullOrWhiteSpace(companyName)
+                ? "tài khoản SRIS của bạn"
+                : $"tài khoản SRIS của bạn tại <strong>{WebUtility.HtmlEncode(companyName)}</strong>";
+
+            var body = $@"<p>{WebUtility.HtmlEncode(greeting)}</p>
+<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho {scope}. Nhấn liên kết dưới đây để đặt mật khẩu mới
+(hiệu lực trong 1 giờ, chỉ dùng được một lần):</p>
 <p><a href=""{link}"">{link}</a></p>
-<p>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>";
+<p>Nếu bạn không yêu cầu, hãy bỏ qua email này — mật khẩu hiện tại vẫn giữ nguyên.</p>";
             await _email.SendEmailAsync("Đặt lại mật khẩu SRIS", body, user.Email, string.Empty);
         }
         catch (Exception ex)
