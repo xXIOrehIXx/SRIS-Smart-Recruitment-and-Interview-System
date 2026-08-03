@@ -24,35 +24,47 @@ GO
    1) Chặn trước: dữ liệu đang có email trùng thì KHÔNG thể siết unique.
    Báo lỗi kèm danh sách để người vận hành sửa tay, thay vì để CREATE INDEX
    ném lỗi khó hiểu (host tự chạy migration lúc khởi động -> phải nói rõ).
-   RLS lọc theo SESSION_CONTEXT nên tắt policy trong lúc kiểm để nhìn xuyên tenant.
+
+   RLS ẩn dòng khác tenant, nhưng KHÔNG tắt policy để dò: migration có thể chạy
+   trên DB dùng chung đang có người kết nối, tắt policy dù chỉ một nhịp là hở
+   dữ liệu xuyên tenant cho mọi session khác. Thay vào đó duyệt từng công ty
+   bằng SESSION_CONTEXT — vẫn đi qua đúng cơ chế RLS — rồi gộp lại để so.
    --------------------------------------------------------------------------- */
-ALTER SECURITY POLICY dbo.TenantSecurityPolicy WITH (STATE = OFF);
-GO
+DECLARE @emails TABLE (company_id BIGINT, email NVARCHAR(256));
+
+DECLARE @cid BIGINT;
+DECLARE company_cur CURSOR LOCAL FAST_FORWARD FOR SELECT company_id FROM dbo.Company;
+OPEN company_cur;
+FETCH NEXT FROM company_cur INTO @cid;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    EXEC sp_set_session_context @key = N'CompanyId', @value = @cid;
+    INSERT INTO @emails (company_id, email) SELECT company_id, email FROM dbo.[User];
+    FETCH NEXT FROM company_cur INTO @cid;
+END
+CLOSE company_cur;
+DEALLOCATE company_cur;
+
+-- Trả SESSION_CONTEXT về trạng thái sạch: connection có thể được pool dùng lại.
+EXEC sp_set_session_context @key = N'CompanyId', @value = NULL;
 
 DECLARE @dups NVARCHAR(MAX);
-
 SELECT @dups = STRING_AGG(
         CONVERT(NVARCHAR(MAX), email) + N' (company_id: ' + CacCompany + N')', N'; ')
 FROM (
     SELECT email, STRING_AGG(CONVERT(NVARCHAR(MAX), company_id), N',') AS CacCompany
-    FROM dbo.[User]
+    FROM @emails
     GROUP BY email
     HAVING COUNT(*) > 1
 ) d;
 
 IF @dups IS NOT NULL
 BEGIN
-    -- Bật lại policy trước khi ném lỗi, tránh để DB ở trạng thái hở tenant.
-    ALTER SECURITY POLICY dbo.TenantSecurityPolicy WITH (STATE = ON);
-
     DECLARE @msg NVARCHAR(2048) =
         N'V028 dừng: email đang trùng giữa các công ty nên không thể đặt UNIQUE(email). '
       + N'Đổi email cho các tài khoản sau rồi chạy lại: ' + LEFT(@dups, 1500);
     THROW 50028, @msg, 1;
 END
-GO
-
-ALTER SECURITY POLICY dbo.TenantSecurityPolicy WITH (STATE = ON);
 GO
 
 /* ---------------------------------------------------------------------------
