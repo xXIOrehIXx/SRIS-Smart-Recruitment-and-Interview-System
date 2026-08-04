@@ -1,70 +1,85 @@
-# Getting Started with Create React App
+# SRIS — Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Giao diện người dùng của **Smart Recruitment and Interview System**, xây dựng bằng
+**React 18 + Vite**. Ứng dụng gồm hai phần chạy chung một bundle:
 
-## Available Scripts
+- **Employer Portal** (cần đăng nhập) — Admin · Recruiter · Interviewer · Department Manager
+- **Candidate Portal** (ẩn danh) — Career Site công khai và các trang mở bằng magic link
 
-In the project directory, you can run:
+> Tổng quan hệ thống, kiến trúc và hướng dẫn chạy toàn bộ dịch vụ: xem
+> [`README.md`](../../README.md) ở thư mục gốc.
 
-### `npm start`
+## Yêu cầu
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Node.js 20+
+- Backend đang chạy tại `http://localhost:5082` (xem `Development/backend`)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Chạy dự án
 
-### `npm test`
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Vite proxy mọi request `/api/*` sang backend, nên **không cần cấu hình CORS** khi phát triển.
+Muốn trỏ sang backend khác:
 
-### `npm run build`
+```bash
+VITE_API_TARGET=http://localhost:5083 npm run dev
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Các lệnh
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| Lệnh | Mô tả |
+|---|---|
+| `npm run dev` | Chạy dev server tại cổng 3000 (kèm proxy `/api`) |
+| `npm run build` | Build production vào thư mục `build/` |
+| `npm run preview` | Xem thử bản build |
+| `npm test` | Chạy test (Vitest) |
+| `npm run test:watch` | Chạy test ở chế độ theo dõi |
+| `npm run storybook` | Storybook tại cổng 6006 |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Công nghệ
 
-### `npm run eject`
+| Hạng mục | Thư viện |
+|---|---|
+| Framework | React 18 · React Router 6 |
+| Build | Vite 8 |
+| Giao diện | Ant Design 5 · TailwindCSS 4 |
+| Biểu đồ | Recharts · Ant Design Charts |
+| Kanban | @hello-pangea/dnd |
+| Gọi API | Axios (interceptor gắn token + chuẩn hóa lỗi) |
+| Kiểm thử | Vitest · Testing Library · jsdom |
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Cấu trúc thư mục
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+src/
+├── layouts/          # AdminLayout (portal), AuthLayout (đăng nhập/đăng ký)
+├── components/       # Component dùng chung (ProtectedRoute, thẻ trạng thái, …)
+├── contexts/         # Context toàn cục (phiên đăng nhập, thông tin công ty)
+├── hooks/            # Custom hook
+├── services/         # Lớp gọi API (api.js — base URL, token, xử lý lỗi)
+└── pages/
+    ├── auth/           # Đăng nhập, đăng ký, quên & đặt lại mật khẩu
+    ├── admin/          # Quản lý tài khoản, phòng ban, loại hình làm việc
+    ├── recruiter/      # Kanban, quản lý tin tuyển dụng, chi tiết ứng viên, đặt lịch
+    ├── dept-manager/   # Yêu cầu tuyển dụng, quyết định tuyển dụng
+    ├── interviewer/    # Buổi phỏng vấn, phiếu chấm, lịch sử chấm
+    ├── criteria/       # Duyệt & chỉnh bộ tiêu chí đánh giá
+    ├── talent-pool/    # Gợi ý ứng viên từ kho CV cũ
+    ├── analytics/      # Dashboard, kết quả chấm CV theo tiêu chí
+    ├── offer/          # Quản lý thư mời làm việc
+    ├── company/        # Thương hiệu công ty (logo, màu, giới thiệu)
+    ├── mail-templates/ # Mẫu email tự động
+    ├── recruitment/    # Career Site công khai + form nộp CV
+    └── candidate/      # Trang magic link: chọn lịch · tra trạng thái · trả lời offer
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Quy ước
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- **Không** thêm tiền tố `/api` lần thứ hai khi gọi endpoint — `services/api.js` đã gắn sẵn.
+- Danh sách endpoint và vai trò được phép gọi: `Development/backend/docs/API_ENDPOINTS.md`.
+- Token lưu ở client; hết hạn thì gọi `POST /api/Account/refresh-token` để lấy cặp token mới.
+- `CompanyId` lấy từ JWT ở phía backend — **không** gửi kèm trong body hay query.
+- Format code bằng Prettier (đã gắn `lint-staged`).
