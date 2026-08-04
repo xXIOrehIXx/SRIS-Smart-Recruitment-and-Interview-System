@@ -5,6 +5,7 @@ using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -93,11 +94,25 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
             companyId, jobId, candidateName.Trim(), candidateEmail.Trim(), candidatePhone.Trim(),
             fileName, mimeType, fileBytes);
 
-        if (string.Equals(result.Status, "FAILED", StringComparison.OrdinalIgnoreCase))
-            throw Bad(result.Reason
-                ?? "Không đọc được nội dung CV (có thể là PDF scan ảnh). Vui lòng nộp PDF có chữ.");
+        // Chỉ nhánh PENDING mới thực sự tạo được hồ sơ; FAILED lẫn NEEDS_MANUAL_EDIT đều trả về
+        // KHÔNG kèm application_id. Chặn theo ApplicationId chứ không liệt kê status: bỏ sót một
+        // status là ứng viên nhận "đã nhận hồ sơ" trong khi KHÔNG có dòng Application nào, rồi
+        // magic link STATUS vỡ FK (application_id = 0) và lỗi bị nuốt ở catch bên dưới.
+        if (result.ApplicationId is not > 0)
+        {
+            // Reason của NEEDS_MANUAL_EDIT viết cho luồng HR tự upload ("nhập thông tin thủ công")
+            // — ứng viên trên career site không làm được việc đó, nên phải nói cách họ tự xử lý.
+            var reason = string.Equals(result.Status, CvScoreStatus.NeedsManualEdit, StringComparison.OrdinalIgnoreCase)
+                ? "CV của bạn là bản scan ảnh (PDF không có lớp chữ) nên hệ thống không đọc được " +
+                  "nội dung. Vui lòng nộp lại file PDF có chữ (xuất từ Word / Google Docs)."
+                : result.Reason ?? "Không nhận được hồ sơ. Vui lòng thử lại hoặc nộp file PDF khác.";
 
-        var applicationId = result.ApplicationId ?? 0;
+            _logger.Warning("CareerSite: từ chối hồ sơ job={JobId} status={Status} — {Reason}",
+                jobId, result.Status, reason);
+            throw Bad(reason);
+        }
+
+        var applicationId = result.ApplicationId.Value;
 
         // Phát magic link STATUS để ứng viên theo dõi trạng thái.
         // IssueAsync đã tự gửi email kèm nút (5.13) -> không gửi lại, tránh 2 mail trùng.

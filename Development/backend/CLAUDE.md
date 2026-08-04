@@ -105,8 +105,10 @@ public class XxxService : BaseService<XxxService>, IXxxService
 ## JSON Serialization
 
 - API responses: `System.Text.Json` (camelCase)
-- Error responses: `Newtonsoft.Json` via `ErrorObjectCommon.ToString()`
-- Both coexist — verify which is active per execution path
+- Error responses: `Newtonsoft.Json` via `ErrorObjectCommon.ToString()` — cũng camelCase
+  (ép bằng `CamelCasePropertyNamesContractResolver`; mặc định của Newtonsoft là PascalCase,
+  để nguyên thì FE đọc `data.userMsg` ra undefined và nuốt mọi thông báo lỗi của BE)
+- Hai bộ serializer cùng tồn tại nhưng CÙNG camelCase — client chỉ cần biết 1 quy ước
 
 ---
 
