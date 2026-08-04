@@ -15,6 +15,7 @@ public class InterviewPoolServiceTests
 {
     private readonly Mock<IApplicationRepo> _appRepo = new();
     private readonly Mock<ISchedulingRepo> _schedulingRepo = new();
+    private readonly Mock<IEvaluationCriteriaRepo> _criteriaRepo = new();
     private readonly Mock<IUserRepo> _userRepo = new();
     private readonly Mock<IMagicLinkService> _magicLink = new();
     private readonly Mock<IActivityLogRepo> _activityLogRepo = new();
@@ -26,10 +27,21 @@ public class InterviewPoolServiceTests
     {
         _logger.Setup(l => l.ForContext<InterviewPoolService>()).Returns(_logger.Object);
 
+        // Mở lịch phỏng vấn đòi job có tiêu chí ĐÃ DUYỆT (nếu không interviewer nhận phiếu chấm
+        // trống). Mặc định cho là có, để test không nói về tiêu chí khỏi phải dựng lại;
+        // test nào cần nhánh "chưa có tiêu chí" thì override setup này.
+        _criteriaRepo
+            .Setup(r => r.GetByJobAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new List<EvaluationCriteria>
+            {
+                new() { CriteriaId = 1, Name = "Tiêu chí mẫu", Weight = 1, MaxScore = 10 }
+            });
+
         var provider = TestHost.Build(s =>
         {
             s.AddSingleton(_appRepo.Object);
             s.AddSingleton(_schedulingRepo.Object);
+            s.AddSingleton(_criteriaRepo.Object);
             s.AddSingleton(_userRepo.Object);
             s.AddSingleton(_magicLink.Object);
             s.AddSingleton(_activityLogRepo.Object);
@@ -66,6 +78,51 @@ public class InterviewPoolServiceTests
         Assert.Single(result.Skipped);
         Assert.Equal(100, result.Skipped[0].ApplicationId);
         Assert.Equal("State error", result.Skipped[0].Reason);
+    }
+
+    [Fact]
+    public async Task InviteAsync_Should_Block_When_Job_Has_No_Approved_Criteria()
+    {
+        var svc = CreateService();
+
+        // Job chưa có tiêu chí duyệt -> mời được thì interviewer mở ra phiếu chấm trống 0/0.
+        // Đè SAU CreateService(): Moq lấy setup đăng ký sau cùng.
+        _criteriaRepo
+            .Setup(r => r.GetByJobAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new List<EvaluationCriteria>());
+
+        _schedulingRepo.Setup(r => r.GetPoolByIdAsync(1L, 10L))
+            .ReturnsAsync(new InterviewSlotPool { PoolId = 10, JobId = 5, Status = "Open", RoundNumber = 1 });
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() =>
+            svc.InviteAsync(1L, 1L, 10L, new InvitePoolDto { ApplicationIds = new List<long> { 100 } }));
+
+        Assert.Equal("CONFLICT", ex.ErrorCode);
+        // Chặn TRƯỚC vòng lặp: không hồ sơ nào bị đẩy state khi cả job còn chưa chấm được.
+        _stateService.Verify(
+            s => s.AdvanceToAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task InviteAsync_Should_Skip_Candidate_Already_Confirmed_For_That_Round()
+    {
+        var svc = CreateService();
+        _schedulingRepo.Setup(r => r.GetPoolByIdAsync(1L, 10L))
+            .ReturnsAsync(new InterviewSlotPool { PoolId = 10, JobId = 5, Status = "Open", RoundNumber = 1 });
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 100L))
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application { ApplicationId = 100, JobId = 5 });
+        // Đã chốt vòng 1 ở pool KHÁC -> mời tiếp thành 2 buổi cùng vòng.
+        _schedulingRepo.Setup(r => r.HasConfirmedScheduleForRoundAsync(1L, 100L, 1)).ReturnsAsync(true);
+
+        var result = await svc.InviteAsync(1L, 1L, 10L, new InvitePoolDto { ApplicationIds = new List<long> { 100 } });
+
+        Assert.Empty(result.Invited);
+        Assert.Single(result.Skipped);
+        Assert.Contains("vòng 1", result.Skipped[0].Reason);
+        _stateService.Verify(
+            s => s.AdvanceToAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>()),
+            Times.Never);
     }
 
     [Fact]
