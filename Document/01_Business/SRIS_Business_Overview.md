@@ -12,12 +12,20 @@ Tên đề tài:
 
 _cho Doanh nghiệp (Smart Recruitment and Interview System)_
 
-| **Sản phẩm:**  | Smart Recruitment and Interview System           |
+| **Sản phẩm:**  | Smart Recruitment and Interview System (SRIS) |
 | -------------- | ------------------------------------------------ |
-| **Mô hình:**   | SaaS Multi-tenant ATS tích hợp AI                |
-| **Team:**      | 5 thành viên (3 Backend .NET + 2 Frontend React) |
-| **Thời gian:** | 3 tháng (01/04/2026 - 15/07/2026)                |
-| **Phiên bản:** | v1.0 - 19/05/2026                                |
+| **Mô hình:**   | SaaS Multi-tenant ATS tích hợp AI cục bộ |
+| **Đối tượng:** | Doanh nghiệp ≤ 200 nhân sự & công ty gia đình (mọi ngành nghề) |
+| **Nhóm:**      | GP35 — 5 thành viên (3 Backend .NET · 2 Frontend React) |
+| **Thời gian:** | 5 tháng (01/04/2026 – 31/08/2026) |
+| **Phiên bản:** | v2.0 — 04/08/2026 |
+
+**Lịch sử phiên bản**
+
+| **Phiên bản** | **Ngày** | **Nội dung thay đổi** |
+| --- | --- | --- |
+| v1.0 | 19/05/2026 | Bản đầu — đối tượng doanh nghiệp IT ≥ 100 nhân sự, có module Quiz, dùng OpenAI |
+| v2.0 | 04/08/2026 | **Cập nhật theo tái định vị hậu hội đồng:** thu hẹp đối tượng còn ≤ 200 nhân sự (mọi ngành), **loại module Quiz**, chuyển sang **chấm CV theo từng tiêu chí**, nâng Talent Pool thành tính năng đinh, chuyển từ OpenAI sang **Local AI**, gia hạn tới 31/08/2026, bổ sung kế hoạch chi tiết + WBS |
 
 # Mục lục
 
@@ -37,85 +45,132 @@ _cho Doanh nghiệp (Smart Recruitment and Interview System)_
 
 **8\.** Phân tích rủi ro & Giảm thiểu
 
-**9\.** Kế hoạch triển khai 3 tháng
+**9\.** Kế hoạch triển khai & Phân công
+
+**10\.** Tổng kết
 
 # 1\. Executive Summary - Tóm tắt điều hành
 
-Dự án Smart Recruitment and Interview System (SRIS) là một nền tảng SaaS đa thuê bao (multi-tenant) hỗ trợ doanh nghiệp IT quy mô từ 100 nhân sự trở lên quản lý toàn bộ vòng đời tuyển dụng - từ đăng tin tuyển dụng, sàng lọc CV, phỏng vấn, đến ra quyết định tuyển dụng.
+Dự án Smart Recruitment and Interview System (SRIS) là một nền tảng SaaS đa thuê bao
+(multi-tenant) giúp **doanh nghiệp nhỏ dưới 200 nhân sự và công ty gia đình** quản lý toàn bộ
+vòng đời tuyển dụng — từ đăng tin, sàng lọc CV, đặt lịch và chấm phỏng vấn, đến ra quyết định
+tuyển dụng và gửi thư mời làm việc.
 
-Sản phẩm tích hợp ba ứng dụng AI cốt lõi:
+Đây là nhóm doanh nghiệp **chưa có phòng nhân sự chuyên trách**: người tuyển dụng thường kiêm
+nhiệm, quản lý ứng viên bằng Excel và hộp thư cá nhân. Các nền tảng ATS quốc tế quá nặng và
+quá đắt so với quy mô này.
 
-- **Chấm điểm CV tự động** - so khớp CV ứng viên với Job Description, trả về điểm 0-100 kèm nhận xét điểm mạnh/yếu.
-- **Sinh câu hỏi quiz từ JD** - tự động tạo bộ câu hỏi trắc nghiệm phù hợp từng vị trí, giảm 90% thời gian HR soạn đề.
-- **Phát hiện gian lận quiz** - hệ thống chống gian lận 3 lớp khi ứng viên làm bài kiểm tra online.
+**Định vị sản phẩm: "Quy trình tuyển dụng tối giản đúng chuẩn cho công ty chưa có phòng HR."**
+Hệ thống không thêm quy trình mới cho doanh nghiệp — nó **cấu trúc hóa** đúng những bước họ đang
+làm rời rạc. Nguyên tắc thiết kế xuyên suốt: **đơn giản là mặc định, phức tạp là tùy chọn.**
 
-Bên cạnh đó, sản phẩm giải quyết các vấn đề thực tế của thị trường Việt Nam thông qua các tính năng đặc thù như Actionable Email cho Hiring Manager (phê duyệt CV ngay trong email không cần login), Collaborative Scoring với Radar Chart (chấm phỏng vấn đa tiêu chí, chống thiên kiến), và Dashboard 360° (báo cáo nguồn ứng viên theo UTM source).
+Sản phẩm tích hợp ba ứng dụng AI cốt lõi, tất cả chạy trên **hạ tầng cục bộ (Local AI)**:
+
+- **Bóc tiêu chí tuyển dụng từ JD** — mô hình ngôn ngữ đọc mô tả công việc và đề xuất bộ tiêu chí
+  đánh giá dạng **bản nháp**; người phụ trách chỉnh sửa và chốt. AI đề xuất, con người quyết định.
+- **Chấm CV theo từng tiêu chí đã chốt** — mỗi tiêu chí được kết luận khớp hay thiếu, **kèm câu
+  trích dẫn nguyên văn từ CV làm bằng chứng**, thay vì trả về một điểm số duy nhất không giải thích được.
+- **Talent Pool — truy hồi ngược kho CV cũ** — mỗi khi mở tin tuyển dụng mới, hệ thống tự quét
+  kho CV đã tích lũy của chính doanh nghiệp để tìm ứng viên phù hợp.
+
+Bên cạnh đó, sản phẩm giải quyết các đặc thù thực tế của thị trường Việt Nam: **ứng viên không
+cần tạo tài khoản** (mọi tương tác qua magic link gửi email), **đặt lịch phỏng vấn theo pool
+khung giờ dùng chung** kiểu Calendly, và **chấm phỏng vấn cộng tác có chế độ chấm mù** để chống
+thiên kiến neo (anchoring bias).
 
 **💡 Giá trị cốt lõi**
 
-Hệ thống hướng tới giảm 30% Time-to-Hire (từ 18 ngày xuống dưới 12 ngày) và tiết kiệm 20 giờ/tuần cho mỗi Recruiter thông qua tự động hóa và ứng dụng AI.
+Hệ thống hướng tới giảm 30% Time-to-Hire (từ 18 ngày xuống dưới 12 ngày) và tiết kiệm khoảng
+15–20 giờ/tuần cho người phụ trách tuyển dụng thông qua tự động hóa và ứng dụng AI cục bộ —
+với **chi phí AI bằng 0** và **dữ liệu ứng viên không rời khỏi hạ tầng doanh nghiệp**.
 
 # 2\. Bối cảnh & Vấn đề kinh doanh
 
 ## 2.1 Bối cảnh thị trường
 
-Thị trường tuyển dụng IT Việt Nam đang trong giai đoạn cạnh tranh khốc liệt. Các công ty quy mô 100+ nhân sự gặp ba điểm nghẽn lớn:
+Doanh nghiệp nhỏ và vừa chiếm phần lớn số lượng doanh nghiệp tại Việt Nam. Theo Luật Hỗ trợ
+Doanh nghiệp nhỏ và vừa (04/2017/QH14), mốc **≤ 200 lao động** là ranh giới xác định doanh
+nghiệp nhỏ và vừa — đây chính là phân khúc mục tiêu của SRIS.
 
-### Nỗi đau 1 - Nhập liệu thủ công tốn thời gian
+Đặc điểm chung của nhóm này: **không có phòng nhân sự chuyên trách**. Người tuyển dụng thường
+là chủ doanh nghiệp, kế toán kiêm nhiệm hoặc một nhân sự hành chính. Họ gặp ba điểm nghẽn lớn:
 
-HR Recruiter dành 3-4 giờ mỗi ngày chỉ để sao chép thông tin từ file CV PDF vào file Excel quản lý. Đây là công việc lặp đi lặp lại, không tạo giá trị trực tiếp.
+### Nỗi đau 1 - Quy trình rời rạc, dữ liệu phân mảnh
+
+CV nằm rải rác trong hộp thư cá nhân, Zalo và ổ đĩa chung. Thông tin ứng viên được chép tay
+sang Excel. Không ai nắm được ứng viên nào đang ở bước nào, ai đã liên hệ, ai còn chờ phản hồi.
 
 ### Nỗi đau 2 - Thất thoát ứng viên (Candidate Leakage)
 
-Khi tỷ lệ apply cao (đặc biệt vào các Job Fair), HR thường bỏ sót email, quên gửi phản hồi (rejection letter), dẫn đến hình ảnh nhà tuyển dụng (Employer Branding) bị tổn hại nghiêm trọng.
+Khi số lượng hồ sơ tăng, người phụ trách bỏ sót email, quên gửi phản hồi từ chối, quên nhắc lịch
+phỏng vấn. Ứng viên tốt bỏ đi vì im lặng quá lâu, và hình ảnh nhà tuyển dụng bị tổn hại.
 
-### Nỗi đau 3 - Thiếu dữ liệu điều hành (No Analytics)
+### Nỗi đau 3 - Đánh giá cảm tính, không lưu vết
 
-Giám đốc không biết nguồn tuyển dụng nào (VietnamWorks, TopCV, LinkedIn) mang lại ứng viên chất lượng nhất để phân bổ ngân sách marketing tuyển dụng hợp lý.
+Phỏng vấn xong không lưu lại điểm số hay lý do; quyết định dựa vào trí nhớ và cảm tính. Khi có
+nhiều người cùng phỏng vấn, ý kiến người nói trước ảnh hưởng người nói sau. CV bị loại ở đợt
+tuyển trước thì mất luôn, không được xem lại cho vị trí sau.
 
-## 2.2 Cơ hội từ AI và SaaS
+## 2.2 Cơ hội từ AI cục bộ và mô hình SaaS
 
-Các nền tảng ATS quốc tế (Workable, Greenhouse, Teamtailor) đã chứng minh mô hình SaaS Multi-tenant là chuẩn industry. Tuy nhiên, chưa có sản phẩm nào tối ưu riêng cho thị trường Việt Nam với các đặc thù:
+Các nền tảng ATS quốc tế (Workable, Greenhouse, Teamtailor) đã chứng minh SaaS Multi-tenant là
+chuẩn ngành. Tuy nhiên chưa có sản phẩm nào tối ưu cho phân khúc doanh nghiệp nhỏ Việt Nam với
+các đặc thù sau:
 
-- Văn hóa làm việc: Hiring Manager bận, ngại đăng nhập hệ thống lạ
-- Quy mô SMB phổ biến: 100-500 nhân sự, ngân sách hạn chế cho ATS enterprise
-- Tích hợp AI: ChatGPT/Gemini đã chín muồi, đặc biệt với tiếng Việt
-- Tuân thủ pháp lý: Luật An ninh mạng Việt Nam 2018 về xử lý dữ liệu cá nhân
+- **Quy mô nhỏ, ngân sách hạn chế** — không đủ chi phí cho ATS enterprise tính theo đầu người dùng.
+- **Không có phòng HR** — cần hệ thống dùng được ngay với **một tài khoản duy nhất**, không cần
+  cấu hình quy trình phức tạp.
+- **Mô hình ngôn ngữ mã nguồn mở đã đủ chín** — các mô hình chạy cục bộ (Ollama) hiện xử lý tốt
+  tiếng Việt, cho phép tích hợp AI với **chi phí biên bằng 0**.
+- **Tuân thủ pháp lý** — Luật Bảo vệ dữ liệu cá nhân có hiệu lực từ **01/01/2026** yêu cầu doanh
+  nghiệp xử lý dữ liệu ứng viên chặt chẽ hơn. Kiến trúc **AI cục bộ + cô lập dữ liệu theo công ty**
+  của SRIS là một **lợi thế tuân thủ**, không đơn thuần là lựa chọn kỹ thuật.
 
 # 3\. Đối tượng người dùng (Personas)
 
-Hệ thống phục vụ 5 nhóm người dùng chính, mỗi nhóm có hồ sơ và nhu cầu riêng biệt.
+Hệ thống phục vụ 5 nhóm người dùng. **Bốn vai trò nội bộ đăng nhập vào Portal; riêng ứng viên là
+khách ẩn danh tham gia qua magic link, không cần tài khoản.**
 
-## 3.1 Chị Mai - Recruiter (Key User)
+Câu tóm tắt phân vai: **Recruiter lái · Interviewer chấm · Trưởng bộ phận quyết · Ứng viên ứng
+tuyển · Admin dựng sân.**
 
-| **Vai trò**           | Chuyên viên Tuyển dụng (HR Manager)                                                                                                    |
+## 3.1 Chị Mai - Người phụ trách tuyển dụng (Key User)
+
+| **Vai trò**           | Recruiter — thường kiêm nhiệm hành chính/kế toán tại công ty 50–150 người |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Câu nói đặc trưng** | "Chị dành cả thanh xuân chỉ để copy paste dữ liệu từ Email ứng viên ra file Excel."                                                    |
-| **Pain points**       | • Quên nhắc ứng viên lịch phỏng vấn<br><br>• Trưởng bộ phận không phản hồi CV kịp thời<br><br>• Cuối tháng tổng hợp KPI mất hẳn 1 ngày |
-| **Mục tiêu**          | • Hệ thống có nút 1-click duyệt ứng viên<br><br>• Tự động đọc CV, trích xuất số điện thoại, bắt CV trùng                               |
+| **Câu nói đặc trưng** | "Chị dành cả thanh xuân chỉ để copy paste dữ liệu từ email ứng viên ra file Excel." |
+| **Pain points**       | • Quên nhắc ứng viên lịch phỏng vấn<br><br>• Trưởng bộ phận không phản hồi CV kịp thời<br><br>• Cuối tháng tổng hợp báo cáo mất hẳn một ngày |
+| **Mục tiêu**          | • Một màn hình thấy hết ứng viên đang ở bước nào<br><br>• Hệ thống tự đọc CV và chỉ ra ai phù hợp, phù hợp ở điểm nào |
 
-## 3.2 Anh Bình - Hiring Manager (End User)
+## 3.2 Anh Bình - Trưởng bộ phận (Department Manager)
 
-| **Vai trò**           | Trưởng Phòng Kỹ Thuật (Hiring Manager)                                                                                                                            |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Câu nói đặc trưng** | "Đừng bắt tôi đăng nhập vào hệ thống lạ nào nữa. Gửi mail ngắn gọn, tôi ấn Duyệt là xong."                                                                        |
-| **Pain points**       | • Phải đọc CV dài 4 trang định dạng lộn xộn<br><br>• Quên trả lời email HR dẫn đến mất ứng viên giỏi<br><br>• Khó đánh giá chéo với các Leader khác khi phỏng vấn |
-| **Mục tiêu**          | • UI tối ưu cho điện thoại (mobile-first)<br><br>• ATS auto generate bảng tóm tắt kỹ năng ứng viên                                                                |
+| **Vai trò**           | Trưởng bộ phận có nhu cầu tuyển người — người **ra đề** và **chốt tuyển** |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Câu nói đặc trưng** | "Đừng bắt tôi học phần mềm mới. Tôi cần người biết việc, cho tôi xem đúng chỗ đó rồi tôi duyệt." |
+| **Pain points**       | • Phải đọc CV dài lộn xộn, không biết nhìn vào đâu<br><br>• Nói yêu cầu bằng lời, HR hiểu một kiểu<br><br>• Khó đánh giá chéo với người phỏng vấn khác |
+| **Mục tiêu**          | • Ghi rõ tiêu chí cần tuyển một lần, dùng xuyên suốt cả quy trình<br><br>• Đến bước cuối chỉ cần xem điểm tổng hợp rồi quyết |
 
-## 3.3 Tuấn Kiệt - Ứng viên IT (External User)
+## 3.3 Tuấn Kiệt - Ứng viên (External User)
 
-| **Vai trò**           | Ứng viên IT (Candidate)                                                                                                   |
+| **Vai trò**           | Ứng viên nộp hồ sơ qua trang tuyển dụng của công ty |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Câu nói đặc trưng** | "Nếu trang tuyển dụng bắt tạo tài khoản dài dòng, tôi sẽ thoát và nộp công ty khác."                                      |
-| **Pain points**       | • Gửi CV xong không có email confirm<br><br>• Website tuyển dụng load chậm<br><br>• Bắt điền lại thông tin đã có trong CV |
-| **Mục tiêu**          | • Nộp CV trong 1 trang duy nhất (one-page)<br><br>• Nhận email phản hồi chuyên nghiệp ngay sau Submit                     |
+| **Câu nói đặc trưng** | "Nếu trang tuyển dụng bắt tạo tài khoản dài dòng, tôi sẽ thoát và nộp công ty khác." |
+| **Pain points**       | • Gửi CV xong không có email xác nhận<br><br>• Không biết hồ sơ của mình đang ở đâu<br><br>• Hẹn lịch phỏng vấn qua lại nhiều lượt email |
+| **Mục tiêu**          | • Nộp CV trong một trang duy nhất, không cần tài khoản<br><br>• Tự chọn khung giờ phỏng vấn phù hợp và tra cứu được trạng thái |
 
 ## 3.4 Nhóm phụ - Admin & Interviewer
 
-| **Vai trò**     | **Admin (per tenant)**                                           | **Interviewer**                                                           |
+| **Vai trò**     | **Admin (theo từng công ty)**                                     | **Interviewer**                                                           |
 | --------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| **Mô tả**       | Quản trị viên công ty, quản lý user trong tenant, cấu hình brand | Người chấm phỏng vấn theo tiêu chí (có thể là nhiều người cho 1 ứng viên) |
-| **Quyền chính** | Cấu hình hệ thống, quản lý role, brand theming                   | Chấm điểm theo tiêu chí, xem radar chart, đề xuất hire/reject             |
+| **Mô tả**       | Quản trị viên công ty: tạo tài khoản, phân vai, cấu hình thương hiệu | Người chấm phỏng vấn theo bộ tiêu chí (một buổi có thể nhiều người chấm) |
+| **Quyền chính** | Quản lý người dùng và phòng ban, cấu hình công ty, brand theming | Chấm điểm theo tiêu chí, xem radar tổng hợp — **chỉ chấm, không quyết** |
+
+**💡 Phân quyền theo quy mô**
+
+Mỗi tài khoản giữ đúng một vai. Công ty gia đình chỉ cần **một tài khoản Admin** làm trọn quy
+trình (Admin là siêu người dùng, bỏ qua mọi cổng phân quyền). Khi công ty lớn lên thì tách vai
+bằng cách tạo thêm tài khoản Recruiter / Interviewer / Trưởng bộ phận. Hệ thống lớn lên cùng
+doanh nghiệp — không bắt công ty 10 người dùng bộ máy của công ty 1000 người.
 
 # 4\. Phạm vi sản phẩm (Scope)
 
@@ -125,252 +180,325 @@ Hệ thống bao gồm 9 module nghiệp vụ chính:
 
 | **#**  | **Module**                | **Phạm vi**                                                         |
 | ------ | ------------------------- | ------------------------------------------------------------------- |
-| **M1** | **Job Management**        | Quản lý tin tuyển dụng, Career Site công khai, form nộp CV one-page |
-| **M2** | **Candidate Pipeline**    | Kanban kéo thả, State Machine, Activity Log, Internal Notes         |
-| **M3** | **AI CV Scoring**         | Chấm điểm CV 0-100, ranking ứng viên, cache theo hash file          |
-| **M4** | **Email Automation**      | 4 email tự động theo state machine, template động                   |
-| **M5** | **Quiz Engine + AI**      | AI sinh quiz từ JD, magic link, đếm ngược, anti-cheat 3 lớp         |
-| **M6** | **Collaborative Scoring** | Multi-interviewer chấm theo tiêu chí, Radar chart, Blind Review     |
-| **M7** | **Dashboard & Analytics** | Funnel chart, KPI metric card, báo cáo nguồn UTM                    |
-| **M8** | **Multi-tenant & Brand**  | Tách dữ liệu theo company_id, theming logo + màu chủ đạo            |
-| **M9** | **Auth & Authorization**  | JWT + RBAC 4 role, Candidate magic link không cần đăng ký           |
+| **M1** | **Job & Yêu cầu tuyển dụng** | Trưởng bộ phận tạo yêu cầu tuyển dụng (tùy chọn) → Recruiter tạo tin tuyển dụng; Career Site công khai theo thương hiệu; form nộp CV one-page |
+| **M2** | **Candidate Pipeline**    | Kanban hiển thị 4 pha, State Machine 6 trạng thái ở tầng nội bộ, Activity Log, ghi chú nội bộ |
+| **M3** | **AI Tiêu chí & Chấm CV & Talent Pool** | AI bóc tiêu chí (nháp → duyệt → chốt), chấm CV **theo từng tiêu chí** kèm câu bằng chứng, **Talent Pool truy hồi ngược kho CV cũ** |
+| **M4** | **Email Automation**      | Email tự động theo State Machine, mẫu email động, mỗi công ty cấu hình SMTP riêng |
+| **M5** | **Collaborative Scoring** | Chấm phỏng vấn theo cùng bộ tiêu chí, radar tổng hợp, **Blind Review tự bật khi có > 1 người chấm** |
+| **M6** | **Dashboard & Analytics** | Phễu tuyển dụng, time-to-hire, tỉ lệ chấp nhận offer, phân tích lý do loại và nguồn ứng viên |
+| **M7** | **Multi-tenant & Brand**  | Cô lập dữ liệu theo `CompanyId` bằng Row-Level Security, brand theming (logo, màu, giới thiệu) |
+| **M8** | **Auth & Authorization**  | JWT + phân quyền 4 vai; ứng viên dùng magic link, không cần đăng ký |
+| **M9** | **Interview Scheduling**  | Pool khung giờ dùng chung + panel người phỏng vấn, mời hàng loạt, ai chốt trước lấy trước, sinh tệp lịch `.ics` |
 
 ## 4.2 Ngoài phạm vi (Out-of-Scope)
 
-Các tính năng sau không nằm trong scope đồ án 3 tháng:
+Các tính năng sau **không** nằm trong phạm vi đồ án:
 
-- Mobile app native (iOS/Android) - Web responsive đã đáp ứng đủ
-- Webcam proctoring cho quiz - Yêu cầu ML model riêng, vượt scope
-- Tích hợp Google Calendar / lịch phỏng vấn tự động
-- Coding challenge / online judge platform
-- Module tính lương / chấm công (Core HR)
-- Chatbot AI phản hồi ứng viên real-time
-- Tích hợp LDAP / SSO Active Directory (chỉ làm optional NFR)
-- Subdomain động (congtyA.smarthire.vn) - dùng path routing /t/{slug} cho demo
+- **Module Quiz / bài kiểm tra trực tuyến** — bao gồm cả sinh đề bằng AI và chống gian lận.
+  **Đã loại khỏi phạm vi từ 07/2026** theo tái định vị (xem Mục 9.4): không phải nỗi đau cốt lõi
+  của doanh nghiệp nhỏ và làm loãng trọng tâm sản phẩm.
+- Ứng dụng di động thuần (iOS/Android) — web đáp ứng đa kích thước màn hình là đủ.
+- Giám sát ứng viên qua webcam.
+- Tích hợp Google Calendar / Outlook hai chiều (hệ thống chỉ sinh tệp `.ics`).
+- Nền tảng chấm bài lập trình (coding challenge / online judge).
+- Module tính lương, chấm công (Core HR).
+- Chatbot AI trả lời ứng viên theo thời gian thực.
+- Tích hợp LDAP / SSO Active Directory.
+- Tên miền con động cho từng công ty (dùng định tuyến theo đường dẫn `/{slug}` cho bản demo).
 
 # 5\. Tính năng nghiệp vụ cốt lõi
 
-Phần này mô tả chi tiết 5 tính năng có giá trị nghiệp vụ cao nhất, là điểm khác biệt của sản phẩm so với các ATS thị trường.
+Phần này mô tả 6 tính năng có giá trị nghiệp vụ cao nhất — điểm khác biệt của sản phẩm so với
+các ATS trên thị trường.
 
-## 5.1 AI Quiz Generation - Sinh câu hỏi tự động từ JD
+## 5.1 Trục tiêu chí - AI bóc tiêu chí, con người chốt
 
-HR không cần tự soạn câu hỏi trắc nghiệm cho từng vị trí. Hệ thống tự động phân tích Job Description và sinh ra bộ 10-20 câu MCQ phù hợp với yêu cầu kỹ năng.
+Toàn bộ giá trị "thông minh" của hệ thống xoay quanh **một bộ tiêu chí duy nhất**, dùng xuyên
+suốt từ lọc CV đến phỏng vấn.
 
 **Quy trình hoạt động:**
 
-- HR tạo Job + JD → bấm "AI Gen Quiz"
-- Hệ thống gửi JD lên OpenAI với prompt được tối ưu sẵn
-- OpenAI trả về JSON gồm: question, 4 options, correct_answer, explanation, difficulty
-- HR preview, sửa nếu cần, publish bộ đề
-- Bộ đề được cache theo job_id → mọi ứng viên cùng job dùng chung 1 đề, tiết kiệm chi phí OpenAI
+- Trưởng bộ phận tạo Yêu cầu tuyển dụng (tùy chọn) → Recruiter tạo tin tuyển dụng với mô tả công việc.
+- Hệ thống gửi mô tả công việc sang mô hình ngôn ngữ chạy cục bộ → nhận về danh sách tiêu chí
+  dạng **bản nháp**, mỗi tiêu chí gồm: tên, loại (bắt buộc / mong muốn), từ khóa nhận diện, trọng số.
+- Người phụ trách xem lại, sửa, thêm, bớt rồi **chốt** bộ tiêu chí.
+- Bộ tiêu chí đã chốt được dùng cho **cả hai việc**: chấm CV và làm phiếu chấm phỏng vấn.
 
-**⭐ Điểm mới so với thị trường**
+**⭐ Nguyên tắc thiết kế**
 
-Đa số ATS hiện chỉ chấm điểm CV bằng AI, chưa làm AI sinh quiz tự động. Đây là điểm khác biệt được thầy hướng dẫn gợi ý bổ sung.
+AI **không được quyết** tiêu chí. Đầu ra của AI luôn ở trạng thái nháp và phải có người duyệt.
+Đây là ranh giới trách nhiệm rõ ràng — khi tuyển sai, người quyết định là con người, không phải mô hình.
 
-## 5.2 Anti-cheat 3 lớp cho Quiz online
+Với doanh nghiệp chưa biết bắt đầu từ đâu, hệ thống cung cấp **thư viện tiêu chí mẫu** theo nhóm
+vị trí để chọn nhanh rồi tùy chỉnh.
 
-Triết lý: "Raise the cost of cheating" - không cố detect 100% mà tăng chi phí gian lận. Hệ thống áp dụng mô hình defense-in-depth 3 tầng:
+## 5.2 Chấm CV theo từng tiêu chí, kèm bằng chứng
 
-| **Lớp** | **Cơ chế**                | **Detect được gì**                                                                                 |
-| ------- | ------------------------- | -------------------------------------------------------------------------------------------------- |
-| **1**   | **Behavioral signals**    | Phát hiện chuyển tab, paste content, mở DevTools, đo thời gian per câu - gắn cờ ứng viên đáng nghi |
-| **2**   | **Question design**       | AI sinh câu hỏi tình huống thay vì tra cứu - khó Google trong 30 giây                              |
-| **3**   | **Cross-check Stage 1↔2** | So sánh điểm quiz async với quiz onsite - chênh > 30% nghi ngờ gian lận                            |
+Thay vì đưa cả mô tả công việc và cả CV vào mô hình để lấy về một điểm số 0–100 không giải thích
+được, hệ thống chấm **theo từng tiêu chí một**:
 
-**Disclosure & Consent:**
+- CV được bóc text, chia thành các đoạn (chunk) và sinh vector biểu diễn ngữ nghĩa.
+- Tiêu chí **bắt buộc** (ví dụ: bằng cấp, số năm kinh nghiệm, chứng chỉ) được đối chiếu bằng **rule**.
+- Tiêu chí **mong muốn** (ví dụ: khả năng làm việc nhóm, kinh nghiệm ngành) được truy hồi bằng
+  **vector similarity** để tìm đúng đoạn CV liên quan.
+- Kết quả trả về theo từng tiêu chí: **khớp / thiếu**, kèm **câu trích nguyên văn từ CV** làm bằng chứng,
+  và điểm tổng có trọng số.
 
-Trước khi làm bài, ứng viên xem màn hình thông báo rõ những hành vi nào sẽ được ghi nhận. Ứng viên phải tick checkbox đồng ý mới được bắt đầu. Phù hợp với Luật An ninh mạng Việt Nam 2018 về thu thập dữ liệu cá nhân.
+**💡 Bài học từ đo lường thực tế**
 
-## 5.3 Actionable Email cho Hiring Manager
+Nhóm đã chạy thí nghiệm đo ngưỡng similarity trên bộ dữ liệu tự dựng và **kết quả bác bỏ cách chấm
+thuần ngưỡng**: độ tương đồng của cặp "đạt" và "không đạt" chồng lên nhau (độ chính xác tốt nhất
+0,611 so với đoán ngẫu nhiên 0,500), trong khi để mô hình ngôn ngữ phán xét đạt 0,972. Kết luận
+được ghi nhận và đưa vào kế hoạch: **vector giữ đúng vai trò truy hồi bằng chứng, việc kết luận
+đạt/không do mô hình ngôn ngữ đảm nhiệm, và người dùng vẫn là người quyết cuối.**
+Đây là minh chứng cho kỷ luật đo lường của nhóm — chi tiết ở `ai-experiments/exp_criteria_threshold/`.
 
-Giải quyết trực tiếp pain point của Persona Anh Bình: "Đừng bắt tôi đăng nhập hệ thống lạ."
+## 5.3 Talent Pool - Truy hồi ngược kho CV cũ
+
+Với doanh nghiệp nhỏ, mỗi CV nhận được là một tài sản. Nhưng thực tế CV bị loại ở đợt tuyển
+trước gần như không bao giờ được xem lại.
+
+**Cách hoạt động:** khi mở một tin tuyển dụng mới, hệ thống lấy vector của tin đó quét ngược
+toàn bộ kho CV đã tích lũy **của chính công ty**, xếp hạng theo độ phù hợp và có bộ lọc theo mốc
+thời gian nộp. Recruiter chỉ việc xem danh sách gợi ý và chủ động liên hệ.
+
+**⭐ Vì sao đây là tính năng đinh**
+
+Giá trị của tính năng này **tăng dần theo thời gian sử dụng** — càng dùng lâu, kho CV càng dày,
+gợi ý càng tốt. Đây là lý do doanh nghiệp gắn bó với nền tảng, và là điểm mà một file Excel
+không thể làm được.
+
+## 5.4 Đặt lịch phỏng vấn theo pool khung giờ dùng chung
+
+Giải quyết trực tiếp cảnh "hẹn tới hẹn lui" qua email giữa người tuyển dụng và ứng viên.
 
 **Cách hoạt động:**
 
-- HR sàng lọc CV, bấm "Gửi Sếp duyệt"
-- Hệ thống gửi email vào inbox Hiring Manager kèm CV PDF và AI Summary
-- Email có nhúng sẵn 2 nút bấm: \[Phê duyệt Phỏng vấn\] và \[Loại\]
-- Hiring Manager bấm thẳng từ điện thoại hoặc desktop - không cần login
-- Kanban tự cập nhật stage, hoặc hiện popup Quick Note nếu Loại
+- Recruiter mở **một bộ khung giờ chung** cho tin tuyển dụng, gán người phỏng vấn cho từng khung.
+- Chọn danh sách ứng viên cần phỏng vấn → mỗi người nhận **một liên kết riêng** qua email.
+- Ứng viên tự chọn khung giờ phù hợp, **ai chốt trước lấy trước**; khung đã bị lấy sẽ biến mất
+  với người vào sau.
+- Chốt xong: hệ thống gửi email xác nhận kèm **tệp lịch `.ics`** cho cả hai phía.
+- Ứng viên bận toàn bộ khung → bấm "không khung nào phù hợp" → hệ thống **gắn cờ nhắc** Recruiter
+  gọi điện, gọi xong chốt lịch thủ công ngay trong hệ thống.
 
-**Bảo mật:**
+**Bảo mật:** mỗi liên kết chứa token có thời hạn, chỉ lưu **giá trị băm** trong cơ sở dữ liệu và
+bị vô hiệu hóa sau khi ứng viên chốt — tránh chuyển tiếp email hoặc dùng lại.
 
-Mỗi nút bấm trong email là một URL chứa token một lần dùng, có TTL 48-72 giờ. Sau khi sử dụng, token bị vô hiệu hóa để tránh forward email hoặc bấm trùng.
+## 5.5 Collaborative Scoring với Blind Review
 
-## 5.4 Collaborative Scoring với Blind Review
-
-Cho phép nhiều interviewer chấm phỏng vấn ứng viên độc lập theo nhiều tiêu chí, tránh thiên kiến (anchoring bias).
+Cho phép nhiều người phỏng vấn chấm độc lập theo cùng bộ tiêu chí, tránh thiên kiến neo
+(anchoring bias).
 
 **Đặc trưng:**
 
-- HR cấu hình bộ tiêu chí cho từng job (ví dụ: Kỹ thuật, Giao tiếp, Tư duy, Tiếng Anh, Culture fit)
-- Mỗi interviewer chấm thang điểm 1-5 cho từng tiêu chí, kèm note
-- Trạng thái scoring: draft → submitted - chỉ thấy điểm người khác khi mình đã submit
-- Hệ thống tự tổng hợp, hiển thị Radar Chart 5 trục so sánh interviewer
-- Insight tự động: phát hiện đồng thuận (std dev &lt; 0.5) hoặc bất đồng (std dev &gt; 1.0) giữa interviewer
+- Phiếu chấm sinh tự động từ **bộ tiêu chí đã chốt** của tin tuyển dụng — không phải bộ tiêu chí
+  rời rạc do mỗi người tự nghĩ.
+- Mỗi người chấm theo thang điểm cho từng tiêu chí, kèm ghi chú; nháp được lưu tự động trong buổi.
+- Trạng thái phiếu: nháp → đã nộp. **Chỉ thấy điểm người khác sau khi mình đã nộp.**
+- Chế độ chấm mù **tự bật khi tin tuyển dụng có nhiều hơn một người chấm** — công ty một người
+  không phải bận tâm tới thiết lập này.
+- Hệ thống tổng hợp radar theo trục tiêu chí và **chỉ ra tiêu chí có độ lệch lớn giữa những người
+  chấm** — đó là chỗ cần ngồi lại bàn.
 
 **💡 Lưu ý kỹ thuật**
 
-Insight tự động không dùng AI - chỉ dùng standard deviation (thống kê đơn giản). Đây là quyết định thiết kế thông minh: không phải mọi tính năng "thông minh" đều cần AI.
+Cảnh báo bất đồng không dùng AI — chỉ dùng độ lệch chuẩn (thống kê cơ bản). Không phải mọi tính
+năng "thông minh" đều cần đến AI.
 
-## 5.5 Multi-tenant Architecture - Đa thuê bao
+## 5.6 Kiến trúc đa thuê bao (Multi-tenant)
 
-Hệ thống phục vụ nhiều công ty khách hàng trên cùng một hạ tầng, dữ liệu các công ty được cách ly tuyệt đối.
+Hệ thống phục vụ nhiều công ty trên cùng một hạ tầng, dữ liệu giữa các công ty được cách ly tuyệt đối.
 
-**Chiến lược:**
+**Chiến lược:** Shared Schema + cột `CompanyId` — chuẩn được các nền tảng SaaS lớn sử dụng.
 
-Shared Schema + cột company_id - đây là chuẩn industry được Notion, Linear, Slack sử dụng.
-
-- **Tách dữ liệu:** Mọi bảng nghiệp vụ đều có cột company_id, mọi query bắt buộc WHERE company_id
-- **Defense-in-depth:** EF Core Global Query Filter tự động inject filter, kết hợp với Row-Level Security của SQL Server
-- **Brand theming:** Mỗi công ty upload logo, chọn màu chủ đạo, viết section "Về công ty" riêng
-- **Career Site path:** /t/{company-slug} cho mỗi tenant (ví dụ: /t/techcorp, /t/financeco)
+- **Cô lập dữ liệu:** mọi bảng nghiệp vụ đều có `CompanyId`; ràng buộc được ép **ở tầng cơ sở dữ
+  liệu** bằng Row-Level Security, thiết lập lại theo từng request để tránh bẫy dùng chung kết nối.
+- **Phòng thủ nhiều lớp:** EF Core Global Query Filter tự chèn điều kiện lọc, kết hợp với RLS —
+  lập trình viên quên điều kiện lọc thì tầng dữ liệu vẫn chặn.
+- **Khách ẩn danh:** ứng viên không có tài khoản, tenant được phân giải từ chính token trong
+  magic link hoặc từ slug của Career Site.
+- **Brand theming:** mỗi công ty tải logo, chọn màu chủ đạo, viết phần giới thiệu riêng cho trang
+  tuyển dụng của mình.
 
 # 6\. Quy trình nghiệp vụ end-to-end
 
-Quy trình tuyển dụng đầy đủ trải qua 7 phase, từ khi ứng viên nộp CV đến khi có kết quả tuyển dụng.
+Hệ thống quản lý hồ sơ ứng viên qua **6 trạng thái nội bộ**, nhưng chỉ hiển thị cho người dùng
+**4 pha** để giữ giao diện đơn giản:
 
-## Phase 0 - HR Setup (làm 1 lần khi tạo Job)
+**Hồ sơ mới → Sàng lọc → Phỏng vấn → Quyết định**
 
-- HR tạo Job với mô tả công việc (JD) chi tiết
-- Bấm "AI Gen Quiz" → OpenAI tạo bộ câu hỏi từ JD
-- HR review, sửa câu sai, publish bộ đề
+Quy trình **chỉ tiến, không lùi**. Có thể loại hồ sơ ở bất kỳ pha nào (lý do loại là tùy chọn).
+Cửa kiểm soát duy nhất: **muốn chuyển sang pha Quyết định phải có ít nhất một phiếu chấm phỏng
+vấn đã nộp.** Phỏng vấn nhiều vòng được xử lý bằng **dữ liệu** (số thứ tự vòng), không sinh thêm
+trạng thái.
+
+## Phase 0 - Chuẩn bị (làm một lần cho mỗi vị trí)
+
+- Trưởng bộ phận tạo Yêu cầu tuyển dụng (tùy chọn — công ty nhỏ có thể bỏ qua).
+- Recruiter tạo tin tuyển dụng với mô tả công việc chi tiết.
+- Hệ thống bóc tiêu chí thành bản nháp → người phụ trách chỉnh sửa và chốt.
+- Tin được đăng lên Career Site công khai của công ty.
 
 ## Phase 1 - Ứng viên nộp CV
 
-- Ứng viên vào Career Site công ty, xem job đang mở
-- Click "Ứng tuyển" → form one-page, upload PDF, không cần tạo tài khoản
-- Nhận email confirm tự động ngay sau Submit
+- Ứng viên vào trang tuyển dụng của công ty, xem các vị trí đang mở.
+- Bấm "Ứng tuyển" → điền form một trang, tải lên CV dạng PDF, **không cần tạo tài khoản**.
+- Nhận email xác nhận tự động ngay sau khi gửi.
 
 ## Phase 2 - Hệ thống xử lý tự động
 
-- CV Parser API bóc tách: họ tên, SĐT, email, skills, kinh nghiệm
-- AI Scoring: so CV với JD → trả điểm 0-100 + nhận xét điểm mạnh/yếu
-- Lưu DB, ứng viên xuất hiện trên Kanban HR ở cột "New"
+- Hệ thống bóc text từ CV, chia đoạn và sinh vector biểu diễn.
+- Chấm CV **theo từng tiêu chí đã chốt** → khớp/thiếu + câu bằng chứng + điểm có trọng số.
+- Việc chấm chạy **bất đồng bộ ở tiến trình nền**: ứng viên nhận phản hồi ngay, kết quả chấm
+  hiện sau; hồ sơ chưa chấm được quét lại tự động khi hệ thống khởi động.
+- Hồ sơ xuất hiện trên bảng Kanban ở pha "Hồ sơ mới".
 
-## Phase 3 - Sàng lọc sơ bộ
+## Phase 3 - Sàng lọc
 
-## _HR_
+- Recruiter xem danh sách xếp hạng, mở từng hồ sơ để đọc **bằng chứng theo tiêu chí** chứ không
+  chỉ nhìn điểm.
+- Ghi chú nội bộ, trao đổi trong hệ thống.
+- Quyết định giữ (chuyển sang pha Phỏng vấn) hoặc loại — mọi thao tác được ghi vào nhật ký hoạt động.
+- Song song: hệ thống gợi ý thêm ứng viên phù hợp từ **Talent Pool** (kho CV cũ).
 
-- HR xem Kanban, sort theo AI score, filter theo job/source
-- Review CV chi tiết, đọc AI Summary, ghi chú nội bộ
-- Bấm "Gửi Sếp duyệt" cho các CV phù hợp
+## Phase 4 - Phỏng vấn
 
-## _Hiring Manager_
+- Recruiter mở pool khung giờ, gán người phỏng vấn, mời danh sách ứng viên.
+- Ứng viên tự chọn khung giờ qua liên kết trong email; hệ thống gửi xác nhận kèm tệp lịch.
+- Trong buổi, người phỏng vấn chấm theo bộ tiêu chí, nháp tự lưu, cuối buổi bấm nộp.
+- Nhiều người chấm → **chấm mù** tự bật; sau khi nộp, hệ thống tổng hợp radar và chỉ ra các tiêu
+  chí bị lệch điểm nhiều.
 
-- Email vào inbox HM kèm CV PDF + AI Summary
-- HM bấm "Phê duyệt" → Kanban tự chuyển sang Quiz stage
-- Hoặc bấm "Loại" → popup Quick Note để HM nhập lý do
+## Phase 5 - Quyết định & Kết quả
 
-## Phase 4 - Ứng viên làm AI Quiz
-
-- Magic link gửi vào email ứng viên (TTL 48h)
-- Disclosure & Consent screen → ứng viên đồng ý mới bắt đầu
-- Làm bài với timer đếm ngược, anti-cheat ghi nhận hành vi
-- Hết giờ tự submit → chấm điểm tự động → hiện badge trên Kanban
-
-## Phase 5 - Phỏng vấn & Collaborative Scoring
-
-- HR lên lịch phỏng vấn cho UV đạt điểm quiz
-- Nhiều interviewer chấm độc lập theo tiêu chí (Blind Review)
-- Hệ thống tổng hợp, hiển thị Radar Chart so sánh
-- Insight tự động cảnh báo nếu có bất đồng lớn giữa interviewer
-
-## Phase 6 - Kết quả & Dashboard
-
-- Email offer letter tự gửi cho ứng viên trúng tuyển
-- Email cảm ơn cho ứng viên không trúng
-- Activity Log ghi lại toàn bộ lịch sử ứng viên
-- Dashboard cập nhật funnel chart, time-to-hire, cost-per-hire, UTM source
+- Trưởng bộ phận (hoặc Recruiter nếu vị trí không gán trưởng bộ phận) xem điểm tổng hợp và chốt.
+- Gửi thư mời làm việc → ứng viên bấm **nhận hoặc từ chối** ngay trong email → hệ thống tự
+  chuyển sang trạng thái Tuyển hoặc Loại.
+- Email kết quả được gửi tự động cho cả ứng viên trúng tuyển và không trúng tuyển.
+- Dashboard cập nhật phễu tuyển dụng, time-to-hire, tỉ lệ chấp nhận offer, phân tích lý do loại
+  và nguồn ứng viên.
 
 # 7\. Mục tiêu kinh doanh & KPI
 
-Hệ thống đặt mục tiêu đạt được 4 KPI cụ thể, đo lường được sau khi triển khai:
+Hệ thống đặt mục tiêu đạt 5 chỉ số cụ thể, đo lường được sau khi triển khai:
 
 | **KPI**                        | **Hiện trạng (As-Is)** | **Mục tiêu (To-Be)**                  |
 | ------------------------------ | ---------------------- | ------------------------------------- |
 | **Time-to-Hire**               | 18 ngày                | **< 12 ngày (giảm 30%)**              |
-| **Recruiter làm tác vụ Admin** | 3-4 giờ/ngày           | **< 1 giờ/ngày (tiết kiệm 20h/tuần)** |
-| **Báo cáo nguồn ứng viên**     | Không có               | **Dashboard 360° theo UTM source**    |
-| **Phát hiện gian lận quiz**    | 0% (không có cơ chế)   | **\> 60% (risk score + cross-check)** |
+| **Thời gian làm tác vụ thủ công** | 3-4 giờ/ngày        | **< 1 giờ/ngày (tiết kiệm 15-20h/tuần)** |
+| **Tỉ lệ hồ sơ có đánh giá lưu vết** | Gần như 0% (đánh giá bằng trí nhớ) | **100% hồ sơ có điểm theo tiêu chí + bằng chứng** |
+| **Tái sử dụng CV đã có** | 0% (CV loại là mất) | **Mỗi tin tuyển dụng mới có gợi ý từ kho CV cũ** |
+| **Báo cáo tuyển dụng**     | Không có               | **Dashboard phễu + time-to-hire + tỉ lệ nhận offer** |
 
 **📊 Ý nghĩa các KPI**
 
-Time-to-Hire và 20h/tuần là chỉ số trực tiếp đo hiệu quả của Email Automation và AI Scoring. Dashboard UTM source giúp Giám đốc ra quyết định phân bổ ngân sách marketing tuyển dụng (~500 triệu/năm cho doanh nghiệp 100+ nhân sự).
+Time-to-Hire và thời gian tác vụ thủ công đo trực tiếp hiệu quả của tự động hóa email, chấm CV
+và đặt lịch. Hai chỉ số về đánh giá lưu vết và tái sử dụng CV đo đúng phần giá trị mà một file
+Excel không thể thay thế — đây là lập luận trung tâm khi bảo vệ.
+
+Số liệu hiện trạng được đối chiếu bằng **phỏng vấn sâu 3–5 doanh nghiệp** thuộc đúng phân khúc
+mục tiêu (bộ 23 câu hỏi / 6 phần) kết hợp khảo sát trực tuyến — xem Mục 9.3.
 
 # 8\. Phân tích rủi ro & Giảm thiểu
 
-Đánh giá 5 rủi ro chính của dự án và chiến lược giảm thiểu:
-
 | **Rủi ro**                             | **Impact** | **Chiến lược giảm thiểu**                                           |
 | -------------------------------------- | ---------- | ------------------------------------------------------------------- |
-| **Kháng cự thay đổi (HR quen Excel)**  | **Cao**    | UI/UX mượt nhất có thể, đào tạo qua Prototype sớm trước khi go-live |
-| **CV Parser sai với PDF phức tạp**     | **Trung**  | Fallback Manual Edit - HR sửa thủ công sau khi nhận kết quả thô     |
-| **Chi phí OpenAI cao khi nhiều UV**    | **Trung**  | Cache kết quả theo hash CV + hash JD, batch processing              |
-| **Ứng viên gian lận quiz online**      | **Cao**    | Anti-cheat 3 lớp + cross-check với onsite test                      |
-| **Bất đồng giữa interviewer khi chấm** | **Thấp**   | Insight tự động cảnh báo std deviation > 1.0                        |
+| **Kháng cự thay đổi (quen dùng Excel)** | **Cao**   | Giữ giao diện tối giản, mặc định dùng được với một tài khoản duy nhất; tính năng nâng cao là tùy chọn |
+| **Bóc text CV sai với PDF phức tạp**   | **Trung**  | Cho phép sửa tay thông tin sau khi bóc; giữ tệp CV gốc để đối chiếu |
+| **Similarity không đủ để kết luận đạt/không đạt** | **Cao** | **Đã đo và xác nhận rủi ro này**: bổ sung bước mô hình ngôn ngữ kiểm chứng sau khi vector truy hồi đoạn CV; giao diện gọi đúng tên là "độ liên quan", không trình bày như một phán quyết |
+| **Hạ tầng chạy AI cục bộ (RAM/CPU)**   | **Trung**  | Tách dịch vụ AI thành tiến trình riêng; embedding chạy thường trực, mô hình ngôn ngữ chạy theo lô; đánh giá phương án thuê máy chủ khi triển khai thật |
+| **Rò rỉ dữ liệu xuyên công ty**        | **Cao**    | Phòng thủ nhiều lớp: Row-Level Security ở tầng dữ liệu + Global Query Filter ở tầng ứng dụng + kiểm thử cô lập dữ liệu |
+| **Mẫu phỏng vấn doanh nghiệp nhỏ (3-5 công ty)** | **Trung** | Nêu rõ hạn chế cỡ mẫu khi trình bày; kết hợp ba lớp minh chứng: desk research có nguồn + khảo sát + phỏng vấn sâu |
+| **Bất đồng giữa người chấm phỏng vấn** | **Thấp**   | Tự động cảnh báo tiêu chí có độ lệch chuẩn lớn để nhóm ngồi lại bàn |
 
-# 9\. Kế hoạch triển khai 3 tháng
+# 9\. Kế hoạch triển khai & Phân công
 
-Dự án được chia thành 3 giai đoạn rõ ràng, mỗi giai đoạn có mục tiêu báo cáo cụ thể với thầy hướng dẫn:
+> **Kế hoạch chi tiết ở mức gói công việc** (104 gói, 1.230 giờ công, có mã WBS, người phụ trách,
+> ước lượng, sprint, trạng thái và minh chứng trong mã nguồn) được trình bày trong tài liệu riêng:
+> **`SRIS_WBS.md` — Work Breakdown Structure.** Mục này chỉ tóm tắt ở cấp giai đoạn.
 
-## Tháng 1 (T4/2026) - Nền tảng & Setup
+## 9.1 Năm giai đoạn triển khai
 
-**Mục tiêu báo cáo:**
+| **Giai đoạn** | **Thời gian** | **Mục tiêu nghiệm thu** | **Khối lượng** |
+| --- | --- | --- | --- |
+| **GĐ1 — Khởi động & Phân tích** | T4/2026 (S1) | SRS, ERD, Use Case, wireframe; khung dự án build được | 110 giờ (8,9%) |
+| **GĐ2 — Nền tảng hệ thống** | T4-T5/2026 (S2-S3) | Đăng nhập & phân quyền chạy thật, dữ liệu cô lập theo công ty, luồng đăng tin → nộp CV → lên Kanban | 218 giờ (17,7%) |
+| **GĐ3 — Tính năng cốt lõi** | T5-T6/2026 (S4-S6) | State Machine, chấm CV tự động, email tự động, chấm phỏng vấn + radar, dashboard, offer | 294 giờ (23,9%) |
+| **GĐ4 — Tái định vị hậu hội đồng** | T7-T8/2026 (S7-S9) | Gỡ Quiz; trục tiêu chí (bóc → duyệt → chấm CV có bằng chứng); Yêu cầu tuyển dụng; Talent Pool; pool khung giờ | 284 giờ (23,1%) |
+| **GĐ5 — Hoàn thiện, Đo lường & Bảo vệ** | T8/2026 (S9-S10) | Minh chứng sơ cấp, đo chất lượng AI, kiểm thử, triển khai, tài liệu, bảo vệ 2 | 324 giờ (26,3%) |
 
-Thầy thấy được thiết kế hệ thống chuẩn, source code chạy được, demo Auth và luồng nộp CV cơ bản.
+**Cột mốc chính:**
 
-**Công việc chính:**
+| **Mốc** | **Ngày** | **Tiêu chí đạt** |
+| --- | --- | --- |
+| M0 — Chốt yêu cầu & thiết kế | 14/04/2026 | SRS + ERD + Use Case được duyệt |
+| M1 — Nền tảng chạy được | 12/05/2026 | Luồng đăng tin → nộp CV chạy end-to-end |
+| M2 — Bản demo đầy đủ | 23/06/2026 | 9 module chạy thông với dữ liệu demo |
+| M3 — **Bảo vệ 1** | 10/07/2026 | Trình bày trước hội đồng, nhận phản hồi |
+| M4 — Hoàn tất tái định vị | 09/08/2026 | Trục tiêu chí + Talent Pool + đặt lịch chạy thật |
+| M5 — **Bảo vệ 2** | 31/08/2026 | Sản phẩm hoàn thiện, tài liệu và số liệu đo đầy đủ |
 
-- Chốt requirement, viết SRS hoàn thiện
-- Thiết kế ERD database (SQL Server) + Use Case diagrams
-- Setup project: .NET Core + React + SQL Server
-- Hoàn thiện Auth + RBAC, CRUD Job & Application cơ bản
-- Giao diện Kanban tĩnh, form nộp CV one-page
+## 9.2 Phân công nhóm 5 người
 
-## Tháng 2 (T5/2026) - Tính năng cốt lõi
+| **Mã** | **Thành viên** | **Vai trò** | **Phạm vi phụ trách chính** | **Khối lượng** |
+| --- | --- | --- | --- | --- |
+| **BE1** | **Vũ Gia Khánh** | BA/PM kiêm Backend Lead | Kiến trúc hệ thống · Xác thực & phân quyền · State Machine · Magic link · AI service (embedding + bóc tiêu chí) · Đối chiếu theo tiêu chí · Phương pháp đánh giá AI · Tài liệu & bảo vệ | 252 giờ (20,5%) |
+| **BE2** | **San** | Backend — Nền tảng dữ liệu & Hạ tầng | Thiết kế CSDL & migration · Multi-tenant/RLS · Lưu trữ tệp (MinIO) · Xử lý PDF & vector · Chấm CV bất đồng bộ · Talent Pool · Pool khung giờ · Kiểm thử & triển khai | 256 giờ (20,8%) |
+| **BE3** | **Huy Minh** | Backend — Nghiệp vụ & Tích hợp | Job & Yêu cầu tuyển dụng · Quản lý người dùng & phòng ban · Email automation · Tổng hợp điểm phỏng vấn · Dashboard & Analytics · Dữ liệu demo · Sơ đồ thiết kế | 246 giờ (20,0%) |
+| **FE1** | **Tùng Anh** | Frontend — Candidate Portal & Phỏng vấn | Career Site & form nộp CV · Các trang magic link (chọn lịch, tra trạng thái, trả lời offer) · Phiếu chấm phỏng vấn & màn interviewer · Màn kết quả chấm CV · Kiểm thử FE | 236 giờ (19,2%) |
+| **FE2** | **Hùng Anh** | Frontend — Employer Portal & Trực quan hóa | Hệ thống giao diện chung & layout · Kanban 4 pha · Quản lý tin tuyển dụng · Duyệt bộ tiêu chí · Yêu cầu tuyển dụng · Talent Pool · Dashboard biểu đồ · Brand theming | 240 giờ (19,5%) |
 
-**Mục tiêu báo cáo:**
+**Nguyên tắc phân công:** mỗi gói công việc có đúng một người chịu trách nhiệm chính; công việc
+liên tầng được tách thành gói Frontend và gói Backend riêng. Chênh lệch khối lượng giữa người
+nhiều nhất và ít nhất là 20 giờ (8,1% so với trung bình 246 giờ/người).
 
-Demo end-to-end: nộp CV → AI chấm điểm → HR kéo Kanban → gửi quiz → kết quả → email tự động gửi đi.
+## 9.3 Phương pháp minh chứng ba lớp
 
-**Công việc chính:**
+Để tránh lập luận cảm tính, nhóm dùng ba lớp minh chứng bổ trợ nhau:
 
-- State Machine + Email tự động hoàn chỉnh
-- Tích hợp OpenAI: AI Scoring CV + AI Gen Quiz
-- Kanban kéo thả hoạt động đầy đủ
-- Quiz Engine FE + BE (bao gồm Anti-cheat)
-- Collaborative Scoring + Radar Chart
-- Dashboard với funnel chart, KPI cards
-- Brand theming + Multi-tenant data isolation
+1. **Desk research có nguồn** — số liệu thị trường và quy trình as-is của doanh nghiệp ≤ 200 người, trích dẫn nguồn đầy đủ.
+2. **Khảo sát trực tuyến** — biểu mẫu 14 câu, chạy song song, thu thập trên diện rộng.
+3. **Phỏng vấn sâu 3-5 doanh nghiệp** — bộ 23 câu / 6 phần, mỗi thành viên tiếp cận một doanh
+   nghiệp qua quan hệ cá nhân (~30 phút/công ty). Kết quả tổng hợp thành bảng "N công ty × quy
+   trình thực tế × nỗi đau × con số" để điền KPI hiện trạng ở Mục 7.
 
-## Tháng 3 (T6-T7/2026) - Hoàn thiện & Bảo vệ
+Hạn chế về cỡ mẫu được nêu thẳng khi trình bày, kèm cách bù đắp bằng hai lớp còn lại.
 
-**Mục tiêu báo cáo:**
+## 9.4 Quản lý thay đổi phạm vi
 
-Sản phẩm hoàn thiện, deploy thật trên cloud, tài liệu đầy đủ, sẵn sàng bảo vệ.
+Đề tài đã trải qua một lần thay đổi phạm vi lớn sau Bảo vệ 1 (10/07/2026), được ghi nhận chính thức:
 
-**Công việc chính:**
+| **Nội dung** | **Trước** | **Sau** | **Lý do** |
+| --- | --- | --- | --- |
+| Đối tượng | Doanh nghiệp IT ≥ 100 nhân sự | Doanh nghiệp ≤ 200 nhân sự + công ty gia đình, mọi ngành | Phản hồi hội đồng: đối tượng quá rộng, thiếu minh chứng |
+| Module Quiz | Trong phạm vi (sinh đề AI + chống gian lận 3 lớp) | **Loại hoàn toàn** | Không phải nỗi đau cốt lõi của doanh nghiệp nhỏ, làm loãng trọng tâm |
+| Chấm CV | Một điểm 0-100 cho cả bộ hồ sơ | Chấm **theo từng tiêu chí** có câu bằng chứng | Điểm số không giải thích được thì người dùng không tin |
+| Nhà cung cấp AI | OpenAI (API trả phí) | **Local AI** (Ollama) | Chi phí bằng 0, dữ liệu không rời hạ tầng, phù hợp Luật Bảo vệ dữ liệu cá nhân |
+| Talent Pool | Tính năng phụ | **Tính năng đinh** | Giá trị tăng dần theo thời gian sử dụng — lý do doanh nghiệp gắn bó |
+| Thời hạn | 15/07/2026 | 31/08/2026 | Bổ sung thời gian cho tái định vị và đo lường chất lượng AI |
 
-- Bug fix, tối ưu UX dựa trên feedback
-- Deploy hệ thống lên server thật (Azure SQL + Vercel + Render/VPS)
-- Viết báo cáo đồ án hoàn chỉnh
-- Làm slide thuyết trình + chuẩn bị demo script cho hội đồng
-- Test toàn bộ flow với data thật, chuẩn bị bài bảo vệ
+Phần phương pháp đánh giá AI xây dựng trong giai đoạn làm Quiz **được tái sử dụng** cho việc đo
+chất lượng bóc tiêu chí và chấm CV — khung "bộ test cố định, mỗi lần đổi một yếu tố, đo hai tầng
+(máy chấm + rubric người)" giữ nguyên, chỉ đổi đối tượng đo.
 
-## Phân công nhóm 5 người
+# 10\. Tổng kết
 
-| **Vai trò** | **Phụ trách chính**     | **Module/Tính năng**                                               |
-| ----------- | ----------------------- | ------------------------------------------------------------------ |
-| **FE 1**    | **Candidate Portal**    | Career Site, form nộp CV, trang làm quiz, status tracking          |
-| **FE 2**    | **Employer Dashboard**  | Kanban board, chi tiết ứng viên, dashboard biểu đồ, brand settings |
-| **BE 1**    | **Core API**            | Auth/JWT, RBAC, Multi-tenant, State Machine, Collaborative Scoring |
-| **BE 2**    | **Service Layer**       | File upload, PDF extract, Email service, Quiz engine               |
-| **BA/PM**   | **Quản trị + AI Layer** | AI scoring service, Prompt engineering, Analytics, Tài liệu        |
+Smart Recruitment and Interview System (SRIS) là dự án có quy mô vừa phải nhưng đầy đủ tính
+nghiệp vụ của một sản phẩm thực tế, phù hợp để bảo vệ đồ án tốt nghiệp với 5 thành viên trong
+5 tháng.
 
-## Tổng kết
+Ba điểm nhóm muốn nhấn mạnh:
 
-Hệ thống Smart Recruitment and Interview System (SRIS) là dự án có quy mô vừa phải nhưng đầy đủ tính nghiệp vụ enterprise, phù hợp để bảo vệ đồ án tốt nghiệp với 5 thành viên trong 3 tháng. Sản phẩm tích hợp AI có lý do nghiệp vụ rõ ràng (không phải gắn AI để có), giải quyết các pain points thực tế của thị trường tuyển dụng IT Việt Nam, và có roadmap kỹ thuật rõ ràng để scale lên trong tương lai.
+1. **Sản phẩm có đối tượng rõ ràng.** Không làm ATS cho mọi doanh nghiệp, mà làm cho nhóm chưa
+   có phòng nhân sự — nhóm bị các nền tảng lớn bỏ qua vì không đủ lợi nhuận.
+2. **AI có lý do nghiệp vụ, không phải gắn cho có.** AI đề xuất tiêu chí và tìm bằng chứng trong
+   CV; con người chốt tiêu chí và ra quyết định tuyển. Ranh giới trách nhiệm rõ ràng.
+3. **Nhóm đo trước khi tin.** Thí nghiệm đo ngưỡng similarity đã **bác bỏ** chính cách làm ban
+   đầu của nhóm, và kết quả đó được ghi nhận công khai cùng hướng khắc phục — thay vì giấu đi.
+
+Sản phẩm có kiến trúc phân tầng rõ ràng, dữ liệu cô lập theo từng doanh nghiệp ở tầng cơ sở dữ
+liệu, và toàn bộ AI chạy cục bộ — đủ nền tảng để phát triển tiếp thành một sản phẩm thương mại
+sau khi tốt nghiệp.
 
 ─────── Hết tài liệu ───────
