@@ -316,7 +316,11 @@ submit_sheet(iv2, sched_id, 7)
 print("   + 2 phieu cham DA NOP -> panel aggregate co du lieu, guard G2 dat")
 
 # ---------- 10) Offer: An PENDING · Hong ACCEPT -> HIRED ----------
-# LƯU Ý: POST /offer TỰ chuyển INTERVIEW -> OFFER (kèm guard G2) — KHÔNG transition tay trước.
+# POST /offer KHONG tu transition: OfferService bat hồ sơ phải ĐANG ở OFFER rồi mới cho tạo
+# thư (nguoi quyet tuyen la DM/Recruiter, khac nguoi soan thu). Nen phai keo INTERVIEW->OFFER
+# truoc — buoc nay qua guard G2 (>=1 phieu cham SUBMITTED, vua nop o buoc 9).
+# Job seed khong gan department_manager_id -> Recruiter duoc quyet (duong mac dinh cong ty nho).
+transition("Nguyễn Văn An", "OFFER")
 s, offer = call("POST", f"/applications/{apps['Nguyễn Văn An']['id']}/offer", token=recruiter,
                 body={"salaryAmount": 25000000, "note": "Offer Java Developer — chờ phản hồi", "expiresInDays": 7})
 must(s, offer, "offer An")
@@ -327,6 +331,7 @@ s, manual = call("POST", f"/applications/{apps['Lê Thị Hồng']['id']}/manual
                  body={"interviewerIds": [iv_ids[0]], "startTime": future})
 must(s, manual, "chot lich tay Hong")
 submit_sheet(iv1, manual["scheduleId"], 9)
+transition("Lê Thị Hồng", "OFFER")
 s, offer2 = call("POST", f"/applications/{apps['Lê Thị Hồng']['id']}/offer", token=recruiter,
                  body={"salaryAmount": 16000000, "note": "Offer Kế toán tổng hợp", "expiresInDays": 7})
 must(s, offer2, "offer Hong")

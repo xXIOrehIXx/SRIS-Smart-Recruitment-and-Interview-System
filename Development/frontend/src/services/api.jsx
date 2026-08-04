@@ -5,11 +5,15 @@ import axios from 'axios';
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Các trang KHÔNG cần đăng nhập (khớp route công khai trong App.jsx): career site theo slug
-// công ty + 3 trang ứng viên vào bằng magic link. Dùng để chặn interceptor 401 đá về /login.
+// công ty + 3 trang ứng viên vào bằng magic link + đặt lại mật khẩu. Dùng để chặn interceptor
+// 401 đá về /login. Riêng /reset-password: token hết hạn/đã dùng -> BE trả 401
+// (AuthErrorCode.ExpiredForgotPassword); nếu để interceptor redirect thì user bị ném về
+// /login không lời giải thích, thay vì đọc được "liên kết đã hết hạn" ngay trên trang.
 const isPublicPath = (pathname) =>
   pathname === '/' ||
   /^\/[^/]+\/career(\/|$)/.test(pathname) ||
-  ['/schedule', '/offer', '/status', '/candidate/offer-response'].includes(pathname);
+  ['/schedule', '/offer', '/status', '/candidate/offer-response',
+   '/forgot-password', '/reset-password'].includes(pathname);
 
 // Tạo axios instance
 const api = axios.create({

@@ -187,9 +187,16 @@ public class CriteriaScoringService : BaseService<CriteriaScoringService>, ICrit
     /// <summary>
     /// Tiêu chí HARD: tìm keyword trong text CV (so cả bản bỏ dấu — CV hay viết không dấu).
     /// Khớp -> bằng chứng = đoạn text quanh vị trí tìm thấy.
+    ///
+    /// Riêng tiêu chí dạng "≥ N năm kinh nghiệm" tách sang so SỐ (<see cref="ExperienceYearsMatcher"/>):
+    /// CV viết mốc thời gian chứ không viết thẳng "3 năm", nên tìm chuỗi luôn sai.
     /// </summary>
     internal static (bool Matched, string? Evidence) MatchHardByKeywords(string cvText, EvaluationCriteria c)
     {
+        var requiredYears = ExperienceYearsMatcher.ParseRequiredYears($"{c.Name} ; {c.Keywords}");
+        if (requiredYears is not null)
+            return MatchExperienceYears(cvText, requiredYears.Value);
+
         var keywords = (string.IsNullOrWhiteSpace(c.Keywords) ? c.Name : c.Keywords)
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
@@ -213,6 +220,34 @@ public class CriteriaScoringService : BaseService<CriteriaScoringService>, ICrit
         }
         return (false, null);
     }
+
+    /// <summary>
+    /// Tiêu chí đếm năm kinh nghiệm: cộng các mốc thời gian trong CV rồi so với yêu cầu.
+    /// CV không ghi mốc nào -> KHÔNG khớp, nhưng bằng chứng nói rõ "không xác định được"
+    /// để người sàng lọc biết đây là thiếu dữ liệu chứ không phải ứng viên thiếu kinh nghiệm.
+    /// </summary>
+    internal static (bool Matched, string? Evidence) MatchExperienceYears(string cvText, double requiredYears)
+    {
+        var scan = ExperienceYearsMatcher.ScanCv(cvText);
+        if (scan.Years is null)
+        {
+            return (false,
+                $"Không xác định được số năm kinh nghiệm từ CV (không tìm thấy mốc thời gian). " +
+                $"Yêu cầu: từ {FormatYears(requiredYears)} năm — cần người đọc xác nhận.");
+        }
+
+        var actual = scan.Years.Value;
+        var evidence = $"Ước tính {FormatYears(actual)} năm kinh nghiệm " +
+                       $"(yêu cầu từ {FormatYears(requiredYears)} năm). " +
+                       $"Mốc thời gian trong CV: {string.Join(" · ", scan.Ranges)}";
+
+        return (actual >= requiredYears, Truncate(evidence));
+    }
+
+    private static string FormatYears(double years) =>
+        years % 1 == 0
+            ? ((int)years).ToString(CultureInfo.InvariantCulture)
+            : years.ToString("0.#", CultureInfo.InvariantCulture);
 
     /// <summary>Bỏ dấu tiếng Việt (đ/Đ xử lý riêng) — RemoveDiacritics("kế toán") = "ke toan".</summary>
     internal static string RemoveDiacritics(string text)

@@ -47,11 +47,16 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
         return await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
     }
 
-    public async Task<bool> EmailExistsAsync(long companyId, string email, long? excludeUserId = null)
+    public async Task<bool> EmailExistsAsync(string email, long? excludeUserId = null)
     {
-        return await _db.Users
-            .Where(u => u.Email == email && (excludeUserId == null || u.UserId != excludeUserId))
-            .AnyAsync();
+        // Email duy nhất TOÀN HỆ THỐNG (V028) -> phải soi xuyên tenant, nếu không thì một email
+        // đã dùng ở công ty khác sẽ lọt qua tầng service rồi vỡ ở UQ_User_email lúc INSERT.
+        // Bỏ Global Query Filter + tắt RLS policy, cùng pattern với GetByEmail.
+        return await WithPolicyOffAsync(async () =>
+            await _db.Users
+                .IgnoreQueryFilters()
+                .Where(u => u.Email == email && (excludeUserId == null || u.UserId != excludeUserId))
+                .AnyAsync());
     }
 
     public async Task<long> InsertAsync(long companyId, User user)

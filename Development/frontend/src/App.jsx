@@ -9,6 +9,7 @@ import PublicJobDetail from "./pages/recruitment/PublicJobDetail";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import SubAccountManagement from "./pages/admin/SubAccountManagement";
 import CreateAccount from "./pages/admin/CreateAccount";
@@ -56,6 +57,9 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Đích của link trong email quên mật khẩu — path khớp chuỗi BE sinh:
+              {CandidatePortal.BaseUrl}/reset-password?token=... */}
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Route>
 
       {/* Route ứng viên qua magic link — path khớp link backend sinh trong email:
