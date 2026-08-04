@@ -142,7 +142,13 @@ public class InterviewerTotalDto
 {
     public long InterviewerId { get; set; }
     public string? InterviewerName { get; set; }
-    public decimal WeightedTotal { get; set; }
+
+    /// <summary>
+    /// PHẦN TRĂM 0–100: điểm có trọng số / điểm tối đa có trọng số, chỉ tính tiêu chí người
+    /// này đã chấm. Là % chứ không phải điểm thô — tiêu chí được phép khác thang (maxScore
+    /// riêng từng tiêu chí) nên cộng điểm thô lại thì 5/5 và 5/10 đóng góp như nhau.
+    /// </summary>
+    public decimal WeightedPercent { get; set; }
 }
 
 /// <summary>Bảng tổng hợp 1 buổi: Radar (average từng tiêu chí) + std dev + điểm từng interviewer.</summary>
@@ -153,8 +159,8 @@ public class ScheduleAggregateDto
     public List<AggregateCriterionDto> Criteria { get; set; } = new();
     public List<InterviewerTotalDto> InterviewerTotals { get; set; } = new();
 
-    /// <summary>Trung bình điểm tổng có trọng số của cả panel.</summary>
-    public decimal PanelWeightedAverage { get; set; }
+    /// <summary>Trung bình <see cref="InterviewerTotalDto.WeightedPercent"/> của cả panel (0–100).</summary>
+    public decimal PanelWeightedPercent { get; set; }
 
     /// <summary>Vòng phỏng vấn (InterviewSchedule.round_number) — chỉ điền khi xem theo hồ sơ.</summary>
     public int? RoundNumber { get; set; }

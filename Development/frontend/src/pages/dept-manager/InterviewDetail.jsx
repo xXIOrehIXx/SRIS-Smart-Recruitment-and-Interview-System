@@ -96,7 +96,8 @@ const DeptInterviewDetail = () => {
         <Space direction="vertical" size={2}>
           {(scores || []).map((s) => (
             <Text key={s.interviewerId} style={{ fontSize: 13 }}>
-              #{s.interviewerId}: <Text strong>{s.score ?? '—'}</Text>
+              {/* BE trả sẵn interviewerName (blind đã mở) — hiện tên, id chỉ để dự phòng */}
+              {s.interviewerName || `#${s.interviewerId}`}: <Text strong>{s.score ?? '—'}</Text>
               {s.note && <Text type="secondary" italic> — "{s.note}"</Text>}
             </Text>
           ))}
@@ -106,12 +107,19 @@ const DeptInterviewDetail = () => {
   ];
 
   const totalColumns = [
-    { title: 'Interviewer', dataIndex: 'interviewerId', key: 'interviewerId', render: (id) => `#${id}` },
     {
+      title: 'Interviewer',
+      dataIndex: 'interviewerName',
+      key: 'interviewerName',
+      render: (name, record) => name || `#${record.interviewerId}`,
+    },
+    {
+      // % có trọng số (điểm đạt / điểm tối đa có trọng số) — không phải điểm thô.
       title: 'Điểm tổng có trọng số',
-      dataIndex: 'weightedTotal',
-      key: 'weightedTotal',
-      render: (t) => <Text strong style={{ color: MATCHA_GREEN }}>{t}</Text>,
+      dataIndex: 'weightedPercent',
+      key: 'weightedPercent',
+      render: (p) => <Text strong style={{ color: MATCHA_GREEN }}>{p}%</Text>,
+      sorter: (a, b) => a.weightedPercent - b.weightedPercent,
     },
   ];
 
@@ -164,7 +172,8 @@ const DeptInterviewDetail = () => {
               <Card className="stat-card" bordered={false}>
                 <Statistic
                   title="Điểm panel (trung bình có trọng số)"
-                  value={aggregate.panelWeightedAverage}
+                  value={aggregate.panelWeightedPercent}
+                  suffix="%"
                   valueStyle={{ color: MATCHA_GREEN }}
                 />
               </Card>

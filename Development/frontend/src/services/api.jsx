@@ -270,7 +270,8 @@ export const interviewAPI = {
   // Điểm phỏng vấn của CẢ hồ sơ, tách theo từng vòng — màn quyết định tuyển dụng của DM.
   // Trả [{ scheduleId, roundNumber, scheduledAt, scheduleStatus, submittedInterviewers,
   //        criteria: [{ name, weight, maxScore, average, stdDev, needsDiscussion, scores: [...] }],
-  //        interviewerTotals: [...], panelWeightedAverage }]
+  //        interviewerTotals: [{ interviewerId, interviewerName, weightedPercent }],
+  //        panelWeightedPercent }]   — weightedPercent/panelWeightedPercent là % 0–100.
   getApplicationAggregate: (applicationId) =>
     api.get(`/applications/${applicationId}/interview-aggregate`),
 };

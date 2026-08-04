@@ -125,6 +125,9 @@ const Grading = () => {
     return criteria.reduce((sum, c) => sum + c.maxScore, 0);
   };
 
+  // Cùng công thức với BE (InterviewScoringService.GetAggregateAsync): điểm có trọng số chia
+  // điểm TỐI ĐA có trọng số. Khác một điểm: ở đây tiêu chí chưa chấm tính 0 (để thấy tiến độ),
+  // còn BE chỉ tính tiêu chí đã chấm — nộp phiếu bắt buộc chấm đủ nên lúc đó hai bên bằng nhau.
   const calculateWeightedScore = () => {
     let weightedSum = 0;
     let totalWeight = 0;
@@ -300,14 +303,17 @@ const Grading = () => {
                 </Text>
               </div>
               <div className="total-score">
-                <Text type="secondary">Điểm tổng</Text>
+                <Text type="secondary">Điểm thô</Text>
                 <div className="score-display">
                   <span className="score-value">{calculateTotal()}</span>
                   <span className="score-divider">/</span>
                   <span className="score-max">{calculateMaxScore()}</span>
                 </div>
+                {/* Hai con số này là HAI phép tính khác nhau: trên là tổng thô (không trọng số),
+                    dưới là % có trọng số — lệch nhau khi các tiêu chí khác trọng số. Ghi rõ để
+                    không bị đọc thành "X/Y quy ra phần trăm". % mới là con số DM thấy ở tổng hợp. */}
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  ({calculateWeightedScore()}%)
+                  {calculateWeightedScore()}% có trọng số
                 </Text>
               </div>
             </div>
