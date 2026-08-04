@@ -5,6 +5,9 @@ namespace GP35.SRIS.Domain.Repos;
 /// <summary>1 pool khung phỏng vấn dùng chung kèm các khung của nó.</summary>
 public record PoolWithSlots(InterviewSlotPool Pool, IReadOnlyList<InterviewSlot> Slots);
 
+/// <summary>1 interviewer đang bận kèm giờ buổi đã chốt — để báo lỗi có ngữ cảnh.</summary>
+public record BusyInterviewer(long InterviewerId, DateTime StartTime);
+
 /// <summary>
 /// Đặt lịch phỏng vấn theo POOL DÙNG CHUNG (docs Section 15). Recruiter mở 1 pool (job + vòng) với
 /// nhiều khung; mời nhiều ứng viên vào cùng pool; ai chốt trước lấy trước (OPEN -> BOOKED, khóa lạc
@@ -31,8 +34,9 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     Task<InterviewSlot?> GetSlotAsync(long companyId, long slotId);
 
     /// <summary>
-    /// Hủy pool: pool -> CANCELLED + khóa mọi khung chưa khóa (OPEN/BOOKED -> LOCKED) + các invite còn
-    /// PENDING -> CANCELLED, trong 1 transaction. Trả false nếu pool đã CANCELLED từ trước.
+    /// Hủy pool: pool -> CANCELLED + khóa mọi khung chưa khóa (OPEN/BOOKED -> LOCKED) + mọi lịch
+    /// PENDING lẫn CONFIRMED của pool -> CANCELLED, trong 1 transaction. Trả false nếu pool đã
+    /// CANCELLED từ trước.
     /// </summary>
     Task<bool> CancelPoolAsync(long companyId, long poolId);
 
@@ -46,6 +50,13 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 
     /// <summary>Ứng viên đã có invite (PENDING/CONFIRMED) ở pool này chưa (chống mời trùng)?</summary>
     Task<bool> HasActiveInviteInPoolAsync(long companyId, long poolId, long applicationId);
+
+    /// <summary>
+    /// Ứng viên đã CHỐT lịch cho vòng này chưa — kể cả ở pool KHÁC. Chặn mời lại người đã có
+    /// buổi vòng 1, thứ tạo ra 2 schedule CONFIRMED cùng vòng
+    /// (<see cref="HasActiveInviteInPoolAsync"/> chỉ nhìn trong 1 pool nên không thấy).
+    /// </summary>
+    Task<bool> HasConfirmedScheduleForRoundAsync(long companyId, long applicationId, int roundNumber);
 
     /// <summary>Lịch PENDING mới nhất của hồ sơ (cho ứng viên chọn khung). Null nếu không có.</summary>
     Task<InterviewSchedule?> GetLatestPendingScheduleAsync(long companyId, long applicationId);
@@ -77,14 +88,24 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// </summary>
     Task<bool> BookAndConfirmAsync(long companyId, long scheduleId, long slotId, long applicationId);
 
-    /// <summary>Người phỏng vấn đã có khung BOOKED đúng giờ này ở pool khác chưa (chống trùng giờ — 15.3)?</summary>
-    Task<bool> IsInterviewerBookedAtAsync(long companyId, long interviewerId, DateTime startTime, long excludeSlotId);
+    /// <summary>
+    /// Check CẢ PANEL cùng lúc — trả về interviewer đầu tiên trong panel đã có khung BOOKED nằm
+    /// trong cửa sổ ±<paramref name="minGap"/> quanh <paramref name="startTime"/>, kèm giờ buổi đó.
+    /// Trả null nếu cả panel rảnh. Dùng khi ứng viên chốt khung (panel N interviewers — mở rộng A).
+    /// Cách nhau ĐÚNG minGap là hợp lệ (biên mở).
+    /// </summary>
+    Task<BusyInterviewer?> FindBusyInterviewerAsync(
+        long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime,
+        TimeSpan minGap, long excludeSlotId);
 
     /// <summary>
-    /// Check CẢ PANEL cùng lúc — trả về interviewer_id đầu tiên trong panel đã có lịch BOOKED đúng
-    /// giờ. Trả null nếu cả panel rảnh. Dùng khi ứng viên chốt khung (panel N interviewers — mở rộng A).
+    /// Giờ buổi đã CHỐT của CHÍNH ứng viên nằm trong cửa sổ ±<paramref name="minGap"/> quanh
+    /// <paramref name="startTime"/> (bỏ qua <paramref name="excludeScheduleId"/>) — chặn 1 ứng viên
+    /// ngồi 2 buổi cùng lúc / sát nhau. Null nếu ứng viên rảnh.
     /// </summary>
-    Task<long?> FindBusyInterviewerAsync(long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime, long excludeSlotId);
+    Task<DateTime?> FindCandidateBusyAtAsync(
+        long companyId, long applicationId, DateTime startTime,
+        TimeSpan minGap, long excludeScheduleId);
 
     /// <summary>Đổi trạng thái lịch (vd NO_SLOT_FITS).</summary>
     Task SetScheduleStatusAsync(long companyId, long scheduleId, string status);

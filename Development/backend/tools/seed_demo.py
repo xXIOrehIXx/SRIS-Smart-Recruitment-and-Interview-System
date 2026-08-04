@@ -279,6 +279,9 @@ iv_ids = [users["Interviewer"]["id"], users["Interviewer2"]["id"]]
 _offs = random.randint(0, 40)  # phút lệch theo run — tránh trùng giờ giữa các lần seed
 future = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00Z", time.gmtime(time.time() + 3 * 86400))
 future2 = time.strftime(f"%Y-%m-%dT14:{_offs:02d}:00Z", time.gmtime(time.time() + 3 * 86400))
+# Lich chot tay cua Hong: NGAY KHAC hai khung tren. Backend chan 2 buoi cach nhau < 1 tieng
+# (cung interviewer hoac cung ung vien) -> dung lai `future` se an 409.
+future3 = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00Z", time.gmtime(time.time() + 4 * 86400))
 s, pool = call("POST", f"/jobs/{jobs['java']}/interview-pools", token=recruiter, body={
     "roundNumber": 1, "slots": [
         {"interviewerIds": iv_ids, "startTime": future},
@@ -328,7 +331,7 @@ print("   + Offer cho An: PENDING (link phan hoi trong UI)")
 
 # Hong: chot lich tay -> cham -> OFFER -> ACCEPT -> HIRED
 s, manual = call("POST", f"/applications/{apps['Lê Thị Hồng']['id']}/manual-interview", token=recruiter,
-                 body={"interviewerIds": [iv_ids[0]], "startTime": future})
+                 body={"interviewerIds": [iv_ids[0]], "startTime": future3})
 must(s, manual, "chot lich tay Hong")
 submit_sheet(iv1, manual["scheduleId"], 9)
 transition("Lê Thị Hồng", "OFFER")

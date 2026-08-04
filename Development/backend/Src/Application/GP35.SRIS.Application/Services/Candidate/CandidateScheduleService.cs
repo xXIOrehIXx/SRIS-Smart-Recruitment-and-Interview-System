@@ -81,12 +81,24 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
         if (slot.StartTime <= DateTime.UtcNow)
             throw Conflict("Khung này đã qua giờ. Vui lòng chọn khung khác.");
 
+        // Chống trùng cho CHÍNH ứng viên: không thể ngồi 2 buổi cùng lúc / sát nhau. Phải check
+        // trước khi book — pool khác (vòng khác, hoặc pool mở lại) không biết gì về buổi đã chốt.
+        var myBusyAt = await _schedulingRepo.FindCandidateBusyAtAsync(
+            v.CompanyId, v.ApplicationId, slot.StartTime, InterviewTiming.MinGap, schedule.ScheduleId);
+        if (myBusyAt is DateTime busyAt)
+            throw Conflict(
+                $"Bạn đã có buổi phỏng vấn lúc {busyAt:HH:mm dd/MM/yyyy}. Hai buổi phải cách nhau " +
+                $"ít nhất {InterviewTiming.MinGapHours} tiếng — vui lòng chọn khung khác.");
+
         // Chống trùng giờ interviewer ở lịch khác (best-effort — 15.3). Check CẢ PANEL.
         var panelIds = slot.Interviewers.Select(i => i.InterviewerId).ToList();
-        var busyId = await _schedulingRepo.FindBusyInterviewerAsync(
-            v.CompanyId, panelIds, slot.StartTime, slot.SlotId);
-        if (busyId is not null)
-            throw Conflict("Một interviewer trong panel đã có lịch vào giờ này. Vui lòng chọn khung khác.");
+        var busy = await _schedulingRepo.FindBusyInterviewerAsync(
+            v.CompanyId, panelIds, slot.StartTime, InterviewTiming.MinGap, slot.SlotId);
+        if (busy is not null)
+            throw Conflict(
+                $"Một interviewer trong panel đã có buổi lúc {busy.StartTime:HH:mm dd/MM/yyyy} — " +
+                $"các buổi phải cách nhau ít nhất {InterviewTiming.MinGapHours} tiếng. " +
+                "Vui lòng chọn khung khác.");
 
         // Khóa lạc quan: ai chốt trước được trước (15.3). KHÔNG khóa khung khác của pool.
         var booked = await _schedulingRepo.BookAndConfirmAsync(

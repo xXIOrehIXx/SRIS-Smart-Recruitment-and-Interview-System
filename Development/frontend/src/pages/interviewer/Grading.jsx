@@ -101,7 +101,9 @@ const Grading = () => {
         }
       }
 
-      if (data.schedule) setInterviewInfo(data.schedule);
+      // Giữ NGUYÊN cả sheet: header đọc interviewInfo.schedule.* và interviewInfo.candidate.*
+      // (gán data.schedule vào đây làm mất một tầng -> panelSize/candidate luôn undefined).
+      setInterviewInfo(data);
     } catch (error) {
       console.error('Error fetching my sheet:', error);
       message.error(error?.response?.data?.userMsg || 'Không thể tải phiếu chấm. Vui lòng thử lại.');

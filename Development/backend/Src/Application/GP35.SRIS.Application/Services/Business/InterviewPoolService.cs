@@ -26,6 +26,7 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
 
     private readonly IApplicationRepo _appRepo;
     private readonly ISchedulingRepo _schedulingRepo;
+    private readonly IEvaluationCriteriaRepo _criteriaRepo;
     private readonly IUserRepo _userRepo;
     private readonly IMagicLinkService _magicLink;
     private readonly IActivityLogRepo _activityLogRepo;
@@ -37,6 +38,7 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     {
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _schedulingRepo = serviceProvider.GetRequiredService<ISchedulingRepo>();
+        _criteriaRepo = serviceProvider.GetRequiredService<IEvaluationCriteriaRepo>();
         _userRepo = serviceProvider.GetRequiredService<IUserRepo>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
@@ -47,6 +49,9 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
 
     public async Task<PoolDto> CreatePoolAsync(long companyId, long userId, long jobId, CreatePoolDto dto)
     {
+        // Chặn NGAY ở cửa đầu: chưa có tiêu chí thì đừng để recruiter mất công chọn khung + panel.
+        await EnsureJobHasApprovedCriteriaAsync(companyId, jobId);
+
         ValidateSlots(dto.Slots);
 
         var roundNumber = dto.RoundNumber ?? 1;
@@ -99,6 +104,10 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         if (!string.Equals(pool.Status, InterviewPoolStatus.Open, StringComparison.OrdinalIgnoreCase))
             throw Conflict("Pool không còn mở — không mời thêm được. Hãy tạo pool mới.");
 
+        // Cửa cam kết thật (ứng viên nhận email). Check lại vì pool có thể tạo trước khi có rule này,
+        // hoặc tiêu chí bị tắt/xóa sau khi pool đã mở.
+        await EnsureJobHasApprovedCriteriaAsync(companyId, pool.JobId);
+
         var result = new InviteResultDto();
         foreach (var applicationId in (dto.ApplicationIds ?? new()).Distinct())
         {
@@ -108,6 +117,24 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
                 result.Skipped.Add(new InviteSkippedDto { ApplicationId = applicationId, Reason = "Không tìm thấy hồ sơ." });
                 continue;
             }
+            // Bỏ qua NGAY nếu không mời được — check TRƯỚC khi đẩy state, để hồ sơ bị skip không bị
+            // đẩy sang INTERVIEW rồi bỏ đó (state đã đổi mà không có lịch nào).
+            if (await _schedulingRepo.HasActiveInviteInPoolAsync(companyId, poolId, applicationId))
+            {
+                result.Skipped.Add(new InviteSkippedDto { ApplicationId = applicationId, Reason = "Đã mời vào pool này rồi." });
+                continue;
+            }
+            if (await _schedulingRepo.HasConfirmedScheduleForRoundAsync(companyId, applicationId, pool.RoundNumber))
+            {
+                result.Skipped.Add(new InviteSkippedDto
+                {
+                    ApplicationId = applicationId,
+                    Reason = $"Đã chốt lịch vòng {pool.RoundNumber} rồi — mời tiếp sẽ thành 2 buổi cùng vòng. " +
+                             "Muốn phỏng vấn thêm thì mở pool vòng kế tiếp."
+                });
+                continue;
+            }
+
             // Mời phỏng vấn = hồ sơ đã sang bước Phỏng vấn -> tự đẩy state (NEW/SCREENING→INTERVIEW).
             // Hồ sơ đã HIRED/REJECTED thì không đẩy được -> báo lý do, không mời.
             try
@@ -117,11 +144,6 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             catch (BaseException ex)
             {
                 result.Skipped.Add(new InviteSkippedDto { ApplicationId = applicationId, Reason = ex.ErrorMessage });
-                continue;
-            }
-            if (await _schedulingRepo.HasActiveInviteInPoolAsync(companyId, poolId, applicationId))
-            {
-                result.Skipped.Add(new InviteSkippedDto { ApplicationId = applicationId, Reason = "Đã mời vào pool này rồi." });
                 continue;
             }
 
@@ -208,8 +230,9 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         var app = await _appRepo.GetByIdAsync(companyId, applicationId)
             ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={applicationId}).");
 
-        // Chốt lịch tay cũng là "hồ sơ đã sang bước Phỏng vấn" -> tự đẩy state, khỏi kéo Kanban.
-        await _stateService.AdvanceToAsync(companyId, userId, applicationId, ApplicationState.Interview);
+        // MỌI validate phải chạy TRƯỚC khi đẩy state: ném lỗi sau AdvanceToAsync thì hồ sơ đã
+        // nhảy sang INTERVIEW mà không có buổi nào được tạo.
+        await EnsureJobHasApprovedCriteriaAsync(companyId, app.JobId);
 
         if (dto.InterviewerIds is null || dto.InterviewerIds.Count == 0)
             throw Bad("Phải chọn ít nhất 1 interviewer cho panel.");
@@ -223,6 +246,24 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
 
         var round = dto.RoundNumber ?? await _schedulingRepo.GetNextRoundNumberAsync(companyId, applicationId);
         var panel = dto.InterviewerIds.Distinct().ToList();
+
+        // Chống trùng như nhánh ứng viên tự chốt (không có schedule cũ để loại trừ -> 0).
+        var myBusyAt = await _schedulingRepo.FindCandidateBusyAtAsync(
+            companyId, applicationId, dto.StartTime, InterviewTiming.MinGap, excludeScheduleId: 0);
+        if (myBusyAt is DateTime busyAt)
+            throw Conflict(
+                $"Ứng viên đã có buổi phỏng vấn lúc {busyAt:HH:mm dd/MM/yyyy}. " +
+                $"Hai buổi phải cách nhau ít nhất {InterviewTiming.MinGapHours} tiếng.");
+
+        var busy = await _schedulingRepo.FindBusyInterviewerAsync(
+            companyId, panel, dto.StartTime, InterviewTiming.MinGap, excludeSlotId: 0);
+        if (busy is not null)
+            throw Conflict(
+                $"Interviewer #{busy.InterviewerId} đã có buổi lúc {busy.StartTime:HH:mm dd/MM/yyyy} — " +
+                $"các buổi phải cách nhau ít nhất {InterviewTiming.MinGapHours} tiếng.");
+
+        // Qua hết cửa -> "hồ sơ đã sang bước Phỏng vấn", tự đẩy state, khỏi kéo Kanban.
+        await _stateService.AdvanceToAsync(companyId, userId, applicationId, ApplicationState.Interview);
 
         var scheduleId = await _schedulingRepo.ManualConfirmAsync(
             companyId, app.JobId, applicationId, panel, dto.StartTime, round,
@@ -246,6 +287,30 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     }
 
     // ============================================================
+
+    /// <summary>
+    /// Không mở lịch phỏng vấn khi job chưa có tiêu chí DÙNG ĐƯỢC. Điều kiện đúng bằng filter của
+    /// phiếu chấm (<c>activeOnly + approvedOnly</c> — xem InterviewScoringService): job chỉ có tiêu
+    /// chí DRAFT do AI vừa bóc thì interviewer vẫn mở ra phiếu trống 0/0. Chặn ở tạo pool / mời /
+    /// chốt tay — cả ba cửa dẫn tới một buổi phỏng vấn có thật.
+    /// </summary>
+    private async Task EnsureJobHasApprovedCriteriaAsync(long companyId, long jobId)
+    {
+        var usable = await _criteriaRepo.GetByJobAsync(companyId, jobId, activeOnly: true);
+        if (usable.Count > 0) return;
+
+        // Chỉ chạy ở nhánh lỗi: phân biệt "chưa bóc" với "bóc rồi nhưng chưa duyệt" để
+        // recruiter biết phải bấm gì tiếp.
+        var all = await _criteriaRepo.GetByJobAsync(companyId, jobId, activeOnly: false, approvedOnly: false);
+
+        throw Conflict(all.Count == 0
+            ? "Tin tuyển dụng này chưa có tiêu chí đánh giá nào. Hãy bóc tiêu chí bằng AI (hoặc " +
+              "nhập tay) và duyệt trước khi mở lịch phỏng vấn — nếu không interviewer sẽ nhận " +
+              "phiếu chấm trống."
+            : $"Tin tuyển dụng này có {all.Count} tiêu chí nhưng chưa cái nào được duyệt và đang bật. " +
+              "Hãy duyệt tiêu chí trước khi mở lịch phỏng vấn — phiếu chấm chỉ hiện tiêu chí " +
+              "đã duyệt.");
+    }
 
     private async Task<PoolDto> BuildPoolDtoAsync(
         long companyId, InterviewSlotPool pool, IReadOnlyList<InterviewSlot>? slots = null)
