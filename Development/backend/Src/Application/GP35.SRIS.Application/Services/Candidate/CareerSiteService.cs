@@ -5,8 +5,8 @@ using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
-using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
+using GP35.SRIS.Lib.Services.Ai;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -26,6 +26,7 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
     private readonly ICompanyRepo _companyRepo;
     private readonly IJobRepo _jobRepo;
     private readonly ICvScoringService _cvScoring;
+    private readonly IPdfTextExtractor _pdfExtractor;
     private readonly IMagicLinkService _magicLink;
     private readonly INotificationService _notification;
     private readonly ILogger _logger;
@@ -35,6 +36,7 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
         _cvScoring = serviceProvider.GetRequiredService<ICvScoringService>();
+        _pdfExtractor = serviceProvider.GetRequiredService<IPdfTextExtractor>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _notification = serviceProvider.GetRequiredService<INotificationService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<CareerSiteService>();
@@ -90,23 +92,29 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
         if (job is null || !IsOpen(job))
             throw NotFound("Vị trí tuyển dụng không tồn tại hoặc đã đóng.");
 
+        // ---- Chặn TRƯỚC khi ghi bất cứ gì ----
+        // ScoreUploadedCvAsync upsert Candidate + đẩy file lên MinIO RỒI mới bóc PDF / kiểm JD,
+        // nên mọi nhánh hỏng đều để lại candidate + file (và có khi cả CvDocument) mồ côi, không
+        // Application nào trỏ tới. Với luồng HR tự upload thì CvDocument NEEDS_MANUAL_EDIT là chỗ
+        // để sửa tay, nhưng career site không có ai sửa — và hiện chưa có API nào ghi lại
+        // extracted_text. Kiểm hết điều kiện ở đây thì lần nộp hỏng không đẻ ra rác.
+        if (string.IsNullOrWhiteSpace(job.JdText))
+            throw Conflict("Vị trí này chưa nhận hồ sơ được (nhà tuyển dụng chưa nhập mô tả công việc). " +
+                           "Vui lòng quay lại sau.");
+
+        EnsureReadableCv(fileBytes);
+
         var result = await _cvScoring.ScoreUploadedCvAsync(
             companyId, jobId, candidateName.Trim(), candidateEmail.Trim(), candidatePhone.Trim(),
             fileName, mimeType, fileBytes);
 
-        // Chỉ nhánh PENDING mới thực sự tạo được hồ sơ; FAILED lẫn NEEDS_MANUAL_EDIT đều trả về
-        // KHÔNG kèm application_id. Chặn theo ApplicationId chứ không liệt kê status: bỏ sót một
-        // status là ứng viên nhận "đã nhận hồ sơ" trong khi KHÔNG có dòng Application nào, rồi
-        // magic link STATUS vỡ FK (application_id = 0) và lỗi bị nuốt ở catch bên dưới.
+        // Lưới an toàn: chỉ nhánh PENDING mới thực sự tạo hồ sơ, mọi status khác đều trả về KHÔNG
+        // kèm application_id. Chặn theo ApplicationId chứ không liệt kê status — bỏ sót một status
+        // là ứng viên nhận "đã nhận hồ sơ" trong khi KHÔNG có dòng Application nào, rồi magic link
+        // STATUS vỡ FK (application_id = 0) và lỗi bị nuốt ở catch bên dưới.
         if (result.ApplicationId is not > 0)
         {
-            // Reason của NEEDS_MANUAL_EDIT viết cho luồng HR tự upload ("nhập thông tin thủ công")
-            // — ứng viên trên career site không làm được việc đó, nên phải nói cách họ tự xử lý.
-            var reason = string.Equals(result.Status, CvScoreStatus.NeedsManualEdit, StringComparison.OrdinalIgnoreCase)
-                ? "CV của bạn là bản scan ảnh (PDF không có lớp chữ) nên hệ thống không đọc được " +
-                  "nội dung. Vui lòng nộp lại file PDF có chữ (xuất từ Word / Google Docs)."
-                : result.Reason ?? "Không nhận được hồ sơ. Vui lòng thử lại hoặc nộp file PDF khác.";
-
+            var reason = result.Reason ?? "Không nhận được hồ sơ. Vui lòng thử lại hoặc nộp file PDF khác.";
             _logger.Warning("CareerSite: từ chối hồ sơ job={JobId} status={Status} — {Reason}",
                 jobId, result.Status, reason);
             throw Bad(reason);
@@ -133,6 +141,28 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
         {
             ApplicationId = applicationId
         };
+    }
+
+    /// <summary>
+    /// Bóc thử PDF để loại CV không đọc được NGAY, trước khi có gì được ghi xuống DB/MinIO.
+    /// Bóc 2 lần (ở đây + trong ScoreUploadedCvAsync) rẻ hơn nhiều so với dọn rác về sau.
+    /// </summary>
+    private void EnsureReadableCv(byte[] fileBytes)
+    {
+        PdfExtractResult extract;
+        try
+        {
+            extract = _pdfExtractor.Extract(fileBytes);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "CareerSite: PDF hỏng — từ chối trước khi ghi.");
+            throw Bad("Không đọc được file PDF (file hỏng hoặc không đúng định dạng). Vui lòng nộp lại.");
+        }
+
+        if (extract.Kind == PdfKind.NeedsManualEdit)
+            throw Bad("CV của bạn là bản scan ảnh (PDF không có lớp chữ) nên hệ thống không đọc được " +
+                      "nội dung. Vui lòng nộp lại file PDF có chữ (xuất từ Word / Google Docs).");
     }
 
     private static bool IsOpen(Job j) =>
@@ -195,5 +225,10 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
     private static BaseException NotFound(string msg) => new(msg)
     {
         ErrorCode = "NOT_FOUND", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.NotFound
+    };
+
+    private static BaseException Conflict(string msg) => new(msg)
+    {
+        ErrorCode = "CONFLICT", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.Conflict
     };
 }

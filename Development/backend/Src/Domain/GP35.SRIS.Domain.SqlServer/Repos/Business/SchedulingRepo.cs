@@ -207,6 +207,18 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .FirstOrDefaultAsync();
     }
 
+    public async Task<InterviewSchedule?> GetPendingScheduleInPoolAsync(
+        long companyId, long applicationId, long poolId)
+    {
+        return await _db.InterviewSchedules
+            .AsNoTracking()
+            .Where(s => s.ApplicationId == applicationId
+                && s.PoolId == poolId
+                && s.Status == InterviewScheduleStatus.Pending)
+            .OrderByDescending(s => s.ScheduleId)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<InterviewSchedule?> GetLatestScheduleAsync(long companyId, long applicationId)
     {
         return await _db.InterviewSchedules

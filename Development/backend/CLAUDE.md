@@ -90,8 +90,14 @@ public class XxxService : BaseService<XxxService>, IXxxService
 - Controllers: `[WithPermission(PermissionConstants.Xxx)]`, enforced by `PermissionMiddleware` after auth
 
 ### Error Handling
-- Standardized response: `{ ErrorCode, DevMsg, UserMsg, TraceId, ValidationFailures }`
-- Global handler: `ConfigureExceptionHandler()`; model validation: `[ModelValidation]`
+- Lỗi nghiệp vụ: ném `BaseException` (đặt `ErrorCode` / `ErrorMessage` / `HttpStatus`) →
+  `ConfigureExceptionHandler()` bọc thành `ErrorObjectCommon`, body camelCase:
+  `{ errorCode, devMsg, userMsg, moreInfo, traceId, validationFailures }`.
+  FE đọc `error.response.data.userMsg`.
+- `AuthMiddleware` trả cùng dạng body đó cho 401/403.
+- Validate model: KHÔNG có attribute riêng — dùng `[ApiController]` mặc định của ASP.NET,
+  trả `ValidationProblemDetails` (`{ errors: {...} }`, System.Text.Json camelCase), KHÁC dạng
+  trên. Client cần đọc lỗi field thì bắt theo `errors`.
 
 ## Coding Conventions
 

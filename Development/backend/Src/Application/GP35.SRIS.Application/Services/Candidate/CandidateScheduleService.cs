@@ -68,14 +68,16 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
     {
         var v = await _magicLink.ValidateAsync(rawToken, Purpose);
 
-        var schedule = await _schedulingRepo.GetLatestPendingScheduleAsync(v.CompanyId, v.ApplicationId)
-            ?? throw Conflict("Không có lịch nào đang chờ bạn xác nhận.");
-
         var slot = await _schedulingRepo.GetSlotAsync(v.CompanyId, dto.SlotId)
             ?? throw NotFound("Không tìm thấy khung giờ.");
 
-        if (schedule.PoolId is not long poolId || slot.PoolId != poolId)
-            throw Bad("Khung giờ không thuộc lịch này.");
+        // Lời mời lấy theo POOL CỦA KHUNG vừa bấm, không phải "lời mời mới nhất của hồ sơ":
+        // magic link phát theo hồ sơ nên khi có nhiều lời mời đang chờ, "mới nhất" có thể là
+        // vòng khác — ứng viên bấm khung vòng 1 mà lại chốt nhầm vào lịch vòng 2.
+        var schedule = await _schedulingRepo.GetPendingScheduleInPoolAsync(
+                v.CompanyId, v.ApplicationId, slot.PoolId)
+            ?? throw Conflict("Khung này không thuộc lời mời nào đang chờ bạn xác nhận.");
+
         if (!string.Equals(slot.Status, InterviewSlotStatus.Open, StringComparison.OrdinalIgnoreCase))
             throw Conflict("Khung này đã được đặt hoặc đã khóa. Vui lòng chọn khung khác.");
         // So với giờ LOCAL của server: start_time lưu dạng local naive (FE gửi không có 'Z' —
@@ -159,11 +161,6 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
     {
         SlotId = s.SlotId,
         StartTime = s.StartTime
-    };
-
-    private static BaseException Bad(string msg) => new(msg)
-    {
-        ErrorCode = "BAD_REQUEST", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.BadRequest
     };
 
     private static BaseException NotFound(string msg) => new(msg)

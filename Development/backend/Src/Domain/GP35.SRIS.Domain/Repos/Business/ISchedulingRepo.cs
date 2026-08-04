@@ -61,6 +61,13 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// <summary>Lịch PENDING mới nhất của hồ sơ (cho ứng viên chọn khung). Null nếu không có.</summary>
     Task<InterviewSchedule?> GetLatestPendingScheduleAsync(long companyId, long applicationId);
 
+    /// <summary>
+    /// Lời mời còn CHỜ của hồ sơ TRONG ĐÚNG pool này. Magic link phát theo HỒ SƠ chứ không theo
+    /// buổi, nên khi hồ sơ có nhiều lời mời đang chờ thì "mới nhất" có thể là vòng khác với vòng
+    /// của khung ứng viên vừa bấm — chốt phải bám theo pool của khung đó.
+    /// </summary>
+    Task<InterviewSchedule?> GetPendingScheduleInPoolAsync(long companyId, long applicationId, long poolId);
+
     /// <summary>Lịch mới nhất của hồ sơ ở BẤT KỲ trạng thái nào (để hiển thị trạng thái cho ứng viên).</summary>
     Task<InterviewSchedule?> GetLatestScheduleAsync(long companyId, long applicationId);
 
