@@ -278,7 +278,6 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         var job = await _jobRepo.GetByIdAsync(companyId, app.JobId);
         var candidate = await _candidateRepo.GetByIdAsync(companyId, app.CandidateId);
 
-        var startTime = coreDto.Schedule?.StartTime ?? default;
         // Lấy startTime từ slot đã chốt (cùng nguồn với list schedules).
         var slotStart = await _schedulingRepo.GetConfirmedSlotStartAsync(companyId, scheduleId);
 

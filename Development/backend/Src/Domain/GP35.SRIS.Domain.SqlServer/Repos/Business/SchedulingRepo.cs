@@ -101,7 +101,10 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .Where(x => x.PoolId == poolId);
         if (onlyOpenFuture)
         {
-            var now = DateTime.UtcNow;
+            // Giờ LOCAL, không UtcNow: start_time lưu local naive (FE gửi không kèm 'Z'), so với
+            // UtcNow thì khung đã qua trong vòng <offset múi giờ> vẫn được coi là tương lai và
+            // hiện ra cho ứng viên chọn.
+            var now = DateTime.Now;
             q = q.Where(x => x.Status == InterviewSlotStatus.Open && x.StartTime > now);
         }
         return await q.OrderBy(x => x.StartTime).ToListAsync();

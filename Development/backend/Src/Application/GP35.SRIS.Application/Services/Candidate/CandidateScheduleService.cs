@@ -78,7 +78,10 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
             throw Bad("Khung giờ không thuộc lịch này.");
         if (!string.Equals(slot.Status, InterviewSlotStatus.Open, StringComparison.OrdinalIgnoreCase))
             throw Conflict("Khung này đã được đặt hoặc đã khóa. Vui lòng chọn khung khác.");
-        if (slot.StartTime <= DateTime.UtcNow)
+        // So với giờ LOCAL của server: start_time lưu dạng local naive (FE gửi không có 'Z' —
+        // xem InterviewPoolService.ValidateSlots). So với UtcNow là lệch đúng offset múi giờ
+        // (VN +7) -> khung 09:00 sáng nay lúc 14:00 chiều vẫn lọt vì 09:00 > 07:00 UTC.
+        if (slot.StartTime <= DateTime.Now)
             throw Conflict("Khung này đã qua giờ. Vui lòng chọn khung khác.");
 
         // Chống trùng cho CHÍNH ứng viên: không thể ngồi 2 buổi cùng lúc / sát nhau. Phải check
