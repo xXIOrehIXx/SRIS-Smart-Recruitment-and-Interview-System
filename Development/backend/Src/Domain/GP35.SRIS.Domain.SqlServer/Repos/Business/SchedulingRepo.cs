@@ -101,7 +101,10 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .Where(x => x.PoolId == poolId);
         if (onlyOpenFuture)
         {
-            var now = DateTime.UtcNow;
+            // Giờ LOCAL, không UtcNow: start_time lưu local naive (FE gửi không kèm 'Z'), so với
+            // UtcNow thì khung đã qua trong vòng <offset múi giờ> vẫn được coi là tương lai và
+            // hiện ra cho ứng viên chọn.
+            var now = DateTime.Now;
             q = q.Where(x => x.Status == InterviewSlotStatus.Open && x.StartTime > now);
         }
         return await q.OrderBy(x => x.StartTime).ToListAsync();
@@ -139,9 +142,14 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
                 .SetProperty(x => x.Status, InterviewSlotStatus.Locked)
                 .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
 
-        // Invite còn chờ -> CANCELLED (ứng viên chưa chốt thì thôi).
+        // Mọi buổi thuộc pool -> CANCELLED, CẢ buổi ĐÃ CHỐT: hủy pool nghĩa là các buổi này không
+        // diễn ra nữa (service đã gửi email báo hủy cho đúng nhóm CONFIRMED này). Bỏ sót CONFIRMED
+        // thì buổi "ma" vẫn nằm trong danh sách chấm của interviewer, vẫn tính vào guard G2, và
+        // ứng viên được mời lại ở pool mới sẽ có 2 buổi CONFIRMED cùng vòng.
         await _db.InterviewSchedules
-            .Where(s => s.PoolId == poolId && s.Status == InterviewScheduleStatus.Pending)
+            .Where(s => s.PoolId == poolId
+                && (s.Status == InterviewScheduleStatus.Pending
+                    || s.Status == InterviewScheduleStatus.Confirmed))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(x => x.Status, InterviewScheduleStatus.Cancelled)
                 .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
@@ -180,11 +188,33 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
                     || s.Status == InterviewScheduleStatus.Confirmed));
     }
 
+    public async Task<bool> HasConfirmedScheduleForRoundAsync(
+        long companyId, long applicationId, int roundNumber)
+    {
+        return await _db.InterviewSchedules
+            .AsNoTracking()
+            .AnyAsync(s => s.ApplicationId == applicationId
+                && s.RoundNumber == roundNumber
+                && s.Status == InterviewScheduleStatus.Confirmed);
+    }
+
     public async Task<InterviewSchedule?> GetLatestPendingScheduleAsync(long companyId, long applicationId)
     {
         return await _db.InterviewSchedules
             .AsNoTracking()
             .Where(s => s.ApplicationId == applicationId && s.Status == InterviewScheduleStatus.Pending)
+            .OrderByDescending(s => s.ScheduleId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<InterviewSchedule?> GetPendingScheduleInPoolAsync(
+        long companyId, long applicationId, long poolId)
+    {
+        return await _db.InterviewSchedules
+            .AsNoTracking()
+            .Where(s => s.ApplicationId == applicationId
+                && s.PoolId == poolId
+                && s.Status == InterviewScheduleStatus.Pending)
             .OrderByDescending(s => s.ScheduleId)
             .FirstOrDefaultAsync();
     }
@@ -266,42 +296,52 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return true;
     }
 
-    public async Task<bool> IsInterviewerBookedAtAsync(
-        long companyId, long interviewerId, DateTime startTime, long excludeSlotId)
-    {
-        // Có slot nào BOOKED đúng giờ mà interviewer này nằm trong panel không?
-        return await _db.InterviewSlotInterviewers
-            .AsNoTracking()
-            .AnyAsync(si =>
-                si.InterviewerId == interviewerId &&
-                _db.InterviewSlots.Any(s =>
-                    s.SlotId == si.SlotId &&
-                    s.SlotId != excludeSlotId &&
-                    s.StartTime == startTime &&
-                    s.Status == InterviewSlotStatus.Booked));
-    }
-
     /// <summary>
-    /// Check cả panel 1 lúc: trả về interviewer_id đầu tiên trong panel đã có lịch BOOKED đúng giờ
-    /// (slot khác). Trả null nếu cả panel rảnh. Dùng khi ứng viên chốt khung.
+    /// Check cả panel 1 lúc: interviewer đầu tiên có khung BOOKED (slot khác) rơi vào cửa sổ
+    /// ±minGap quanh startTime. Trả null nếu cả panel rảnh. Dùng khi ứng viên chốt khung.
     /// </summary>
-    public async Task<long?> FindBusyInterviewerAsync(
-        long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime, long excludeSlotId)
+    public async Task<BusyInterviewer?> FindBusyInterviewerAsync(
+        long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime,
+        TimeSpan minGap, long excludeSlotId)
     {
         if (interviewerIds.Count == 0) return null;
-        return await _db.InterviewSlotInterviewers
-            .AsNoTracking()
-            .Where(si =>
-                interviewerIds.Contains(si.InterviewerId) &&
-                _db.InterviewSlots.Any(s =>
-                    s.SlotId == si.SlotId &&
-                    s.SlotId != excludeSlotId &&
-                    s.StartTime == startTime &&
-                    s.Status == InterviewSlotStatus.Booked))
-            // Cast nullable TRƯỚC FirstOrDefault: long thường trả default(long)=0 khi
-            // không có ai bận -> "0 is not null" làm check trùng giờ LUÔN chặn (bug 409).
-            .Select(si => (long?)si.InterviewerId)
-            .FirstOrDefaultAsync();
+
+        // Biên MỞ: cách nhau đúng minGap là hợp lệ (09:00 và 10:00 không đụng nhau).
+        // (Không đặt tên biến là `from` — trùng từ khóa LINQ query syntax.)
+        var windowStart = startTime - minGap;
+        var windowEnd = startTime + minGap;
+
+        // Project ra record (kiểu tham chiếu) nên FirstOrDefault trả null thật khi rảnh —
+        // không dính bẫy default(long)=0 của phiên bản trả long.
+        return await (
+            from si in _db.InterviewSlotInterviewers.AsNoTracking()
+            join s in _db.InterviewSlots.AsNoTracking() on si.SlotId equals s.SlotId
+            where interviewerIds.Contains(si.InterviewerId)
+                && s.SlotId != excludeSlotId
+                && s.Status == InterviewSlotStatus.Booked
+                && s.StartTime > windowStart && s.StartTime < windowEnd
+            orderby s.StartTime
+            select new BusyInterviewer(si.InterviewerId, s.StartTime)
+        ).FirstOrDefaultAsync();
+    }
+
+    public async Task<DateTime?> FindCandidateBusyAtAsync(
+        long companyId, long applicationId, DateTime startTime,
+        TimeSpan minGap, long excludeScheduleId)
+    {
+        var windowStart = startTime - minGap;
+        var windowEnd = startTime + minGap;
+
+        return await (
+            from sch in _db.InterviewSchedules.AsNoTracking()
+            join sl in _db.InterviewSlots.AsNoTracking() on sch.ConfirmedSlotId equals sl.SlotId
+            where sch.ApplicationId == applicationId
+                && sch.ScheduleId != excludeScheduleId
+                && sch.Status == InterviewScheduleStatus.Confirmed
+                && sl.StartTime > windowStart && sl.StartTime < windowEnd
+            orderby sl.StartTime
+            select (DateTime?)sl.StartTime
+        ).FirstOrDefaultAsync();
     }
 
     public async Task SetScheduleStatusAsync(long companyId, long scheduleId, string status)

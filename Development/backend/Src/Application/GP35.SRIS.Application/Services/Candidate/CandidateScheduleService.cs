@@ -68,25 +68,42 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
     {
         var v = await _magicLink.ValidateAsync(rawToken, Purpose);
 
-        var schedule = await _schedulingRepo.GetLatestPendingScheduleAsync(v.CompanyId, v.ApplicationId)
-            ?? throw Conflict("Không có lịch nào đang chờ bạn xác nhận.");
-
         var slot = await _schedulingRepo.GetSlotAsync(v.CompanyId, dto.SlotId)
             ?? throw NotFound("Không tìm thấy khung giờ.");
 
-        if (schedule.PoolId is not long poolId || slot.PoolId != poolId)
-            throw Bad("Khung giờ không thuộc lịch này.");
+        // Lời mời lấy theo POOL CỦA KHUNG vừa bấm, không phải "lời mời mới nhất của hồ sơ":
+        // magic link phát theo hồ sơ nên khi có nhiều lời mời đang chờ, "mới nhất" có thể là
+        // vòng khác — ứng viên bấm khung vòng 1 mà lại chốt nhầm vào lịch vòng 2.
+        var schedule = await _schedulingRepo.GetPendingScheduleInPoolAsync(
+                v.CompanyId, v.ApplicationId, slot.PoolId)
+            ?? throw Conflict("Khung này không thuộc lời mời nào đang chờ bạn xác nhận.");
+
         if (!string.Equals(slot.Status, InterviewSlotStatus.Open, StringComparison.OrdinalIgnoreCase))
             throw Conflict("Khung này đã được đặt hoặc đã khóa. Vui lòng chọn khung khác.");
-        if (slot.StartTime <= DateTime.UtcNow)
+        // So với giờ LOCAL của server: start_time lưu dạng local naive (FE gửi không có 'Z' —
+        // xem InterviewPoolService.ValidateSlots). So với UtcNow là lệch đúng offset múi giờ
+        // (VN +7) -> khung 09:00 sáng nay lúc 14:00 chiều vẫn lọt vì 09:00 > 07:00 UTC.
+        if (slot.StartTime <= DateTime.Now)
             throw Conflict("Khung này đã qua giờ. Vui lòng chọn khung khác.");
+
+        // Chống trùng cho CHÍNH ứng viên: không thể ngồi 2 buổi cùng lúc / sát nhau. Phải check
+        // trước khi book — pool khác (vòng khác, hoặc pool mở lại) không biết gì về buổi đã chốt.
+        var myBusyAt = await _schedulingRepo.FindCandidateBusyAtAsync(
+            v.CompanyId, v.ApplicationId, slot.StartTime, InterviewTiming.MinGap, schedule.ScheduleId);
+        if (myBusyAt is DateTime busyAt)
+            throw Conflict(
+                $"Bạn đã có buổi phỏng vấn lúc {busyAt:HH:mm dd/MM/yyyy}. Hai buổi phải cách nhau " +
+                $"ít nhất {InterviewTiming.MinGapHours} tiếng — vui lòng chọn khung khác.");
 
         // Chống trùng giờ interviewer ở lịch khác (best-effort — 15.3). Check CẢ PANEL.
         var panelIds = slot.Interviewers.Select(i => i.InterviewerId).ToList();
-        var busyId = await _schedulingRepo.FindBusyInterviewerAsync(
-            v.CompanyId, panelIds, slot.StartTime, slot.SlotId);
-        if (busyId is not null)
-            throw Conflict("Một interviewer trong panel đã có lịch vào giờ này. Vui lòng chọn khung khác.");
+        var busy = await _schedulingRepo.FindBusyInterviewerAsync(
+            v.CompanyId, panelIds, slot.StartTime, InterviewTiming.MinGap, slot.SlotId);
+        if (busy is not null)
+            throw Conflict(
+                $"Một interviewer trong panel đã có buổi lúc {busy.StartTime:HH:mm dd/MM/yyyy} — " +
+                $"các buổi phải cách nhau ít nhất {InterviewTiming.MinGapHours} tiếng. " +
+                "Vui lòng chọn khung khác.");
 
         // Khóa lạc quan: ai chốt trước được trước (15.3). KHÔNG khóa khung khác của pool.
         var booked = await _schedulingRepo.BookAndConfirmAsync(
@@ -144,11 +161,6 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
     {
         SlotId = s.SlotId,
         StartTime = s.StartTime
-    };
-
-    private static BaseException Bad(string msg) => new(msg)
-    {
-        ErrorCode = "BAD_REQUEST", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.BadRequest
     };
 
     private static BaseException NotFound(string msg) => new(msg)

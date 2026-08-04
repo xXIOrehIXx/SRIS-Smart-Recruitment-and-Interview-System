@@ -26,6 +26,21 @@ public static class InterviewScoreStatus
     public const string Submitted = "SUBMITTED";
 }
 
+/// <summary>
+/// Ràng buộc thời gian giữa các buổi phỏng vấn. Hệ thống chỉ lưu giờ BẮT ĐẦU (không có
+/// thời lượng), nên "không trùng" được hiểu là hai buổi phải cách nhau tối thiểu
+/// <see cref="MinGapHours"/> tiếng — áp cho CẢ ứng viên (không thể ngồi 2 buổi một lúc)
+/// lẫn interviewer (không thể chấm 2 buổi một lúc).
+/// </summary>
+public static class InterviewTiming
+{
+    /// <summary>Khoảng cách tối thiểu giữa 2 buổi phỏng vấn (giờ).</summary>
+    public const int MinGapHours = 1;
+
+    /// <summary>Cùng giá trị dạng TimeSpan — dùng làm cửa sổ chống trùng khi chốt khung.</summary>
+    public static TimeSpan MinGap => TimeSpan.FromHours(MinGapHours);
+}
+
 /// <summary>Trạng thái 1 khung giờ (InterviewSlot.status) — docs 15.3.</summary>
 public static class InterviewSlotStatus
 {

@@ -142,27 +142,29 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             });
         }
 
-        // Điểm tổng có trọng số từng interviewer (chỉ tính tiêu chí họ đã chấm).
-        var weightById = criteria.ToDictionary(c => c.CriteriaId, c => c.Weight);
+        // Điểm tổng từng interviewer, quy về PHẦN TRĂM có trọng số (chỉ tính tiêu chí họ đã chấm).
+        // Mẫu số là điểm TỐI ĐA có trọng số chứ không phải tổng trọng số: mỗi tiêu chí có maxScore
+        // riêng, cộng điểm thô lại thì 5/5 (hoàn hảo) và 5/10 (một nửa) đóng góp như nhau.
+        // Cùng công thức với phiếu chấm bên FE -> interviewer và DM nhìn thấy một con số.
+        var critById = criteria.ToDictionary(c => c.CriteriaId);
         var totals = new List<InterviewerTotalDto>();
         foreach (var id in interviewerIds)
         {
-            var rows = submitted.Where(s => s.InterviewerId == id && s.Score is not null).ToList();
-            decimal weightSum = 0, weighted = 0;
-            foreach (var r in rows)
+            decimal earned = 0, possible = 0;
+            foreach (var r in submitted.Where(s => s.InterviewerId == id && s.Score is not null))
             {
-                if (!weightById.TryGetValue(r.CriteriaId, out var w)) continue;
-                weighted += r.Score!.Value * w;
-                weightSum += w;
+                if (!critById.TryGetValue(r.CriteriaId, out var c) || c.MaxScore <= 0) continue;
+                earned += r.Score!.Value * c.Weight;
+                possible += c.MaxScore * c.Weight;
             }
             totals.Add(new InterviewerTotalDto
             {
                 InterviewerId = id,
-                WeightedTotal = weightSum == 0 ? 0 : Math.Round(weighted / weightSum, 2)
+                WeightedPercent = possible == 0 ? 0 : Math.Round(earned / possible * 100, 1)
             });
         }
 
-        var panelAvg = totals.Count == 0 ? 0m : Math.Round(totals.Average(t => t.WeightedTotal), 2);
+        var panelAvg = totals.Count == 0 ? 0m : Math.Round(totals.Average(t => t.WeightedPercent), 1);
 
         // Tên người chấm (blind đã mở vì chỉ lấy phiếu SUBMITTED) — DM cần biết ai cho điểm nào.
         var names = await GetInterviewerNamesAsync(companyId, interviewerIds);
@@ -178,7 +180,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             SubmittedInterviewers = interviewerIds.Count,
             Criteria = critDtos,
             InterviewerTotals = totals,
-            PanelWeightedAverage = panelAvg
+            PanelWeightedPercent = panelAvg
         };
     }
 
@@ -278,7 +280,6 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         var job = await _jobRepo.GetByIdAsync(companyId, app.JobId);
         var candidate = await _candidateRepo.GetByIdAsync(companyId, app.CandidateId);
 
-        var startTime = coreDto.Schedule?.StartTime ?? default;
         // Lấy startTime từ slot đã chốt (cùng nguồn với list schedules).
         var slotStart = await _schedulingRepo.GetConfirmedSlotStartAsync(companyId, scheduleId);
 

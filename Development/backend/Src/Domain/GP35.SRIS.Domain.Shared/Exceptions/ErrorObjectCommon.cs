@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace GP35.SRIS.Domain.Shared.Exceptions
 {
@@ -73,9 +74,20 @@ namespace GP35.SRIS.Domain.Shared.Exceptions
     {
     }
 
+    /// <summary>
+    /// camelCase cho KHỚP body thành công (System.Text.Json camelCase) và với client:
+    /// FE đọc <c>error.response.data.userMsg</c>. Serialize mặc định của Newtonsoft ra
+    /// PascalCase (<c>UserMsg</c>) -> mọi thông báo lỗi của BE về tới FE đều undefined và
+    /// người dùng chỉ thấy câu fallback chung chung.
+    /// </summary>
+    private static readonly JsonSerializerSettings CamelCase = new()
+    {
+      ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
+
     public override string ToString()
     {
-      return JsonConvert.SerializeObject(this);
+      return JsonConvert.SerializeObject(this, CamelCase);
     }
 
   }

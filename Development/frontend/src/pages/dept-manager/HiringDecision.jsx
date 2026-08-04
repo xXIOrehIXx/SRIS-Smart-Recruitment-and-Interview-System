@@ -480,7 +480,7 @@ const HiringDecision = () => {
                   extra={
                     round.submittedInterviewers > 0 && (
                       <Text strong style={{ color: MATCHA_GREEN }}>
-                        TB có trọng số: {round.panelWeightedAverage}
+                        TB có trọng số: {round.panelWeightedPercent}%
                       </Text>
                     )
                   }
