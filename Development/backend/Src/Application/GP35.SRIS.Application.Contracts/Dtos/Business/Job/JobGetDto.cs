@@ -8,7 +8,7 @@ public class JobGetDto
     public string Title { get; set; } = null!;
     public string? JdText { get; set; }
     public long? DepartmentManagerId { get; set; }
-    /// <summary>Recruiter đã tạo job (user_id). NULL = chưa rõ người tạo.</summary>
+    /// <summary>Human Resource đã tạo job (user_id). NULL = chưa rõ người tạo.</summary>
     public long? CreatedBy { get; set; }
     public string Status { get; set; } = null!;
     public DateTime? CreatedAt { get; set; }

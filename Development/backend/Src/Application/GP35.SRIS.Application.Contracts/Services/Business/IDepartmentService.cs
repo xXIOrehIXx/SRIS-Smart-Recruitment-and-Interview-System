@@ -4,7 +4,7 @@ namespace GP35.SRIS.Application.Contracts.Services.Business;
 
 /// <summary>
 /// Danh mục phòng ban (V022): Admin CRUD; mọi role đăng nhập đọc được để đổ dropdown
-/// (Recruiter tạo Job, DM tạo Yêu cầu tuyển dụng). Job tham chiếu bằng TÊN — đổi tên
+/// (Human Resource tạo Job, DM tạo Yêu cầu tuyển dụng). Job tham chiếu bằng TÊN — đổi tên
 /// thì đồng bộ Job/RecruitmentRequest; xóa bị chặn khi còn job dùng (chuyển Inactive thay thế).
 /// </summary>
 public interface IDepartmentService : IBaseService

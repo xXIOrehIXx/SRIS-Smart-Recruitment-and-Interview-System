@@ -9,12 +9,12 @@ namespace GP35.SRIS.Controllers;
 
 /// <summary>
 /// Lịch sử hồ sơ (audit "ai làm gì lúc nào" — docs 5.6): chuyển state, tạo lịch PV, ra offer,
-/// ứng viên chốt lịch/offer... Nội bộ — Recruiter/Interviewer/DM xem.
+/// ứng viên chốt lịch/offer... Nội bộ — Human Resource/Interviewer/DM xem.
 /// </summary>
 [Route("api/applications/{applicationId:long}/history")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter, RoleConstants.Interviewer, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager)]
 public class ActivityLogController : ControllerBase
 {
     private readonly IContextData _contextData;

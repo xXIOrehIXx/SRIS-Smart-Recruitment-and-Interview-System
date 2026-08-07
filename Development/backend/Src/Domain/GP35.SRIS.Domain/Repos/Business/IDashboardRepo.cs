@@ -35,8 +35,8 @@ public record ActivityRow(long ApplicationId, string CandidateName, string Actio
 /// (Global Query Filter) — cô lập tenant. jobId null = toàn công ty; có giá trị = lọc theo 1 job.
 /// <para>
 /// V023 — <c>departmentManagerId</c>: giới hạn phạm vi về "phòng ban của DM này" = job gán đúng
-/// DM đó + job chưa gán DM (đường mặc định công ty nhỏ, Recruiter quyết nên ai cũng nhìn).
-/// Null = không giới hạn (Admin/Recruiter nhìn toàn công ty). Lọc ở ĐÂY chứ không ở FE để
+/// DM đó + job chưa gán DM (đường mặc định công ty nhỏ, Human Resource quyết nên ai cũng nhìn).
+/// Null = không giới hạn (Admin/Human Resource nhìn toàn công ty). Lọc ở ĐÂY chứ không ở FE để
 /// không rò hồ sơ phòng khác qua response.
 /// </para>
 /// </summary>

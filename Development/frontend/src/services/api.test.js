@@ -121,7 +121,7 @@ describe('offerAPI — thư mời nhận việc (5.15)', () => {
     expect(apiInst.get).toHaveBeenCalledWith('/applications/9/offer/letter', { responseType: 'blob' });
   });
 
-  test('recordOutcome: Recruiter chốt kết quả ứng viên trả lời ngoài hệ thống', () => {
+  test('recordOutcome: Human Resource chốt kết quả ứng viên trả lời ngoài hệ thống', () => {
     offerAPI.recordOutcome(9, false, 'Nhận offer công ty khác');
     expect(apiInst.post).toHaveBeenCalledWith(
       '/applications/9/offer/outcome',
@@ -170,7 +170,7 @@ describe('các endpoint đã xóa vì backend không có', () => {
     expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool');
   });
 
-  test('talentPoolAPI truyền mốc độ tươi CV do Recruiter chọn', () => {
+  test('talentPoolAPI truyền mốc độ tươi CV do Human Resource chọn', () => {
     talentPoolAPI.getSuggestions(3, 1);
     expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool?withinMonths=1');
     talentPoolAPI.getSuggestions(3, 3);
@@ -189,7 +189,7 @@ describe('đường dẫn từng bị sai', () => {
     expect(apiInst.get).toHaveBeenCalledWith('/jobs?includeInactive=true');
   });
 
-  test('users/options cho dropdown (Recruiter/DM gọi được, khác /users chỉ Admin)', () => {
+  test('users/options cho dropdown (Human Resource/DM gọi được, khác /users chỉ Admin)', () => {
     usersAPI.getOptions('Interviewer');
     expect(apiInst.get).toHaveBeenCalledWith('/users/options', { params: { role: 'Interviewer' } });
   });

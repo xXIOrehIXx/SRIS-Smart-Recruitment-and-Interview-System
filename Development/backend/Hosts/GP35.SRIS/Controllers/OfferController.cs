@@ -9,14 +9,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Thư mời nhận việc (docs 5.15). Người quyết (DM của job; job không gán DM -> Recruiter) đã đẩy
-/// hồ sơ sang OFFER; Recruiter gọi API này để soạn + gửi thư mời (PDF qua email), rồi ghi nhận
+/// Thư mời nhận việc (docs 5.15). Người quyết (DM của job; job không gán DM -> Human Resource) đã đẩy
+/// hồ sơ sang OFFER; Human Resource gọi API này để soạn + gửi thư mời (PDF qua email), rồi ghi nhận
 /// kết quả ứng viên trả lời ngoài hệ thống.
 /// </summary>
 [Route("api/applications/{applicationId:long}/offer")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter)]
+[WithRole(RoleConstants.HumanResource)]
 public class OfferController : ControllerBase
 {
     private readonly IContextData _contextData;

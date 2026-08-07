@@ -3,7 +3,7 @@ using GP35.SRIS.Application.Contracts.Dtos.Ai;
 namespace GP35.SRIS.Application.Contracts.Services.Ai;
 
 /// <summary>
-/// Talent Pool / CV Suggestion (Việc 13). Recruiter bấm "Gợi ý CV": đảo chiều vector search trên kho
+/// Talent Pool / CV Suggestion (Việc 13). Human Resource bấm "Gợi ý CV": đảo chiều vector search trên kho
 /// CvDocument CŨ của công ty -> Top N CV gần JD nhất, lọc theo độ tươi. KHÔNG real-time, không gợi ý ngược.
 /// </summary>
 public interface ITalentPoolService : IBaseService

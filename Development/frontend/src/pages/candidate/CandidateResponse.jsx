@@ -29,7 +29,7 @@ const HeaderLogo = () => (
  * Trang ứng viên xem THƯ MỜI NHẬN VIỆC qua magic link (docs 5.15).
  *
  * KHÔNG còn nút Đồng ý/Từ chối: ứng viên đọc/tải bản PDF rồi trả lời nhà tuyển dụng
- * qua email/điện thoại; Recruiter ghi nhận kết quả trong Portal. Vì thế trang này chỉ đọc.
+ * qua email/điện thoại; Human Resource ghi nhận kết quả trong Portal. Vì thế trang này chỉ đọc.
  */
 const CandidateResponse = () => {
   const [searchParams] = useSearchParams();

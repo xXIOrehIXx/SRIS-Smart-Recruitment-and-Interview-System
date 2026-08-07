@@ -19,8 +19,8 @@ const { TextArea } = Input;
 /**
  * Quản lý THƯ MỜI NHẬN VIỆC (docs 5.15).
  *
- * Luồng: hồ sơ ở trạng thái OFFER -> Recruiter soạn thư (form điền sẵn từ Job/Company) ->
- * gửi email kèm link mở PDF -> ứng viên trả lời NGOÀI hệ thống -> Recruiter bấm
+ * Luồng: hồ sơ ở trạng thái OFFER -> Human Resource soạn thư (form điền sẵn từ Job/Company) ->
+ * gửi email kèm link mở PDF -> ứng viên trả lời NGOÀI hệ thống -> Human Resource bấm
  * "Đã nhận việc" / "Từ chối" để chốt HIRED/REJECTED.
  */
 const OfferManagement = () => {
@@ -286,7 +286,7 @@ const OfferManagement = () => {
     setCreateModalOpen(true);
     form.resetFields();
 
-    // Điền sẵn form từ Job + Company + hồ sơ để Recruiter chỉ sửa lại chỗ cần.
+    // Điền sẵn form từ Job + Company + hồ sơ để Human Resource chỉ sửa lại chỗ cần.
     try {
       setLoadingDefaults(true);
       const res = await offerAPI.getDefaults(application.id || application.applicationId);

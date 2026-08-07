@@ -15,7 +15,7 @@ namespace GP35.SRIS.Controllers;
 /// </summary>
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter)]
+[WithRole(RoleConstants.HumanResource)]
 public class EvaluationCriteriaController : ControllerBase
 {
     private readonly IContextData _contextData;

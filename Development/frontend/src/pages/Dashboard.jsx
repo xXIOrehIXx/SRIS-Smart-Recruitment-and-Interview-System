@@ -150,7 +150,7 @@ const Dashboard = () => {
 
   const fetchCandidatesBySchedule = async (applicationId) => {
     // 1 buoi phong van gan voi dung 1 ho so — doc chi tiet qua /applications/{id}
-    // (Interviewer co quyen; KHONG dung /aggregate — panel tong hop chi cho Recruiter/DM).
+    // (Interviewer co quyen; KHONG dung /aggregate — panel tong hop chi cho Human Resource/DM).
     try {
       setLoadingCandidates(true);
       const response = await applicationAPI.getById(applicationId);
@@ -293,7 +293,7 @@ const Dashboard = () => {
             options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
           />
           {(isAdmin || isDeptManager) && (
-            <Button icon={<PlusOutlined />} type="primary" onClick={() => navigate(isAdmin ? '/recruiter/jobs/create' : '/dept/create-request')}>
+            <Button icon={<PlusOutlined />} type="primary" onClick={() => navigate(isAdmin ? '/human-resource/jobs/create' : '/dept/create-request')}>
               {isAdmin ? 'Đăng Tin Mới' : 'Tạo Yêu Cầu'}
             </Button>
           )}
@@ -393,7 +393,7 @@ const Dashboard = () => {
               <Card className="dashboard-card" bordered={false}>
                 <div className="card-header">
                   <Title level={5}>Ứng Viên Ứng Tuyển Gần Đây</Title>
-                  <Button type="link" onClick={() => navigate('/recruiter/jobs')}>Xem tất cả <RightOutlined /></Button>
+                  <Button type="link" onClick={() => navigate('/human-resource/jobs')}>Xem tất cả <RightOutlined /></Button>
                 </div>
                 <Table
                   columns={[
@@ -408,7 +408,7 @@ const Dashboard = () => {
                   rowKey="applicationId"
                   pagination={false}
                   className="applications-table"
-                  onRow={(record) => ({ onClick: () => navigate(`/recruiter/candidates/${record.applicationId}`), style: { cursor: 'pointer' } })}
+                  onRow={(record) => ({ onClick: () => navigate(`/human-resource/candidates/${record.applicationId}`), style: { cursor: 'pointer' } })}
                 />
               </Card>
             </Col>

@@ -10,7 +10,7 @@ namespace GP35.SRIS.Controllers;
 
 /// <summary>
 /// Collaborative Scoring (docs 5.7). Interviewer đăng nhập chấm điểm (Blind Review): nháp riêng,
-/// submit mới mở blind. Recruiter/Department Manager đọc bảng tổng hợp (Radar + std dev) để quyết.
+/// submit mới mở blind. Human Resource/Department Manager đọc bảng tổng hợp (Radar + std dev) để quyết.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -59,7 +59,7 @@ public class InterviewScoringController : ControllerBase
 
     /// <summary>Bảng tổng hợp panel (chỉ phiếu đã nộp): Radar + std dev + điểm từng interviewer.</summary>
     [HttpGet("api/interview-schedules/{scheduleId:long}/aggregate")]
-    [WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
     public async Task<IActionResult> Aggregate(long scheduleId)
     {
         return Ok(await _scoringService.GetAggregateAsync(_contextData.CompanyId, scheduleId));
@@ -70,7 +70,7 @@ public class InterviewScoringController : ControllerBase
     /// đọc trước khi chốt tuyển/loại.
     /// </summary>
     [HttpGet("api/applications/{applicationId:long}/interview-aggregate")]
-    [WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
     public async Task<IActionResult> AggregateByApplication(long applicationId)
     {
         return Ok(await _scoringService.GetAggregatesByApplicationAsync(_contextData.CompanyId, applicationId));

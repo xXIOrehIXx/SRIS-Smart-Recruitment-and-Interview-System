@@ -133,8 +133,8 @@ public class JobService : BaseService<JobService>, IJobService
     }
 
     /// <summary>
-    /// Người quyết tuyển của job (V023): Recruiter chọn tay thì tôn trọng lựa chọn đó; bỏ trống
-    /// thì lấy DM phụ trách phòng ban đã chọn. Phòng ban chưa gán DM -> vẫn null (Recruiter quyết,
+    /// Người quyết tuyển của job (V023): Human Resource chọn tay thì tôn trọng lựa chọn đó; bỏ trống
+    /// thì lấy DM phụ trách phòng ban đã chọn. Phòng ban chưa gán DM -> vẫn null (Human Resource quyết,
     /// đường mặc định của công ty nhỏ).
     /// </summary>
     private async Task<long?> ResolveDepartmentManagerAsync(long companyId, string? department, long? explicitManagerId)

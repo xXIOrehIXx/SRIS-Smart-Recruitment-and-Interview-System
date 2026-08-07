@@ -128,9 +128,11 @@ Nguyên tắc thiết kế: **đơn giản là mặc định, phức tạp là t
 > (docs Section 3 OUT). Không thiết kế, không code, không tài liệu gì thêm cho quiz.
 
 ### Roles (4 login + 1 ẩn danh — mỗi user 1 role; công ty nhỏ dùng 1 tài khoản Admin)
-- `Admin` / `Recruiter` / `Interviewer` / `DepartmentManager` → đăng nhập Portal (JWT)
+- `Admin` / **Human Resource** / `Interviewer` / `DepartmentManager` → đăng nhập Portal (JWT)
+  - ⚠️ Human Resource: tên gọi mới (khớp báo cáo). GIÁ TRỊ trong `User.role` + JWT vẫn là `'Recruiter'`
+    — xem `RoleConstants.HumanResource` / `ROLES.HUMAN_RESOURCE`. URL Portal: `/human-resource/*`.
 - `Candidate` → **magic link only**, không có account, không có User row
-- Câu thần chú: Recruiter lái · Interviewer chấm · DM quyết (và RA ĐỀ) · Candidate ứng tuyển · Admin dựng sân
+- Câu thần chú: Human Resource lái · Interviewer chấm · DM quyết (và RA ĐỀ) · Candidate ứng tuyển · Admin dựng sân
 
 ### Pipeline: 6 state nội bộ, hiển thị 4 PHA
 NEW → SCREENING → INTERVIEW → OFFER → HIRED / REJECTED (8 transition)  
@@ -138,7 +140,7 @@ Forward-only. Reject từ bất kỳ state nào → REJECTED (`reject_reason` T�
 Người dùng thấy **4 pha**: Hồ sơ mới (NEW) · Sàng lọc (SCREENING) · Phỏng vấn (INTERVIEW) · Quyết định (OFFER→HIRED/REJECTED). 6 state là chuyện nội bộ, không phơi ra UI/tài liệu.
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)
-DM tạo Yêu cầu tuyển dụng (tùy chọn) → Recruiter tạo Job → AI bóc tiêu chí `DRAFT` →
+DM tạo Yêu cầu tuyển dụng (tùy chọn) → Human Resource tạo Job → AI bóc tiêu chí `DRAFT` →
 người duyệt chốt → chấm CV **theo TỪNG tiêu chí** (khớp/thiếu + câu bằng chứng) →
 cùng bộ tiêu chí dùng cho phiếu chấm phỏng vấn. KHÔNG ném cả JD↔CV lấy 1 con số.
 
@@ -154,7 +156,7 @@ Lưu **hash** token (SHA-256), không lưu gốc. "One-time" = đốt khi CHỐT
 
 ### Người quyết tuyển
 `Job.department_manager_id` → DepartmentManager quyết ở bước OFFER.  
-Null = Recruiter quyết (đường mặc định của công ty nhỏ). Interviewer chỉ chấm (input), không quyết.
+Null = Human Resource quyết (đường mặc định của công ty nhỏ). Interviewer chỉ chấm (input), không quyết.
 DM đứng HAI đầu: ra đề (Yêu cầu tuyển dụng — 5.17) và chốt (OFFER).
 
 ---

@@ -150,7 +150,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     /// <summary>
     /// Chốt ở cửa INTERVIEW→OFFER (Duyệt ứng viên) hoặc rời cửa OFFER (→HIRED / →REJECTED) là QUYẾT TUYỂN 
     /// — chỉ DM được gán cho job đó quyết (docs 5.14).
-    /// Job không gán DM -> giữ đường mặc định của công ty nhỏ: Recruiter quyết.
+    /// Job không gán DM -> giữ đường mặc định của công ty nhỏ: Human Resource quyết.
     /// Admin là superuser -> bỏ qua.
     /// </summary>
     private async Task EnsureCanDecideAsync(long companyId, long userId, long jobId, string from, string to)

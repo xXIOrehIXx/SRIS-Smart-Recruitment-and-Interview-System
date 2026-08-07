@@ -10,7 +10,7 @@ namespace GP35.SRIS.Controllers;
 
 /// <summary>
 /// Danh mục hình thức làm việc (V027): Admin dựng sân (CRUD); mọi role đăng nhập đọc được
-/// để đổ dropdown (Recruiter tạo Job, DM tạo Yêu cầu tuyển dụng).
+/// để đổ dropdown (Human Resource tạo Job, DM tạo Yêu cầu tuyển dụng).
 /// </summary>
 [ApiController]
 [Authorize]

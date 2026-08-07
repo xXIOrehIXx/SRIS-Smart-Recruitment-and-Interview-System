@@ -9,13 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// CRUD template email động (M4) — Recruiter cấu hình nội dung email tự động theo từng loại trigger
+/// CRUD template email động (M4) — Human Resource cấu hình nội dung email tự động theo từng loại trigger
 /// (state machine + magic link). Admin bypass [WithRole]. Cô lập tenant qua IContextData.CompanyId.
 /// </summary>
 [Route("api/email-templates")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter)]
+[WithRole(RoleConstants.HumanResource)]
 public class EmailTemplateController : ControllerBase
 {
     private readonly IContextData _contextData;

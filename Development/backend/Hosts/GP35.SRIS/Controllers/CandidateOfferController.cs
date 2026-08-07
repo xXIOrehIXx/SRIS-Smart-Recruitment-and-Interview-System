@@ -9,7 +9,7 @@ namespace GP35.SRIS.Controllers;
 /// Token qua "?token=" (purpose=OFFER_RESPONSE); CandidateTenantMiddleware giải tenant từ tiền tố token.
 ///
 /// Chỉ ĐỌC: không còn endpoint phản hồi. Ứng viên trả lời nhà tuyển dụng ngoài hệ thống,
-/// Recruiter/DM ghi nhận kết quả ở POST /api/applications/{id}/offer/outcome.
+/// Human Resource/DM ghi nhận kết quả ở POST /api/applications/{id}/offer/outcome.
 /// </summary>
 [Route("api/candidate/offer")]
 [ApiController]

@@ -402,7 +402,7 @@ Nhận xét: ${feedback || 'Không có'}`;
             </Title>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
               <Text type="secondary">
-                Lịch chi tiết (ngày giờ, phòng họp) chỉ có thể xem từ phía Recruiter/Dept Manager do API cho Interviewer hiện tại chỉ cung cấp mã lịch và trạng thái. 
+                Lịch chi tiết (ngày giờ, phòng họp) chỉ có thể xem từ phía Human Resource/Dept Manager do API cho Interviewer hiện tại chỉ cung cấp mã lịch và trạng thái. 
                 Bạn có thể xem lịch trên Google Calendar của bạn.
               </Text>
             </div>

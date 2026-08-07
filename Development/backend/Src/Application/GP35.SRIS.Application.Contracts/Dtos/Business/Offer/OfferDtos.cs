@@ -1,10 +1,10 @@
 namespace GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 
 /// <summary>
-/// Người quyết tuyển (Department Manager của job; job không gán DM -> Recruiter) soạn THƯ MỜI
+/// Người quyết tuyển (Department Manager của job; job không gán DM -> Human Resource) soạn THƯ MỜI
 /// NHẬN VIỆC cho hồ sơ đang ở trạng thái OFFER (docs 5.15). Tạo OfferDetail + gửi email kèm link
 /// mở file PDF thư mời. Ứng viên KHÔNG bấm đồng ý/từ chối trong hệ thống — trả lời ngoài hệ thống,
-/// Recruiter ghi nhận kết quả sau (<see cref="OfferOutcomeDto"/>).
+/// Human Resource ghi nhận kết quả sau (<see cref="OfferOutcomeDto"/>).
 /// Trường để trống -> lấy mặc định từ Job/Company (xem <see cref="OfferLetterDefaultsDto"/>);
 /// mục nào rỗng thì bản PDF bỏ hẳn dòng đó, không in "N/A".
 /// </summary>
@@ -40,7 +40,7 @@ public class MakeOfferDto
 }
 
 /// <summary>
-/// Giá trị gợi ý để mở sẵn form soạn thư (Recruiter chỉ sửa lại chỗ cần).
+/// Giá trị gợi ý để mở sẵn form soạn thư (Human Resource chỉ sửa lại chỗ cần).
 /// Lấy từ Job + Company + hồ sơ ứng viên, KHÔNG ghi gì vào DB.
 /// </summary>
 public class OfferLetterDefaultsDto
@@ -116,7 +116,7 @@ public class MakeOfferResultDto
 }
 
 /// <summary>
-/// Recruiter/DM ghi nhận kết quả sau khi ứng viên trả lời NGOÀI hệ thống (email/điện thoại).
+/// Human Resource/DM ghi nhận kết quả sau khi ứng viên trả lời NGOÀI hệ thống (email/điện thoại).
 /// Accepted=true -> ACCEPTED + Application HIRED; false -> DECLINED + Application REJECTED.
 /// </summary>
 public class OfferOutcomeDto

@@ -15,9 +15,9 @@ const { Title, Text } = Typography;
 
 /**
  * Đặt lịch phỏng vấn theo POOL dùng chung (docs Section 15):
- * Recruiter mở 1 pool khung giờ cho job + vòng → mời nhiều ứng viên (mỗi người nhận
+ * Human Resource mở 1 pool khung giờ cho job + vòng → mời nhiều ứng viên (mỗi người nhận
  * 1 magic link SCHEDULE qua email) → ai chốt slot trước lấy trước.
- * Ứng viên báo bận nhiều lần (cờ vàng/đỏ) → Recruiter gọi điện rồi "Chốt lịch tay".
+ * Ứng viên báo bận nhiều lần (cờ vàng/đỏ) → Human Resource gọi điện rồi "Chốt lịch tay".
  */
 const InterviewScheduleRecruit = () => {
   const [jobs, setJobs] = useState([]);
@@ -53,7 +53,7 @@ const InterviewScheduleRecruit = () => {
     }
   };
 
-  // Dropdown Interviewer qua /users/options (Recruiter gọi được, khác /users chỉ Admin)
+  // Dropdown Interviewer qua /users/options (Human Resource gọi được, khác /users chỉ Admin)
   const fetchInterviewers = async () => {
     try {
       const response = await usersAPI.getOptions('Interviewer');
@@ -201,7 +201,7 @@ const InterviewScheduleRecruit = () => {
 
   const handleCancelPool = async (poolId) => {
     try {
-      await interviewAPI.cancelPool(poolId, 'Hủy bởi recruiter');
+      await interviewAPI.cancelPool(poolId, 'Hủy bởi Human Resource');
       message.success('Đã hủy pool (ứng viên đã chốt sẽ nhận email báo).');
       fetchJobData(selectedJobId);
     } catch (error) {

@@ -53,7 +53,7 @@ const DeptRecruitmentRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   const { user } = useAuth();
-  const isRecruiter = user?.role === ROLES.RECRUITER || user?.role === ROLES.ADMIN;
+  const isRecruiter = user?.role === ROLES.HUMAN_RESOURCE || user?.role === ROLES.ADMIN;
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -97,7 +97,7 @@ const DeptRecruitmentRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Recruiter duyệt / từ chối (lý do từ chối tùy chọn)
+  // Human Resource duyệt / từ chối (lý do từ chối tùy chọn)
   const handleReview = async (record, approve) => {
     if (!approve) {
       let note = '';
@@ -239,7 +239,7 @@ const DeptRecruitmentRequests = () => {
               setDetailModal(true);
             }}
           />
-          {/* Recruiter/Admin: duyệt / từ chối khi PENDING; tạo tin khi đã duyệt */}
+          {/* Human Resource/Admin: duyệt / từ chối khi PENDING; tạo tin khi đã duyệt */}
           {isRecruiter && record.status === 'PENDING' && (
             <>
               <Popconfirm
@@ -270,12 +270,12 @@ const DeptRecruitmentRequests = () => {
               size="small"
               icon={<PlusOutlined />}
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-              onClick={() => navigate(`/recruiter/jobs/create?requestId=${record.id}`)}
+              onClick={() => navigate(`/human-resource/jobs/create?requestId=${record.id}`)}
             >
               Tạo tin
             </Button>
           )}
-          {/* DM: sửa lại đề bài khi Recruiter chưa duyệt (duyệt xong BE khóa để giữ audit) */}
+          {/* DM: sửa lại đề bài khi Human Resource chưa duyệt (duyệt xong BE khóa để giữ audit) */}
           {!isRecruiter && record.status === 'PENDING' && (
             <Button
               type="text"

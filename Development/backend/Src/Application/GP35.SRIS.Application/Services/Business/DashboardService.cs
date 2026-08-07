@@ -27,7 +27,7 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
 
     /// <summary>
     /// Phạm vi dữ liệu của người đang đăng nhập (V023): DM chỉ thấy hồ sơ thuộc phòng ban mình
-    /// phụ trách (repo lo lọc); Admin/Recruiter/Interviewer thấy toàn công ty -> null.
+    /// phụ trách (repo lo lọc); Admin/Human Resource/Interviewer thấy toàn công ty -> null.
     /// </summary>
     private long? DepartmentScope =>
         string.Equals(_contextData.Role, RoleConstants.DepartmentManager, StringComparison.OrdinalIgnoreCase)

@@ -2,7 +2,7 @@ namespace GP35.SRIS.Application.Contracts.Dtos.Ai;
 
 /// <summary>
 /// 1 ứng viên gợi ý từ Talent Pool (kho CV cũ của công ty) cho 1 job. Score 0–100 (cao = hợp),
-/// kèm "tuổi CV" để Recruiter tự cân độ tươi (CV cũ quá -> ứng viên có thể đã có việc).
+/// kèm "tuổi CV" để Human Resource tự cân độ tươi (CV cũ quá -> ứng viên có thể đã có việc).
 /// </summary>
 public class TalentPoolSuggestionDto
 {
@@ -28,7 +28,7 @@ public class TalentPoolResultDto
     public List<TalentPoolSuggestionDto> Suggestions { get; set; } = new();
 }
 
-/// <summary>Recruiter mời 1 ứng viên trong kho ứng tuyển vào job (email lấy từ gợi ý).</summary>
+/// <summary>Human Resource mời 1 ứng viên trong kho ứng tuyển vào job (email lấy từ gợi ý).</summary>
 public class TalentPoolInviteDto
 {
     public string CandidateEmail { get; set; } = null!;

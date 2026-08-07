@@ -228,7 +228,7 @@ export const applicationAPI = {
 // ==================== INTERVIEW SCHEDULING ====================
 
 // Lịch phỏng vấn theo POOL dùng chung (docs Section 15):
-// Recruiter mở 1 pool khung giờ cho job + vòng → mời nhiều ứng viên (mỗi người 1
+// Human Resource mở 1 pool khung giờ cho job + vòng → mời nhiều ứng viên (mỗi người 1
 // magic link SCHEDULE) → ai chốt slot trước lấy trước. Chốt tay cho nhánh gọi điện.
 export const interviewAPI = {
   // Danh sách pool của 1 job (kèm slots + ứng viên đã mời + cờ nhắc vàng/đỏ)
@@ -322,7 +322,7 @@ export const offerAPI = {
   getLetterBlob: (applicationId) =>
     api.get(`/applications/${applicationId}/offer/letter`, { responseType: 'blob' }),
 
-  // Ứng viên trả lời NGOÀI hệ thống -> Recruiter ghi nhận: accepted=true -> HIRED, false -> REJECTED
+  // Ứng viên trả lời NGOÀI hệ thống -> Human Resource ghi nhận: accepted=true -> HIRED, false -> REJECTED
   recordOutcome: (applicationId, accepted, note) =>
     api.post(`/applications/${applicationId}/offer/outcome`, { accepted, note }),
 
@@ -415,7 +415,7 @@ export const dashboardAPI = {
 // Reverse matching: JD của job → quét kho CvDocument cũ cùng tenant.
 // Chỉ có theo TỪNG job — trả { jobId, withinMonths, count, suggestions: [...] }.
 export const talentPoolAPI = {
-  // withinMonths = độ tươi CV Recruiter chọn (1/3/6 tháng). Bỏ trống -> BE mặc định 6 tháng.
+  // withinMonths = độ tươi CV Human Resource chọn (1/3/6 tháng). Bỏ trống -> BE mặc định 6 tháng.
   getSuggestions: (jobId, withinMonths) =>
     api.get(withinMonths
       ? `/jobs/${jobId}/talent-pool?withinMonths=${withinMonths}`
@@ -470,7 +470,7 @@ export const usersAPI = {
   resetPassword: (userId, newPassword) =>
     api.post(`/users/${userId}/reset-password`, { newPassword }),
 
-  // Dropdown chọn người cho Recruiter/DM (không cần quyền Admin).
+  // Dropdown chọn người cho Human Resource/DM (không cần quyền Admin).
   // role: 'Interviewer' | 'DepartmentManager' | ... — bỏ trống = tất cả Active
   getOptions: (role) =>
     api.get('/users/options', { params: role ? { role } : {} }),
@@ -524,7 +524,7 @@ export const employmentTypeAPI = {
 };
 
 // ==================== RECRUITMENT REQUESTS (Yêu cầu tuyển dụng — 5.17) ====================
-// DM "ra đề" (tùy chọn) → Recruiter duyệt → tạo Job từ yêu cầu (CONVERTED + jobId truy vết).
+// DM "ra đề" (tùy chọn) → Human Resource duyệt → tạo Job từ yêu cầu (CONVERTED + jobId truy vết).
 
 export const recruitmentRequestAPI = {
   // data: { title, department?, quantity, employmentType?, experienceLevel?,
@@ -545,11 +545,11 @@ export const recruitmentRequestAPI = {
   cancel: (id) =>
     api.delete(`/recruitment-requests/${id}`),
 
-  // Recruiter duyệt: approve=false bắt buộc note
+  // Human Resource duyệt: approve=false bắt buộc note
   review: (id, approve, note) =>
     api.post(`/recruitment-requests/${id}/review`, { approve, note }),
 
-  // Recruiter gắn job đã tạo từ yêu cầu → CONVERTED
+  // Human Resource gắn job đã tạo từ yêu cầu → CONVERTED
   convert: (id, jobId) =>
     api.post(`/recruitment-requests/${id}/convert`, { jobId }),
 };

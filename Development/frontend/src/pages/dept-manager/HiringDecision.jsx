@@ -61,7 +61,7 @@ const HiringDecision = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   // Chi tiết để DM quyết: điểm TIÊU CHÍ phỏng vấn từng vòng + CV gốc.
-  // (Điểm CV/AI cố tình KHÔNG hiện ở đây — đó là công cụ sàng lọc của Recruiter.)
+  // (Điểm CV/AI cố tình KHÔNG hiện ở đây — đó là công cụ sàng lọc của Human Resource.)
   const [detailLoading, setDetailLoading] = useState(false);
   const [interviewRounds, setInterviewRounds] = useState([]);
   const [appDetail, setAppDetail] = useState(null);
@@ -130,7 +130,7 @@ const HiringDecision = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId]);
 
-  // Recruiter/DM gửi offer ở màn khác -> hồ sơ rơi vào cột OFFER; quay lại tab này là thấy ngay.
+  // Human Resource/DM gửi offer ở màn khác -> hồ sơ rơi vào cột OFFER; quay lại tab này là thấy ngay.
   useRefreshOnFocus(() => fetchCandidates());
 
   const getStatusTag = (status) => {
@@ -217,7 +217,7 @@ const HiringDecision = () => {
       width: 150,
     },
     {
-      // Điểm CV/AI là công cụ sàng lọc của Recruiter — DM quyết theo tiêu chí phỏng vấn,
+      // Điểm CV/AI là công cụ sàng lọc của Human Resource — DM quyết theo tiêu chí phỏng vấn,
       // xem trong modal chi tiết. Ở bảng chỉ cần biết hồ sơ thuộc phòng nào.
       title: 'Phòng ban',
       dataIndex: 'department',

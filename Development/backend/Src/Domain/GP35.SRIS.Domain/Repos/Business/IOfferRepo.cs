@@ -12,7 +12,7 @@ public interface IOfferRepo : IBaseRepo<long, OfferDetail>
     Task<long> InsertAsync(long companyId, OfferDetail offer);
 
     /// <summary>
-    /// Recruiter/DM ghi nhận kết quả ứng viên trả lời NGOÀI hệ thống (ACCEPTED/DECLINED) +
+    /// Human Resource/DM ghi nhận kết quả ứng viên trả lời NGOÀI hệ thống (ACCEPTED/DECLINED) +
     /// responded_at — chỉ khi đang PENDING (khóa lạc quan chống hai người bấm cùng lúc).
     /// Trả số dòng (0 = đã chốt trước đó/không thấy).
     /// </summary>

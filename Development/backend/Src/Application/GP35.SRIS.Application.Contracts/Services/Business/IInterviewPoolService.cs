@@ -3,7 +3,7 @@ using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
 /// <summary>
-/// Đặt lịch phỏng vấn theo POOL DÙNG CHUNG — phía Recruiter (docs Section 15). Mở 1 pool khung cho
+/// Đặt lịch phỏng vấn theo POOL DÙNG CHUNG — phía Human Resource (docs Section 15). Mở 1 pool khung cho
 /// job + vòng, mời nhiều ứng viên (mỗi người 1 magic link SCHEDULE), ai chốt trước lấy trước.
 /// Nhiều vòng = dữ liệu trong INTERVIEW (5.12), không thêm state.
 /// </summary>
@@ -22,7 +22,7 @@ public interface IInterviewPoolService : IBaseService
     Task CancelPoolAsync(long companyId, long userId, long poolId, CancelPoolDto dto);
 
     /// <summary>
-    /// Recruiter chốt lịch TAY cho 1 ứng viên (nhánh gọi điện — không qua pool/magic link). Trả schedule_id
+    /// Human Resource chốt lịch TAY cho 1 ứng viên (nhánh gọi điện — không qua pool/magic link). Trả schedule_id
     /// để interviewer chấm điểm được. Chỉ khi hồ sơ đang ở INTERVIEW.
     /// </summary>
     Task<long> ManualConfirmAsync(long companyId, long userId, long applicationId, ManualConfirmDto dto);

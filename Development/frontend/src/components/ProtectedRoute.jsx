@@ -6,12 +6,12 @@ import { useAuth, ROLES } from "../contexts/AuthContext";
 // Mapping từ các role name khác nhau sang role chuẩn
 const ROLE_MAPPING = {
   Admin: ROLES.ADMIN,
-  Recruiter: ROLES.RECRUITER,
+  Recruiter: ROLES.HUMAN_RESOURCE,
   Interviewer: ROLES.INTERVIEWER,
   Candidate: ROLES.CANDIDATE,
   DepartmentManager: ROLES.DEPARTMENT_MANAGER,
   admin: ROLES.ADMIN,
-  recruiter: ROLES.RECRUITER,
+  recruiter: ROLES.HUMAN_RESOURCE,
   interviewer: ROLES.INTERVIEWER,
   candidate: ROLES.CANDIDATE,
   departmentmanager: ROLES.DEPARTMENT_MANAGER,
@@ -68,7 +68,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
       // Chuyển hướng về dashboard phù hợp với role
       const dashboardRoutes = {
         [ROLES.ADMIN]: "/admin/dashboard",
-        [ROLES.RECRUITER]: "/recruiter/dashboard",
+        [ROLES.HUMAN_RESOURCE]: "/human-resource/dashboard",
         [ROLES.INTERVIEWER]: "/interviewer/incoming",
         [ROLES.DEPARTMENT_MANAGER]: "/dept/dashboard",
       };

@@ -11,7 +11,7 @@
 > **Multi-tenant:** tenant lấy từ JWT (claim `CompanyId`) — FE không cần gửi companyId ở body/query.
 > **Response lỗi:** `{ errorCode, devMsg, userMsg, traceId, validationFailures }`.
 
-Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=DepartmentManager · `Anon`=không cần đăng nhập (magic link / public). Admin luôn bypass `[WithRole]`.
+Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM`=DepartmentManager · `Anon`=không cần đăng nhập (magic link / public). Admin luôn bypass `[WithRole]`.
 
 ---
 
@@ -90,7 +90,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 ## 8. Talent Pool (reverse matching) — `jobs/{jobId}/talent-pool`
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| GET | `/api/jobs/{jobId}/talent-pool?withinMonths=6&topN=10` | Rec | quét kho CV cũ cùng tenant khớp JD mới; `withinMonths` = độ tươi CV Recruiter chọn (FE: 1/3/6 tháng, mặc định 6, trần 36) |
+| GET | `/api/jobs/{jobId}/talent-pool?withinMonths=6&topN=10` | Rec | quét kho CV cũ cùng tenant khớp JD mới; `withinMonths` = độ tươi CV Human Resource chọn (FE: 1/3/6 tháng, mặc định 6, trần 36) |
 
 ## 9. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
 | Method | Path | Role | Ghi chú |
@@ -112,7 +112,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | GET | `/api/applications/{applicationId}/notes` | Rec/Itv/DM | list ghi chú |
 
 ## 12. Đặt lịch phỏng vấn — POOL khung dùng chung (Rec)
-> **ĐỔI MÔ HÌNH 07/2026:** không còn tạo lịch 1-1 per-ứng-viên. Recruiter mở 1 POOL khung cho job+vòng,
+> **ĐỔI MÔ HÌNH 07/2026:** không còn tạo lịch 1-1 per-ứng-viên. Human Resource mở 1 POOL khung cho job+vòng,
 > mời DANH SÁCH ứng viên (mỗi người 1 magic link SCHEDULE), ai chốt trước lấy khung trước.
 > Điều kiện mời: card đã ở pha Phỏng vấn (KÉO trước, MỜI sau).
 
@@ -142,7 +142,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | GET | `/api/applications/{applicationId}/offer/letter` | Rec/DM | file PDF thư mời đã gửi (`application/pdf`) |
 | POST | `/api/applications/{applicationId}/offer/outcome` | Rec/DM | ghi nhận ứng viên trả lời: `{accepted, note}` → HIRED / REJECTED |
 
-## 15. Magic link (Recruiter phát) — `applications/{applicationId}/magic-links`
+## 15. Magic link (Human Resource phát) — `applications/{applicationId}/magic-links`
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/magic-links` | Rec | phát link cho candidate (SCHEDULE/STATUS/OFFER_RESPONSE) |
@@ -183,7 +183,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 ---
 
 ## Ghi chú cho FE
-- **Luồng chính Recruiter:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → upload CV (§7) → xem ranking (§7) → mở hồ sơ (§9) → xem chấm theo tiêu chí (§5 criteria-matches) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → soạn + gửi thư mời nhận việc (§14, PDF qua email) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
+- **Luồng chính Human Resource:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → upload CV (§7) → xem ranking (§7) → mở hồ sơ (§9) → xem chấm theo tiêu chí (§5 criteria-matches) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → soạn + gửi thư mời nhận việc (§14, PDF qua email) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
 - **Chọn người trong form:** gán interviewer vào khung / chọn DM cho job → `GET /api/users/options?role=…` (§2) — KHÔNG dùng `GET /api/users` (Admin-only).
 - **Luồng Interviewer:** chỉ §13.
 - **Luồng Admin:** §2 (users) + §3 (company) + §17 (dashboard).

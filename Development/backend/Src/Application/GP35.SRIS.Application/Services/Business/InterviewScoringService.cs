@@ -90,7 +90,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         await EnsureNotLockedAsync(companyId, scheduleId);
         var criteria = await GetActiveCriteriaAsync(companyId, scheduleId);
         if (criteria.Count == 0)
-            throw Conflict("Job chưa có tiêu chí chấm nào — Recruiter cần cấu hình trước.");
+            throw Conflict("Job chưa có tiêu chí chấm nào — Human Resource cần cấu hình trước.");
 
         var mine = await _scoreRepo.GetByScheduleAndInterviewerAsync(companyId, scheduleId, interviewerId);
         var scored = mine.Where(s => s.Score is not null).Select(s => s.CriteriaId).ToHashSet();

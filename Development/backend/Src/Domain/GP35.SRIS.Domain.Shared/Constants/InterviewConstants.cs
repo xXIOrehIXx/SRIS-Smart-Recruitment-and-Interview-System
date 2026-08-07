@@ -9,10 +9,10 @@ public static class InterviewScheduleStatus
     /// <summary>Ứng viên đã chốt 1 khung.</summary>
     public const string Confirmed = "CONFIRMED";
 
-    /// <summary>Ứng viên báo không khung nào phù hợp -> Recruiter mở vòng mới.</summary>
+    /// <summary>Ứng viên báo không khung nào phù hợp -> Human Resource mở vòng mới.</summary>
     public const string NoSlotFits = "NO_SLOT_FITS";
 
-    /// <summary>Recruiter hủy lịch.</summary>
+    /// <summary>Human Resource hủy lịch.</summary>
     public const string Cancelled = "CANCELLED";
 }
 
@@ -63,7 +63,7 @@ public static class InterviewPoolStatus
     /// <summary>Đã đóng (hết khung / recruiter đóng thủ công / dùng cho lịch chốt tay).</summary>
     public const string Closed = "CLOSED";
 
-    /// <summary>Recruiter hủy pool.</summary>
+    /// <summary>Human Resource hủy pool.</summary>
     public const string Cancelled = "CANCELLED";
 }
 

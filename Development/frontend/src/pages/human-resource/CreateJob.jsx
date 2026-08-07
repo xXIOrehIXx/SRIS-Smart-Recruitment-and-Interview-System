@@ -53,7 +53,7 @@ const { TextArea } = Input;
  *  - Job entity: quantity min 1, salary thuộc decimal (lớn)
  *
  * FE validate CHẶT hơn BE (vd: description min 50 ký tự) là chủ ý — muốn
- * cảnh báo recruiter sớm vì JD ngắn quá hệ thống chấm CV vector sẽ kém chính xác.
+ * cảnh báo Human Resource sớm vì JD ngắn quá hệ thống chấm CV vector sẽ kém chính xác.
  */
 /**
  * Đổi giá trị ngày từ API sang thứ <DatePicker> nhận được (dayjs), an toàn với dữ liệu bẩn.
@@ -387,13 +387,13 @@ const CreateJob = () => {
         await jobsAPI.update(editingJobId, data);
         message.success("Cập nhật tin tuyển dụng thành công — bạn có thể tiếp tục chỉnh sửa.");
         // QUAN TRỌNG: KHÔNG navigate sau khi update — user còn đang trong luồng edit. Trước
-        // đây navigate("/recruiter/jobs") làm user mất context, muốn sửa tiếp phải vào lại.
+        // đây navigate("/human-resource/jobs") làm user mất context, muốn sửa tiếp phải vào lại.
         // Tạo mới (không phải edit) thì navigate tới JobDetail vừa tạo cho user xem lại.
       } else {
         const res = await jobsAPI.create(data);
         await linkToRequest(res.data?.jobId);
         message.success("Lưu nháp thành công");
-        navigate("/recruiter/jobs");
+        navigate("/human-resource/jobs");
       }
     } catch (error) {
       // Lỗi validate (title trống) — antd throw object có errorFields
@@ -437,7 +437,7 @@ const CreateJob = () => {
         const res = await jobsAPI.create(data);
         await linkToRequest(res.data?.jobId);
         message.success("Tin tuyển dụng đã được đăng thành công!");
-        navigate("/recruiter/jobs");
+        navigate("/human-resource/jobs");
       }
     } catch (error) {
       if (error?.errorFields) {
@@ -752,7 +752,7 @@ const CreateJob = () => {
       <div className="page-header">
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/recruiter/jobs")}
+          onClick={() => navigate("/human-resource/jobs")}
         >
           Quay lại
         </Button>
@@ -793,7 +793,7 @@ const CreateJob = () => {
                   </Space>
                 }
                 action={
-                  <Button size="small" onClick={() => navigate(`/recruiter/jobs/${editingJobId}`)}>
+                  <Button size="small" onClick={() => navigate(`/human-resource/jobs/${editingJobId}`)}>
                     Xem tin
                   </Button>
                 }

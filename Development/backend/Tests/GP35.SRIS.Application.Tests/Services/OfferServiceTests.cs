@@ -164,7 +164,7 @@ public class OfferServiceTests
         Assert.Equal("ACCEPTED", result.OfferStatus);
         Assert.Equal("HIRED", result.ApplicationState);
         // isCandidateAnswer = true: ghi nhận câu trả lời, KHÔNG áp luật "chỉ DM của job" (5.14)
-        // — job có gán DM mà bắt đúng DM mới ghi được thì Recruiter cầm email trả lời cũng chịu.
+        // — job có gán DM mà bắt đúng DM mới ghi được thì Human Resource cầm email trả lời cũng chịu.
         _stateService.Verify(s => s.TransitionAsync(1L, 9L, 100L, "HIRED", null, true), Times.Once);
         _activityLogRepo.Verify(
             r => r.InsertAsync(1L, It.Is<ActivityLog>(a => a.Action == "OFFER_ACCEPTED")), Times.Once);

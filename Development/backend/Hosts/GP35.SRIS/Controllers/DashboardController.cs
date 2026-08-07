@@ -9,12 +9,12 @@ namespace GP35.SRIS.Controllers;
 
 /// <summary>
 /// Dashboard / Analytics (docs 4, M7): phễu tuyển dụng, time-to-hire, offer acceptance rate,
-/// phân rã lý do loại + nguồn ứng viên. Số liệu quản trị — Recruiter & Department Manager xem.
+/// phân rã lý do loại + nguồn ứng viên. Số liệu quản trị — Human Resource & Department Manager xem.
 /// </summary>
 [Route("api/dashboard")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager, RoleConstants.Admin)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Admin)]
 public class DashboardController : ControllerBase
 {
     private readonly IContextData _contextData;

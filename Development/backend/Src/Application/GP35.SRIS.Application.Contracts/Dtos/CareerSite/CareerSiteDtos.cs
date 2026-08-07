@@ -33,7 +33,7 @@ public class PublicJobDto
 
 /// <summary>
 /// Kết quả nộp CV của ứng viên trên Career Site. KHÔNG trả điểm AI (điểm chấm CV là dữ liệu nội bộ
-/// của Recruiter — docs 5.7); chỉ xác nhận đã nhận hồ sơ.
+/// của Human Resource — docs 5.7); chỉ xác nhận đã nhận hồ sơ.
 /// </summary>
 public class PublicApplyResultDto
 {

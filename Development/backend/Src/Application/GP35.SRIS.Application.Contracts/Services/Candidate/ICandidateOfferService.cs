@@ -5,7 +5,7 @@ namespace GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 /// <summary>
 /// Ứng viên xem/tải THƯ MỜI NHẬN VIỆC qua magic link OFFER_RESPONSE (docs 5.15). Không login,
 /// không thao tác: không còn nút Đồng ý/Từ chối — ứng viên trả lời nhà tuyển dụng ngoài hệ thống,
-/// Recruiter/DM ghi nhận kết quả trong Portal.
+/// Human Resource/DM ghi nhận kết quả trong Portal.
 ///
 /// Vì thế token KHÔNG bị đốt khi mở: ứng viên phải xem/tải lại được thư trong suốt thời gian hiệu lực.
 /// </summary>

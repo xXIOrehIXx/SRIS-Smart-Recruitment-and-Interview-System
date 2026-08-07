@@ -8,7 +8,7 @@ public class CriteriaTemplateItemInputDto
     public decimal MaxScore { get; set; } = 10;
 }
 
-/// <summary>Recruiter tạo khuôn tiêu chí mới (cấp company).</summary>
+/// <summary>Human Resource tạo khuôn tiêu chí mới (cấp company).</summary>
 public class CriteriaTemplateInputDto
 {
     public string Name { get; set; } = null!;
@@ -16,7 +16,7 @@ public class CriteriaTemplateInputDto
     public List<CriteriaTemplateItemInputDto> Items { get; set; } = new();
 }
 
-/// <summary>Recruiter sửa khuôn (header + thay toàn bộ dòng + bật/tắt).</summary>
+/// <summary>Human Resource sửa khuôn (header + thay toàn bộ dòng + bật/tắt).</summary>
 public class CriteriaTemplateUpdateDto
 {
     public string Name { get; set; } = null!;

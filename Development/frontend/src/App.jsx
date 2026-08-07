@@ -16,16 +16,16 @@ import CreateAccount from "./pages/admin/CreateAccount";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import EmploymentTypeManagement from "./pages/admin/EmploymentTypeManagement";
 import AdminLayout from "./layouts/AdminLayout";
-import RecruiterDashboard from "./pages/recruiter/Dashboard";
-import JobManagement from "./pages/recruiter/JobManagement";
-import JobDetail from "./pages/recruiter/JobDetail";
-import CreateJob from "./pages/recruiter/CreateJob";
-import CandidateDetail from "./pages/recruiter/CandidateDetail";
+import HumanResourceDashboard from "./pages/human-resource/Dashboard";
+import JobManagement from "./pages/human-resource/JobManagement";
+import JobDetail from "./pages/human-resource/JobDetail";
+import CreateJob from "./pages/human-resource/CreateJob";
+import CandidateDetail from "./pages/human-resource/CandidateDetail";
 import IncomingInterview from "./pages/interviewer/IncomingInterview";
 import Grading from "./pages/interviewer/Grading";
 import InterviewerInterviewHistory from "./pages/interviewer/InterviewHistory";
 import InterviewerInterviewDetail from "./pages/interviewer/InterviewDetail";
-import InterviewScheduleRecruit from "./pages/recruiter/InterviewScheduleRecruit";
+import InterviewScheduleRecruit from "./pages/human-resource/InterviewScheduleRecruit";
 import DeptInterviewSchedule from "./pages/dept-manager/InterviewSchedule";
 import DeptInterviewDetail from "./pages/dept-manager/InterviewDetail";
 import DeptRecruitmentRequests from "./pages/dept-manager/RecruitmentRequests";
@@ -86,17 +86,17 @@ const App = () => {
 
       <Route
         element={
-          <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
+          <ProtectedRoute allowedRoles={[ROLES.HUMAN_RESOURCE]}>
             <AdminLayout />
           </ProtectedRoute>
         }
       >
-        <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
-        <Route path="/recruiter/jobs" element={<JobManagement />} />
-        <Route path="/recruiter/jobs/:id" element={<JobDetail />} />
-        <Route path="/recruiter/jobs/create" element={<CreateJob />} />
-        <Route path="/recruiter/requests" element={<DeptRecruitmentRequests />} />
-        <Route path="/recruiter/candidates/:id" element={<CandidateDetail />} />
+        <Route path="/human-resource/dashboard" element={<HumanResourceDashboard />} />
+        <Route path="/human-resource/jobs" element={<JobManagement />} />
+        <Route path="/human-resource/jobs/:id" element={<JobDetail />} />
+        <Route path="/human-resource/jobs/create" element={<CreateJob />} />
+        <Route path="/human-resource/requests" element={<DeptRecruitmentRequests />} />
+        <Route path="/human-resource/candidates/:id" element={<CandidateDetail />} />
         <Route
           path="/interviews/schedule"
           element={<InterviewScheduleRecruit />}
@@ -127,10 +127,10 @@ const App = () => {
         <Route path="/interviewer/grading/:id" element={<Grading />} />
       </Route>
 
-      {/* Offers — Recruiter quản lý OfferDetail (sau khi DM đã duyệt ở bước INTERVIEW->OFFER). */}
+      {/* Offers — Human Resource quản lý OfferDetail (sau khi DM đã duyệt ở bước INTERVIEW->OFFER). */}
       <Route
         element={
-          <ProtectedRoute allowedRoles={[ROLES.RECRUITER]}>
+          <ProtectedRoute allowedRoles={[ROLES.HUMAN_RESOURCE]}>
             <AdminLayout />
           </ProtectedRoute>
         }
@@ -182,7 +182,7 @@ const App = () => {
         element={
           isAuthenticated ? (
             <Navigate
-              to={user ? getDashboardRoute() : "/recruiter/dashboard"}
+              to={user ? getDashboardRoute() : "/human-resource/dashboard"}
               replace
             />
           ) : (

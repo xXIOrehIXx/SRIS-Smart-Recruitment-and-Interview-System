@@ -9,13 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Ghi chú nội bộ trên hồ sơ (docs "Activity Log & Internal Notes"). Nội bộ — Recruiter/Interviewer/DM
+/// Ghi chú nội bộ trên hồ sơ (docs "Activity Log & Internal Notes"). Nội bộ — Human Resource/Interviewer/DM
 /// cộng tác, KHÔNG gửi ứng viên. Người viết = user đăng nhập.
 /// </summary>
 [Route("api/applications/{applicationId:long}/notes")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter, RoleConstants.Interviewer, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager)]
 public class InternalNoteController : ControllerBase
 {
     private readonly IContextData _contextData;

@@ -1,6 +1,6 @@
 namespace GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 
-/// <summary>1 interviewer rút gọn (id + tên) — dùng trong SlotDto để Recruiter thấy panel.</summary>
+/// <summary>1 interviewer rút gọn (id + tên) — dùng trong SlotDto để Human Resource thấy panel.</summary>
 public class InterviewerMiniDto
 {
     public long InterviewerId { get; set; }
@@ -8,7 +8,7 @@ public class InterviewerMiniDto
     public string? Email { get; set; }
 }
 
-/// <summary>1 khung giờ Recruiter mở (panel 1..N interviewer + 1 thời điểm).</summary>
+/// <summary>1 khung giờ Human Resource mở (panel 1..N interviewer + 1 thời điểm).</summary>
 public class SlotInputDto
 {
     /// <summary>Panel interviewer (1..5 người cùng dự buổi phỏng vấn). Docs Section 15 mở rộng A.</summary>
@@ -17,7 +17,7 @@ public class SlotInputDto
 }
 
 /// <summary>
-/// Recruiter mở 1 POOL khung dùng chung cho 1 job + vòng (docs 15). Nhiều ứng viên được mời sẽ
+/// Human Resource mở 1 POOL khung dùng chung cho 1 job + vòng (docs 15). Nhiều ứng viên được mời sẽ
 /// cùng chọn từ bộ khung này. roundNumber null = vòng 1.
 /// </summary>
 public class CreatePoolDto
@@ -26,20 +26,20 @@ public class CreatePoolDto
     public List<SlotInputDto> Slots { get; set; } = new();
 }
 
-/// <summary>Recruiter mời 1 danh sách ứng viên (application) vào 1 pool — mỗi người 1 magic link SCHEDULE.</summary>
+/// <summary>Human Resource mời 1 danh sách ứng viên (application) vào 1 pool — mỗi người 1 magic link SCHEDULE.</summary>
 public class InvitePoolDto
 {
     public List<long> ApplicationIds { get; set; } = new();
 }
 
-/// <summary>Recruiter hủy pool. Lý do (tùy chọn) ghi nhật ký + email báo ứng viên đã chốt.</summary>
+/// <summary>Human Resource hủy pool. Lý do (tùy chọn) ghi nhật ký + email báo ứng viên đã chốt.</summary>
 public class CancelPoolDto
 {
     public string? Reason { get; set; }
 }
 
 /// <summary>
-/// Recruiter chốt lịch TAY cho 1 ứng viên (nhánh gọi điện — không qua pool/magic link).
+/// Human Resource chốt lịch TAY cho 1 ứng viên (nhánh gọi điện — không qua pool/magic link).
 /// roundNumber null = tự đánh số vòng kế tiếp của hồ sơ.
 /// </summary>
 public class ManualConfirmDto
@@ -58,7 +58,7 @@ public class SlotDto
     public string Status { get; set; } = null!;
     /// <summary>Ứng viên (application) đã đặt khung này; null khi còn OPEN.</summary>
     public long? BookedApplicationId { get; set; }
-    /// <summary>Panel interviewer của khung (1..N người) — Recruiter xem tên.</summary>
+    /// <summary>Panel interviewer của khung (1..N người) — Human Resource xem tên.</summary>
     public List<InterviewerMiniDto> Interviewers { get; set; } = new();
 }
 

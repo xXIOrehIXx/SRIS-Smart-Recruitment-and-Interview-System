@@ -3,11 +3,11 @@ using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
 /// <summary>
-/// Thư mời nhận việc (docs 5.15). Recruiter/DM soạn thư cho hồ sơ đang ở trạng thái OFFER →
+/// Thư mời nhận việc (docs 5.15). Human Resource/DM soạn thư cho hồ sơ đang ở trạng thái OFFER →
 /// hệ thống lưu OfferDetail (PENDING = đã gửi) + gửi email kèm link mở file PDF thư mời.
 ///
 /// Ứng viên KHÔNG bấm đồng ý/từ chối trong hệ thống — họ trả lời ngoài hệ thống (email/điện
-/// thoại), sau đó Recruiter/DM vào Portal ghi nhận kết quả qua <see cref="RecordOutcomeAsync"/>
+/// thoại), sau đó Human Resource/DM vào Portal ghi nhận kết quả qua <see cref="RecordOutcomeAsync"/>
 /// → đồng bộ Application sang HIRED/REJECTED.
 /// </summary>
 public interface IOfferService : IBaseService

@@ -8,13 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Dropdown chọn người cho Recruiter/DM (gán interviewer vào khung phỏng vấn, chọn DM cho job).
+/// Dropdown chọn người cho Human Resource/DM (gán interviewer vào khung phỏng vấn, chọn DM cho job).
 /// Tách khỏi UsersController vì bảng quản trị user đầy đủ chỉ dành cho Admin.
 /// </summary>
 [Route("api/users/options")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
 public class UserOptionsController : ControllerBase
 {
     private readonly IContextData _contextData;

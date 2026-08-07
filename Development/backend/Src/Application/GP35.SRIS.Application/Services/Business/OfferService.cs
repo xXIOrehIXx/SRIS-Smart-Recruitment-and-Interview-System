@@ -13,11 +13,11 @@ using Serilog;
 namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
-/// Thư mời nhận việc (docs 5.15). Recruiter/DM soạn thư cho hồ sơ đang ở trạng thái OFFER
+/// Thư mời nhận việc (docs 5.15). Human Resource/DM soạn thư cho hồ sơ đang ở trạng thái OFFER
 /// (đã được người quyết duyệt) → lưu OfferDetail + phát magic link OFFER_RESPONSE; link đó mở
 /// ra file PDF thư mời chứ không phải trang bấm Đồng ý/Từ chối.
 ///
-/// Ứng viên trả lời NGOÀI hệ thống; Recruiter/DM ghi nhận kết quả bằng <see cref="RecordOutcomeAsync"/>.
+/// Ứng viên trả lời NGOÀI hệ thống; Human Resource/DM ghi nhận kết quả bằng <see cref="RecordOutcomeAsync"/>.
 /// </summary>
 public class OfferService : BaseService<OfferService>, IOfferService
 {
@@ -217,7 +217,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
         // State machine tự ghi ActivityLog STATE_CHANGE + gửi email kết quả cho ứng viên.
         // isCandidateAnswer: đây là GHI NHẬN câu trả lời của ứng viên, không phải quyết định
         // tuyển mới -> không áp luật "chỉ DM của job" (5.14), nếu không thì job có gán DM sẽ
-        // kẹt: Recruiter cầm email trả lời của ứng viên mà không được phép gõ vào hệ thống.
+        // kẹt: Human Resource cầm email trả lời của ứng viên mà không được phép gõ vào hệ thống.
         string appState;
         if (dto.Accepted)
         {
@@ -323,7 +323,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
     private static string? RoleTitle(string? role) => (role ?? "").Trim() switch
     {
         RoleConstants.Admin => "Quản trị viên",
-        RoleConstants.Recruiter => "Chuyên viên tuyển dụng",
+        RoleConstants.HumanResource => "Chuyên viên tuyển dụng",
         RoleConstants.DepartmentManager => "Trưởng bộ phận",
         RoleConstants.Interviewer => "Người phỏng vấn",
         _ => null

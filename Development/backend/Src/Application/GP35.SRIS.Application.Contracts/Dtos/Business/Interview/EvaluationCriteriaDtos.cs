@@ -1,6 +1,6 @@
 namespace GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 
-/// <summary>Recruiter/DM tạo 1 tiêu chí cho job (per-job — 5.7, 5.18).</summary>
+/// <summary>Human Resource/DM tạo 1 tiêu chí cho job (per-job — 5.7, 5.18).</summary>
 public class CriteriaInputDto
 {
     public string Name { get; set; } = null!;
@@ -14,7 +14,7 @@ public class CriteriaInputDto
     public string? Keywords { get; set; }
 }
 
-/// <summary>Recruiter sửa 1 tiêu chí (gồm bật/tắt + phân loại).</summary>
+/// <summary>Human Resource sửa 1 tiêu chí (gồm bật/tắt + phân loại).</summary>
 public class CriteriaUpdateDto
 {
     public string Name { get; set; } = null!;

@@ -9,7 +9,7 @@ import '../Dashboard.css';
 const { Title, Text } = Typography;
 
 /**
- * DM theo dõi lịch phỏng vấn (READ-ONLY — Recruiter mới thao tác mở pool/mời):
+ * DM theo dõi lịch phỏng vấn (READ-ONLY — Human Resource mới thao tác mở pool/mời):
  * chọn job → xem pool khung giờ + ứng viên đã mời; buổi ĐÃ CHỐT có nút xem
  * tổng hợp điểm panel (chỉ phiếu đã nộp — blind review 5.7).
  */
@@ -174,7 +174,7 @@ const DeptInterviewSchedule = () => {
 
       {pools.length === 0 && !loading && (
         <Card className="main-card" bordered={false}>
-          <Empty description="Chưa có pool khung giờ nào cho vị trí này (Recruiter mở pool ở trang Lịch phỏng vấn)" />
+          <Empty description="Chưa có pool khung giờ nào cho vị trí này (Human Resource mở pool ở trang Lịch phỏng vấn)" />
         </Card>
       )}
 

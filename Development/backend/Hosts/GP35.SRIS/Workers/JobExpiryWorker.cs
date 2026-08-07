@@ -6,7 +6,7 @@ namespace GP35.SRIS.Workers;
 
 /// <summary>
 /// Worker quét job quá hạn mỗi 5 phút, tự chuyển <c>Status</c> sang <c>Closed</c> để job không
-/// còn xuất hiện ở trang công khai và trong list Open của Recruiter (giữ lại row trong DB để
+/// còn xuất hiện ở trang công khai và trong list Open của Human Resource (giữ lại row trong DB để
 /// không mất hồ sơ ứng viên + analytics).
 ///
 /// Vòng lặp:

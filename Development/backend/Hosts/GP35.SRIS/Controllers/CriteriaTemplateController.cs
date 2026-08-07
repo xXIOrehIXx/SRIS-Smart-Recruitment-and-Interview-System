@@ -9,12 +9,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Thư viện tiêu chí mẫu cấp company (Việc 12). Recruiter CRUD khuôn rồi áp vào job —
+/// Thư viện tiêu chí mẫu cấp company (Việc 12). Human Resource CRUD khuôn rồi áp vào job —
 /// clone thành EvaluationCriteria của job (xem EvaluationCriteriaController để sửa per-job sau).
 /// </summary>
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter)]
+[WithRole(RoleConstants.HumanResource)]
 [Route("api/criteria-templates")]
 public class CriteriaTemplateController : ControllerBase
 {

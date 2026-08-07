@@ -27,7 +27,7 @@ public class ApplicationStateServiceTests
     private readonly Mock<IJobRepo> _jobRepo = new();
 
     /// <summary>
-    /// Người đang thao tác. Mặc định Recruiter trên job KHÔNG gán DM -> guard "chỉ DM của job
+    /// Người đang thao tác. Mặc định Human Resource trên job KHÔNG gán DM -> guard "chỉ DM của job
     /// mới quyết tuyển" (cửa OFFER→HIRED/REJECTED) không chặn, các test cũ giữ nguyên hành vi.
     /// </summary>
     private readonly ContextDataStub _context = new() { UserId = UserId, Role = "Recruiter" };
@@ -270,7 +270,7 @@ public class ApplicationStateServiceTests
         Assert.Equal("HIRED", result.ToState);
     }
 
-    /// <summary>Guard chỉ áp ở cửa OFFER — các bước trước đó Recruiter vẫn đi bình thường.</summary>
+    /// <summary>Guard chỉ áp ở cửa OFFER — các bước trước đó Human Resource vẫn đi bình thường.</summary>
     [Fact]
     public async Task Transition_BeforeOffer_NotAffectedByDecisionGuard()
     {

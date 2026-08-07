@@ -87,7 +87,7 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
         // 2. Clone từng dòng thành EvaluationCriteria mới.
         //    Khớp tinh thần "template đã được duyệt rồi": áp vào job = clone thẳng
         //    APPROVED, không phải DRAFT (AI bóc từ JD mới cần qua bước duyệt). Việc
-        //    Recruiter đã chọn template hợp lệ đồng nghĩa với chấp nhận bộ tiêu chí.
+        //    Human Resource đã chọn template hợp lệ đồng nghĩa với chấp nhận bộ tiêu chí.
         var created = new List<CriteriaDto>();
         foreach (var item in found.Items.OrderBy(i => i.DisplayOrder).ThenBy(i => i.ItemId))
         {
