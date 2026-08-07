@@ -24,6 +24,7 @@ public class OfferServiceTests
     private readonly Mock<IMagicLinkService> _magicLink = new();
     private readonly Mock<INotificationService> _notification = new();
     private readonly Mock<IOfferLetterPdfGenerator> _pdf = new();
+    private readonly Mock<IBrandLogoFetcher> _logo = new();
     private readonly Mock<IActivityLogRepo> _activityLogRepo = new();
     private readonly Mock<IContextData> _contextData = new();
     private readonly Mock<ILogger> _logger = new();
@@ -43,6 +44,7 @@ public class OfferServiceTests
             s.AddSingleton(_magicLink.Object);
             s.AddSingleton(_notification.Object);
             s.AddSingleton(_pdf.Object);
+            s.AddSingleton(_logo.Object);
             s.AddSingleton(_activityLogRepo.Object);
             s.AddSingleton(_contextData.Object);
             s.AddSingleton(_logger.Object);

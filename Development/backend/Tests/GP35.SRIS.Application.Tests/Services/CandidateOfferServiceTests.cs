@@ -27,6 +27,7 @@ public class CandidateOfferServiceTests
     private readonly Mock<IApplicationRepo> _appRepo = new();
     private readonly Mock<ICompanyRepo> _companyRepo = new();
     private readonly Mock<IOfferLetterPdfGenerator> _pdf = new();
+    private readonly Mock<IBrandLogoFetcher> _logo = new();
     private readonly Mock<ILogger> _logger = new();
 
     private CandidateOfferService CreateService()
@@ -40,6 +41,7 @@ public class CandidateOfferServiceTests
             s.AddSingleton(_appRepo.Object);
             s.AddSingleton(_companyRepo.Object);
             s.AddSingleton(_pdf.Object);
+            s.AddSingleton(_logo.Object);
             s.AddSingleton(_logger.Object);
         });
         return new CandidateOfferService(provider);

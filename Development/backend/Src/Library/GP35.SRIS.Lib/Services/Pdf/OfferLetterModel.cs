@@ -13,6 +13,15 @@ public class OfferLetterModel
     public string? CompanyEmail { get; set; }
     public string? CompanyPhone { get; set; }
 
+    /// <summary>
+    /// Logo công ty (PNG/JPEG/...) in ở đầu thư. Null = không in logo, phần đầu thư tự dồn lại.
+    /// Là bytes chứ không phải URL: tầng in KHÔNG được đi gọi mạng — xem <see cref="IBrandLogoFetcher"/>.
+    /// </summary>
+    public byte[]? LogoBytes { get; set; }
+
+    /// <summary>Màu brand (<c>Company.primary_color</c>), vd "#0F62FE". Null/sai -> navy mặc định.</summary>
+    public string? BrandColor { get; set; }
+
     /// <summary>Ngày phát hành thư (mặc định: ngày gửi).</summary>
     public DateTime LetterDate { get; set; } = DateTime.Now;
 

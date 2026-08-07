@@ -32,6 +32,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
     private readonly IApplicationStateService _stateService;
     private readonly IMagicLinkService _magicLink;
     private readonly IOfferLetterPdfGenerator _pdf;
+    private readonly IBrandLogoFetcher _logo;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly IContextData _contextData;
     private readonly ILogger _logger;
@@ -47,6 +48,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
         _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _pdf = serviceProvider.GetRequiredService<IOfferLetterPdfGenerator>();
+        _logo = serviceProvider.GetRequiredService<IBrandLogoFetcher>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<OfferService>();
     }
@@ -183,6 +185,8 @@ public class OfferService : BaseService<OfferService>, IOfferService
         var company = await _companyRepo.GetByCompanyId(companyId);
 
         var model = BuildLetterModel(offer, company, info?.CandidateName);
+        model.LogoBytes = await _logo.TryGetAsync(company?.LogoUrl);
+
         return (_pdf.Generate(model), _pdf.BuildFileName(model));
     }
 
@@ -257,6 +261,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
             CompanyAddress = company?.Address,
             CompanyEmail = company?.ContactEmail,
             CompanyPhone = company?.Phone,
+            BrandColor = company?.PrimaryColor,
             LetterDate = o.SentAt ?? o.CreatedAt ?? DateTime.UtcNow,
 
             CandidateName = candidateName,

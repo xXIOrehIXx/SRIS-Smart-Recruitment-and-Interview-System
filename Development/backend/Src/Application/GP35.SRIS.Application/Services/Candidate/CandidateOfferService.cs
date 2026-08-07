@@ -26,6 +26,7 @@ public class CandidateOfferService : BaseService<CandidateOfferService>, ICandid
     private readonly IApplicationRepo _appRepo;
     private readonly ICompanyRepo _companyRepo;
     private readonly IOfferLetterPdfGenerator _pdf;
+    private readonly IBrandLogoFetcher _logo;
     private readonly ILogger _logger;
 
     public CandidateOfferService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -35,6 +36,7 @@ public class CandidateOfferService : BaseService<CandidateOfferService>, ICandid
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _pdf = serviceProvider.GetRequiredService<IOfferLetterPdfGenerator>();
+        _logo = serviceProvider.GetRequiredService<IBrandLogoFetcher>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<CandidateOfferService>();
     }
 
@@ -79,6 +81,7 @@ public class CandidateOfferService : BaseService<CandidateOfferService>, ICandid
         var company = await _companyRepo.GetByCompanyId(v.CompanyId);
 
         var model = OfferService.BuildLetterModel(offer, company, info?.CandidateName);
+        model.LogoBytes = await _logo.TryGetAsync(company?.LogoUrl);
 
         _logger.Information("Offer: ứng viên tải thư mời (offer_id={OfferId}, app={AppId}).",
             offer.OfferId, v.ApplicationId);
