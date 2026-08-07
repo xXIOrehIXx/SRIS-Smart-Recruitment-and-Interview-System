@@ -127,7 +127,7 @@ const AdminLayout = () => {
   const getRoleLabel = (role) => {
     const roleLabels = {
       [ROLES.ADMIN]: "Quản trị viên",
-      [ROLES.RECRUITER]: "Nhà tuyển dụng",
+      [ROLES.HUMAN_RESOURCE]: "Nhà tuyển dụng",
       [ROLES.INTERVIEWER]: "Người phỏng vấn",
       [ROLES.DEPARTMENT_MANAGER]: "Trưởng phòng",
     };

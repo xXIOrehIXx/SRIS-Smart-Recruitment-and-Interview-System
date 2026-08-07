@@ -88,7 +88,7 @@ const JobManagement = () => {
    * Đóng job (soft-close) — gọi DELETE /api/jobs/{id}. BE JobService.CloseAsync set
    * status='Closed' mà không xóa cứng. Sau khi đóng: job không còn trong career site và
    * list mặc định, nhưng vẫn hiện khi filter 'Đã đóng' (giữ row cho analytics + hồ sơ).
-   * Yêu cầu xác nhận — đây là thao tác một chiều, Recruiter có thể "Mở lại" sau.
+   * Yêu cầu xác nhận — đây là thao tác một chiều, Human Resource có thể "Mở lại" sau.
    */
   const handleCloseJob = async (record) => {
     try {
@@ -165,13 +165,13 @@ const JobManagement = () => {
         key: "view",
         icon: <EyeOutlined />,
         label: "Xem Chi Tiết",
-        onClick: () => navigate(`/recruiter/jobs/${jobId}`),
+        onClick: () => navigate(`/human-resource/jobs/${jobId}`),
       },
       {
         key: "edit",
         icon: <EditOutlined />,
         label: "Chỉnh Sửa",
-        onClick: () => navigate(`/recruiter/jobs/create?edit=${jobId}`),
+        onClick: () => navigate(`/human-resource/jobs/create?edit=${jobId}`),
       },
       // "Xem Ứng Viên" bỏ ở đây: màn chi tiết tin đã có danh sách ứng viên kèm trạng thái,
       // hai lối vào cùng một thứ chỉ làm menu dài thêm.
@@ -346,7 +346,7 @@ const JobManagement = () => {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => navigate("/recruiter/jobs/create")}
+          onClick={() => navigate("/human-resource/jobs/create")}
           className="create-btn"
         >
           Đăng Tin Mới

@@ -19,7 +19,7 @@ public class UserListItemDto
     public string? AvatarUrl { get; set; }
 }
 
-/// <summary>Admin tạo tài khoản nội bộ mới (Recruiter/Interviewer/DepartmentManager/Admin).</summary>
+/// <summary>Admin tạo tài khoản nội bộ mới (Human Resource/Interviewer/DepartmentManager/Admin).</summary>
 public class UserCreateDto
 {
     public string Email { get; set; } = null!;
@@ -58,7 +58,7 @@ public class UserPasswordDto
 
 /// <summary>
 /// Item gọn cho dropdown chọn người (gán interviewer vào khung, chọn DM cho job) —
-/// Recruiter/DM gọi được, không lộ Status/LastLoginAt như bảng quản trị của Admin.
+/// Human Resource/DM gọi được, không lộ Status/LastLoginAt như bảng quản trị của Admin.
 /// </summary>
 public class UserOptionDto
 {

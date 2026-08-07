@@ -26,7 +26,7 @@ public class DashboardRepo : IDashboardRepo
     /// <list type="bullet">
     ///   <item>jobId — xem 1 job cụ thể.</item>
     ///   <item>departmentManagerId (V023) — chỉ job DM này phụ trách, cộng job chưa gán DM
-    ///   (job không gán DM = Recruiter quyết, không thuộc riêng phòng nào nên vẫn cho xem).</item>
+    ///   (job không gán DM = Human Resource quyết, không thuộc riêng phòng nào nên vẫn cho xem).</item>
     /// </list>
     /// Cả hai null -> không thêm điều kiện nào, SQL sinh ra y như trước.
     /// </summary>

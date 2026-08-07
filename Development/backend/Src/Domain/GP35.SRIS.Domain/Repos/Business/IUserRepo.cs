@@ -10,7 +10,7 @@ public interface IUserRepo : IBaseRepo<Guid, User>
     Task<IReadOnlyList<User>> GetListByCompanyAsync(long companyId);
 
     /// <summary>
-    /// Lấy user có role chứa tên role chỉ định trong công ty hiện tại (dùng cho Recruiter chọn
+    /// Lấy user có role chứa tên role chỉ định trong công ty hiện tại (dùng cho Human Resource chọn
     /// interviewer khi tạo pool lịch phỏng vấn — không qua Admin).
     /// </summary>
     Task<IReadOnlyList<User>> GetListByRoleAsync(long companyId, string role);

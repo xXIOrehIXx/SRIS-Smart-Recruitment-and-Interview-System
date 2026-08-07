@@ -9,4 +9,10 @@ public class UpdateBrandDto
     public string? Name { get; set; }
     public string? LogoUrl { get; set; }
     public string? PrimaryColor { get; set; }
+    public string? Industry { get; set; }
+
+    // Liên hệ in ở đầu thư mời nhận việc (5.15). Nhập 1 lần, mọi thư sau đều tự có.
+    public string? Address { get; set; }
+    public string? ContactEmail { get; set; }
+    public string? Phone { get; set; }
 }

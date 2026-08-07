@@ -36,7 +36,7 @@ const { TextArea } = Input;
 const MATCHA_GREEN = "#5D8C3E";
 
 // BE NotificationService.cs truyền các placeholder này theo từng trigger.
-// Liệt kê trong UI để Recruiter khỏi gõ {{companyName}} / {{interviewDate}} sai.
+// Liệt kê trong UI để Human Resource khỏi gõ {{companyName}} / {{interviewDate}} sai.
 const SUPPORTED_VARIABLES = [
   { key: "{{candidateName}}", desc: "Tên ứng viên — mọi loại email" },
   { key: "{{jobTitle}}",      desc: "Vị trí ứng tuyển — mọi loại email" },
@@ -231,7 +231,7 @@ const MailTemplates = () => {
 
   /**
    * Mỗi trigger email gửi cho ứng viên cần tối thiểu 1 template active.
-   * Liệt kê các loại CHƯA có template active để Recruiter biết đường bổ sung —
+   * Liệt kê các loại CHƯA có template active để Human Resource biết đường bổ sung —
    * nếu không hệ thống sẽ fallback nội dung hard-coded, không đồng nhất giữa
    * các trigger.
    */
@@ -246,7 +246,7 @@ const MailTemplates = () => {
       preview = preview.replace(new RegExp(`{{${key}}}`, "g"), value);
     });
     // BE hỗ trợ thêm các biến khác ({{link}}, {{expiresAt}}, {{startTime}}) — preview
-    // chỉ render biến có dữ liệu mẫu để Recruiter khỏi nhầm là biến hỏng.
+    // chỉ render biến có dữ liệu mẫu để Human Resource khỏi nhầm là biến hỏng.
     preview = preview
       .replace(/{{\s*link\s*}}/g, "https://example.com/schedule?token=xxx")
       .replace(/{{\s*expiresAt\s*}}/g, "25/12/2026 23:59 UTC")

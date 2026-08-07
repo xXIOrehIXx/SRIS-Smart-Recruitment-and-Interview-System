@@ -30,7 +30,7 @@ const CreateAccount = () => {
 
   const roles = [
     { value: "Admin", label: "Admin" },
-    { value: "Recruiter", label: "Recruiter" },
+    { value: "Recruiter", label: "Human Resource" },
     { value: "Interviewer", label: "Interviewer" },
     { value: "DepartmentManager", label: "Department Manager" },
   ];

@@ -60,7 +60,7 @@ services.AddAutoMapper();
 // Worker chấm điểm CV chạy nền (Cách A) — rút hàng đợi + vớt hồ sơ chưa chấm lúc khởi động.
 services.AddHostedService<GP35.SRIS.Workers.CvScoringWorker>();
 // Worker quét job quá hạn mỗi 5 phút — tự chuyển Status Open -> Closed để job không còn
-// nằm trên career site / list Open của Recruiter. Soft-close (giữ row cho analytics).
+// nằm trên career site / list Open của Human Resource. Soft-close (giữ row cho analytics).
 services.AddHostedService<GP35.SRIS.Workers.JobExpiryWorker>();
 services
   .AddControllers()

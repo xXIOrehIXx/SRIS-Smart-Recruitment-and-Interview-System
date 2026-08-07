@@ -3,10 +3,14 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
-// Các vai trò trong hệ thống - hỗ trợ nhiều tên gọi từ backend
+// Các vai trò trong hệ thống - hỗ trợ nhiều tên gọi từ backend.
+//
+// HUMAN_RESOURCE vẫn mang GIÁ TRỊ 'Recruiter': đó là chuỗi trong cột User.role của DB và trong
+// JWT do backend phát ra (xem RoleConstants.HumanResource). Chỉ tên gọi/URL/nhãn đổi cho khớp
+// tài liệu — sửa giá trị ở đây mà không migrate DB sẽ làm mọi kiểm tra quyền trượt hết.
 export const ROLES = {
   ADMIN: 'Admin',
-  RECRUITER: 'Recruiter',
+  HUMAN_RESOURCE: 'Recruiter',
   INTERVIEWER: 'Interviewer',
   CANDIDATE: 'Candidate',
   DEPARTMENT_MANAGER: 'DepartmentManager',
@@ -15,12 +19,12 @@ export const ROLES = {
 // Mapping từ các role name khác nhau sang role chuẩn
 const ROLE_MAPPING = {
   'Admin': ROLES.ADMIN,
-  'Recruiter': ROLES.RECRUITER,
+  'Recruiter': ROLES.HUMAN_RESOURCE,
   'Interviewer': ROLES.INTERVIEWER,
   'Candidate': ROLES.CANDIDATE,
   'DepartmentManager': ROLES.DEPARTMENT_MANAGER,
   'admin': ROLES.ADMIN,
-  'recruiter': ROLES.RECRUITER,
+  'recruiter': ROLES.HUMAN_RESOURCE,
   'interviewer': ROLES.INTERVIEWER,
   'candidate': ROLES.CANDIDATE,
   'departmentmanager': ROLES.DEPARTMENT_MANAGER,
@@ -35,7 +39,7 @@ const normalizeRole = (role) => {
 // Route theo vai trò - chuyển hướng sau khi login
 export const ROLE_ROUTES = {
   [ROLES.ADMIN]: '/admin/dashboard',
-  [ROLES.RECRUITER]: '/recruiter/dashboard',
+  [ROLES.HUMAN_RESOURCE]: '/human-resource/dashboard',
   [ROLES.INTERVIEWER]: '/interviewer/incoming',
   [ROLES.DEPARTMENT_MANAGER]: '/dept/dashboard',
 };
@@ -51,8 +55,8 @@ export const ROLE_MENUS = {
     { key: '/admin/departments', icon: 'ApartmentOutlined', label: 'Phòng Ban' },
     { key: '/admin/employment-types', icon: 'ScheduleOutlined', label: 'Hình Thức Làm Việc' },
     { key: '/admin/company-branding', icon: 'GlobalOutlined', label: 'Thương Hiệu' },
-    { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
-    { key: '/recruiter/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
+    { key: '/human-resource/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
+    { key: '/human-resource/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
@@ -60,10 +64,10 @@ export const ROLE_MENUS = {
     { key: '/analytics', icon: 'BarChartOutlined', label: 'Báo Cáo' },
     { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
   ],
-  [ROLES.RECRUITER]: [
-    { key: '/recruiter/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
-    { key: '/recruiter/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
-    { key: '/recruiter/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
+  [ROLES.HUMAN_RESOURCE]: [
+    { key: '/human-resource/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
+    { key: '/human-resource/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
+    { key: '/human-resource/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
@@ -79,7 +83,7 @@ export const ROLE_MENUS = {
     { key: '/dept/requests', icon: 'FileTextOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/dept/interviews', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
     // DM duyệt ứng viên ở cửa INTERVIEW->OFFER thông qua Quyết Định Tuyển Dụng.
-    // Recruiter sẽ là người tạo OfferDetail.
+    // Human Resource sẽ là người tạo OfferDetail.
     { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Quyết Định Tuyển Dụng' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],
@@ -99,8 +103,8 @@ export const hasPermission = (userRole, route) => {
       '/admin',
       '/settings',
     ],
-    [ROLES.RECRUITER]: [
-      '/recruiter',
+    [ROLES.HUMAN_RESOURCE]: [
+      '/human-resource',
       '/interviews',
       '/offers',
       '/talent-pool',

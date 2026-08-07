@@ -11,13 +11,13 @@ using Serilog;
 namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
-/// Đặt lịch phỏng vấn theo POOL dùng chung — Recruiter (Section 15). Ai chốt trước lấy trước;
+/// Đặt lịch phỏng vấn theo POOL dùng chung — Human Resource (Section 15). Ai chốt trước lấy trước;
 /// các khung khác giữ OPEN cho người sau.
 ///
 /// MỜI = hồ sơ đã sang bước Phỏng vấn: service tự đẩy state tới INTERVIEW (đi từng bước, có
-/// ActivityLog) thay vì bắt Recruiter sang Kanban kéo card trước rồi mới mời được.
+/// ActivityLog) thay vì bắt Human Resource sang Kanban kéo card trước rồi mới mời được.
 ///
-/// Mở rộng A: mỗi khung có 1..N interviewer (panel) — Recruiter có thể chọn 3–5 người cùng dự buổi phỏng vấn.
+/// Mở rộng A: mỗi khung có 1..N interviewer (panel) — Human Resource có thể chọn 3–5 người cùng dự buổi phỏng vấn.
 /// </summary>
 public class InterviewPoolService : BaseService<InterviewPoolService>, IInterviewPoolService
 {

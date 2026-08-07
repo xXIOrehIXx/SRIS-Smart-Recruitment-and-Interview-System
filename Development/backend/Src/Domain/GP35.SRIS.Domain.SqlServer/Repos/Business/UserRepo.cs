@@ -25,7 +25,7 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
 
     public async Task<IReadOnlyList<User>> GetListByRoleAsync(long companyId, string role)
     {
-        // Tìm user có role chứa tên role (role có thể là "Interviewer,Recruiter" nếu user giữ nhiều role).
+        // Tìm user có role chứa tên role (role có thể là "Interviewer,Human Resource" nếu user giữ nhiều role).
         // Chỉ lấy user đang Active.
         return await _db.Users.AsNoTracking()
             .Where(u => u.Status == "Active" && u.Role.Contains(role))

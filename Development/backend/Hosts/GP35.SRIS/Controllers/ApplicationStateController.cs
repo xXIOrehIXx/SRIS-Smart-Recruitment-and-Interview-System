@@ -9,13 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// State machine hồ sơ (docs 5.8) — Recruiter thao tác Kanban; ở cửa INTERVIEW→OFFER là điểm
-/// quyết tuyển (Department Manager / Recruiter mặc định). Forward-only + guard G1/G2 + reject reason.
+/// State machine hồ sơ (docs 5.8) — Human Resource thao tác Kanban; ở cửa INTERVIEW→OFFER là điểm
+/// quyết tuyển (Department Manager / Human Resource mặc định). Forward-only + guard G1/G2 + reject reason.
 /// </summary>
 [Route("api/applications/{applicationId:long}")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
 public class ApplicationStateController : ControllerBase
 {
     private readonly IContextData _contextData;

@@ -23,7 +23,7 @@ Ba nguyên tắc bất di bất dịch của phần này:
 ```mermaid
 sequenceDiagram
     autonumber
-    actor R as Recruiter
+    actor R as Human Resource
     participant API as .NET API
     participant AI as Python AI service
     participant OL as Ollama
@@ -199,16 +199,16 @@ Ghi vào `ApplicationCriterionMatch` (thay toàn bộ dòng cũ) + `Application.
 
 | Method | Path | Vai | Việc |
 |---|---|---|---|
-| POST | `/api/jobs/{jobId}/criteria/extract` | Recruiter | Bóc tiêu chí DRAFT từ JD |
-| GET | `/api/jobs/{jobId}/criteria` | Recruiter | Danh sách tiêu chí của job |
-| POST | `/api/jobs/{jobId}/criteria` | Recruiter | Thêm tiêu chí tay (APPROVED luôn) |
-| PUT | `/api/evaluation-criteria/{criteriaId}` | Recruiter | Sửa tiêu chí |
-| DELETE | `/api/evaluation-criteria/{criteriaId}` | Recruiter | Ngừng dùng (soft) |
-| POST | `/api/jobs/{jobId}/criteria/approve` | Recruiter | Chốt DRAFT → APPROVED (+ đẩy hồ sơ NEW sang SCREENING) |
+| POST | `/api/jobs/{jobId}/criteria/extract` | Human Resource | Bóc tiêu chí DRAFT từ JD |
+| GET | `/api/jobs/{jobId}/criteria` | Human Resource | Danh sách tiêu chí của job |
+| POST | `/api/jobs/{jobId}/criteria` | Human Resource | Thêm tiêu chí tay (APPROVED luôn) |
+| PUT | `/api/evaluation-criteria/{criteriaId}` | Human Resource | Sửa tiêu chí |
+| DELETE | `/api/evaluation-criteria/{criteriaId}` | Human Resource | Ngừng dùng (soft) |
+| POST | `/api/jobs/{jobId}/criteria/approve` | Human Resource | Chốt DRAFT → APPROVED (+ đẩy hồ sơ NEW sang SCREENING) |
 | POST | `/api/cv-scoring/upload` | — | Nộp CV |
-| GET | `/api/cv-scoring/jobs/{jobId}/ranking` | Recruiter | Xếp hạng ứng viên |
-| GET | `/api/applications/{id}/criteria-matches` | Recruiter | Bảng khớp/thiếu + bằng chứng |
-| POST | `/api/applications/{id}/criteria-score` | Recruiter | **Chấm lại** một hồ sơ theo bộ tiêu chí hiện tại |
+| GET | `/api/cv-scoring/jobs/{jobId}/ranking` | Human Resource | Xếp hạng ứng viên |
+| GET | `/api/applications/{id}/criteria-matches` | Human Resource | Bảng khớp/thiếu + bằng chứng |
+| POST | `/api/applications/{id}/criteria-score` | Human Resource | **Chấm lại** một hồ sơ theo bộ tiêu chí hiện tại |
 
 ---
 

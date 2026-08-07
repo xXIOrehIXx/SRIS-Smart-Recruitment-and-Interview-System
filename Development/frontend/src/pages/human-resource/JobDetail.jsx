@@ -179,7 +179,7 @@ const JobDetail = () => {
       width: 220,
       render: (_, record) => (
         <Space size={4}>
-          <Button size="small" onClick={() => navigate(`/recruiter/candidates/${record.id}`)}>Xem</Button>
+          <Button size="small" onClick={() => navigate(`/human-resource/candidates/${record.id}`)}>Xem</Button>
           <Button size="small" type="primary" onClick={() => navigate('/interviews/schedule')}>Lịch</Button>
           {record.state !== 'REJECTED' && record.state !== 'HIRED' && (
             <Button
@@ -274,7 +274,7 @@ const JobDetail = () => {
     <div className="job-detail-page">
       <div className="page-header">
         <Button 
-          onClick={() => navigate('/recruiter/jobs')} 
+          onClick={() => navigate('/human-resource/jobs')} 
           className="back-btn"
           icon={<ArrowLeftOutlined />}
         >
@@ -313,7 +313,7 @@ const JobDetail = () => {
                 <Button icon={<ShareAltOutlined />}>Chia Sẻ</Button>
                 <Button 
                   icon={<EditOutlined />}
-                  onClick={() => navigate(`/recruiter/jobs/create?edit=${jobId}`)}
+                  onClick={() => navigate(`/human-resource/jobs/create?edit=${jobId}`)}
                 >
                   Chỉnh Sửa
                 </Button>
@@ -371,7 +371,7 @@ const JobDetail = () => {
               <Button 
                 icon={<EditOutlined />} 
                 block
-                onClick={() => navigate(`/recruiter/jobs/create?edit=${jobId}`)}
+                onClick={() => navigate(`/human-resource/jobs/create?edit=${jobId}`)}
               >
                 Chỉnh Sửa Tin
               </Button>

@@ -175,7 +175,7 @@ const CreateRecruitmentRequest = () => {
         message.success('Đã lưu thay đổi yêu cầu tuyển dụng.');
       } else {
         await recruitmentRequestAPI.create(payload);
-        message.success('Đã gửi yêu cầu tuyển dụng — Recruiter sẽ duyệt và tạo tin đăng.');
+        message.success('Đã gửi yêu cầu tuyển dụng — Human Resource sẽ duyệt và tạo tin đăng.');
       }
       navigate('/dept/requests');
     } catch (error) {
@@ -227,7 +227,7 @@ const CreateRecruitmentRequest = () => {
             </Title>
             <Text type="secondary">
               {isEdit
-                ? 'Chỉnh sửa yêu cầu đang chờ duyệt — Recruiter duyệt xong sẽ không sửa được nữa'
+                ? 'Chỉnh sửa yêu cầu đang chờ duyệt — Human Resource duyệt xong sẽ không sửa được nữa'
                 : 'Gửi yêu cầu tuyển dụng mới cho phòng ban của bạn'}
             </Text>
           </div>
@@ -517,7 +517,7 @@ const CreateRecruitmentRequest = () => {
 
               <Divider />
 
-              <Form.Item label="Ghi chú cho Recruiter (tùy chọn)" name="notes">
+              <Form.Item label="Ghi chú cho Human Resource (tùy chọn)" name="notes">
                 <TextArea rows={3} placeholder="Các lưu ý đặc biệt, yêu cầu riêng cho recruiter..." />
               </Form.Item>
 

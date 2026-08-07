@@ -30,7 +30,11 @@ public class CompanyService : BaseService<CompanyService>, ICompanyService
         companyId,
         Normalize(dto.Name),
         Normalize(dto.LogoUrl),
-        Normalize(dto.PrimaryColor));
+        Normalize(dto.PrimaryColor),
+        Normalize(dto.Industry),
+        Normalize(dto.Address),
+        Normalize(dto.ContactEmail),
+        Normalize(dto.Phone));
 
     if (company is null)
       throw new KeyNotFoundException($"Không tìm thấy công ty (company_id={companyId}).");

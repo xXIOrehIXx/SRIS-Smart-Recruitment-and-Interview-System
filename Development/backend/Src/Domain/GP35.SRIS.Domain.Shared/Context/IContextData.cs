@@ -16,7 +16,7 @@ namespace GP35.SRIS.Domain.Shared.Context
         string? UserName { get; set; }
         string? Code { get; set; }
         long CompanyId { get; set; }
-        /// <summary>Role user đăng nhập (Admin/Recruiter/Interviewer/DepartmentManager). Null với khách ẩn danh.</summary>
+        /// <summary>Role user đăng nhập (Admin/Human Resource/Interviewer/DepartmentManager). Null với khách ẩn danh.</summary>
         string? Role { get; set; }
     }
 

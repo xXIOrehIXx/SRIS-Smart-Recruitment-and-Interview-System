@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace GP35.SRIS.Application.Contracts.Dtos;
 
-/// <summary>Body tạo Job mới (Recruiter tạo job + JD — docs 6, 5.14). V020: mở rộng field cho form CreateJob.</summary>
+/// <summary>Body tạo Job mới (Human Resource tạo job + JD — docs 6, 5.14). V020: mở rộng field cho form CreateJob.</summary>
 public class JobCreateDto
 {
     [Required]
@@ -12,7 +12,7 @@ public class JobCreateDto
     /// <summary>Mô tả công việc (JD). Cần có để hệ thống chấm điểm CV bằng vector.</summary>
     public string? JdText { get; set; }
 
-    /// <summary>Người quyết tuyển (Department Manager). Để trống = Recruiter quyết (docs 5.14).</summary>
+    /// <summary>Người quyết tuyển (Department Manager). Để trống = Human Resource quyết (docs 5.14).</summary>
     public long? DepartmentManagerId { get; set; }
 
     /// <summary>Trạng thái: Draft | Open | Closed. Để trống = Open.</summary>

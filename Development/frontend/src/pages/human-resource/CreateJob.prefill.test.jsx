@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 /**
  * Tạo tin từ Yêu cầu tuyển dụng của DM (5.17): bấm "Tạo tin" ở màn yêu cầu
- * -> /recruiter/jobs/create?requestId=X phải ĐIỀN SẴN thông tin DM đã nhập,
+ * -> /human-resource/jobs/create?requestId=X phải ĐIỀN SẴN thông tin DM đã nhập,
  * HR không phải gõ lại từ đầu.
  */
 import { render, screen, waitFor } from '@testing-library/react';
@@ -51,7 +51,7 @@ beforeEach(() => {
 
 const renderFromRequest = async () => {
   render(
-    <MemoryRouter initialEntries={['/recruiter/jobs/create?requestId=7']}>
+    <MemoryRouter initialEntries={['/human-resource/jobs/create?requestId=7']}>
       <CreateJob />
     </MemoryRouter>
   );
@@ -110,7 +110,7 @@ test('?requestId -> người quyết tuyển điền sẵn chính DM đã ra đ�
 });
 
 /**
- * Sửa tin đã có: /recruiter/jobs/create?edit=X.
+ * Sửa tin đã có: /human-resource/jobs/create?edit=X.
  * Hạn nộp từ API là CHUỖI ISO, còn <DatePicker> của antd v5 chỉ nhận object dayjs —
  * gán thẳng chuỗi thì component throw và cả trang trắng xóa. Lỗi này nằm im cho tới
  * khi có tin điền hạn nộp, nên phải có test giữ.
@@ -136,7 +136,7 @@ const renderEdit = async (job) => {
   jobsAPI.getById.mockResolvedValue({ data: job });
 
   render(
-    <MemoryRouter initialEntries={['/recruiter/jobs/create?edit=48']}>
+    <MemoryRouter initialEntries={['/human-resource/jobs/create?edit=48']}>
       <CreateJob />
     </MemoryRouter>
   );

@@ -106,64 +106,14 @@
   font-size: 14px;
 }
 
-.cr-notes-section {
-  padding: 0 28px 24px;
-}
-
-.cr-notes-box {
-  background: #fafafa;
+/* Khung nhúng bản PDF thư mời — cao gần bằng khổ A4 để đọc được liền mạch,
+   trên mobile hạ xuống cho khỏi chiếm hết màn hình. */
+.cr-letter-frame {
+  width: 100%;
+  height: 780px;
   border: 1px solid #e7e7e6;
-  border-radius: 10px;
-  padding: 16px;
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  color: #4a4a4a;
-}
-
-.cr-response-section {
-  padding: 24px 28px;
+  border-radius: 8px;
   background: #fafafa;
-  border-top: 1px solid #e7e7e6;
-}
-
-.cr-action-buttons {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.accept-btn {
-  flex: 1;
-  height: 48px;
-  background: linear-gradient(135deg, #5d8c3e, #7ab356) !important;
-  border-color: #5d8c3e !important;
-  font-weight: 600;
-  font-size: 15px;
-  border-radius: 10px;
-  color: white !important;
-}
-
-.accept-btn:hover {
-  background: linear-gradient(135deg, #4a7832, #6aa344) !important;
-  border-color: #4a7832 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(93, 140, 62, 0.4);
-}
-
-.decline-btn {
-  flex: 1;
-  height: 48px;
-  font-weight: 600;
-  font-size: 15px;
-  border-radius: 10px;
-}
-
-.cr-footer-note {
-  display: block;
-  text-align: center;
-  margin-top: 20px;
-  font-size: 13px;
 }
 
 .cr-footer {
@@ -184,8 +134,8 @@
     font-size: 22px !important;
   }
 
-  .cr-action-buttons {
-    flex-direction: column;
+  .cr-letter-frame {
+    height: 520px;
   }
 
   .cr-offer-header {

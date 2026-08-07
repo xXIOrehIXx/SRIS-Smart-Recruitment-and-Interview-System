@@ -54,7 +54,7 @@ const KANBAN_STATES = ["NEW", "SCREENING", "INTERVIEW", "OFFER"];
 // Forward-only state machine order (matches backend ApplicationStateMachine)
 const STATE_ORDER = ["NEW", "SCREENING", "INTERVIEW", "OFFER", "HIRED"];
 
-const RecruiterDashboard = () => {
+const HumanResourceDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [kanbanLoading, setKanbanLoading] = useState(true);
@@ -256,7 +256,7 @@ const RecruiterDashboard = () => {
             {...provided.dragHandleProps}
             className={`kanban-card ${snapshot.isDragging ? "dragging" : ""}`}
             onClick={() =>
-              navigate(`/recruiter/candidates/${card.applicationId}`)
+              navigate(`/human-resource/candidates/${card.applicationId}`)
             }
           >
             <div className="card-header">
@@ -310,7 +310,7 @@ const RecruiterDashboard = () => {
                 size="small"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/recruiter/candidates/${card.applicationId}`);
+                  navigate(`/human-resource/candidates/${card.applicationId}`);
                 }}
               >
                 Chi tiết
@@ -338,7 +338,7 @@ const RecruiterDashboard = () => {
   }
 
   return (
-    <div className="dashboard-page recruiter-dashboard">
+    <div className="dashboard-page human-resource-dashboard">
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">
@@ -492,4 +492,4 @@ const RecruiterDashboard = () => {
   );
 };
 
-export default RecruiterDashboard;
+export default HumanResourceDashboard;

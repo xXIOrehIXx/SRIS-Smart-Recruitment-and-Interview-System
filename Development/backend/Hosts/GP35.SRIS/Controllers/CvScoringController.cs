@@ -14,7 +14,7 @@ namespace GP35.SRIS.Controllers
     [Route("api/cv-scoring")]
     [ApiController]
     [Authorize]
-    [WithRole(RoleConstants.Recruiter)]
+    [WithRole(RoleConstants.HumanResource)]
     public class CvScoringController : ControllerBase
     {
         private readonly IContextData _contextData;
@@ -69,12 +69,12 @@ namespace GP35.SRIS.Controllers
         /// trình duyệt (xem PDF); khi lưu sẽ có tên đẹp dạng CV_&lt;tên ứng viên&gt;.pdf.
         /// <para>
         /// Mở thêm cho DepartmentManager: DM phải ĐỌC ĐƯỢC CV trước khi quyết tuyển ở bước Offer.
-        /// Điểm CV (upload/ranking) vẫn chỉ của Recruiter — DM quyết theo tiêu chí phỏng vấn.
+        /// Điểm CV (upload/ranking) vẫn chỉ của Human Resource — DM quyết theo tiêu chí phỏng vấn.
         /// [WithRole] ở method đè [WithRole] ở controller (AuthMiddleware lấy metadata gần nhất).
         /// </para>
         /// </summary>
         [HttpGet("cv/{cvId:long}/file-url")]
-        [WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+        [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
         public async Task<IActionResult> GetCvFileUrl(long cvId)
         {
             var url = await _cvScoringService.GetCvFileUrlAsync(_contextData.CompanyId, cvId);

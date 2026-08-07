@@ -306,7 +306,7 @@ const IncomingInterview = () => {
                 <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                   Các buổi sẽ hiện ở đây sau khi:
                   <ul style={{ marginTop: 8, paddingLeft: 24, textAlign: 'left' }}>
-                    <li>Recruiter mở pool khung giờ và gán panel có bạn.</li>
+                    <li>Human Resource mở pool khung giờ và gán panel có bạn.</li>
                     <li>Ứng viên chốt 1 khung → schedule chuyển sang <Tag color="processing">CONFIRMED</Tag>.</li>
                   </ul>
                 </Text>

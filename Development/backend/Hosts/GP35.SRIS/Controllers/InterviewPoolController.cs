@@ -10,13 +10,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Đặt lịch phỏng vấn theo POOL dùng chung — Recruiter (docs Section 15). Mở 1 bộ khung cho job +
+/// Đặt lịch phỏng vấn theo POOL dùng chung — Human Resource (docs Section 15). Mở 1 bộ khung cho job +
 /// vòng, mời nhiều ứng viên (mỗi người 1 magic link SCHEDULE), ai chốt trước lấy trước. Chốt lịch
 /// tay cho nhánh gọi điện. Nhiều vòng = round_number (5.12), KÉO trước (card ở INTERVIEW), MỜI sau.
 /// </summary>
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter)]
+[WithRole(RoleConstants.HumanResource)]
 public class InterviewPoolController : ControllerBase
 {
     private readonly IContextData _contextData;
@@ -41,7 +41,7 @@ public class InterviewPoolController : ControllerBase
     /// <summary>Xem mọi pool của 1 job kèm khung + ứng viên đã mời (có cờ nhắc gọi điện).
     /// DM cũng xem được (read-only — theo dõi lịch phỏng vấn job mình phụ trách).</summary>
     [HttpGet("api/jobs/{jobId:long}/interview-pools")]
-    [WithRole(RoleConstants.Recruiter, RoleConstants.DepartmentManager)]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
     public async Task<IActionResult> GetByJob(long jobId)
     {
         var result = await _poolService.GetPoolsByJobAsync(_contextData.CompanyId, jobId);
@@ -75,8 +75,8 @@ public class InterviewPoolController : ControllerBase
 
     /// <summary>
     /// Danh sách Interviewer (user có role chứa "Interviewer", đang Active) trong công ty hiện tại —
-    /// phục vụ dropdown chọn người phỏng vấn khi Recruiter tạo pool. Tách khỏi /api/users (Admin-only)
-    /// để Recruiter có thể dùng mà không cần quyền Admin.
+    /// phục vụ dropdown chọn người phỏng vấn khi Human Resource tạo pool. Tách khỏi /api/users (Admin-only)
+    /// để Human Resource có thể dùng mà không cần quyền Admin.
     /// </summary>
     [HttpGet("api/interview-pools/interviewers")]
     public async Task<IActionResult> ListInterviewers()

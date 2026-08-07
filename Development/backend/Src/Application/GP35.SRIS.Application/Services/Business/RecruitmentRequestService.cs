@@ -10,7 +10,7 @@ using Serilog;
 namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
-/// Yêu cầu tuyển dụng (docs 5.17). DM ra đề → Recruiter duyệt → tạo Job từ yêu cầu (CONVERTED).
+/// Yêu cầu tuyển dụng (docs 5.17). DM ra đề → Human Resource duyệt → tạo Job từ yêu cầu (CONVERTED).
 /// Chỉ sửa/hủy khi còn PENDING; duyệt xong không sửa nội dung nữa (giữ audit "đề bài gốc").
 /// </summary>
 public class RecruitmentRequestService : BaseService<RecruitmentRequestService>, IRecruitmentRequestService
@@ -177,7 +177,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         // không để DB ném CHECK violation thành 500.
         if (dto.ExperienceYearsMin is < 0 or > 50)
             throw Bad("Số năm kinh nghiệm phải trong khoảng 0–50.");
-        // Ngày cần tuyển ở quá khứ là gõ nhầm năm/tháng — để lọt thì Recruiter đọc xong
+        // Ngày cần tuyển ở quá khứ là gõ nhầm năm/tháng — để lọt thì Human Resource đọc xong
         // không biết deadline thật là bao giờ. So ở mức NGÀY (ô này không nhập giờ).
         if (dto.ExpectedStartDate is { } start && start.Date < DateTime.UtcNow.Date)
             throw Bad($"Ngày cần tuyển ({start:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");

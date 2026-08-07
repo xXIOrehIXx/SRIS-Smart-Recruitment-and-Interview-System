@@ -41,7 +41,8 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     }
 
     public async Task<ApplicationStateDto> TransitionAsync(
-        long companyId, long userId, long applicationId, string toState, string? reason)
+        long companyId, long userId, long applicationId, string toState, string? reason,
+        bool isCandidateAnswer = false)
     {
         toState = (toState ?? "").Trim().ToUpperInvariant();
         if (!ApplicationStateMachine.IsValidState(toState))
@@ -53,7 +54,8 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         var from = app.CurrentState;
 
         // QUYẾT TUYỂN: Chuyển từ INTERVIEW -> OFFER (duyệt), hoặc rời state OFFER (thu hồi/từ chối) — chỉ DM được quyết.
-        await EnsureCanDecideAsync(companyId, userId, app.JobId, from, toState);
+        if (!isCandidateAnswer)
+            await EnsureCanDecideAsync(companyId, userId, app.JobId, from, toState);
 
         var now = DateTime.UtcNow;
         string? rejectReason = null;
@@ -148,7 +150,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     /// <summary>
     /// Chốt ở cửa INTERVIEW→OFFER (Duyệt ứng viên) hoặc rời cửa OFFER (→HIRED / →REJECTED) là QUYẾT TUYỂN 
     /// — chỉ DM được gán cho job đó quyết (docs 5.14).
-    /// Job không gán DM -> giữ đường mặc định của công ty nhỏ: Recruiter quyết.
+    /// Job không gán DM -> giữ đường mặc định của công ty nhỏ: Human Resource quyết.
     /// Admin là superuser -> bỏ qua.
     /// </summary>
     private async Task EnsureCanDecideAsync(long companyId, long userId, long jobId, string from, string to)
@@ -160,10 +162,9 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         if (!isInterviewToOffer && !isLeavingOffer)
             return;
 
-        // userId = 0 -> không phải người dùng Portal mà là ỨNG VIÊN phản hồi offer qua magic link
-        // (CandidateOfferService: ACCEPTED->HIRED, DECLINED->REJECTED). Đó là quyết định của ứng
-        // viên, không phải của DM -> không áp luật "chỉ DM của job", nếu không luồng nhận/từ chối
-        // offer sẽ chết giữa chừng (offer đã ACCEPTED mà hồ sơ kẹt ở OFFER).
+        // userId = 0 -> hành động không đến từ một người dùng Portal cụ thể (job nền, seed…).
+        // Riêng việc ghi nhận câu trả lời của ứng viên với thư mời đi bằng cờ isCandidateAnswer
+        // (xem TransitionAsync), không mượn userId = 0 nữa — để ActivityLog vẫn ghi ĐÚNG ai bấm.
         if (userId <= 0)
             return;
 

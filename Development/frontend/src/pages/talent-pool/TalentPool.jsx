@@ -12,7 +12,7 @@ const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
-// Mốc "độ tươi" CV cho Recruiter tự chọn thay vì cứng 6 tháng.
+// Mốc "độ tươi" CV cho Human Resource tự chọn thay vì cứng 6 tháng.
 // CV càng cũ thì ứng viên càng có khả năng đã có việc -> quét hẹp = ít nhưng nóng,
 // quét rộng = nhiều nhưng nguội. Backend clamp trần 36 tháng.
 const FRESHNESS_OPTIONS = [

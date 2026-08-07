@@ -231,7 +231,7 @@ const SubAccountManagement = () => {
     };
     const labels = {
       Admin: "Admin",
-      Recruiter: "Recruiter",
+      Recruiter: "Human Resource",
       Interviewer: "Interviewer",
       DepartmentManager: "Department Manager",
       User: "User",
@@ -379,7 +379,7 @@ const SubAccountManagement = () => {
           >
             <Select.Option value="all">Tất cả vai trò</Select.Option>
             <Select.Option value="Admin">Admin</Select.Option>
-            <Select.Option value="Recruiter">Recruiter</Select.Option>
+            <Select.Option value="Recruiter">Human Resource</Select.Option>
             <Select.Option value="Interviewer">Interviewer</Select.Option>
             <Select.Option value="DepartmentManager">
               Department Manager
@@ -509,7 +509,7 @@ const SubAccountManagement = () => {
           >
             <Select placeholder="Chọn vai trò">
               <Select.Option value="Admin">Admin</Select.Option>
-              <Select.Option value="Recruiter">Recruiter</Select.Option>
+              <Select.Option value="Recruiter">Human Resource</Select.Option>
               <Select.Option value="Interviewer">Interviewer</Select.Option>
               <Select.Option value="DepartmentManager">
                 Department Manager

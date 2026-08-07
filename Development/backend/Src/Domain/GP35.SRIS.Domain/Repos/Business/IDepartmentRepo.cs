@@ -27,7 +27,7 @@ public interface IDepartmentRepo : IBaseRepo<long, Department>
 
     /// <summary>
     /// DM phụ trách phòng ban theo TÊN (V023) — dùng để tự điền Job.department_manager_id
-    /// khi Recruiter chọn phòng ban mà không chọn DM. Null = phòng ban không tồn tại / chưa gán DM.
+    /// khi Human Resource chọn phòng ban mà không chọn DM. Null = phòng ban không tồn tại / chưa gán DM.
     /// </summary>
     Task<long?> GetManagerByNameAsync(long companyId, string name);
 

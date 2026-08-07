@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Yêu cầu tuyển dụng (docs 5.17 — TÙY CHỌN): DM "ra đề" → Recruiter duyệt → tạo Job từ yêu cầu.
-/// DM tạo/sửa/hủy (khi PENDING); Recruiter xem + duyệt + gắn job (Admin bypass qua WithRole).
+/// Yêu cầu tuyển dụng (docs 5.17 — TÙY CHỌN): DM "ra đề" → Human Resource duyệt → tạo Job từ yêu cầu.
+/// DM tạo/sửa/hủy (khi PENDING); Human Resource xem + duyệt + gắn job (Admin bypass qua WithRole).
 /// </summary>
 [ApiController]
 [Authorize]
@@ -34,9 +34,9 @@ public class RecruitmentRequestController : ControllerBase
         return Ok(await _requestService.CreateAsync(_contextData.CompanyId, _contextData.UserId, dto));
     }
 
-    /// <summary>Danh sách yêu cầu của công ty (?status=PENDING/... để lọc). DM + Recruiter cùng xem.</summary>
+    /// <summary>Danh sách yêu cầu của công ty (?status=PENDING/... để lọc). DM + Human Resource cùng xem.</summary>
     [HttpGet]
-    [WithRole(RoleConstants.DepartmentManager, RoleConstants.Recruiter)]
+    [WithRole(RoleConstants.DepartmentManager, RoleConstants.HumanResource)]
     public async Task<IActionResult> GetList([FromQuery] string? status = null)
     {
         return Ok(await _requestService.GetListAsync(_contextData.CompanyId, status));
@@ -44,7 +44,7 @@ public class RecruitmentRequestController : ControllerBase
 
     /// <summary>Chi tiết 1 yêu cầu.</summary>
     [HttpGet("{requestId:long}")]
-    [WithRole(RoleConstants.DepartmentManager, RoleConstants.Recruiter)]
+    [WithRole(RoleConstants.DepartmentManager, RoleConstants.HumanResource)]
     public async Task<IActionResult> GetById(long requestId)
     {
         return Ok(await _requestService.GetByIdAsync(_contextData.CompanyId, requestId));
@@ -67,17 +67,17 @@ public class RecruitmentRequestController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Recruiter duyệt: { approve, note } → APPROVED / REJECTED (note tùy chọn).</summary>
+    /// <summary>Human Resource duyệt: { approve, note } → APPROVED / REJECTED (note tùy chọn).</summary>
     [HttpPost("{requestId:long}/review")]
-    [WithRole(RoleConstants.Recruiter)]
+    [WithRole(RoleConstants.HumanResource)]
     public async Task<IActionResult> Review(long requestId, [FromBody] ReviewRequestDto dto)
     {
         return Ok(await _requestService.ReviewAsync(_contextData.CompanyId, _contextData.UserId, requestId, dto));
     }
 
-    /// <summary>Recruiter gắn Job đã tạo từ yêu cầu: { jobId } → CONVERTED (truy vết đề bài → job).</summary>
+    /// <summary>Human Resource gắn Job đã tạo từ yêu cầu: { jobId } → CONVERTED (truy vết đề bài → job).</summary>
     [HttpPost("{requestId:long}/convert")]
-    [WithRole(RoleConstants.Recruiter)]
+    [WithRole(RoleConstants.HumanResource)]
     public async Task<IActionResult> Convert(long requestId, [FromBody] ConvertRequestDto dto)
     {
         return Ok(await _requestService.ConvertAsync(_contextData.CompanyId, _contextData.UserId, requestId, dto));

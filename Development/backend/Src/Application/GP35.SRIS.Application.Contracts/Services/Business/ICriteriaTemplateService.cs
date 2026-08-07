@@ -3,7 +3,7 @@ using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
 /// <summary>
-/// Thư viện tiêu chí mẫu cấp company (Việc 12). Recruiter tạo khuôn 1 lần rồi ÁP vào job —
+/// Thư viện tiêu chí mẫu cấp company (Việc 12). Human Resource tạo khuôn 1 lần rồi ÁP vào job —
 /// clone từng dòng thành EvaluationCriteria của job (không tham chiếu, sửa riêng sau được).
 /// </summary>
 public interface ICriteriaTemplateService : IBaseService

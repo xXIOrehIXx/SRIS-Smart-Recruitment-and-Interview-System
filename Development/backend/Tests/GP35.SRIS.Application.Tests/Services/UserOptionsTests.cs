@@ -45,7 +45,7 @@ public class UserOptionsTests
         var svc = CreateService(
             Make(1, "admin@x.com", RoleConstants.Admin),
             Make(2, "iv@x.com", RoleConstants.Interviewer),
-            Make(3, "rec@x.com", RoleConstants.Recruiter));
+            Make(3, "rec@x.com", RoleConstants.HumanResource));
 
         var result = await svc.GetOptionsAsync(CompanyId, RoleConstants.Interviewer);
 
@@ -58,7 +58,7 @@ public class UserOptionsTests
     {
         var svc = CreateService(
             Make(1, "admin@x.com", RoleConstants.Admin),
-            Make(3, "rec@x.com", RoleConstants.Recruiter));
+            Make(3, "rec@x.com", RoleConstants.HumanResource));
 
         var result = await svc.GetOptionsAsync(CompanyId, RoleConstants.Interviewer);
 

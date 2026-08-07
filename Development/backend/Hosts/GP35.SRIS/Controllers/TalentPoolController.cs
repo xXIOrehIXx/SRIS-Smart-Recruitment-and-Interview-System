@@ -9,13 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Talent Pool / CV Suggestion (Việc 13) — Recruiter bấm "Gợi ý CV" cho 1 job: đảo chiều vector search
+/// Talent Pool / CV Suggestion (Việc 13) — Human Resource bấm "Gợi ý CV" cho 1 job: đảo chiều vector search
 /// trên kho CvDocument cũ của công ty -> Top N ứng viên gần JD, lọc theo độ tươi. Cô lập tenant tuyệt đối.
 /// </summary>
 [Route("api/jobs/{jobId:long}/talent-pool")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.Recruiter)]
+[WithRole(RoleConstants.HumanResource)]
 public class TalentPoolController : ControllerBase
 {
     private readonly IContextData _contextData;
@@ -40,7 +40,7 @@ public class TalentPoolController : ControllerBase
     }
 
     /// <summary>
-    /// Gợi ý CV từ kho cũ. withinMonths = độ tươi Recruiter chọn (FE cho mốc 1/3/6 tháng,
+    /// Gợi ý CV từ kho cũ. withinMonths = độ tươi Human Resource chọn (FE cho mốc 1/3/6 tháng,
     /// mặc định 6; service clamp trần 36); topN = số gợi ý (mặc định 10).
     /// </summary>
     [HttpGet]

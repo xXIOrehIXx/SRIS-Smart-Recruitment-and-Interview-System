@@ -20,7 +20,7 @@ public interface IInterviewScoringService : IBaseService
     /// <summary>Nộp phiếu (DRAFT->SUBMITTED) — mở blind. Guard: phải chấm đủ mọi tiêu chí.</summary>
     Task<ScoringSheetDto> SubmitAsync(long companyId, long interviewerId, long scheduleId);
 
-    /// <summary>Tổng hợp panel (chỉ phiếu đã nộp) — cho Recruiter/Department Manager đọc để quyết.</summary>
+    /// <summary>Tổng hợp panel (chỉ phiếu đã nộp) — cho Human Resource/Department Manager đọc để quyết.</summary>
     Task<ScheduleAggregateDto> GetAggregateAsync(long companyId, long scheduleId);
 
     /// <summary>

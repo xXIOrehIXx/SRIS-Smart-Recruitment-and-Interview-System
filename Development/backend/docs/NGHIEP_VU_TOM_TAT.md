@@ -7,7 +7,7 @@ Hệ thống tuyển dụng cho công ty nhỏ (≤200 người). Nhiều công 
 | Vai | Việc | Vào bằng |
 |---|---|---|
 | Admin | Tạo tài khoản, gán vai, cấu hình công ty | Đăng nhập |
-| Recruiter | Vận hành mọi thứ: đăng tin, sàng lọc, đặt lịch, gửi offer | Đăng nhập |
+| Human Resource | Vận hành mọi thứ: đăng tin, sàng lọc, đặt lịch, gửi offer | Đăng nhập |
 | Interviewer | Chấm điểm phỏng vấn | Đăng nhập |
 | Department Manager (DM) | Ra đề (cần tuyển ai) + chốt tuyển ở bước cuối | Đăng nhập |
 | Ứng viên | Nộp CV, chọn lịch, xem trạng thái, nhận/từ chối offer | Link qua email, KHÔNG cần tài khoản |
@@ -19,9 +19,9 @@ Một người có thể giữ nhiều vai (công ty gia đình: 1 chủ làm h�
 **Hồ sơ mới → Sàng lọc → Phỏng vấn → Quyết định.** Chỉ tiến, không lùi. Loại được ở bất kỳ pha nào (bắt buộc ghi lý do).
 
 1. **Hồ sơ mới** — ứng viên nộp CV trên trang tuyển dụng công khai của công ty. Hệ thống tự đọc PDF và chấm điểm sẵn.
-2. **Sàng lọc** — Recruiter xem điểm + bằng chứng rồi tự quyết giữ hay loại.
+2. **Sàng lọc** — Human Resource xem điểm + bằng chứng rồi tự quyết giữ hay loại.
 3. **Phỏng vấn** — đặt lịch, phỏng vấn (1 vòng mặc định, nhiều vòng nếu cấu hình), interviewer chấm điểm theo tiêu chí.
-4. **Quyết định** — DM (không có DM thì Recruiter) xem điểm rồi chốt → gửi offer → ứng viên tự bấm nhận/từ chối → TUYỂN hoặc LOẠI.
+4. **Quyết định** — DM (không có DM thì Human Resource) xem điểm rồi chốt → gửi offer → ứng viên tự bấm nhận/từ chối → TUYỂN hoặc LOẠI.
 
 Chốt cửa duy nhất: muốn sang pha Quyết định phải có ít nhất 1 phiếu chấm phỏng vấn đã nộp.
 
@@ -33,7 +33,7 @@ Chốt cửa duy nhất: muốn sang pha Quyết định phải có ít nhất 1
 
 ## Đặt lịch phỏng vấn (kiểu Calendly)
 
-Recruiter mở **1 bộ khung giờ chung** cho job (gán interviewer từng khung) → mời danh sách ứng viên → mỗi người nhận 1 link riêng qua email → ứng viên tự chọn khung, **ai chốt trước lấy trước** → email xác nhận + file lịch .ics. Ứng viên bận hết khung → bấm "không khung nào phù hợp" → hệ thống gắn cờ nhắc Recruiter gọi điện; gọi xong chốt lịch tay trong hệ thống.
+Human Resource mở **1 bộ khung giờ chung** cho job (gán interviewer từng khung) → mời danh sách ứng viên → mỗi người nhận 1 link riêng qua email → ứng viên tự chọn khung, **ai chốt trước lấy trước** → email xác nhận + file lịch .ics. Ứng viên bận hết khung → bấm "không khung nào phù hợp" → hệ thống gắn cờ nhắc Human Resource gọi điện; gọi xong chốt lịch tay trong hệ thống.
 
 ## Chấm phỏng vấn
 

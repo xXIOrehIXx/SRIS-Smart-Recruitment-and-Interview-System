@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers
 {
     /// <summary>
-    /// Quản lý Job. Tạo Job chỉ dành cho Recruiter (docs 2, 5.14 — Recruiter vận hành pipeline).
+    /// Quản lý Job. Tạo Job chỉ dành cho Human Resource (docs 2, 5.14 — Human Resource vận hành pipeline).
     /// </summary>
 [Route("api/[controller]")]
 [ApiController]
@@ -25,10 +25,10 @@ namespace GP35.SRIS.Controllers
             _jobService = jobService;
         }
 
-        /// <summary>Tạo Job mới — Recruiter (Admin bypass qua WithRole). Để trống Status = "Open".</summary>
+        /// <summary>Tạo Job mới — Human Resource (Admin bypass qua WithRole). Để trống Status = "Open".</summary>
         [HttpPost]
         [Authorize]
-        [WithRole(RoleConstants.Recruiter, RoleConstants.Admin)]
+        [WithRole(RoleConstants.HumanResource, RoleConstants.Admin)]
         public async Task<IActionResult> Create([FromBody] JobCreateDto dto)
         {
             var job = await _jobService.CreateAsync(_contextData.CompanyId, _contextData.UserId, dto);
@@ -37,7 +37,7 @@ namespace GP35.SRIS.Controllers
 
         /// <summary>
         /// Danh sách Job của công ty (mặc định chỉ job Open; ?includeInactive=true để thấy cả
-        /// job đã đóng — màn quản lý của Recruiter). Career site công khai dùng /api/public/{slug}/jobs.
+        /// job đã đóng — màn quản lý của Human Resource). Career site công khai dùng /api/public/{slug}/jobs.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> List([FromQuery] bool includeInactive = false)
@@ -58,7 +58,7 @@ namespace GP35.SRIS.Controllers
         /// <summary>Sửa Job (title/JD/DM/status). Đóng job = Status "Closed". JD đổi -> embedding tự làm mới.</summary>
         [HttpPut("{jobId:long}")]
         [Authorize]
-        [WithRole(RoleConstants.Recruiter)]
+        [WithRole(RoleConstants.HumanResource)]
         public async Task<IActionResult> Update(long jobId, [FromBody] JobUpdateDto dto)
         {
             return Ok(await _jobService.UpdateAsync(_contextData.CompanyId, jobId, dto));
@@ -67,7 +67,7 @@ namespace GP35.SRIS.Controllers
         /// <summary>Đóng Job (soft close — Status "Closed"). Không xóa cứng để giữ hồ sơ + analytics.</summary>
         [HttpDelete("{jobId:long}")]
         [Authorize]
-        [WithRole(RoleConstants.Recruiter)]
+        [WithRole(RoleConstants.HumanResource)]
         public async Task<IActionResult> Close(long jobId)
         {
             await _jobService.CloseAsync(_contextData.CompanyId, jobId);

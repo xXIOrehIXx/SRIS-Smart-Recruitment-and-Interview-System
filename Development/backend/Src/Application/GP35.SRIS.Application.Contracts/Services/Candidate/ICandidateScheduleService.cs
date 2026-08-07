@@ -14,6 +14,6 @@ public interface ICandidateScheduleService : IBaseService
     /// <summary>Chốt 1 khung. Trả lỗi 409 nếu khung vừa bị người khác đặt / đã khóa.</summary>
     Task<ScheduleConfirmationDto> ConfirmAsync(string rawToken, ConfirmSlotDto dto);
 
-    /// <summary>"Không khung nào phù hợp" -> lịch chuyển NO_SLOT_FITS, đốt token (Recruiter mở vòng mới).</summary>
+    /// <summary>"Không khung nào phù hợp" -> lịch chuyển NO_SLOT_FITS, đốt token (Human Resource mở vòng mới).</summary>
     Task NoSlotFitsAsync(string rawToken);
 }

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace GP35.SRIS.Domain.Entities;
 
 /// <summary>
-/// Yêu cầu tuyển dụng — DM "ra đề" (docs 5.17, TÙY CHỌN). Recruiter duyệt rồi tạo Job
+/// Yêu cầu tuyển dụng — DM "ra đề" (docs 5.17, TÙY CHỌN). Human Resource duyệt rồi tạo Job
 /// từ yêu cầu (status CONVERTED + job_id truy vết "job này từ đề bài nào").
 /// </summary>
 public class RecruitmentRequest : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHasCompanyInfo

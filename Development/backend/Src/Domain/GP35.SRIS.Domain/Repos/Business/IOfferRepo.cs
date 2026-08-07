@@ -12,8 +12,10 @@ public interface IOfferRepo : IBaseRepo<long, OfferDetail>
     Task<long> InsertAsync(long companyId, OfferDetail offer);
 
     /// <summary>
-    /// Ghi phản hồi của ứng viên (ACCEPTED/DECLINED) + responded_at — chỉ khi đang PENDING
-    /// (khóa lạc quan chống double-submit). Trả số dòng (0 = đã phản hồi rồi/không thấy).
+    /// Human Resource/DM ghi nhận kết quả ứng viên trả lời NGOÀI hệ thống (ACCEPTED/DECLINED) +
+    /// responded_at — chỉ khi đang PENDING (khóa lạc quan chống hai người bấm cùng lúc).
+    /// Trả số dòng (0 = đã chốt trước đó/không thấy).
     /// </summary>
-    Task<int> SetResponseAsync(long companyId, long offerId, string status, DateTime respondedAt);
+    Task<int> SetOutcomeAsync(
+        long companyId, long offerId, string status, long? outcomeBy, string? note, DateTime respondedAt);
 }

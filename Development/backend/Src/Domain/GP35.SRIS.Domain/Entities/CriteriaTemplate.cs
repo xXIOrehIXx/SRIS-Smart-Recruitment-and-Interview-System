@@ -5,7 +5,7 @@ using GP35.SRIS.Domain;
 namespace GP35.SRIS.Domain.Entities;
 
 /// <summary>
-/// Khuôn tiêu chí chấm dùng lại ở cấp company (Việc 12). Recruiter tạo 1 lần (vd "Khung phỏng vấn Dev"),
+/// Khuôn tiêu chí chấm dùng lại ở cấp company (Việc 12). Human Resource tạo 1 lần (vd "Khung phỏng vấn Dev"),
 /// rồi clone vào từng job thành <see cref="EvaluationCriteria"/> — đỡ gõ lại, nhất quán giữa các job.
 /// </summary>
 public class CriteriaTemplate : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHasCompanyInfo

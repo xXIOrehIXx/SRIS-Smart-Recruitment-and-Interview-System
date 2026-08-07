@@ -21,14 +21,14 @@ public class RecruitmentRequestInputDto
     public DateTime? ExpectedStartDate { get; set; }
 }
 
-/// <summary>Recruiter duyệt yêu cầu: approve=true -> APPROVED, false -> REJECTED (kèm note).</summary>
+/// <summary>Human Resource duyệt yêu cầu: approve=true -> APPROVED, false -> REJECTED (kèm note).</summary>
 public class ReviewRequestDto
 {
     public bool Approve { get; set; }
     public string? Note { get; set; }
 }
 
-/// <summary>Recruiter đánh dấu đã tạo Job từ yêu cầu -> CONVERTED + truy vết job_id.</summary>
+/// <summary>Human Resource đánh dấu đã tạo Job từ yêu cầu -> CONVERTED + truy vết job_id.</summary>
 public class ConvertRequestDto
 {
     public long JobId { get; set; }

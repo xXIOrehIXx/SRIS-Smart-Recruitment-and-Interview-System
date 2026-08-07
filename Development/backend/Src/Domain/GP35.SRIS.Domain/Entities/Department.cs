@@ -9,7 +9,7 @@ namespace GP35.SRIS.Domain.Entities;
 /// DepartmentService tự đồng bộ tên trong Job/RecruitmentRequest.
 /// <para>
 /// V023: <see cref="ManagerUserId"/> = DM phụ trách phòng ban — nguồn để tự điền
-/// <c>Job.department_manager_id</c> khi Recruiter chọn phòng ban lúc tạo job.
+/// <c>Job.department_manager_id</c> khi Human Resource chọn phòng ban lúc tạo job.
 /// </para>
 /// </summary>
 public class Department : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHasCompanyInfo

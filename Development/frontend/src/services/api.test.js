@@ -80,9 +80,11 @@ describe('candidateAPI — token LUÔN qua query string (backend đọc [FromQue
     );
   });
 
-  test('respondToOffer: token ở query, body chỉ có accept', () => {
-    candidateAPI.respondToOffer('6.abc', true);
-    expect(apiInst.post).toHaveBeenCalledWith('/candidate/offer/respond?token=6.abc', { accept: true });
+  // 5.15: ứng viên không còn bấm đồng ý/từ chối — chỉ mở/tải PDF thư mời.
+  // URL này gắn thẳng vào <object>/thẻ tải nên phải kèm BASE_URL, không đi qua axios.
+  test('offerLetterUrl: URL tuyệt đối theo BASE_URL, token được encode', () => {
+    expect(candidateAPI.offerLetterUrl('6.tok+en'))
+      .toBe(`/api/candidate/offer/letter?token=${encodeURIComponent('6.tok+en')}`);
   });
 
   test('noSlotAvailable: token ở query, không body', () => {
@@ -105,6 +107,26 @@ describe('applicationAPI', () => {
   test('transition kèm reason (cần khi toState=REJECTED)', () => {
     applicationAPI.transition(9, 'SCREENING');
     expect(apiInst.post).toHaveBeenCalledWith('/applications/9/transition', { toState: 'SCREENING', reason: undefined });
+  });
+});
+
+describe('offerAPI — thư mời nhận việc (5.15)', () => {
+  test('getDefaults lấy giá trị điền sẵn cho form soạn thư', () => {
+    offerAPI.getDefaults(9);
+    expect(apiInst.get).toHaveBeenCalledWith('/applications/9/offer/defaults');
+  });
+
+  test('getLetterBlob phải xin responseType blob (không thì axios làm hỏng nhị phân PDF)', () => {
+    offerAPI.getLetterBlob(9);
+    expect(apiInst.get).toHaveBeenCalledWith('/applications/9/offer/letter', { responseType: 'blob' });
+  });
+
+  test('recordOutcome: Human Resource chốt kết quả ứng viên trả lời ngoài hệ thống', () => {
+    offerAPI.recordOutcome(9, false, 'Nhận offer công ty khác');
+    expect(apiInst.post).toHaveBeenCalledWith(
+      '/applications/9/offer/outcome',
+      { accepted: false, note: 'Nhận offer công ty khác' },
+    );
   });
 });
 
@@ -148,7 +170,7 @@ describe('các endpoint đã xóa vì backend không có', () => {
     expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool');
   });
 
-  test('talentPoolAPI truyền mốc độ tươi CV do Recruiter chọn', () => {
+  test('talentPoolAPI truyền mốc độ tươi CV do Human Resource chọn', () => {
     talentPoolAPI.getSuggestions(3, 1);
     expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool?withinMonths=1');
     talentPoolAPI.getSuggestions(3, 3);
@@ -167,7 +189,7 @@ describe('đường dẫn từng bị sai', () => {
     expect(apiInst.get).toHaveBeenCalledWith('/jobs?includeInactive=true');
   });
 
-  test('users/options cho dropdown (Recruiter/DM gọi được, khác /users chỉ Admin)', () => {
+  test('users/options cho dropdown (Human Resource/DM gọi được, khác /users chỉ Admin)', () => {
     usersAPI.getOptions('Interviewer');
     expect(apiInst.get).toHaveBeenCalledWith('/users/options', { params: { role: 'Interviewer' } });
   });

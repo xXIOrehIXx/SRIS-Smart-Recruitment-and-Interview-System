@@ -29,14 +29,14 @@ const ICON_MAP = {
 /**
  * Một số item sidebar là "tính năng chính" của vai trò — gắn thêm badge pill
  * nổi bật bên phải label để user dễ nhận diệt nhanh. Hiện tại:
- *  - "/recruiter/requests" : Yêu cầu tuyển dụng (cả Admin lẫn Recruiter đều có).
+ *  - "/human-resource/requests" : Yêu cầu tuyển dụng (cả Admin lẫn Human Resource đều có).
  *    Match theo key để tránh phụ thuộc cứng vào label string.
  *
  * Cấu hình badge: { icon, label, color } — `color` là tên biến CSS (vd "matcha").
  * Pill chỉ hiện khi sidebar mở rộng (collapsed thì antd ẩn label luôn).
  */
 const BADGE_LABEL_KEYS = {
-  "/recruiter/requests": {
+  "/human-resource/requests": {
     icon: requestIcon,
     label: "Yêu cầu",
     color: "matcha",

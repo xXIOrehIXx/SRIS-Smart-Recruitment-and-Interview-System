@@ -1,8 +1,9 @@
-using GP35.SRIS.Application.Contracts.Dtos.Candidate.Offer;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Services.CandidatePortal;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Exceptions;
+using GP35.SRIS.Lib.Services.Pdf;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Serilog;
@@ -10,12 +11,22 @@ using Xunit;
 
 namespace GP35.SRIS.Application.Tests.Services;
 
+/// <summary>
+/// Cổng ứng viên (5.15) giờ CHỈ ĐỌC: xem tóm tắt + tải PDF thư mời. Không còn Đồng ý/Từ chối —
+/// việc chốt HIRED/REJECTED nằm ở OfferService.RecordOutcomeAsync (Portal).
+/// </summary>
 public class CandidateOfferServiceTests
 {
+    private const string RawToken = "token123";
+    private const long CompanyId = 1L;
+    private const long AppId = 100L;
+    private const long TokenId = 5L;
+
     private readonly Mock<IMagicLinkService> _magicLink = new();
     private readonly Mock<IOfferRepo> _offerRepo = new();
-    private readonly Mock<IApplicationStateService> _stateService = new();
-    private readonly Mock<IActivityLogRepo> _activityLogRepo = new();
+    private readonly Mock<IApplicationRepo> _appRepo = new();
+    private readonly Mock<ICompanyRepo> _companyRepo = new();
+    private readonly Mock<IOfferLetterPdfGenerator> _pdf = new();
     private readonly Mock<ILogger> _logger = new();
 
     private CandidateOfferService CreateService()
@@ -26,72 +37,79 @@ public class CandidateOfferServiceTests
         {
             s.AddSingleton(_magicLink.Object);
             s.AddSingleton(_offerRepo.Object);
-            s.AddSingleton(_stateService.Object);
-            s.AddSingleton(_activityLogRepo.Object);
+            s.AddSingleton(_appRepo.Object);
+            s.AddSingleton(_companyRepo.Object);
+            s.AddSingleton(_pdf.Object);
             s.AddSingleton(_logger.Object);
         });
         return new CandidateOfferService(provider);
     }
 
+    private void SetupValidToken() =>
+        _magicLink.Setup(m => m.ValidateAsync(RawToken, "OFFER_RESPONSE"))
+            .ReturnsAsync(new MagicLinkValidation(CompanyId, TokenId, AppId, "OFFER_RESPONSE"));
+
     [Fact]
-    public async Task AcceptOfferAsync_Should_Change_State_To_Offered()
+    public async Task GetOfferAsync_Should_Return_Letter_Summary()
     {
-        // Arrange
         var svc = CreateService();
-        var rawToken = "token123";
-        var companyId = 1L;
-        var appId = 100L;
+        SetupValidToken();
 
-        _magicLink.Setup(m => m.ValidateAsync(rawToken, "OFFER_RESPONSE"))
-            .ReturnsAsync(new MagicLinkValidation(companyId, 5L, appId, "OFFER_RESPONSE"));
+        _offerRepo.Setup(r => r.GetByApplicationAsync(CompanyId, AppId)).ReturnsAsync(new OfferDetail
+        {
+            OfferId = 10,
+            Status = "PENDING",
+            JobTitle = "Kế toán tổng hợp",
+            Department = "Tài chính",
+            SalaryAmount = 20_000_000,
+            Currency = "VND",
+            SalaryPeriod = "THANG",
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        });
+        _appRepo.Setup(r => r.GetContactInfoAsync(CompanyId, AppId))
+            .ReturnsAsync(new ApplicationContactInfo(AppId, "a@b.com", "Nguyễn Văn A", "Kế toán tổng hợp", "OFFER"));
+        _companyRepo.Setup(r => r.GetByCompanyId(CompanyId))
+            .ReturnsAsync(new Company { CompanyId = CompanyId, Name = "Công ty ABC" });
 
-        var offer = new OfferDetail { OfferId = 10, Status = "Pending", ExpiresAt = DateTime.UtcNow.AddDays(1) };
-        _offerRepo.Setup(r => r.GetByApplicationAsync(companyId, appId)).ReturnsAsync(offer);
-        _offerRepo.Setup(r => r.SetResponseAsync(companyId, 10, It.IsAny<string>(), It.IsAny<DateTime>())).ReturnsAsync(1);
+        var dto = await svc.GetOfferAsync(RawToken);
 
-        var dto = new OfferResponseDto { Accept = true };
-
-        // Act
-        var result = await svc.RespondAsync(rawToken, dto);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("ACCEPTED", result.OfferStatus);
-        Assert.Equal("HIRED", result.ApplicationState);
-
-        _stateService.Verify(s => s.TransitionAsync(companyId, 0, appId, "HIRED", null), Times.Once);
-        _magicLink.Verify(m => m.MarkUsedAsync(companyId, 5L), Times.Once);
-        _activityLogRepo.Verify(r => r.InsertAsync(companyId, It.Is<ActivityLog>(a => a.Action == "OFFER_ACCEPTED")), Times.Once);
+        Assert.Equal("Công ty ABC", dto.CompanyName);
+        Assert.Equal("Nguyễn Văn A", dto.CandidateName);
+        Assert.Equal("Kế toán tổng hợp", dto.JobTitle);
+        Assert.Equal(20_000_000, dto.SalaryAmount);
+        Assert.Equal("THANG", dto.SalaryPeriod);
     }
 
     [Fact]
-    public async Task RejectOfferAsync_Should_Change_State_To_Rejected()
+    public async Task GetLetterPdfAsync_Should_Return_Pdf_And_Not_Burn_Token()
     {
-        // Arrange
+        // Token KHÔNG bị đốt khi mở: ứng viên phải xem lại được thư suốt thời gian hiệu lực (5.13).
         var svc = CreateService();
-        var rawToken = "token123";
-        var companyId = 1L;
-        var appId = 100L;
+        SetupValidToken();
 
-        _magicLink.Setup(m => m.ValidateAsync(rawToken, "OFFER_RESPONSE"))
-            .ReturnsAsync(new MagicLinkValidation(companyId, 5L, appId, "OFFER_RESPONSE"));
+        _offerRepo.Setup(r => r.GetByApplicationAsync(CompanyId, AppId))
+            .ReturnsAsync(new OfferDetail { OfferId = 10, Status = "PENDING", Currency = "VND" });
+        _appRepo.Setup(r => r.GetContactInfoAsync(CompanyId, AppId))
+            .ReturnsAsync(new ApplicationContactInfo(AppId, "a@b.com", "Nguyễn Văn A", "Kế toán", "OFFER"));
+        _companyRepo.Setup(r => r.GetByCompanyId(CompanyId)).ReturnsAsync(new Company { Name = "Công ty ABC" });
+        _pdf.Setup(p => p.Generate(It.IsAny<OfferLetterModel>())).Returns(new byte[] { 1, 2, 3 });
+        _pdf.Setup(p => p.BuildFileName(It.IsAny<OfferLetterModel>())).Returns("Thu-moi-nhan-viec-Nguyen-Van-A.pdf");
 
-        var offer = new OfferDetail { OfferId = 10, Status = "Pending", ExpiresAt = DateTime.UtcNow.AddDays(1) };
-        _offerRepo.Setup(r => r.GetByApplicationAsync(companyId, appId)).ReturnsAsync(offer);
-        _offerRepo.Setup(r => r.SetResponseAsync(companyId, 10, It.IsAny<string>(), It.IsAny<DateTime>())).ReturnsAsync(1);
+        var (content, fileName) = await svc.GetLetterPdfAsync(RawToken);
 
-        var dto = new OfferResponseDto { Accept = false };
+        Assert.Equal(new byte[] { 1, 2, 3 }, content);
+        Assert.Equal("Thu-moi-nhan-viec-Nguyen-Van-A.pdf", fileName);
+        _magicLink.Verify(m => m.MarkUsedAsync(It.IsAny<long>(), It.IsAny<long>()), Times.Never);
+    }
 
-        // Act
-        var result = await svc.RespondAsync(rawToken, dto);
+    [Fact]
+    public async Task GetLetterPdfAsync_Should_Throw_Conflict_If_No_Offer_Yet()
+    {
+        var svc = CreateService();
+        SetupValidToken();
+        _offerRepo.Setup(r => r.GetByApplicationAsync(CompanyId, AppId)).ReturnsAsync((OfferDetail)null!);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("DECLINED", result.OfferStatus);
-        Assert.Equal("REJECTED", result.ApplicationState);
-
-        _stateService.Verify(s => s.TransitionAsync(companyId, 0, appId, "REJECTED", "Ứng viên từ chối offer."), Times.Once);
-        _magicLink.Verify(m => m.MarkUsedAsync(companyId, 5L), Times.Once);
-        _activityLogRepo.Verify(r => r.InsertAsync(companyId, It.Is<ActivityLog>(a => a.Action == "OFFER_DECLINED")), Times.Once);
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.GetLetterPdfAsync(RawToken));
+        Assert.Equal("CONFLICT", ex.ErrorCode);
     }
 }
