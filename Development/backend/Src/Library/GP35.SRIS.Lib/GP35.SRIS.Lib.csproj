@@ -11,6 +11,7 @@
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="PdfPig" Version="0.1.10" />
+    <PackageReference Include="QuestPDF" Version="2026.7.2" />
     <PackageReference Include="Serilog" Version="4.3.0" />
   </ItemGroup>
 

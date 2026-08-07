@@ -8,9 +8,18 @@ namespace GP35.SRIS.Application.Contracts.Services.Business;
 /// </summary>
 public interface IApplicationStateService : IBaseService
 {
-    /// <summary>Chuyển hồ sơ sang state đích (gồm cả REJECTED). Kiểm luật + guard + ghi log.</summary>
+    /// <summary>
+    /// Chuyển hồ sơ sang state đích (gồm cả REJECTED). Kiểm luật + guard + ghi log.
+    /// </summary>
+    /// <param name="isCandidateAnswer">
+    /// true = đang GHI NHẬN câu trả lời của ứng viên với thư mời nhận việc (5.15), không phải
+    /// một quyết định tuyển mới -> bỏ qua luật "chỉ DM của job được quyết" (5.14). Ứng viên nhận
+    /// hay từ chối là sự thật khách quan; bắt đúng DM mới được gõ vào sẽ làm hồ sơ kẹt ở OFFER
+    /// trong khi offer đã ACCEPTED. Quyết định thật đã xảy ra ở cửa INTERVIEW→OFFER.
+    /// </param>
     Task<ApplicationStateDto> TransitionAsync(
-        long companyId, long userId, long applicationId, string toState, string? reason);
+        long companyId, long userId, long applicationId, string toState, string? reason,
+        bool isCandidateAnswer = false);
 
     /// <summary>Loại hồ sơ (REJECTED) — tiện ích, reason tùy chọn.</summary>
     Task<ApplicationStateDto> RejectAsync(long companyId, long userId, long applicationId, string? reason);

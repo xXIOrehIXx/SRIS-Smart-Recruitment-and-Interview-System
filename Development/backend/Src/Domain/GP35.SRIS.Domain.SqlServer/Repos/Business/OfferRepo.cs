@@ -31,13 +31,16 @@ public class OfferRepo : BaseRepo<long, OfferDetail>, IOfferRepo
         return offer.OfferId;
     }
 
-    public async Task<int> SetResponseAsync(long companyId, long offerId, string status, DateTime respondedAt)
+    public async Task<int> SetOutcomeAsync(
+        long companyId, long offerId, string status, long? outcomeBy, string? note, DateTime respondedAt)
     {
-        // Khóa lạc quan: chỉ chốt khi còn PENDING -> phản hồi thứ 2 không ghi đè (rowcount=0).
+        // Khóa lạc quan: chỉ chốt khi còn PENDING -> lần ghi nhận thứ 2 không ghi đè (rowcount=0).
         return await _db.OfferDetails
             .Where(o => o.OfferId == offerId && o.Status == OfferStatus.Pending)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(o => o.Status, status)
+                .SetProperty(o => o.OutcomeBy, outcomeBy)
+                .SetProperty(o => o.OutcomeNote, note)
                 .SetProperty(o => o.RespondedAt, respondedAt)
                 .SetProperty(o => o.UpdatedAt, respondedAt));
     }

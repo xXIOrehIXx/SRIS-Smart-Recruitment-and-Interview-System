@@ -1,27 +1,30 @@
 namespace GP35.SRIS.Application.Contracts.Dtos.Candidate.Offer;
 
 /// <summary>
-/// Offer như ứng viên thấy qua magic link OFFER_RESPONSE (docs 5.15) — chỉ nội dung cần để quyết:
-/// lương / tiền tệ / ngày vào làm / hạn phản hồi. Không lộ thông tin nội bộ (decided_by, note).
+/// Thư mời nhận việc như ứng viên thấy qua magic link OFFER_RESPONSE (docs 5.15).
+/// Chỉ là bản tóm tắt để hiện trên trang trước khi tải PDF — KHÔNG lộ thông tin nội bộ
+/// (decided_by, ghi chú nội bộ, outcome). Ứng viên không thao tác gì trên trang này:
+/// không có nút Đồng ý/Từ chối, họ trả lời nhà tuyển dụng ngoài hệ thống.
 /// </summary>
 public class CandidateOfferDto
 {
+    public string? CompanyName { get; set; }
+    public string? CandidateName { get; set; }
+    public string? JobTitle { get; set; }
+    public string? Department { get; set; }
+    public DateTime? StartDate { get; set; }
+    public string? EmploymentType { get; set; }
+    public string? WorkLocation { get; set; }
+
     public decimal? SalaryAmount { get; set; }
     public string Currency { get; set; } = null!;
-    public DateTime? StartDate { get; set; }
-    public string Status { get; set; } = null!;
+    /// <summary>"THANG" | "NAM" — kỳ lương, để trang hiển thị "/tháng" hay "/năm".</summary>
+    public string? SalaryPeriod { get; set; }
+
+    /// <summary>Người liên hệ nếu ứng viên có câu hỏi (in cả trên thư).</summary>
+    public string? HrContactName { get; set; }
+    public string? HrContactEmail { get; set; }
+
+    /// <summary>Hạn nhà tuyển dụng mong nhận trả lời (cũng là hạn của link xem thư).</summary>
     public DateTime? ExpiresAt { get; set; }
-}
-
-/// <summary>Ứng viên bấm Đồng ý/Từ chối offer.</summary>
-public class OfferResponseDto
-{
-    public bool Accept { get; set; }
-}
-
-/// <summary>Kết quả phản hồi: trạng thái offer mới + state pipeline tương ứng.</summary>
-public class OfferResponseResultDto
-{
-    public string OfferStatus { get; set; } = null!;       // ACCEPTED / DECLINED
-    public string ApplicationState { get; set; } = null!;  // HIRED / REJECTED
 }

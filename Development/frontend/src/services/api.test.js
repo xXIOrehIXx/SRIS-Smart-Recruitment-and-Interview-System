@@ -80,9 +80,11 @@ describe('candidateAPI — token LUÔN qua query string (backend đọc [FromQue
     );
   });
 
-  test('respondToOffer: token ở query, body chỉ có accept', () => {
-    candidateAPI.respondToOffer('6.abc', true);
-    expect(apiInst.post).toHaveBeenCalledWith('/candidate/offer/respond?token=6.abc', { accept: true });
+  // 5.15: ứng viên không còn bấm đồng ý/từ chối — chỉ mở/tải PDF thư mời.
+  // URL này gắn thẳng vào <object>/thẻ tải nên phải kèm BASE_URL, không đi qua axios.
+  test('offerLetterUrl: URL tuyệt đối theo BASE_URL, token được encode', () => {
+    expect(candidateAPI.offerLetterUrl('6.tok+en'))
+      .toBe(`/api/candidate/offer/letter?token=${encodeURIComponent('6.tok+en')}`);
   });
 
   test('noSlotAvailable: token ở query, không body', () => {
@@ -105,6 +107,26 @@ describe('applicationAPI', () => {
   test('transition kèm reason (cần khi toState=REJECTED)', () => {
     applicationAPI.transition(9, 'SCREENING');
     expect(apiInst.post).toHaveBeenCalledWith('/applications/9/transition', { toState: 'SCREENING', reason: undefined });
+  });
+});
+
+describe('offerAPI — thư mời nhận việc (5.15)', () => {
+  test('getDefaults lấy giá trị điền sẵn cho form soạn thư', () => {
+    offerAPI.getDefaults(9);
+    expect(apiInst.get).toHaveBeenCalledWith('/applications/9/offer/defaults');
+  });
+
+  test('getLetterBlob phải xin responseType blob (không thì axios làm hỏng nhị phân PDF)', () => {
+    offerAPI.getLetterBlob(9);
+    expect(apiInst.get).toHaveBeenCalledWith('/applications/9/offer/letter', { responseType: 'blob' });
+  });
+
+  test('recordOutcome: Recruiter chốt kết quả ứng viên trả lời ngoài hệ thống', () => {
+    offerAPI.recordOutcome(9, false, 'Nhận offer công ty khác');
+    expect(apiInst.post).toHaveBeenCalledWith(
+      '/applications/9/offer/outcome',
+      { accepted: false, note: 'Nhận offer công ty khác' },
+    );
   });
 });
 

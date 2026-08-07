@@ -315,9 +315,15 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         {
             "SCHEDULE" => ($"Mời chọn lịch phỏng vấn — vị trí {jobTitle}",
                        $"Vui lòng chọn khung giờ phỏng vấn phù hợp cho vị trí <b>{jobTitle}</b>.", "Chọn lịch phỏng vấn"),
+            // 5.15: link mở thẳng file PDF thư mời — ứng viên KHÔNG bấm đồng ý/từ chối trong
+            // hệ thống nữa, nên lời email phải mời họ trả lời lại email/HR, không mời "phản hồi".
             "OFFER_RESPONSE" => ($"Thư mời nhận việc — vị trí {jobTitle}",
-                       $"Chúc mừng! Bạn nhận được offer cho vị trí <b>{jobTitle}</b>. " +
-                       "Nhấn nút bên dưới để xem chi tiết và phản hồi.", "Xem & phản hồi offer"),
+                       $"Chúc mừng! Bạn đã vượt qua vòng phỏng vấn vị trí <b>{jobTitle}</b>. " +
+                       "Chúng tôi trân trọng gửi bạn thư mời nhận việc kèm theo — nhấn nút bên dưới " +
+                       "để xem và tải bản PDF.<br><br>" +
+                       "Sau khi xem thư, vui lòng phản hồi lại email này để xác nhận bạn có nhận " +
+                       "lời mời hay không. Mọi thắc mắc về nội dung thư, bạn cứ trao đổi trực tiếp " +
+                       "với bộ phận tuyển dụng của chúng tôi.", "Xem thư mời nhận việc (PDF)"),
             "STATUS" => ($"Trạng thái hồ sơ — vị trí {jobTitle}",
                        $"Nhấn nút bên dưới để xem trạng thái hồ sơ ứng tuyển vị trí <b>{jobTitle}</b>.", "Xem trạng thái"),
             _ => ("Thông báo từ bộ phận tuyển dụng",

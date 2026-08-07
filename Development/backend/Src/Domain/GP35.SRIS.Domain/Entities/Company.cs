@@ -20,6 +20,15 @@ public class Company : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo
     public string? PrimaryColor { get; set; }
     [Column("industry")]
     public string? Industry { get; set; }
+
+    // Liên hệ in ở đầu thư mời nhận việc (V029) — nhập 1 lần ở hồ sơ công ty.
+    [Column("address")]
+    public string? Address { get; set; }
+    [Column("contact_email")]
+    public string? ContactEmail { get; set; }
+    [Column("phone")]
+    public string? Phone { get; set; }
+
     [Column("email_domain")]
     public string? EmailDomain { get; set; }
     [Column("smtp_host")]

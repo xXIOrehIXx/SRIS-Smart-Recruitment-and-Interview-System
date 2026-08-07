@@ -222,12 +222,29 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính 
 - Một người vừa là DM vừa chấm phỏng vấn: gán họ làm interviewer của slot (InterviewSlot.interviewer_id). Không cần cơ chế riêng.
 - KHÔNG cổng duyệt CV riêng, KHÔNG bảng cấu hình thẩm quyền.
 
-### 5.15 Offer — OfferDetail + ứng viên tự phản hồi
-- OfferDetail (tối giản): 1-1 (0..1) với Application. Field: salary_amount, currency, start_date, status (PENDING/ACCEPTED/DECLINED), sent_at, responded_at. Mở KPI offer acceptance rate.
-- KHÔNG làm: lịch sử thương lượng, tạo offer letter, ký số (Core Recruiter — ngoài scope).
-- Luồng: tại INTERVIEW→OFFER, DM quyết (không DM → Recruiter) → OfferDetail + gửi offer.
-- Self-service: magic link OFFER_RESPONSE → trang hiện OfferDetail + Đồng ý/Từ chối → cập nhật status → OFFER→HIRED / →REJECTED.
-- status OfferDetail vs current_state Application KHÔNG trùng: một theo artifact, một theo pipeline; đồng bộ (ACCEPTED ↔ HIRED).
+### 5.15 Thư mời nhận việc (Offer Letter) — CHỐT 07/08/2026
+> **Đổi so với bản trước:** bỏ hẳn trang ứng viên bấm "Đồng ý / Từ chối". Lý do: đó không phải cách
+> công ty nhỏ làm việc — họ gửi thư mời rồi ứng viên gọi/mail trả lời. Bắt ứng viên bấm nút trong một
+> hệ thống lạ chỉ thêm bước thừa, mà vẫn không thay được cuộc trao đổi thật.
+
+- OfferDetail = NỘI DUNG một lá thư: ngoài salary_amount/currency/start_date còn job_title, department,
+  reporting_to, employment_type, work_location, salary_period, bonus, benefits, terms, hr_contact_*,
+  signer_*, candidate_address, note (V029). Các mục lấy từ Job được **chụp lại** lúc soạn — sửa Job về
+  sau KHÔNG được đổi nội dung thư đã phát đi.
+- Liên hệ đầu thư (tên/địa chỉ/email/điện thoại công ty) lấy từ Company (`address`, `contact_email`,
+  `phone` — V029), nhập một lần ở hồ sơ công ty.
+- **Luồng:** tại INTERVIEW→OFFER, DM quyết (không DM → Recruiter) → Recruiter soạn thư (form điền sẵn
+  từ Job/Company, sửa được) → hệ thống lưu OfferDetail (PENDING) + gửi email kèm link → link mở ra
+  **file PDF thư mời** (QuestPDF, font Lato có đủ dấu tiếng Việt) → ứng viên trả lời NGOÀI hệ thống →
+  Recruiter/DM bấm "Đã nhận việc"/"Từ chối" trong Portal → ACCEPTED+HIRED / DECLINED+REJECTED.
+- Trang ứng viên (magic link OFFER_RESPONSE) CHỈ ĐỌC: tóm tắt + nhúng PDF + nút tải. Token **không bị
+  đốt khi mở** — không chốt gì ở đó thì đốt chỉ làm ứng viên mất bản thư đã nhận.
+- status giữ nguyên 3 giá trị (CHECK constraint không đổi, KPI offer acceptance rate chạy nguyên), chỉ
+  đổi cách đọc: PENDING = đã gửi thư chờ trả lời · ACCEPTED = đã nhận việc · DECLINED = đã từ chối.
+- Ghi nhận kết quả **không** áp luật "chỉ DM của job quyết" (5.14): ứng viên nhận hay từ chối là sự thật
+  khách quan, không phải quyết định mới — quyết định thật đã xảy ra ở cửa INTERVIEW→OFFER. Bắt đúng DM
+  mới được gõ vào sẽ làm hồ sơ kẹt ở OFFER trong khi thư đã có câu trả lời.
+- KHÔNG làm: lịch sử thương lượng, ký số (ngoài scope).
 
 ### 5.16 TÁI ĐỊNH VỊ HẬU-HỘI-ĐỒNG — 4 pha hiển thị + tối giản mặc định (CHỐT)
 **Nguyên tắc: đơn giản là mặc định, phức tạp là tùy chọn.** Hệ thống lớn lên cùng công ty — không bắt công ty 10 người xài bộ máy công ty 1000 người.

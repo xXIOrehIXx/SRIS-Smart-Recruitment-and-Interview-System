@@ -65,6 +65,13 @@ namespace GP35.SRIS.HostBase.Extensions
             // Mã hoá bí mật ở DB (smtp_password) — AES-256, khoá từ Auth:Key.
             services.AddSingleton<GP35.SRIS.Domain.Shared.Security.ISecretProtector, AesSecretProtector>();
 
+            // Thư mời nhận việc dạng PDF (5.15). QuestPDF cần khai báo license MỘT LẦN trước khi
+            // sinh file đầu tiên, nếu không sẽ ném lỗi lúc chạy — đặt ngay cạnh registration để
+            // không ai xoá nhầm. Community = miễn phí (doanh nghiệp doanh thu < 1 triệu USD).
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+            services.AddSingleton<GP35.SRIS.Lib.Services.Pdf.IOfferLetterPdfGenerator,
+                GP35.SRIS.Lib.Services.Pdf.OfferLetterPdfGenerator>();
+
             // Lưu trữ file (MinIO, tương thích S3) — đổi sang S3 chỉ cần đổi config/registration này
             services.AddMinioStorage();
         }

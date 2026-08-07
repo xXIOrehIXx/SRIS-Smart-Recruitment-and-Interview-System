@@ -8,6 +8,9 @@ public class CompanyGetDto : BaseEntityDto<long>
   public string? LogoUrl { get; set; }
   public string? PrimaryColor { get; set; }
   public string? Industry { get; set; }
+  public string? Address { get; set; }
+  public string? ContactEmail { get; set; }
+  public string? Phone { get; set; }
   public string? EmailDomain { get; set; }
   public string? SmtpHost { get; set; }
   public int? SmtpPort { get; set; }

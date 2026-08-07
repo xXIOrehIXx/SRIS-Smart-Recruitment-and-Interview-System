@@ -293,23 +293,38 @@ export const candidateAPI = {
   noSlotAvailable: (token) =>
     api.post(`/candidate/schedule/no-slot?token=${encodeURIComponent(token)}`),
 
+  // Tóm tắt thư mời nhận việc (ứng viên KHÔNG bấm đồng ý/từ chối — 5.15)
   getOffer: (token) =>
     api.get(`/candidate/offer?token=${encodeURIComponent(token)}`),
 
-  respondToOffer: (token, accept) =>
-    api.post(`/candidate/offer/respond?token=${encodeURIComponent(token)}`, { accept }),
+  // URL file PDF thư mời — dùng thẳng cho <iframe>/thẻ tải, không qua axios
+  // (BASE_URL vì trang ứng viên có thể chạy khác origin với BE).
+  offerLetterUrl: (token) =>
+    `${BASE_URL}/candidate/offer/letter?token=${encodeURIComponent(token)}`,
 };
 
 // ==================== OFFER ====================
 
 export const offerAPI = {
-  // data: { salaryAmount?, currency?, startDate?, note?, expiresInDays? }
-  // Trả { offer, magicToken, ... } — magic link OFFER_RESPONSE gửi ứng viên
+  // Giá trị điền sẵn cho form soạn thư (lấy từ Job + Company + hồ sơ)
+  getDefaults: (applicationId) =>
+    api.get(`/applications/${applicationId}/offer/defaults`),
+
+  // data: toàn bộ các mục của thư mời (xem MakeOfferDto ở BE) — ô để trống thì BE tự
+  // điền mặc định. Trả { offer, magicToken, ... }: link để ứng viên mở PDF thư mời.
   create: (applicationId, data) =>
     api.post(`/applications/${applicationId}/offer`, data),
 
   getByApplication: (applicationId) =>
     api.get(`/applications/${applicationId}/offer`),
+
+  // Bản PDF thư đã gửi — mở trong tab mới (cần token nên tải qua axios rồi tạo blob URL).
+  getLetterBlob: (applicationId) =>
+    api.get(`/applications/${applicationId}/offer/letter`, { responseType: 'blob' }),
+
+  // Ứng viên trả lời NGOÀI hệ thống -> Recruiter ghi nhận: accepted=true -> HIRED, false -> REJECTED
+  recordOutcome: (applicationId, accepted, note) =>
+    api.post(`/applications/${applicationId}/offer/outcome`, { accepted, note }),
 
   // Không có endpoint withdraw riêng — thu hồi offer = reject application
   // (dùng applicationAPI.reject với lý do).

@@ -59,6 +59,10 @@ const CompanyBranding = () => {
       form.setFieldsValue({
         name: data.name,
         industry: data.industry,
+        // 3 ô này in ở đầu THƯ MỜI NHẬN VIỆC (5.15) — nhập 1 lần, mọi thư sau đều tự có.
+        email: data.contactEmail,
+        phone: data.phone,
+        address: data.address,
       });
 
       brandForm.setFieldsValue({
@@ -79,6 +83,9 @@ const CompanyBranding = () => {
       await companyAPI.update({
         name: values.name,
         industry: values.industry,
+        contactEmail: values.email,
+        phone: values.phone,
+        address: values.address,
       });
       message.success("Lưu thông tin công ty thành công!");
       await refreshCompany();
@@ -202,7 +209,11 @@ const CompanyBranding = () => {
                 </Col>
               </Row>
 
-              <Form.Item label="Địa chỉ" name="address">
+              <Form.Item
+                label="Địa chỉ"
+                name="address"
+                extra="Địa chỉ, email và số điện thoại ở trên được in làm phần đầu thư mời nhận việc gửi ứng viên."
+              >
                 <Input
                   placeholder="123 Nguyễn Huệ, Quận 1, TP.HCM"
                   size="large"

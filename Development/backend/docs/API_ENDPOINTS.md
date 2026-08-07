@@ -133,11 +133,14 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | POST | `/api/interview-schedules/{scheduleId}/my-sheet/submit` | Itv | nộp phiếu (khóa, thỏa guard G2) |
 | GET | `/api/interview-schedules/{scheduleId}/aggregate` | Rec/DM | tổng hợp điểm các interviewer |
 
-## 14. Offer — `applications/{applicationId}/offer` (Rec/DM)
+## 14. Thư mời nhận việc — `applications/{applicationId}/offer` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| POST | `/api/applications/{applicationId}/offer` | Rec/DM | tạo offer (0..1 / application) |
+| GET | `/api/applications/{applicationId}/offer/defaults` | Rec/DM | giá trị điền sẵn form soạn thư (từ Job + Company) |
+| POST | `/api/applications/{applicationId}/offer` | Rec/DM | soạn + gửi thư mời (0..1 / application); tự phát link OFFER_RESPONSE |
 | GET | `/api/applications/{applicationId}/offer` | Rec/DM | xem offer |
+| GET | `/api/applications/{applicationId}/offer/letter` | Rec/DM | file PDF thư mời đã gửi (`application/pdf`) |
+| POST | `/api/applications/{applicationId}/offer/outcome` | Rec/DM | ghi nhận ứng viên trả lời: `{accepted, note}` → HIRED / REJECTED |
 
 ## 15. Magic link (Recruiter phát) — `applications/{applicationId}/magic-links`
 | Method | Path | Role | Ghi chú |
@@ -166,8 +169,8 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 | POST | `/api/candidate/schedule/confirm` | SCHEDULE | chọn slot |
 | POST | `/api/candidate/schedule/no-slot` | SCHEDULE | báo không slot nào phù hợp |
 | GET | `/api/candidate/status?token=…` | STATUS | tra trạng thái hồ sơ |
-| GET | `/api/candidate/offer?token=…` | OFFER_RESPONSE | xem offer |
-| POST | `/api/candidate/offer/respond` | OFFER_RESPONSE | chấp nhận / từ chối |
+| GET | `/api/candidate/offer?token=…` | OFFER_RESPONSE | tóm tắt thư mời nhận việc |
+| GET | `/api/candidate/offer/letter?token=…` | OFFER_RESPONSE | file PDF thư mời (`application/pdf`) — link trong email trỏ về trang này |
 
 ## 19. Career Site công khai — `public/{slug}` (Anon)
 | Method | Path | Ghi chú |
@@ -180,7 +183,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Recruiter · `Itv`=Interviewer · `DM`=Dep
 ---
 
 ## Ghi chú cho FE
-- **Luồng chính Recruiter:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → upload CV (§7) → xem ranking (§7) → mở hồ sơ (§9) → xem chấm theo tiêu chí (§5 criteria-matches) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → tạo offer (§14) → phát magic link OFFER_RESPONSE (§15).
+- **Luồng chính Recruiter:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → upload CV (§7) → xem ranking (§7) → mở hồ sơ (§9) → xem chấm theo tiêu chí (§5 criteria-matches) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → soạn + gửi thư mời nhận việc (§14, PDF qua email) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
 - **Chọn người trong form:** gán interviewer vào khung / chọn DM cho job → `GET /api/users/options?role=…` (§2) — KHÔNG dùng `GET /api/users` (Admin-only).
 - **Luồng Interviewer:** chỉ §13.
 - **Luồng Admin:** §2 (users) + §3 (company) + §17 (dashboard).

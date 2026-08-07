@@ -57,15 +57,22 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
         return company;
     }
 
-    public async Task<Company?> UpdateBrandAsync(long companyId, string? name, string? logoUrl, string? primaryColor)
+    public async Task<Company?> UpdateBrandAsync(
+        long companyId, string? name, string? logoUrl, string? primaryColor,
+        string? industry, string? address, string? contactEmail, string? phone)
     {
         // Tracking (không AsNoTracking) để EF phát UPDATE. Cô lập tenant: WHERE company_id tường minh + RLS.
         var company = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId);
         if (company is null) return null;
 
+        // null = giữ nguyên: endpoint /brand chỉ gửi logo+màu, không được xoá mất liên hệ công ty.
         if (name is not null) company.Name = name;
         company.LogoUrl = logoUrl ?? company.LogoUrl;
         company.PrimaryColor = primaryColor ?? company.PrimaryColor;
+        company.Industry = industry ?? company.Industry;
+        company.Address = address ?? company.Address;
+        company.ContactEmail = contactEmail ?? company.ContactEmail;
+        company.Phone = phone ?? company.Phone;
         company.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();

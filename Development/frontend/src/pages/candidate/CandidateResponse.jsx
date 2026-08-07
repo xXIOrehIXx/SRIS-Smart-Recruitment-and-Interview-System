@@ -1,16 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Layout, Card, Typography, Button, Tag, Descriptions, Result, Spin, Form, Input, message, Modal } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, FileTextOutlined, TrophyOutlined, CalendarOutlined, DollarOutlined } from '@ant-design/icons';
+import { Layout, Card, Typography, Button, Tag, Descriptions, Result, Spin, Space, Alert } from 'antd';
+import {
+  CloseCircleOutlined, FileTextOutlined, TrophyOutlined, CalendarOutlined,
+  DollarOutlined, DownloadOutlined, MailOutlined, EnvironmentOutlined,
+} from '@ant-design/icons';
 import { candidateAPI } from '../../services/api';
 import './css/CandidateResponse.css';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+const HeaderLogo = () => (
+  <div className="header-logo">
+    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="12" fill={MATCHA_GREEN} />
+      <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5" />
+      <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+    <span>SRIS</span>
+  </div>
+);
+
+/**
+ * Trang ứng viên xem THƯ MỜI NHẬN VIỆC qua magic link (docs 5.15).
+ *
+ * KHÔNG còn nút Đồng ý/Từ chối: ứng viên đọc/tải bản PDF rồi trả lời nhà tuyển dụng
+ * qua email/điện thoại; Recruiter ghi nhận kết quả trong Portal. Vì thế trang này chỉ đọc.
+ */
 const CandidateResponse = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -19,69 +39,44 @@ const CandidateResponse = () => {
   const [loading, setLoading] = useState(true);
   const [offerData, setOfferData] = useState(null);
   const [error, setError] = useState(null);
-  const [responded, setResponded] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [responseType, setResponseType] = useState(null);
-  const [form] = Form.useForm();
+
+  const letterUrl = token ? candidateAPI.offerLetterUrl(token) : null;
 
   useEffect(() => {
-    if (token) {
-      fetchOffer();
-    } else {
-      setError('Token không hợp lệ hoặc đã hết hạn.');
+    if (!token) {
+      setError('Liên kết không hợp lệ hoặc đã hết hạn.');
       setLoading(false);
+      return;
     }
+    fetchOffer();
   }, [token]);
 
   const fetchOffer = async () => {
     try {
       setLoading(true);
       const response = await candidateAPI.getOffer(token);
-      const data = response.data;
-      setOfferData(data);
+      setOfferData(response.data);
     } catch (err) {
       console.error('Error fetching offer:', err);
-      const errorMsg = err?.response?.data?.message || 'Không thể tải thông tin offer. Liên kết có thể đã hết hạn.';
-      setError(errorMsg);
+      // BE trả ErrorObjectCommon (userMsg), không phải `message`.
+      setError(
+        err?.response?.data?.userMsg ||
+        'Không thể tải thư mời nhận việc. Liên kết có thể đã hết hạn.',
+      );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResponse = async (accept) => {
-    try {
-      setSubmitting(true);
-      const values = await form.validateFields();
-      await candidateAPI.respondToOffer(token, accept);
-      setResponseType(accept ? 'accepted' : 'declined');
-      setResponded(true);
-    } catch (err) {
-      console.error('Error responding to offer:', err);
-      message.error(err?.response?.data?.message || 'Không thể gửi phản hồi. Vui lòng thử lại.');
-    } finally {
-      setSubmitting(false);
     }
   };
 
   if (loading) {
     return (
       <Layout className="candidate-response-layout">
-        <Header className="cr-header">
-          <div className="header-logo">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span>SRIS</span>
-          </div>
-        </Header>
+        <Header className="cr-header"><HeaderLogo /></Header>
         <Content className="cr-content">
           <div style={{ textAlign: 'center', padding: 80 }}>
             <Spin size="large" />
             <div style={{ marginTop: 16 }}>
-              <Text type="secondary">Đang tải thông tin offer...</Text>
+              <Text type="secondary">Đang tải thư mời nhận việc...</Text>
             </div>
           </div>
         </Content>
@@ -92,202 +87,145 @@ const CandidateResponse = () => {
   if (error) {
     return (
       <Layout className="candidate-response-layout">
-        <Header className="cr-header">
-          <div className="header-logo">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span>SRIS</span>
-          </div>
-        </Header>
+        <Header className="cr-header"><HeaderLogo /></Header>
         <Content className="cr-content">
           <Result
             status="error"
             icon={<CloseCircleOutlined style={{ color: '#f5222d' }} />}
-            title="Không thể tải Offer"
+            title="Không thể mở thư mời"
             subTitle={error}
-            extra={
-              <Button type="primary" onClick={() => navigate('/')}>
-                Quay về trang chủ
-              </Button>
-            }
+            extra={<Button type="primary" onClick={() => navigate('/')}>Quay về trang chủ</Button>}
           />
         </Content>
       </Layout>
     );
   }
 
-  if (responded) {
-    return (
-      <Layout className="candidate-response-layout">
-        <Header className="cr-header">
-          <div className="header-logo">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-              <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-              <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-            <span>SRIS</span>
-          </div>
-        </Header>
-        <Content className="cr-content">
-          <Result
-            status={responseType === 'accepted' ? 'success' : 'info'}
-            icon={
-              responseType === 'accepted'
-                ? <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 72 }} />
-                : <FileTextOutlined style={{ color: '#8c8c8b', fontSize: 72 }} />
-            }
-            title={responseType === 'accepted' ? 'Cảm ơn bạn đã đồng ý!' : 'Phản hồi của bạn đã được ghi nhận'}
-            subTitle={
-              responseType === 'accepted'
-                ? 'Chúc mừng bạn! Chúng tôi sẽ liên hệ trong thời gian sớm nhất để sắp xếp các thủ tục tiếp theo.'
-                : 'Cảm ơn bạn đã phản hồi. Chúng tôi hiểu quyết định của bạn và chúc bạn may mắn trên con đường sự nghiệp.'
-            }
-            extra={
-              <Button type="primary" onClick={() => navigate('/')}>
-                Đóng
-              </Button>
-            }
-          />
-        </Content>
-      </Layout>
-    );
-  }
-
-  const formatSalary = (salary) => {
-    if (!salary) return 'Thỏa thuận';
-    return new Intl.NumberFormat('vi-VN').format(salary) + ' VNĐ/tháng';
+  const formatSalary = () => {
+    if (!offerData?.salaryAmount) return 'Thỏa thuận';
+    const amount = new Intl.NumberFormat('vi-VN').format(offerData.salaryAmount);
+    const currency = offerData.currency || 'VND';
+    const period = offerData.salaryPeriod === 'NAM' ? '/năm'
+      : offerData.salaryPeriod === 'THANG' ? '/tháng' : '';
+    return `${amount} ${currency}${period}`;
   };
 
   const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('vi-VN', { day: '2-digit', month: 'long', year: 'numeric' });
+    if (!date) return null;
+    return new Date(date).toLocaleDateString('vi-VN', {
+      day: '2-digit', month: 'long', year: 'numeric',
+    });
   };
+
+  const hrContact = offerData?.hrContactEmail || offerData?.hrContactName;
 
   return (
     <Layout className="candidate-response-layout">
       <Header className="cr-header">
-        <div className="header-logo">
-          <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill={MATCHA_GREEN}/>
-            <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5"/>
-            <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
-          <span>SRIS</span>
-        </div>
-        <Tag color="green" icon={<FileTextOutlined />}>Offer Letter</Tag>
+        <HeaderLogo />
+        <Tag color="green" icon={<FileTextOutlined />}>Thư mời nhận việc</Tag>
       </Header>
 
       <Content className="cr-content">
         <div className="cr-container">
           <div className="cr-hero">
-            <div className="cr-hero-icon">
-              <TrophyOutlined />
-            </div>
+            <div className="cr-hero-icon"><TrophyOutlined /></div>
             <Title level={2} className="cr-hero-title">
               Chúc mừng bạn đã vượt qua phỏng vấn!
             </Title>
             <Paragraph className="cr-hero-subtitle">
-              Chúng tôi rất vui được gửi đến bạn một offer chính thức. Vui lòng xem chi tiết bên dưới và phản hồi trước ngày hết hạn.
+              {offerData?.companyName || 'Nhà tuyển dụng'} trân trọng gửi bạn thư mời nhận việc
+              {offerData?.jobTitle ? ` cho vị trí ${offerData.jobTitle}` : ''}. Bạn có thể xem
+              trực tiếp bên dưới hoặc tải bản PDF về máy.
             </Paragraph>
           </div>
 
           <Card className="cr-offer-card">
             <div className="cr-offer-header">
               <div>
-                <Title level={4} style={{ margin: 0 }}>
-                  Thông Tin Offer
-                </Title>
+                <Title level={4} style={{ margin: 0 }}>Tóm tắt</Title>
                 <Text type="secondary">
-                  Vị trí: <strong>{offerData?.jobTitle || offerData?.position || 'N/A'}</strong>
+                  Vị trí: <strong>{offerData?.jobTitle || 'N/A'}</strong>
                 </Text>
               </div>
-              <Tag color="gold" style={{ fontSize: 14, padding: '4px 12px' }}>
-                Chờ phản hồi
-              </Tag>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                href={letterUrl}
+                download
+                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+              >
+                Tải thư (PDF)
+              </Button>
             </div>
 
             <Descriptions column={{ xs: 1, sm: 2 }} className="cr-offer-details">
-              {/* CandidateOfferDto: { salaryAmount, currency, startDate, status, expiresAt } */}
               <Descriptions.Item label={<span><DollarOutlined /> Mức lương</span>}>
-                <Text strong style={{ color: MATCHA_GREEN, fontSize: 16 }}>
-                  {formatSalary(offerData?.salaryAmount ?? offerData?.salary)}
-                  {offerData?.currency ? ` ${offerData.currency}` : ''}
-                </Text>
+                <Text strong style={{ color: MATCHA_GREEN, fontSize: 16 }}>{formatSalary()}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label={<span><CalendarOutlined /> Ngày bắt đầu</span>}>
-                <Text strong>{formatDate(offerData?.startDate)}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Hạn phản hồi">
-                <Text type="danger" strong>{formatDate(offerData?.expiresAt ?? offerData?.deadline)}</Text>
-              </Descriptions.Item>
-              {offerData?.position && (
-                <Descriptions.Item label="Phòng ban">
-                  {offerData.department || 'N/A'}
+              {offerData?.startDate && (
+                <Descriptions.Item label={<span><CalendarOutlined /> Ngày bắt đầu</span>}>
+                  <Text strong>{formatDate(offerData.startDate)}</Text>
+                </Descriptions.Item>
+              )}
+              {offerData?.department && (
+                <Descriptions.Item label="Phòng ban">{offerData.department}</Descriptions.Item>
+              )}
+              {offerData?.employmentType && (
+                <Descriptions.Item label="Hình thức làm việc">{offerData.employmentType}</Descriptions.Item>
+              )}
+              {offerData?.workLocation && (
+                <Descriptions.Item label={<span><EnvironmentOutlined /> Địa điểm</span>}>
+                  {offerData.workLocation}
+                </Descriptions.Item>
+              )}
+              {offerData?.expiresAt && (
+                <Descriptions.Item label="Mong nhận phản hồi trước">
+                  <Text type="danger" strong>{formatDate(offerData.expiresAt)}</Text>
                 </Descriptions.Item>
               )}
             </Descriptions>
 
-            {offerData?.notes && (
-              <>
-                <div className="cr-notes-section">
-                  <Title level={5} style={{ marginBottom: 8 }}>Ghi chú từ nhà tuyển dụng</Title>
-                  <div className="cr-notes-box">
-                    {offerData.notes}
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="cr-response-section">
-              <Title level={5}>Phản hồi của bạn</Title>
-
-              <Form form={form} layout="vertical">
-                <Form.Item
-                  label="Lời nhắn (tùy chọn)"
-                  name="message"
-                >
-                  <TextArea
-                    rows={3}
-                    placeholder="Bạn có muốn gửi lời nhắn kèm theo không?..."
-                    maxLength={500}
-                    showCount
-                  />
-                </Form.Item>
-              </Form>
-
-              <div className="cr-action-buttons">
-                <Button
-                  size="large"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => handleResponse(true)}
-                  loading={submitting}
-                  className="accept-btn"
-                >
-                  Đồng ý Offer
-                </Button>
-                <Button
-                  size="large"
-                  icon={<CloseCircleOutlined />}
-                  onClick={() => handleResponse(false)}
-                  loading={submitting}
-                  className="decline-btn"
-                >
-                  Từ chối
-                </Button>
-              </div>
-            </div>
+            <Alert
+              type="info"
+              showIcon
+              icon={<MailOutlined />}
+              style={{ marginTop: 16 }}
+              message="Cách xác nhận"
+              description={
+                <Space direction="vertical" size={2}>
+                  <span>
+                    Vui lòng phản hồi trực tiếp email bạn vừa nhận để xác nhận bạn có nhận
+                    lời mời hay không — trang này không có nút bấm xác nhận.
+                  </span>
+                  {hrContact && (
+                    <span>
+                      Người liên hệ:{' '}
+                      <strong>
+                        {offerData.hrContactName}
+                        {offerData.hrContactName && offerData.hrContactEmail ? ' — ' : ''}
+                        {offerData.hrContactEmail}
+                      </strong>
+                    </span>
+                  )}
+                </Space>
+              }
+            />
           </Card>
 
-          <Text type="secondary" className="cr-footer-note">
-            Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với bộ phận nhân sự qua email hoặc số điện thoại được cung cấp trong email gốc.
-          </Text>
+          {/* Bản thư đầy đủ — nhúng thẳng PDF cho ứng viên đọc ngay, không phải tải mới xem được. */}
+          <Card className="cr-offer-card" style={{ marginTop: 24 }} styles={{ body: { padding: 12 } }}>
+            <object data={letterUrl} type="application/pdf" className="cr-letter-frame">
+              <div style={{ padding: 24, textAlign: 'center' }}>
+                <Paragraph type="secondary">
+                  Trình duyệt của bạn không hiển thị được PDF trực tiếp.
+                </Paragraph>
+                <Button type="primary" icon={<DownloadOutlined />} href={letterUrl} download>
+                  Tải thư mời nhận việc (PDF)
+                </Button>
+              </div>
+            </object>
+          </Card>
         </div>
       </Content>
 
