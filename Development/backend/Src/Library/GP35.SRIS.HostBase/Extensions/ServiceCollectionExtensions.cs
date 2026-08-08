@@ -14,8 +14,6 @@ using GP35.SRIS.Domain.SqlServer.Extensions;
 using GP35.SRIS.Domain.SqlServer.Repos;
 using GP35.SRIS.Lib.Services;
 using GP35.SRIS.Lib.Services.Ai;
-using GP35.SRIS.Application.Contracts.Services.Ai;
-using GP35.SRIS.Application.Services.Ai;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Services.Business;
 using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
@@ -81,7 +79,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IUserRepo, UserRepo>();
             services.AddScoped<ICompanyRepo, CompanyRepo>();
 
-            // AI / CV scoring repos
+            // Ứng viên / job / CV / hồ sơ
             services.AddScoped<ICandidateRepo, CandidateRepo>();
             services.AddScoped<IJobRepo, JobRepo>();
             services.AddScoped<ICvDocumentRepo, CvDocumentRepo>();
@@ -103,9 +101,8 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
 
-            // Chấm CV theo tiêu chí (5.18): chunk CV + kết quả khớp/thiếu per-criterion
+            // Hạ tầng vector từng-đoạn CV — giữ lại (bảng CvChunk còn đó), hiện chưa tính năng nào dùng.
             services.AddScoped<ICvChunkRepo, CvChunkRepo>();
-            services.AddScoped<IApplicationCriterionMatchRepo, ApplicationCriterionMatchRepo>();
 
             // Offer
             services.AddScoped<IOfferRepo, OfferRepo>();
@@ -140,11 +137,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IJobService, JobService>();
-            services.AddScoped<ICvScoringService, CvScoringService>();
-            services.AddScoped<ICriteriaScoringService, CriteriaScoringService>();
-            // Hàng đợi chấm CV chạy nền (Cách A) — singleton: request ghi vào, worker nền (CvScoringWorker) đọc ra.
-            services.AddSingleton<ICvScoreQueue, CvScoreQueue>();
-            services.AddScoped<ITalentPoolService, TalentPoolService>();
+            services.AddScoped<ICvIntakeService, CvIntakeService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();

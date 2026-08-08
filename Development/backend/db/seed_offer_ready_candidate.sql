@@ -108,7 +108,6 @@ BEGIN
     DECLARE @name  NVARCHAR(200) = CASE @i WHEN 1 THEN N'Trần Minh Quân' ELSE N'Lê Thu Hà' END;
     DECLARE @email NVARCHAR(256) = CASE @i WHEN 1 THEN N'tran.minh.quan.demo@example.com' ELSE N'le.thu.ha.demo@example.com' END;
     DECLARE @phone VARCHAR(30)   = CASE @i WHEN 1 THEN '0912345678' ELSE '0987654321' END;
-    DECLARE @score DECIMAL(5,2)  = CASE @i WHEN 1 THEN 86.50 ELSE 78.00 END;
     DECLARE @ivScore DECIMAL(5,2)= CASE @i WHEN 1 THEN 8.5 ELSE 7.5 END;
 
     /* Candidate */
@@ -133,14 +132,14 @@ BEGIN
         SET @cvId = SCOPE_IDENTITY();
     END
 
-    /* Application — dừng ở INTERVIEW; đặt sẵn ai_match_score để worker chấm nền bỏ qua */
+    /* Application — dừng ở INTERVIEW (không còn cột điểm nào từ V030) */
     DECLARE @appId BIGINT = (SELECT TOP 1 application_id FROM dbo.[Application]
                              WHERE company_id = @companyId AND job_id = @jobId AND candidate_id = @candId);
     IF @appId IS NULL
     BEGIN
         INSERT INTO dbo.[Application] (company_id, job_id, candidate_id, cv_id, current_state,
-                                       ai_match_score, criteria_score, created_at, stage_updated_at)
-        VALUES (@companyId, @jobId, @candId, @cvId, 'INTERVIEW', @score, @score,
+                                       created_at, stage_updated_at)
+        VALUES (@companyId, @jobId, @candId, @cvId, 'INTERVIEW',
                 DATEADD(DAY, -12, @now), DATEADD(DAY, -3, @now));
         SET @appId = SCOPE_IDENTITY();
     END
@@ -148,7 +147,7 @@ BEGIN
     BEGIN
         UPDATE dbo.[Application]
            SET current_state = 'INTERVIEW', reject_reason = NULL, rejected_at = NULL, hired_at = NULL,
-               ai_match_score = @score, criteria_score = @score, stage_updated_at = DATEADD(DAY, -3, @now)
+               stage_updated_at = DATEADD(DAY, -3, @now)
          WHERE application_id = @appId;
     END
 

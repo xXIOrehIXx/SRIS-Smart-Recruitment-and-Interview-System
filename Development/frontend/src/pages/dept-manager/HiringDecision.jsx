@@ -35,7 +35,7 @@ import {
   dashboardAPI,
   applicationAPI,
   interviewAPI,
-  cvScoringAPI,
+  cvAPI,
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
@@ -178,7 +178,7 @@ const HiringDecision = () => {
     if (!appDetail?.cvId) return;
     try {
       setCvLoading(true);
-      const res = await cvScoringAPI.getCvFileUrl(appDetail.cvId);
+      const res = await cvAPI.getCvFileUrl(appDetail.cvId);
       const url = res.data?.url;
       if (!url) {
         message.warning('Hồ sơ này không có file CV gốc.');

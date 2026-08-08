@@ -11,10 +11,6 @@ public class ApplicationCardDto
     public string CandidateName { get; set; } = null!;
     public string CandidateEmail { get; set; } = null!;
     public string CurrentState { get; set; } = null!;
-    /// <summary>Điểm cả-CV (0-100). Null = chưa chấm xong (đang PENDING).</summary>
-    public decimal? AiMatchScore { get; set; }
-    /// <summary>Điểm theo tiêu chí (0-100 — 5.18). Null = job chưa có tiêu chí / chưa chấm.</summary>
-    public decimal? CriteriaScore { get; set; }
     public long CvId { get; set; }
     public DateTime? AppliedAt { get; set; }
 }
@@ -31,8 +27,6 @@ public class ApplicationDetailDto
 {
     public long ApplicationId { get; set; }
     public string CurrentState { get; set; } = null!;
-    public decimal? AiMatchScore { get; set; }
-    public decimal? CriteriaScore { get; set; }
     public string? RejectReason { get; set; }
     public DateTime? AppliedAt { get; set; }
     public DateTime? StageUpdatedAt { get; set; }

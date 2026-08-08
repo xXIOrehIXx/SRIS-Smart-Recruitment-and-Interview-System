@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Application.Contracts.Dtos.Business.Dashboard;
+﻿namespace GP35.SRIS.Application.Contracts.Dtos.Business.Dashboard;
 
 /// <summary>1 bậc của phễu tuyển dụng (state + số hồ sơ).</summary>
 public class FunnelStageDto
@@ -92,7 +92,6 @@ public class KanbanCardDto
     public string JobTitle { get; set; } = null!;
     public long JobId { get; set; }
     public string CurrentState { get; set; } = null!;
-    public decimal? AiMatchScore { get; set; }
     public DateTime AppliedAt { get; set; }
     public DateTime? StageUpdatedAt { get; set; }
     /// <summary>Phòng ban của job (V023) — hiển thị ở màn quyết định tuyển dụng.</summary>

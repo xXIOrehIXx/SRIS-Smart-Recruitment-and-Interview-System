@@ -30,8 +30,8 @@ vi.mock('axios', () => {
 
 import axios from 'axios';
 import {
-  authAPI, jobsAPI, cvScoringAPI, applicationAPI, interviewAPI, candidateAPI,
-  offerAPI, criteriaAPI, dashboardAPI, talentPoolAPI, usersAPI, recruitmentRequestAPI,
+  authAPI, jobsAPI, cvAPI, applicationAPI, interviewAPI, candidateAPI,
+  offerAPI, criteriaAPI, dashboardAPI, usersAPI, recruitmentRequestAPI,
 } from './api';
 
 // api.js tạo 2 instance: [0] = api (có token), [1] = publicApi (career site ẩn danh)
@@ -164,24 +164,17 @@ describe('các endpoint đã xóa vì backend không có', () => {
     expect(dashboardAPI.getSourceAnalytics).toBeUndefined();
   });
 
-  test('talentPoolAPI chỉ có theo từng job', () => {
-    expect(talentPoolAPI.getAll).toBeUndefined();
-    talentPoolAPI.getSuggestions(3);
-    expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool');
-  });
-
-  test('talentPoolAPI truyền mốc độ tươi CV do Human Resource chọn', () => {
-    talentPoolAPI.getSuggestions(3, 1);
-    expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool?withinMonths=1');
-    talentPoolAPI.getSuggestions(3, 3);
-    expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/talent-pool?withinMonths=3');
+  test('không còn API chấm điểm/xếp hạng CV', () => {
+    expect(cvAPI.getRanking).toBeUndefined();
+    expect(criteriaAPI.getCriteriaMatches).toBeUndefined();
+    expect(criteriaAPI.rescoreCriteria).toBeUndefined();
   });
 });
 
 describe('đường dẫn từng bị sai', () => {
-  test('cv file url là /cv-scoring/cv/{id}/file-url', () => {
-    cvScoringAPI.getCvFileUrl(12);
-    expect(apiInst.get).toHaveBeenCalledWith('/cv-scoring/cv/12/file-url');
+  test('cv file url là /cvs/{id}/file-url', () => {
+    cvAPI.getCvFileUrl(12);
+    expect(apiInst.get).toHaveBeenCalledWith('/cvs/12/file-url');
   });
 
   test('jobs?includeInactive=true khi xem cả job đã đóng', () => {

@@ -163,7 +163,6 @@ const Dashboard = () => {
         email: app.candidateEmail,
         position: app.jobTitle,
         currentState: app.currentState,
-        aiMatchScore: app.aiMatchScore,
       }] : []);
     } catch (error) {
       console.error('Error fetching candidate:', error);

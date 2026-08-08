@@ -1,6 +1,5 @@
 using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.CareerSite;
-using GP35.SRIS.Application.Contracts.Services.Ai;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 using GP35.SRIS.Domain.Entities;
@@ -14,8 +13,8 @@ namespace GP35.SRIS.Application.Services.CandidatePortal;
 
 /// <summary>
 /// Career Site công khai (M1). Đọc job/brand đã bị giới hạn theo tenant (Global Query Filter + RLS,
-/// companyId set ở middleware từ slug). Nộp CV tái dùng <see cref="ICvScoringService"/> nhưng KHÔNG
-/// trả điểm AI cho ứng viên (điểm là dữ liệu nội bộ — docs 5.7).
+/// companyId set ở middleware từ slug). Nộp CV tái dùng <see cref="ICvIntakeService"/> — cùng một
+/// đường nhận hồ sơ với luồng Human Resource tự upload.
 /// </summary>
 public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteService
 {
@@ -25,7 +24,7 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
 
     private readonly ICompanyRepo _companyRepo;
     private readonly IJobRepo _jobRepo;
-    private readonly ICvScoringService _cvScoring;
+    private readonly ICvIntakeService _cvIntake;
     private readonly IPdfTextExtractor _pdfExtractor;
     private readonly IMagicLinkService _magicLink;
     private readonly INotificationService _notification;
@@ -35,7 +34,7 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
     {
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
-        _cvScoring = serviceProvider.GetRequiredService<ICvScoringService>();
+        _cvIntake = serviceProvider.GetRequiredService<ICvIntakeService>();
         _pdfExtractor = serviceProvider.GetRequiredService<IPdfTextExtractor>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _notification = serviceProvider.GetRequiredService<INotificationService>();
@@ -93,22 +92,18 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
             throw NotFound("Vị trí tuyển dụng không tồn tại hoặc đã đóng.");
 
         // ---- Chặn TRƯỚC khi ghi bất cứ gì ----
-        // ScoreUploadedCvAsync upsert Candidate + đẩy file lên MinIO RỒI mới bóc PDF / kiểm JD,
-        // nên mọi nhánh hỏng đều để lại candidate + file (và có khi cả CvDocument) mồ côi, không
-        // Application nào trỏ tới. Với luồng HR tự upload thì CvDocument NEEDS_MANUAL_EDIT là chỗ
-        // để sửa tay, nhưng career site không có ai sửa — và hiện chưa có API nào ghi lại
-        // extracted_text. Kiểm hết điều kiện ở đây thì lần nộp hỏng không đẻ ra rác.
-        if (string.IsNullOrWhiteSpace(job.JdText))
-            throw Conflict("Vị trí này chưa nhận hồ sơ được (nhà tuyển dụng chưa nhập mô tả công việc). " +
-                           "Vui lòng quay lại sau.");
-
+        // UploadCvAsync upsert Candidate + đẩy file lên MinIO RỒI mới bóc PDF, nên mọi nhánh hỏng
+        // đều để lại candidate + file (và có khi cả CvDocument) mồ côi, không Application nào trỏ
+        // tới. Với luồng HR tự upload thì CvDocument NEEDS_MANUAL_EDIT là chỗ để sửa tay, nhưng
+        // career site không có ai sửa — và hiện chưa có API nào ghi lại extracted_text.
+        // Kiểm hết điều kiện ở đây thì lần nộp hỏng không đẻ ra rác.
         EnsureReadableCv(fileBytes);
 
-        var result = await _cvScoring.ScoreUploadedCvAsync(
+        var result = await _cvIntake.UploadCvAsync(
             companyId, jobId, candidateName.Trim(), candidateEmail.Trim(), candidatePhone.Trim(),
             fileName, mimeType, fileBytes);
 
-        // Lưới an toàn: chỉ nhánh PENDING mới thực sự tạo hồ sơ, mọi status khác đều trả về KHÔNG
+        // Lưới an toàn: chỉ nhánh RECEIVED mới thực sự tạo hồ sơ, mọi status khác đều trả về KHÔNG
         // kèm application_id. Chặn theo ApplicationId chứ không liệt kê status — bỏ sót một status
         // là ứng viên nhận "đã nhận hồ sơ" trong khi KHÔNG có dòng Application nào, rồi magic link
         // STATUS vỡ FK (application_id = 0) và lỗi bị nuốt ở catch bên dưới.
@@ -145,7 +140,7 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
 
     /// <summary>
     /// Bóc thử PDF để loại CV không đọc được NGAY, trước khi có gì được ghi xuống DB/MinIO.
-    /// Bóc 2 lần (ở đây + trong ScoreUploadedCvAsync) rẻ hơn nhiều so với dọn rác về sau.
+    /// Bóc 2 lần (ở đây + trong UploadCvAsync) rẻ hơn nhiều so với dọn rác về sau.
     /// </summary>
     private void EnsureReadableCv(byte[] fileBytes)
     {

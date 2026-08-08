@@ -86,7 +86,6 @@ const JobDetail = () => {
         fullName: app.candidateName,
         email: app.candidateEmail,
         state: app.currentState,
-        cvScore: app.aiMatchScore != null ? Math.round(app.aiMatchScore) : null,
       })));
     } catch (error) {
       console.error('Error fetching applications:', error);
@@ -158,14 +157,6 @@ const JobDetail = () => {
       dataIndex: 'state',
       key: 'stage',
       render: (stage) => <ApplicationStateTag state={stage} />,
-    },
-    {
-      title: 'Điểm CV',
-      dataIndex: 'cvScore',
-      key: 'score',
-      render: (score) => score ? (
-        <Progress percent={score} size="small" strokeColor={MATCHA_GREEN} format={(p) => `${p}%`} />
-      ) : <Text type="secondary">N/A</Text>,
     },
     {
       title: 'Ngày Ứng Tuyển',

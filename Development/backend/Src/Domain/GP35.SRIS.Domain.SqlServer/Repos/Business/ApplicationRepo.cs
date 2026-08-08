@@ -31,38 +31,6 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             .FirstOrDefaultAsync(a => a.ApplicationId == applicationId);
     }
 
-    public async Task<double> GetCvJdCosineDistanceAsync(long companyId, long cvId, long jobId)
-    {
-        // VECTOR_DISTANCE đo ngay trong SQL Server (cửa thoát raw SQL — 5.11). Khoảng cách nhỏ = giống nhiều.
-        return await _db.Database
-            .SqlQueryRaw<double>(
-                "SELECT VECTOR_DISTANCE('cosine', c.embedding, j.embedding) AS Value " +
-                "FROM CvDocument c CROSS JOIN Job j " +
-                "WHERE c.cv_id = {0} AND c.company_id = {2} " +
-                "  AND j.job_id = {1} AND j.company_id = {2}",
-                cvId, jobId, companyId)
-            .SingleAsync();
-    }
-
-    public async Task UpdateScoreAsync(long companyId, long applicationId, decimal score)
-    {
-        // ExecuteUpdate tôn trọng Global Query Filter (tự kèm company_id).
-        await _db.Applications
-            .Where(a => a.ApplicationId == applicationId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.AiMatchScore, score)
-                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
-    }
-
-    public async Task UpdateCriteriaScoreAsync(long companyId, long applicationId, decimal score)
-    {
-        await _db.Applications
-            .Where(a => a.ApplicationId == applicationId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.CriteriaScore, score)
-                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow));
-    }
-
     public async Task<int> TransitionStateAsync(
         long companyId, long applicationId, string toState, string? rejectReason,
         DateTime stageUpdatedAt, DateTime? rejectedAt, DateTime? hiredAt)
@@ -106,44 +74,6 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             .FirstOrDefaultAsync();
     }
 
-    public async Task<IReadOnlyList<UnscoredApplication>> GetAllUnscoredAsync()
-    {
-        // Sweep KHỞI ĐỘNG (Cách A): tìm MỌI hồ sơ chưa có điểm + CV đọc được (parse OK), XUYÊN tenant.
-        // Chạy ngoài request -> SESSION_CONTEXT('CompanyId') chưa set nên RLS chặn hết: tạm TẮT policy
-        // (giống UserRepo.GetByEmail; ALTER là trạng thái toàn DB) + IgnoreQueryFilters bỏ Global Query Filter.
-        // An toàn vì chỉ chạy 1 lần lúc khởi động (chưa có request đồng thời). Worker chấm từng hồ sơ vẫn
-        // set đúng tenant nên cô lập dữ liệu không bị phá.
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);");
-        try
-        {
-            return await (
-                from a in _db.Applications.AsNoTracking().IgnoreQueryFilters()
-                join c in _db.CvDocuments.AsNoTracking().IgnoreQueryFilters() on a.CvId equals c.CvId
-                where a.AiMatchScore == null && c.ParseStatus == CvParseStatus.Ok
-                select new UnscoredApplication(a.CompanyId, a.ApplicationId))
-                .ToListAsync();
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);");
-        }
-    }
-
-    public async Task<IEnumerable<ApplicationRankingRow>> GetRankingByJobAsync(long companyId, long jobId)
-    {
-        // Join Candidate lấy tên; Global Query Filter kèm company_id trên cả hai bảng (cùng tenant).
-        return await (
-            from a in _db.Applications.AsNoTracking()
-            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
-            where a.JobId == jobId
-            orderby a.AiMatchScore descending
-            select new ApplicationRankingRow(
-                a.ApplicationId, a.CandidateId, c.FullName, a.AiMatchScore, a.CurrentState, a.CvId))
-            .ToListAsync();
-    }
-
     public async Task<IReadOnlyList<ApplicationBoardRow>> GetBoardByJobAsync(long companyId, long jobId)
     {
         // Toàn bộ hồ sơ của job cho Kanban; FE tự nhóm theo current_state. Mới nộp trước.
@@ -154,8 +84,7 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             orderby a.CreatedAt descending
             select new ApplicationBoardRow(
                 a.ApplicationId, a.CandidateId, c.FullName, c.Email,
-                a.CurrentState, a.AiMatchScore, a.CriteriaScore,
-                a.CvId, a.CreatedAt))
+                a.CurrentState, a.CvId, a.CreatedAt))
             .ToListAsync();
     }
 
@@ -168,7 +97,7 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             join cv in _db.CvDocuments.AsNoTracking() on a.CvId equals cv.CvId
             where a.ApplicationId == applicationId
             select new ApplicationDetailRow(
-                a.ApplicationId, a.CurrentState, a.AiMatchScore, a.CriteriaScore,
+                a.ApplicationId, a.CurrentState,
                 a.RejectReason, a.CreatedAt, a.StageUpdatedAt,
                 c.CandidateId, c.FullName, c.Email, c.Phone, c.Source,
                 j.JobId, j.Title,

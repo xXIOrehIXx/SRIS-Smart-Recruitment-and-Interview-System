@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Dashboard;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Dashboard;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
@@ -144,7 +144,6 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
                         JobTitle = c.JobTitle,
                         JobId = c.JobId,
                         CurrentState = c.CurrentState,
-                        AiMatchScore = c.AiMatchScore,
                         AppliedAt = c.AppliedAt,
                         StageUpdatedAt = c.StageUpdatedAt,
                         Department = c.Department,

@@ -30,8 +30,6 @@ public class ApplicationQueryService : BaseService<ApplicationQueryService>, IAp
                 CandidateName = r.CandidateName,
                 CandidateEmail = r.CandidateEmail,
                 CurrentState = r.CurrentState,
-                AiMatchScore = r.AiMatchScore,
-                CriteriaScore = r.CriteriaScore,
                 CvId = r.CvId,
                 AppliedAt = r.AppliedAt
             }).ToList()
@@ -47,8 +45,6 @@ public class ApplicationQueryService : BaseService<ApplicationQueryService>, IAp
         {
             ApplicationId = r.ApplicationId,
             CurrentState = r.CurrentState,
-            AiMatchScore = r.AiMatchScore,
-            CriteriaScore = r.CriteriaScore,
             RejectReason = r.RejectReason,
             AppliedAt = r.AppliedAt,
             StageUpdatedAt = r.StageUpdatedAt,
