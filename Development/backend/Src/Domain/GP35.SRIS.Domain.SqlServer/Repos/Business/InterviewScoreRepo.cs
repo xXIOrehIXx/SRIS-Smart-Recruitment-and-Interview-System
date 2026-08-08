@@ -70,4 +70,57 @@ public class InterviewScoreRepo : BaseRepo<long, InterviewScore>, IInterviewScor
             .Where(s => s.ScheduleId == scheduleId && s.Status == InterviewScoreStatus.Submitted)
             .ToListAsync();
     }
+
+    // ----- Kết luận của người phỏng vấn (V031) -----
+
+    public async Task<InterviewFeedback?> GetFeedbackAsync(long companyId, long scheduleId, long interviewerId)
+    {
+        return await _db.InterviewFeedbacks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.ScheduleId == scheduleId && f.InterviewerId == interviewerId);
+    }
+
+    public async Task UpsertFeedbackAsync(
+        long companyId, long scheduleId, long interviewerId, string? recommendation, string? summary)
+    {
+        // Không đụng submitted_at: đã nộp rồi sửa lại thì VẪN là đã nộp (giống điểm — 5.7).
+        var rows = await _db.InterviewFeedbacks
+            .Where(f => f.ScheduleId == scheduleId && f.InterviewerId == interviewerId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Recommendation, recommendation)
+                .SetProperty(x => x.Summary, summary)
+                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
+
+        if (rows == 0)
+        {
+            _db.InterviewFeedbacks.Add(new InterviewFeedback
+            {
+                CompanyId = companyId,
+                ScheduleId = scheduleId,
+                InterviewerId = interviewerId,
+                Recommendation = recommendation,
+                Summary = summary
+            });
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    public async Task<int> SubmitFeedbackAsync(long companyId, long scheduleId, long interviewerId)
+    {
+        return await _db.InterviewFeedbacks
+            .Where(f => f.ScheduleId == scheduleId && f.InterviewerId == interviewerId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.SubmittedAt, DateTime.UtcNow)
+                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
+    }
+
+    public async Task<IReadOnlyList<InterviewFeedback>> GetSubmittedFeedbackByScheduleAsync(
+        long companyId, long scheduleId)
+    {
+        // BLIND REVIEW: submitted_at NULL = còn nháp -> không lộ (coding rule #5).
+        return await _db.InterviewFeedbacks
+            .AsNoTracking()
+            .Where(f => f.ScheduleId == scheduleId && f.SubmittedAt != null)
+            .ToListAsync();
+    }
 }

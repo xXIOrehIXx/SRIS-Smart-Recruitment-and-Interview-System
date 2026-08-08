@@ -233,16 +233,7 @@ const HumanResourceDashboard = () => {
     kanbanData.columns?.filter((col) => KANBAN_STATES.includes(col.state)) ||
     [];
 
-  const getScoreColor = (score) => {
-    if (score === null || score === undefined) return "#d9d9d9";
-    if (score >= 80) return "#52c41a";
-    if (score >= 60) return "#faad14";
-    return "#f5222d";
-  };
-
   const renderCandidateCard = (card, index) => {
-    const scoreColor = getScoreColor(card.aiMatchScore);
-
     return (
       <Draggable
         key={card.applicationId}
@@ -283,18 +274,6 @@ const HumanResourceDashboard = () => {
 
             <div className="card-footer">
               <div className="card-meta">
-                <Tooltip title="Điểm AI">
-                  <div
-                    className="score-badge"
-                    style={{
-                      backgroundColor: `${scoreColor}20`,
-                      color: scoreColor,
-                    }}
-                  >
-                    <TrophyOutlined />{" "}
-                    {card.aiMatchScore ? `${card.aiMatchScore}%` : "N/A"}
-                  </div>
-                </Tooltip>
                 <Tooltip title="Ngày nộp">
                   <div className="date-badge">
                     <ClockCircleOutlined />{" "}

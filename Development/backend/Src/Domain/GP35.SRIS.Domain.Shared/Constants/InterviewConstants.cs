@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Domain.Shared.Constants;
+﻿namespace GP35.SRIS.Domain.Shared.Constants;
 
 /// <summary>Trạng thái 1 lịch phỏng vấn / 1 vòng (InterviewSchedule.status) — docs 15.4.</summary>
 public static class InterviewScheduleStatus
@@ -24,6 +24,27 @@ public static class InterviewScoreStatus
 {
     public const string Draft = "DRAFT";
     public const string Submitted = "SUBMITTED";
+}
+
+/// <summary>
+/// Kết luận của người phỏng vấn (InterviewFeedback.recommendation — V031). Đây là thứ
+/// người quyết tuyển đọc trước tiên: "nên tuyển hay không", điểm chỉ là phần bổ trợ.
+/// </summary>
+public static class InterviewRecommendation
+{
+    public const string StrongHire = "STRONG_HIRE";
+    public const string Hire = "HIRE";
+
+    /// <summary>Còn lăn tăn — không phải "không", nhưng cũng chưa dám gật.</summary>
+    public const string Consider = "CONSIDER";
+    public const string NoHire = "NO_HIRE";
+
+    public static bool IsValid(string? value) =>
+        value is StrongHire or Hire or Consider or NoHire;
+
+    /// <summary>Gật đầu (mạnh hay thường đều tính là đề xuất tuyển).</summary>
+    public static bool IsPositive(string? value) =>
+        value is StrongHire or Hire;
 }
 
 /// <summary>

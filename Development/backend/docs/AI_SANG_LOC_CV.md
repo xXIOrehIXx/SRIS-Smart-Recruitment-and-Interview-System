@@ -1,5 +1,10 @@
 # AI Bóc tiêu chí & Sàng lọc CV — Tài liệu kỹ thuật
 
+> ⚠️ **08/08/2026 — PHẦN SÀNG LỌC/CHẤM CV ĐÃ BỊ LOẠI KHỎI HỆ THỐNG.**
+> Còn đúng và còn chạy: luồng *bóc tiêu chí từ JD → người duyệt chốt*.
+> Mọi mô tả về chunk CV, cosine per-criterion, điểm, xếp hạng, Talent Pool dưới đây
+> là HỒ SƠ THIẾT KẾ CŨ (giữ cho báo cáo), không phải code hiện tại.
+
 > Dành cho người làm Backend cần đọc/sửa phần này. Đọc hết mất ~15 phút.
 > Nghiệp vụ nền: `docs/00_CONTEXT.md` §5.18. Danh sách endpoint: `docs/API_ENDPOINTS.md`.
 

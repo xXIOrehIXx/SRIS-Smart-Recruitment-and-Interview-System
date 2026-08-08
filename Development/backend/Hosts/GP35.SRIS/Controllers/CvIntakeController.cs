@@ -1,5 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Ai;
-using GP35.SRIS.Application.Contracts.Services.Ai;
+using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.HostBase.Authorization;
@@ -9,24 +8,25 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers
 {
     /// <summary>
-    /// Chấm điểm CV bằng AI (PDF -> text -> vector -> VECTOR_DISTANCE -> điểm 0-100).
+    /// Nhận CV vào hệ thống (Human Resource tự nộp hộ ứng viên) + tải lại file CV gốc.
+    /// Không chấm điểm, không xếp hạng.
     /// </summary>
-    [Route("api/cv-scoring")]
+    [Route("api/cvs")]
     [ApiController]
     [Authorize]
     [WithRole(RoleConstants.HumanResource)]
-    public class CvScoringController : ControllerBase
+    public class CvIntakeController : ControllerBase
     {
         private readonly IContextData _contextData;
-        private readonly ICvScoringService _cvScoringService;
+        private readonly ICvIntakeService _cvIntakeService;
 
-        public CvScoringController(IContextData contextData, ICvScoringService cvScoringService)
+        public CvIntakeController(IContextData contextData, ICvIntakeService cvIntakeService)
         {
             _contextData = contextData;
-            _cvScoringService = cvScoringService;
+            _cvIntakeService = cvIntakeService;
         }
 
-        /// <summary>Nộp CV dạng FILE PDF (multipart/form-data) và chấm điểm.</summary>
+        /// <summary>Nộp CV dạng FILE PDF (multipart/form-data) cho một job.</summary>
         [HttpPost("upload")]
         [RequestSizeLimit(20 * 1024 * 1024)] // 20MB
         public async Task<IActionResult> Upload(
@@ -49,19 +49,11 @@ namespace GP35.SRIS.Controllers
                 bytes = ms.ToArray();
             }
 
-            var result = await _cvScoringService.ScoreUploadedCvAsync(
+            var result = await _cvIntakeService.UploadCvAsync(
                 _contextData.CompanyId, jobId, candidateName, candidateEmail, candidatePhone,
                 file.FileName, file.ContentType, bytes);
 
             return Ok(result);
-        }
-
-        /// <summary>Bảng xếp hạng ứng viên của 1 job theo điểm AI giảm dần.</summary>
-        [HttpGet("jobs/{jobId:long}/ranking")]
-        public async Task<IActionResult> Ranking(long jobId)
-        {
-            var ranking = await _cvScoringService.GetRankingAsync(_contextData.CompanyId, jobId);
-            return Ok(ranking);
         }
 
         /// <summary>
@@ -69,15 +61,14 @@ namespace GP35.SRIS.Controllers
         /// trình duyệt (xem PDF); khi lưu sẽ có tên đẹp dạng CV_&lt;tên ứng viên&gt;.pdf.
         /// <para>
         /// Mở thêm cho DepartmentManager: DM phải ĐỌC ĐƯỢC CV trước khi quyết tuyển ở bước Offer.
-        /// Điểm CV (upload/ranking) vẫn chỉ của Human Resource — DM quyết theo tiêu chí phỏng vấn.
         /// [WithRole] ở method đè [WithRole] ở controller (AuthMiddleware lấy metadata gần nhất).
         /// </para>
         /// </summary>
-        [HttpGet("cv/{cvId:long}/file-url")]
+        [HttpGet("{cvId:long}/file-url")]
         [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
         public async Task<IActionResult> GetCvFileUrl(long cvId)
         {
-            var url = await _cvScoringService.GetCvFileUrlAsync(_contextData.CompanyId, cvId);
+            var url = await _cvIntakeService.GetCvFileUrlAsync(_contextData.CompanyId, cvId);
             if (url is null)
                 return NotFound(new { error = "CV không tồn tại hoặc không có file gốc." });
 

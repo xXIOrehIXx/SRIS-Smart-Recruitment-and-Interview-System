@@ -20,11 +20,6 @@ public class Application : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHa
     public long CvId { get; set; }
     [Column("current_state")]
     public string CurrentState { get; set; } = null!;
-    [Column("ai_match_score")]
-    public decimal? AiMatchScore { get; set; }
-    /// <summary>Điểm chấm theo TỪNG tiêu chí (5.18) — tách khỏi ai_match_score (cả-CV).</summary>
-    [Column("criteria_score")]
-    public decimal? CriteriaScore { get; set; }
     [Column("reject_reason")]
     public string? RejectReason { get; set; }
     [Column("stage_updated_at")]

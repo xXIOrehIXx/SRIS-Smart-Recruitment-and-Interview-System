@@ -35,10 +35,16 @@ public class ScoreItemInputDto
     public string? Note { get; set; }
 }
 
-/// <summary>Lưu nháp cả phiếu (nhiều tiêu chí một lần).</summary>
+/// <summary>Lưu nháp cả phiếu (nhiều tiêu chí một lần) + kết luận của người chấm.</summary>
 public class SaveScoreDraftDto
 {
     public List<ScoreItemInputDto> Items { get; set; } = new();
+
+    /// <summary>HIRE | NO_HIRE | UNSURE. Null = chưa chọn (nháp vẫn lưu được).</summary>
+    public string? Recommendation { get; set; }
+
+    /// <summary>Nhận xét tổng — lý do đề xuất như vậy. Đây là thứ người quyết tuyển đọc.</summary>
+    public string? Summary { get; set; }
 }
 
 /// <summary>1 tiêu chí trên phiếu chấm của CHÍNH interviewer (kèm điểm/note của họ nếu có).</summary>
@@ -85,6 +91,12 @@ public class ScoringSheetDto
     public string MyStatus { get; set; } = null!;
 
     public List<ScoringSheetCriterionDto> Criteria { get; set; } = new();
+
+    /// <summary>Kết luận của CHÍNH người này: HIRE | NO_HIRE | UNSURE. Null = chưa chọn.</summary>
+    public string? MyRecommendation { get; set; }
+
+    /// <summary>Nhận xét tổng của chính người này.</summary>
+    public string? MySummary { get; set; }
 
     /// <summary>Thông tin buổi (vòng, thời gian, số người panel) — FE bind cho header card.</summary>
     public ScoringScheduleInfoDto? Schedule { get; set; }

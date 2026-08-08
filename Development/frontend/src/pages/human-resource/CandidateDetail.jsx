@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Row, Col, Card, Typography, Avatar, Tag, Button, Tabs, Timeline,
-  Space, Divider, Spin, message, Table, Tooltip, Statistic, Empty, Alert,
+  Space, Divider, Spin, message, Tooltip, Alert,
   Modal, Input
 } from 'antd';
 import {
@@ -12,13 +12,10 @@ import {
   CalendarOutlined,
   FileTextOutlined,
   ReloadOutlined,
-  CheckCircleOutlined,
   CloseCircleOutlined,
-  LinkOutlined,
-  ThunderboltOutlined,
-  RobotOutlined
+  LinkOutlined
 } from '@ant-design/icons';
-import { applicationAPI, criteriaAPI, cvScoringAPI } from '../../services/api';
+import { applicationAPI, cvAPI } from '../../services/api';
 import ApplicationStateTag, { stateLabel } from '../../components/ApplicationStateTag';
 import './css/CandidateDetail.css';
 
@@ -40,25 +37,21 @@ const CandidateDetail = () => {
   const [application, setApplication] = useState(null);
   const [history, setHistory] = useState([]);
   const [notes, setNotes] = useState([]);
-  const [matches, setMatches] = useState([]);
-  const [rescoring, setRescoring] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
 
   const fetchApplicationDetails = useCallback(async () => {
     try {
       setLoading(true);
-      const [appRes, historyRes, notesRes, matchesRes] = await Promise.allSettled([
+      const [appRes, historyRes, notesRes] = await Promise.allSettled([
         applicationAPI.getById(applicationId),
         applicationAPI.getHistory(applicationId),
         applicationAPI.getNotes(applicationId),
-        criteriaAPI.getCriteriaMatches(applicationId),
       ]);
 
       if (appRes.status === 'fulfilled') setApplication(appRes.value.data);
       else message.error('Không thể tải thông tin ứng viên');
       setHistory(historyRes.status === 'fulfilled' ? historyRes.value.data || [] : []);
       setNotes(notesRes.status === 'fulfilled' ? notesRes.value.data || [] : []);
-      setMatches(matchesRes.status === 'fulfilled' ? matchesRes.value.data || [] : []);
     } finally {
       setLoading(false);
     }
@@ -80,31 +73,13 @@ const CandidateDetail = () => {
 
   const handleOpenCv = async () => {
     try {
-      const response = await cvScoringAPI.getCvFileUrl(application.cvId);
+      const response = await cvAPI.getCvFileUrl(application.cvId);
       const url = response.data?.url;
       if (url) window.open(url, '_blank', 'noopener');
       else message.error('CV không có file gốc');
     } catch (error) {
       console.error('Error opening CV:', error);
       message.error('Không thể mở file CV');
-    }
-  };
-
-  // Chấm lại theo bộ tiêu chí hiện tại (sau khi duyệt/sửa tiêu chí của job)
-  const handleRescore = async () => {
-    setRescoring(true);
-    try {
-      const response = await criteriaAPI.rescoreCriteria(applicationId);
-      setMatches(response.data || []);
-      message.success('Đã chấm lại theo bộ tiêu chí hiện tại.');
-      // criteriaScore tổng thay đổi -> nạp lại hồ sơ
-      const appRes = await applicationAPI.getById(applicationId);
-      setApplication(appRes.data);
-    } catch (error) {
-      console.error('Error rescoring:', error);
-      message.error(error?.response?.data?.userMsg || 'Không thể chấm lại (job có thể chưa có tiêu chí đã duyệt).');
-    } finally {
-      setRescoring(false);
     }
   };
 
@@ -142,104 +117,7 @@ const CandidateDetail = () => {
     }
   };
 
-  const matchColumns = [
-    {
-      title: 'Tiêu chí',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name, record) => (
-        <Space size={6}>
-          <Text strong>{name}</Text>
-          {/* Nhãn cho người đọc, không phải tên kỹ thuật HARD/SOFT trong DB. */}
-          {record.type === 'HARD'
-            ? <Tag color="volcano" style={{ fontSize: 11 }}>Bắt buộc</Tag>
-            : <Tag color="geekblue" style={{ fontSize: 11 }}>Theo mức độ</Tag>}
-        </Space>
-      ),
-    },
-    {
-      title: 'Kết quả',
-      dataIndex: 'matched',
-      key: 'matched',
-      width: 110,
-      render: (matched) => matched
-        ? <Tag icon={<CheckCircleOutlined />} color="success">Khớp</Tag>
-        : <Tag icon={<CloseCircleOutlined />} color="error">Thiếu</Tag>,
-      filters: [{ text: 'Khớp', value: true }, { text: 'Thiếu', value: false }],
-      onFilter: (value, record) => record.matched === value,
-    },
-    {
-      title: 'Độ tương đồng',
-      dataIndex: 'similarity',
-      key: 'similarity',
-      width: 130,
-      render: (sim, record) => record.type === 'HARD'
-        ? <Text type="secondary">— (lọc rule)</Text>
-        : (sim != null ? <Text strong>{Math.round(sim * 100)}%</Text> : <Text type="secondary">—</Text>),
-    },
-    { title: 'Trọng số', dataIndex: 'weight', key: 'weight', width: 90 },
-    {
-      title: 'Bằng chứng trong CV',
-      dataIndex: 'evidence',
-      key: 'evidence',
-      render: (evidence) => evidence
-        ? <Text italic style={{ fontSize: 13 }}>"{evidence}"</Text>
-        : <Text type="secondary">—</Text>,
-    },
-  ];
-
   const tabItems = [
-    {
-      key: 'criteria',
-      label: <span><RobotOutlined /> Đánh giá theo tiêu chí</span>,
-      children: (
-        <Card className="info-card" bordered={false}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-            <Space size={24}>
-              <Statistic
-                title="Điểm cả CV (AI)"
-                value={application?.aiMatchScore != null ? Math.round(application.aiMatchScore) : '—'}
-                suffix={application?.aiMatchScore != null ? '%' : ''}
-                valueStyle={{ color: MATCHA_GREEN, fontSize: 24 }}
-              />
-              <Statistic
-                title="Điểm theo tiêu chí"
-                value={application?.criteriaScore != null ? Math.round(application.criteriaScore) : '—'}
-                suffix={application?.criteriaScore != null ? '%' : ''}
-                valueStyle={{ fontSize: 24 }}
-              />
-            </Space>
-            <Tooltip title="Chấm lại hồ sơ này theo bộ tiêu chí hiện tại của job (dùng sau khi duyệt/sửa tiêu chí)">
-              <Button icon={<ThunderboltOutlined />} onClick={handleRescore} loading={rescoring}>
-                Chấm lại theo tiêu chí
-              </Button>
-            </Tooltip>
-          </div>
-
-          {matches.length > 0 ? (
-            <Table
-              columns={matchColumns}
-              dataSource={matches}
-              rowKey="criteriaId"
-              pagination={false}
-              size="small"
-            />
-          ) : (
-            <Empty
-              description={
-                <div>
-                  <Text type="secondary">Chưa có kết quả chấm theo tiêu chí</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Job cần có bộ tiêu chí ĐÃ DUYỆT (trang Tiêu Chí Đánh Giá), sau đó bấm "Chấm lại theo tiêu chí"
-                  </Text>
-                </div>
-              }
-            />
-          )}
-        </Card>
-      ),
-    },
     {
       key: 'resume',
       label: 'CV',
@@ -361,11 +239,6 @@ const CandidateDetail = () => {
 
               <div className="profile-tags">
                 <ApplicationStateTag state={application?.currentState} />
-                {application?.aiMatchScore != null && (
-                  <Tag color={application.aiMatchScore >= 80 ? 'success' : 'warning'}>
-                    AI: {Math.round(application.aiMatchScore)}%
-                  </Tag>
-                )}
               </div>
             </div>
 

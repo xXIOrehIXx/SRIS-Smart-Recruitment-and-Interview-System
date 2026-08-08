@@ -66,9 +66,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | PUT | `/api/evaluation-criteria/{criteriaId}` | Rec | sửa 1 tiêu chí |
 | DELETE | `/api/evaluation-criteria/{criteriaId}` | Rec | xóa (soft, active=0) |
 | POST | `/api/jobs/{jobId}/criteria/extract` | Rec | AI bóc tiêu chí từ JD → DRAFT |
-| POST | `/api/jobs/{jobId}/criteria/approve` | Rec | chốt DRAFT → APPROVED (sinh embedding SOFT) |
-| GET | `/api/applications/{applicationId}/criteria-matches` | Rec | kết quả chấm CV theo từng tiêu chí (khớp/thiếu + bằng chứng) |
-| POST | `/api/applications/{applicationId}/criteria-score` | Rec | chạy chấm CV theo tiêu chí (nền) |
+| POST | `/api/jobs/{jobId}/criteria/approve` | Rec | chốt DRAFT → APPROVED; bộ tiêu chí này là phiếu chấm phỏng vấn |
 
 ## 6. Bộ mẫu tiêu chí — `criteria-templates` (Rec)
 | Method | Path | Role | Ghi chú |
@@ -80,17 +78,15 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | DELETE | `/api/criteria-templates/{templateId}` | Rec | |
 | POST | `/api/criteria-templates/{templateId}/apply/{jobId}` | Rec | áp mẫu vào job |
 
-## 7. CV & chấm điểm — `cv-scoring` (Rec)
-| Method | Path | Role | Ghi chú |
-|---|---|---|---|
-| POST | `/api/cv-scoring/upload` | Rec | upload CV (PDF) — multipart. Chấm chạy nền, trả PENDING |
-| GET | `/api/cv-scoring/jobs/{jobId}/ranking` | Rec | bảng xếp hạng CV theo điểm |
-| GET | `/api/cv-scoring/cv/{cvId}/file-url` | Rec | presigned URL xem file CV |
+## 7. Nhận hồ sơ / CV — `cvs` (Rec)
+> 08/08/2026: bỏ chấm điểm + xếp hạng CV. Upload chỉ NHẬN hồ sơ (trả `RECEIVED`).
 
-## 8. Talent Pool (reverse matching) — `jobs/{jobId}/talent-pool`
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| GET | `/api/jobs/{jobId}/talent-pool?withinMonths=6&topN=10` | Rec | quét kho CV cũ cùng tenant khớp JD mới; `withinMonths` = độ tươi CV Human Resource chọn (FE: 1/3/6 tháng, mặc định 6, trần 36) |
+| POST | `/api/cvs/upload` | Rec | upload CV (PDF) — multipart; tạo Application ở NEW |
+| GET | `/api/cvs/{cvId}/file-url` | Rec/DM | presigned URL xem file CV |
+
+## 8. ~~Talent Pool~~ — ĐÃ LOẠI 08/08/2026
 
 ## 9. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
 | Method | Path | Role | Ghi chú |
@@ -183,7 +179,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 ---
 
 ## Ghi chú cho FE
-- **Luồng chính Human Resource:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → upload CV (§7) → xem ranking (§7) → mở hồ sơ (§9) → xem chấm theo tiêu chí (§5 criteria-matches) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → soạn + gửi thư mời nhận việc (§14, PDF qua email) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
+- **Luồng chính Human Resource:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → nhận CV (§7) → tự đọc/sàng lọc hồ sơ (§9) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → soạn + gửi thư mời nhận việc (§14, PDF qua email) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
 - **Chọn người trong form:** gán interviewer vào khung / chọn DM cho job → `GET /api/users/options?role=…` (§2) — KHÔNG dùng `GET /api/users` (Admin-only).
 - **Luồng Interviewer:** chỉ §13.
 - **Luồng Admin:** §2 (users) + §3 (company) + §17 (dashboard).

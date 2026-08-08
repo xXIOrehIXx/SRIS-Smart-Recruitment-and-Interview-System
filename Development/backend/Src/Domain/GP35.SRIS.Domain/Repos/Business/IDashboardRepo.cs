@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Domain.Repos;
+﻿namespace GP35.SRIS.Domain.Repos;
 
 /// <summary>Số hồ sơ theo 1 state (phục vụ funnel).</summary>
 public record StateCount(string State, int Count);
@@ -15,7 +15,6 @@ public record KanbanCard(
     string JobTitle,
     long JobId,
     string CurrentState,
-    decimal? AiMatchScore,
     DateTime AppliedAt,
     DateTime? StageUpdatedAt,
     // V023: phòng ban + DM của job — để màn "Quyết định tuyển dụng" của DM chỉ hiện hồ sơ

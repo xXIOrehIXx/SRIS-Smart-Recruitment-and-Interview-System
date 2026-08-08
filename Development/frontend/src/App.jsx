@@ -36,8 +36,7 @@ import CandidateResponse from "./pages/candidate/CandidateResponse";
 import CandidateStatus from "./pages/candidate/CandidateStatus";
 import Schedule from "./pages/candidate/Schedule";
 import Analytics from "./pages/analytics/Analytics";
-import CVScoring from "./pages/analytics/CVScoring";
-import TalentPool from "./pages/talent-pool/TalentPool";
+import CvIntake from "./pages/human-resource/CvIntake";
 import MailTemplates from "./pages/mail-templates/MailTemplates";
 import Criteria from "./pages/criteria/Criteria";
 import CompanyBranding from "./pages/company/CompanyBranding";
@@ -104,8 +103,7 @@ const App = () => {
         <Route path="/criteria" element={<Criteria />} />
         <Route path="/mail-templates" element={<MailTemplates />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/analytics/cv-scoring" element={<CVScoring />} />
-        <Route path="/talent-pool" element={<TalentPool />} />
+        <Route path="/human-resource/cv-intake" element={<CvIntake />} />
       </Route>
 
       <Route

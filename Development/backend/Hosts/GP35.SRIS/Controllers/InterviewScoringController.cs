@@ -75,4 +75,15 @@ public class InterviewScoringController : ControllerBase
     {
         return Ok(await _scoringService.GetAggregatesByApplicationAsync(_contextData.CompanyId, applicationId));
     }
+
+    /// <summary>
+    /// Bản tóm tắt để CHỐT tuyển: panel đề xuất gì, vì sao, note theo tiêu chí + ghi chú nội bộ.
+    /// Không kèm điểm — màn "Quyết định tuyển dụng" của DM đọc cái này.
+    /// </summary>
+    [HttpGet("api/applications/{applicationId:long}/decision-brief")]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
+    public async Task<IActionResult> DecisionBrief(long applicationId)
+    {
+        return Ok(await _scoringService.GetDecisionBriefAsync(_contextData.CompanyId, applicationId));
+    }
 }

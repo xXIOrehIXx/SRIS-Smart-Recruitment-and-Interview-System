@@ -172,11 +172,12 @@ export const jobsAPI = {
     }),
 };
 
-// ==================== CV SCORING ====================
+// ==================== CV (nhận hồ sơ) ====================
 
-export const cvScoringAPI = {
+// Nhận CV vào hệ thống. KHÔNG chấm điểm, không xếp hạng — sàng lọc là việc của người.
+export const cvAPI = {
   uploadCV: async (formData, onProgress) => {
-    const response = await api.post('/cv-scoring/upload', formData, {
+    const response = await api.post('/cvs/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -185,12 +186,9 @@ export const cvScoringAPI = {
     return response;
   },
 
-  getRanking: (jobId) =>
-    api.get(`/cv-scoring/jobs/${jobId}/ranking`),
-
   // Trả { url } — presigned URL (~1h) để mở/tải file CV gốc
   getCvFileUrl: (cvId) =>
-    api.get(`/cv-scoring/cv/${cvId}/file-url`),
+    api.get(`/cvs/${cvId}/file-url`),
 };
 
 // ==================== APPLICATIONS ====================
@@ -274,6 +272,14 @@ export const interviewAPI = {
   //        panelWeightedPercent }]   — weightedPercent/panelWeightedPercent là % 0–100.
   getApplicationAggregate: (applicationId) =>
     api.get(`/applications/${applicationId}/interview-aggregate`),
+
+  // Bản tóm tắt để CHỐT tuyển — KHÔNG có điểm, chỉ đề xuất + lý do (V031).
+  // Trả { candidateName, jobTitle, cvId, hireCount, considerCount, noHireCount, totalSubmitted,
+  //       rounds: [{ roundNumber, scheduledAt, submittedInterviewers,
+  //                  verdicts: [{ interviewerName, recommendation, summary, notes: [{criteriaName, note}] }] }],
+  //       internalNotes: [{ authorName, content, createdAt }] }
+  getDecisionBrief: (applicationId) =>
+    api.get(`/applications/${applicationId}/decision-brief`),
 };
 
 // ==================== CANDIDATE (Magic Link) ====================
@@ -368,13 +374,6 @@ export const criteriaAPI = {
   approve: (jobId) =>
     api.post(`/jobs/${jobId}/criteria/approve`),
 
-  // Kết quả chấm CV theo TỪNG tiêu chí (khớp/thiếu + câu bằng chứng)
-  getCriteriaMatches: (applicationId) =>
-    api.get(`/applications/${applicationId}/criteria-matches`),
-
-  // Chấm lại điểm tiêu chí cho 1 hồ sơ
-  rescoreCriteria: (applicationId) =>
-    api.post(`/applications/${applicationId}/criteria-score`),
 
   applyTemplateToJob: (templateId, jobId) =>
     api.post(`/criteria-templates/${templateId}/apply/${jobId}`),
@@ -408,22 +407,6 @@ export const dashboardAPI = {
 
   getKanban: (jobId) =>
     api.get(`/dashboard/kanban${jobId ? `?jobId=${jobId}` : ''}`),
-};
-
-// ==================== TALENT POOL ====================
-
-// Reverse matching: JD của job → quét kho CvDocument cũ cùng tenant.
-// Chỉ có theo TỪNG job — trả { jobId, withinMonths, count, suggestions: [...] }.
-export const talentPoolAPI = {
-  // withinMonths = độ tươi CV Human Resource chọn (1/3/6 tháng). Bỏ trống -> BE mặc định 6 tháng.
-  getSuggestions: (jobId, withinMonths) =>
-    api.get(withinMonths
-      ? `/jobs/${jobId}/talent-pool?withinMonths=${withinMonths}`
-      : `/jobs/${jobId}/talent-pool`),
-
-  // Gửi email mời ứng tuyển từ backend (SMTP) — trả { sent }
-  invite: (jobId, candidateEmail, candidateName) =>
-    api.post(`/jobs/${jobId}/talent-pool/invite`, { candidateEmail, candidateName }),
 };
 
 // ==================== COMPANY ====================

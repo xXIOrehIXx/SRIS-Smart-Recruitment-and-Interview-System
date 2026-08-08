@@ -1,5 +1,4 @@
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
-using GP35.SRIS.Application.Contracts.Services.Ai;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
@@ -10,8 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Tiêu chí đánh giá per-job (docs 5.7, 5.18) — trục xuyên suốt từ lọc CV đến phỏng vấn.
-/// CRUD + AI bóc DRAFT từ JD + duyệt + xem kết quả khớp/thiếu của từng hồ sơ.
+/// Tiêu chí đánh giá per-job (docs 5.7, 5.18) — bộ khung để interviewer chấm phỏng vấn.
+/// CRUD + AI bóc DRAFT từ JD + người duyệt chốt APPROVED.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -20,16 +19,13 @@ public class EvaluationCriteriaController : ControllerBase
 {
     private readonly IContextData _contextData;
     private readonly IEvaluationCriteriaService _criteriaService;
-    private readonly ICriteriaScoringService _criteriaScoring;
 
     public EvaluationCriteriaController(
         IContextData contextData,
-        IEvaluationCriteriaService criteriaService,
-        ICriteriaScoringService criteriaScoring)
+        IEvaluationCriteriaService criteriaService)
     {
         _contextData = contextData;
         _criteriaService = criteriaService;
-        _criteriaScoring = criteriaScoring;
     }
 
     /// <summary>Thêm 1 tiêu chí cho job (người gõ trực tiếp -> APPROVED luôn).</summary>
@@ -78,23 +74,5 @@ public class EvaluationCriteriaController : ControllerBase
         var approved = await _criteriaService.ApproveDraftsAsync(
             _contextData.CompanyId, jobId, _contextData.UserId);
         return Ok(new { approved });
-    }
-
-    /// <summary>Bảng khớp/thiếu + bằng chứng + điểm theo tiêu chí của 1 hồ sơ (màn sàng lọc).</summary>
-    [HttpGet("api/applications/{applicationId:long}/criteria-matches")]
-    public async Task<IActionResult> GetMatches(long applicationId)
-    {
-        return Ok(await _criteriaScoring.GetMatchesAsync(_contextData.CompanyId, applicationId));
-    }
-
-    /// <summary>
-    /// Chấm lại 1 hồ sơ theo bộ tiêu chí hiện tại (gọi sau khi duyệt/sửa tiêu chí
-    /// để cập nhật kết quả cho hồ sơ đã nộp trước đó).
-    /// </summary>
-    [HttpPost("api/applications/{applicationId:long}/criteria-score")]
-    public async Task<IActionResult> Rescore(long applicationId)
-    {
-        await _criteriaScoring.ScoreByCriteriaAsync(_contextData.CompanyId, applicationId);
-        return Ok(await _criteriaScoring.GetMatchesAsync(_contextData.CompanyId, applicationId));
     }
 }

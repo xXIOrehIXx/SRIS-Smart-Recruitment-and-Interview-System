@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Repos;
+﻿using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.SqlServer.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -115,7 +115,6 @@ public class DashboardRepo : IDashboardRepo
                 j.Title,
                 a.JobId,
                 a.CurrentState,
-                a.AiMatchScore,
                 a.CreatedAt,
                 a.StageUpdatedAt,
                 j.Department,
@@ -133,7 +132,6 @@ public class DashboardRepo : IDashboardRepo
                 x.Title,
                 x.JobId,
                 x.CurrentState,
-                x.AiMatchScore,
                 x.CreatedAt ?? DateTime.MinValue,
                 x.StageUpdatedAt,
                 x.Department,
@@ -152,7 +150,7 @@ public class DashboardRepo : IDashboardRepo
             join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
             orderby a.ApplicationId descending
             select new KanbanCard(a.ApplicationId, c.CandidateId, c.FullName, c.Email, j.Title,
-                a.JobId, a.CurrentState, a.AiMatchScore, a.CreatedAt ?? DateTime.MinValue, a.StageUpdatedAt))
+                a.JobId, a.CurrentState, a.CreatedAt ?? DateTime.MinValue, a.StageUpdatedAt))
             .Take(take)
             .ToListAsync();
     }
@@ -167,7 +165,7 @@ public class DashboardRepo : IDashboardRepo
             // stage_updated_at luôn set khi transition; tránh ?? trong ORDER BY (EF không translate)
             orderby a.StageUpdatedAt descending
             select new KanbanCard(a.ApplicationId, c.CandidateId, c.FullName, c.Email, j.Title,
-                a.JobId, a.CurrentState, a.AiMatchScore, a.CreatedAt ?? DateTime.MinValue, a.StageUpdatedAt))
+                a.JobId, a.CurrentState, a.CreatedAt ?? DateTime.MinValue, a.StageUpdatedAt))
             .Take(take)
             .ToListAsync();
     }

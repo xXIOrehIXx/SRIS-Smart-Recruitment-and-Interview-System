@@ -141,14 +141,19 @@ Người dùng thấy **4 pha**: Hồ sơ mới (NEW) · Sàng lọc (SCREENING)
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)
 DM tạo Yêu cầu tuyển dụng (tùy chọn) → Human Resource tạo Job → AI bóc tiêu chí `DRAFT` →
-người duyệt chốt → chấm CV **theo TỪNG tiêu chí** (khớp/thiếu + câu bằng chứng) →
-cùng bộ tiêu chí dùng cho phiếu chấm phỏng vấn. KHÔNG ném cả JD↔CV lấy 1 con số.
+người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng vấn** (interviewer chấm, 5.7).
+
+> **SÀNG LỌC CV BẰNG AI + TALENT POOL ĐÃ LOẠI KHỎI SCOPE (chốt 08/08/2026).**
+> Hệ thống KHÔNG chấm điểm / xếp hạng ứng viên: bỏ cả điểm tổng JD↔CV lẫn chấm CV
+> theo từng tiêu chí, bỏ Talent Pool. Không thiết kế, không code, không tài liệu gì
+> thêm cho việc máy chấm CV. Nhận hồ sơ = `CvIntakeService` (parse PDF + lưu, không chấm).
+> Hạ tầng vector (CvChunk, cột embedding, `/embed`) GIỮ nguyên nhưng KHÔNG ai gọi.
 
 ### AI Service (Python FastAPI — port riêng)
 - .NET **không gọi AI trực tiếp** — chỉ gọi qua HTTP nội bộ đến Python service
 - Python stateless, không đụng DB, không biết tenant
 - Embedding: `BAAI/bge-m3` → `VECTOR(1024)` (đổi từ `paraphrase-multilingual-MiniLM-L12-v2`/384: 1024 chiều + đọc tới 8192 token để embed trọn CV dài / CV tiếng Việt, không cắt cụt)
-- **Talent Pool reverse matching = hero smart feature** (đã code): JD mới → quét kho CvDocument cũ cùng tenant
+- Endpoint đang dùng: **`/extract-criteria`** (Ollama qwen2.5 — bóc tiêu chí từ JD). `/embed` còn đó nhưng .NET không gọi nữa (Talent Pool + chấm CV đã loại).
 
 ### Magic link purposes (chỉ của Candidate)
 `SCHEDULE` · `STATUS` · `OFFER_RESPONSE` (3 purpose — QUIZ đã loại)  
@@ -174,12 +179,15 @@ DM đứng HAI đầu: ra đề (Yêu cầu tuyển dụng — 5.17) và chốt 
    KHÔNG thêm state INTERVIEW_1/_2. Sơ đồ 6 state/8 transition giữ nguyên.
 
 4. **Tiêu chí (EvaluationCriteria):** AI bóc → `DRAFT` → người duyệt chốt. AI KHÔNG quyết tiêu chí.
-   Chấm CV chỉ tính nhóm `CV_MATCHABLE`; tiêu chí `HARD` lọc bằng rule, `SOFT` bằng vector (5.18).
+   Tiêu chí đã duyệt dùng cho phiếu chấm phỏng vấn. Cột `criteria_type`/`cv_matchable`/
+   `keywords` còn trong DB nhưng chỉ là mô tả — KHÔNG còn code nào chấm CV theo chúng.
 
 5. **Blind Review (InterviewScore):** điểm/note ẩn cho tới khi `status='SUBMITTED'`.
    Query lộ điểm trước submit = phá blind review. (Blind chỉ tự bật khi job có >1 interviewer — 5.7.)
 
 6. **OfferDetail:** 0..1 per Application (UNIQUE `application_id`). Một offer / một application.
 
-> Khi đụng feature lớn (criteria/chấm CV, scoring, scheduling), đọc section tương ứng
-> trong `docs/00_CONTEXT.md` (vd tiêu chí → 5.17/5.18, scoring → 5.7, scheduling → Section 15).
+> Khi đụng feature lớn (tiêu chí, chấm phỏng vấn, scheduling), đọc section tương ứng
+> trong `docs/00_CONTEXT.md` (tiêu chí → 5.17/5.18, chấm phỏng vấn → 5.7, scheduling → Section 15).
+> Phần mô tả chấm CV/Talent Pool trong docs là hồ sơ thiết kế CŨ — đọc khối "CHỐT 08/08/2026"
+> ở đầu Section 3 trước khi tin bất cứ dòng nào nói hệ thống có chấm điểm CV.

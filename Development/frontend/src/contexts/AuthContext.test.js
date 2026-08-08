@@ -26,7 +26,7 @@ describe('hasPermission', () => {
     expect(hasPermission('Recruiter', '/interviews/schedule')).toBe(true);
     expect(hasPermission('Recruiter', '/criteria')).toBe(true);
     expect(hasPermission('Recruiter', '/offers')).toBe(true);
-    expect(hasPermission('Recruiter', '/talent-pool')).toBe(true);
+    expect(hasPermission('Recruiter', '/human-resource/cv-intake')).toBe(true);
   });
 
   test('Interviewer KHÔNG vào được trang recruiter (chỉ chấm, không lái)', () => {
