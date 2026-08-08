@@ -328,9 +328,11 @@ const CompanyBranding = () => {
                   </Button>
                 )}
 
+                {/* Chỉ giữ điều người dùng KHÔNG tự đoán được: giới hạn file. Bỏ lời khuyên
+                    kích thước ảnh (đơn vị px không nói lên gì với người làm nhân sự) và bỏ
+                    câu nhắc bấm Lưu — nút Lưu nằm ngay bên dưới, không cần dặn. */}
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Ảnh PNG hoặc JPG, tối đa 2MB. Nên dùng logo nền trong suốt, chiều ngang
-                  khoảng 300px. Nhớ bấm <b>Lưu thương hiệu</b> bên dưới sau khi chọn ảnh.
+                  Ảnh PNG hoặc JPG, tối đa 2MB.
                 </Text>
               </Space>
             </Form>
