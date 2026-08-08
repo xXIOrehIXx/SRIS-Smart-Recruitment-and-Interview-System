@@ -17,12 +17,28 @@ public sealed class LetterPalette
     /// <summary>Ngưỡng sáng tối đa cho chữ/đường kẻ trên nền trắng (đủ 4.5:1 theo WCAG).</summary>
     private const double MaxLuminance = 0.17;
 
-    private LetterPalette(byte r, byte g, byte b)
+    /// <summary>Xanh cyan của khung viền khi công ty chưa chọn màu brand (bám mẫu thư tham chiếu).</summary>
+    private const string DefaultFrame = "#29ABE2";
+
+    /// <summary>Nền giấy tím-xám rất nhạt — cố định, không đổi theo brand để thư luôn dễ đọc.</summary>
+    private const string PaperColor = "#EFEFF8";
+
+    private LetterPalette(byte r, byte g, byte b, string frame)
     {
         Accent = Hex(r, g, b);
         SoftLine = Hex(Blend(r, 0.68), Blend(g, 0.68), Blend(b, 0.68));
         Tint = Hex(Blend(r, 0.94), Blend(g, 0.94), Blend(b, 0.94));
+        Frame = frame;
     }
+
+    /// <summary>Màu khung viền quanh trang — dùng NGUYÊN màu brand (viền không cần tương phản chữ).</summary>
+    public string Frame { get; }
+
+    /// <summary>Nền trong khung.</summary>
+    public string Paper => PaperColor;
+
+    /// <summary>Chữ tiêu đề/heading — gần đen như mẫu, KHÔNG tô màu brand.</summary>
+    public string Heading => "#1A1A1A";
 
     /// <summary>Màu chủ đạo: tiêu đề, tên công ty, gạch đầu dòng, đường kẻ đậm.</summary>
     public string Accent { get; }
@@ -41,9 +57,15 @@ public sealed class LetterPalette
 
     public static LetterPalette From(string? brandColor)
     {
-        var rgb = Parse(brandColor) ?? Parse(DefaultBrand)!.Value;
-        var (r, g, b) = Darken(rgb);
-        return new LetterPalette(r, g, b);
+        var parsed = Parse(brandColor);
+
+        // Khung viền lấy nguyên màu brand (không làm tối): viền không phải chữ, ép tối làm
+        // mất đúng cái màu công ty chọn. Chưa cấu hình brand -> cyan như thư mẫu.
+        var frame = parsed is (byte fr, byte fg, byte fb) ? Hex(fr, fg, fb) : DefaultFrame;
+
+        // Chữ/gạch chân thì vẫn phải đọc được trên giấy -> dùng bản đã làm tối.
+        var (r, g, b) = Darken(parsed ?? Parse(DefaultBrand)!.Value);
+        return new LetterPalette(r, g, b, frame);
     }
 
     // ============================================================

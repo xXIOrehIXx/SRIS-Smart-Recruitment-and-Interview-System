@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -7,12 +7,14 @@ using QuestPDF.Infrastructure;
 namespace GP35.SRIS.Lib.Services.Pdf;
 
 /// <summary>
-/// Sinh PDF thư mời nhận việc bằng QuestPDF (docs 5.15) — bám sát mẫu chuẩn:
-/// đầu thư công ty (logo + brand) → ngày → tiêu đề → người nhận → lời mở →
-/// Thông tin vị trí → Lương &amp; Phúc lợi → Điều khoản &amp; Điều kiện → hạn xác nhận → ký tên.
+/// Sinh PDF thư mời nhận việc bằng QuestPDF (docs 5.15).
 ///
-/// Màu sắc lấy từ <c>Company.primary_color</c> qua <see cref="LetterPalette"/> nên mỗi tenant
-/// ra một lá thư mang màu của chính họ; công ty chưa cấu hình brand vẫn được navy mặc định.
+/// Bố cục bám theo thư mẫu (<c>docs/offer letter.png</c>): khung viền mảnh màu brand chạy
+/// quanh trang, nền giấy tím-xám rất nhạt, logo + tiêu đề canh giữa, phần thân canh trái
+/// với các mục gạch đầu dòng ❖.
+///
+/// Màu khung lấy từ <c>Company.primary_color</c> qua <see cref="LetterPalette"/> nên mỗi tenant
+/// ra một lá thư mang màu của chính họ; chưa cấu hình brand thì dùng cyan như thư mẫu.
 ///
 /// Font: Lato (QuestPDF nhúng sẵn trong package) — đã kiểm tra hiển thị đủ dấu tiếng Việt,
 /// nên KHÔNG phụ thuộc font cài trên máy chủ (chạy được cả trên Linux container).
@@ -20,6 +22,18 @@ namespace GP35.SRIS.Lib.Services.Pdf;
 public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
 {
     private const string FontFamily = "Lato";
+
+    /// <summary>Ký tự gạch đầu dòng của thư mẫu.</summary>
+    private const string Bullet = "❖";
+
+    /// <summary>Khoảng trắng từ mép giấy tới khung viền.</summary>
+    private const float OuterMargin = 9f;
+
+    /// <summary>Khoảng cách giữa các khối lớn (thư mẫu để trống chừng một dòng).</summary>
+    private const float BlockGap = 11f;
+
+    /// <summary>Giãn dòng của khối địa chỉ — thư mẫu xếp sít, không giãn như đoạn văn.</summary>
+    private const float TightLine = 1.08f;
 
     private static readonly CultureInfo Vn = CultureInfo.GetCultureInfo("vi-VN");
 
@@ -48,7 +62,7 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
 
     /// <summary>
     /// Dựng document thư mời. Tách khỏi <see cref="Generate"/> để còn xuất được ra ảnh
-    /// (<c>GenerateImages</c>) khi cần xem lại bố cục — kiểm tra bằng mắt thay vì đoán.
+    /// (<c>GenerateImages</c>) khi cần đối chiếu bố cục với thư mẫu — kiểm bằng mắt thay vì đoán.
     /// </summary>
     public Document BuildDocument(OfferLetterModel m)
     {
@@ -59,55 +73,37 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
-                // Lề + cỡ chữ đã căn để một lá thư đủ mục (6 dòng vị trí + 3 dòng lương +
-                // 3 điều khoản + lời nhắn) vẫn gọn trong MỘT trang A4 — thư mời tràn sang
-                // trang 2 chỉ để chứa mỗi chữ ký trông rất nghiệp dư.
-                page.Margin(1.9f, Unit.Centimetre);
-                page.MarginTop(1.5f, Unit.Centimetre);
-                page.DefaultTextStyle(t => t.FontFamily(FontFamily).FontSize(10.5f)
-                    .LineHeight(1.28f).FontColor(p.Body));
+                page.Margin(0);
+                page.PageColor(Colors.White);
+                page.DefaultTextStyle(t => t.FontFamily(FontFamily).FontSize(10)
+                    .LineHeight(1.22f).FontColor(p.Body));
 
-                // Dải màu tràn mép trên: nằm ở lớp Background nên không ăn vào lề nội dung.
-                page.Background().Column(bg =>
-                {
-                    bg.Item().Height(9).Background(p.Accent);
-                    bg.Item().Extend();
-                });
+                // Khung viền + nền giấy vẽ ở lớp Background nên phủ TRỌN trang, không co theo
+                // chiều cao nội dung — thư ngắn vẫn có khung chạy hết trang như thư mẫu.
+                page.Background()
+                    .Padding(OuterMargin)
+                    .Border(1.4f).BorderColor(p.Frame)
+                    .Background(p.Paper);
 
-                page.Content().Column(col =>
-                {
-                    col.Spacing(9);
-
-                    ComposeLetterhead(col, m, p);
-                    ComposeTitle(col, m, p);
-                    ComposeRecipient(col, m, p);
-                    ComposeIntro(col, m);
-
-                    ComposeFields(col, "THÔNG TIN VỊ TRÍ", BuildPositionFields(m), p, highlight: false);
-                    ComposeFields(col, "LƯƠNG & PHÚC LỢI", BuildCompensationFields(m), p, highlight: true);
-                    ComposeBullets(col, "ĐIỀU KHOẢN & ĐIỀU KIỆN", BuildTermsLines(m), p);
-
-                    ComposeClosing(col, m);
-                    ComposeSignature(col, m, p);
-                });
-
-                // Chân trang: tên công ty + số trang. Thư 2 trang mà không đánh số thì rời tờ là mất thứ tự.
-                page.Footer().Column(foot =>
-                {
-                    foot.Item().PaddingBottom(5).LineHorizontal(0.6f).LineColor(p.SoftLine);
-                    foot.Item().Row(row =>
+                // Nội dung nằm trong khung: cộng thêm lề trong cho chữ không dính viền.
+                page.Content()
+                    .PaddingHorizontal(OuterMargin + 26)
+                    .PaddingTop(OuterMargin + 22)
+                    .PaddingBottom(OuterMargin + 20)
+                    .Column(col =>
                     {
-                        row.RelativeItem().Text(m.CompanyName ?? "")
-                            .FontSize(8).FontColor(p.Muted);
-                        row.ConstantItem(60).AlignRight().Text(t =>
-                        {
-                            t.DefaultTextStyle(s => s.FontSize(8).FontColor(p.Muted));
-                            t.CurrentPageNumber();
-                            t.Span(" / ");
-                            t.TotalPages();
-                        });
+                        ComposeHeader(col, m, p);
+                        ComposeSenderBlock(col, m);
+                        ComposeDateAndRecipient(col, m);
+                        ComposeSubjectAndIntro(col, m);
+
+                        ComposeSection(col, "Thông tin vị trí:", BuildPositionLines(m), p);
+                        ComposeSection(col, "Lương & Phúc lợi:", BuildCompensationLines(m), p);
+                        ComposeSection(col, "Điều khoản & Điều kiện:", BuildTermsLines(m), p);
+
+                        ComposeClosing(col, m);
+                        ComposeSignature(col, m);
                     });
-                });
             });
         });
     }
@@ -125,231 +121,160 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     // Các khối của lá thư
     // ============================================================
 
-    private static void ComposeLetterhead(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
+    /// <summary>Logo canh giữa + tiêu đề lớn canh giữa — đúng thứ tự của thư mẫu.</summary>
+    private static void ComposeHeader(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
     {
-        var hasLogo = m.LogoBytes is { Length: > 0 };
-
-        col.Item().Row(row =>
+        if (m.LogoBytes is { Length: > 0 })
         {
-            if (hasLogo)
-            {
-                row.ConstantItem(130).AlignMiddle().MaxHeight(52)
-                    .Image(m.LogoBytes!).FitArea();
-                row.ConstantItem(12);
-            }
+            col.Item().AlignCenter().MaxHeight(46).MaxWidth(220)
+                .Image(m.LogoBytes).FitArea();
+            col.Item().Height(16);
+        }
 
-            // Có logo thì thông tin công ty dạt phải cho cân; không logo thì canh trái như thư thường.
-            var info = row.RelativeItem().AlignMiddle();
-            (hasLogo ? info.AlignRight() : info).Column(head =>
-            {
-                if (Has(m.CompanyName))
-                    head.Item().Text(m.CompanyName!).FontSize(16).Bold().FontColor(p.Accent);
-                if (Has(m.CompanyAddress))
-                    head.Item().Text(m.CompanyAddress!).FontSize(9).FontColor(p.Muted);
+        col.Item().AlignCenter().Text("THƯ MỜI NHẬN VIỆC")
+            .FontSize(20).Bold().FontColor(p.Heading);
 
-                // "email | điện thoại" — chỉ nối gạch khi có cả hai, tránh dòng "| 0900..." cụt đầu.
-                var contact = string.Join("  |  ",
-                    new[] { m.CompanyEmail, m.CompanyPhone }.Where(Has)!);
-                if (contact.Length > 0)
-                    head.Item().Text(contact).FontSize(9).FontColor(p.Muted);
-            });
-        });
-
-        // Kẻ đôi (đậm + nhạt) — thủ pháp letterhead cổ điển, rẻ mà lên hình rất "giấy tờ chính thức".
-        col.Item().PaddingTop(3).Column(rule =>
-        {
-            rule.Item().LineHorizontal(2.2f).LineColor(p.Accent);
-            rule.Item().PaddingTop(1.8f).LineHorizontal(0.6f).LineColor(p.SoftLine);
-        });
-
-        col.Item().AlignRight().Text($"Ngày {m.LetterDate:dd} tháng {m.LetterDate:MM} năm {m.LetterDate:yyyy}")
-            .FontSize(9.5f).FontColor(p.Muted);
+        col.Item().Height(18);
     }
 
-    private static void ComposeTitle(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
+    private static void ComposeSenderBlock(ColumnDescriptor col, OfferLetterModel m)
     {
-        col.Item().AlignCenter().Column(t =>
+        col.Item().Column(head =>
         {
-            t.Item().AlignCenter().Text("THƯ MỜI NHẬN VIỆC")
-                .FontSize(17).Bold().FontColor(p.Accent).LetterSpacing(0.06f);
+            if (Has(m.CompanyName))
+                head.Item().Text(m.CompanyName!).Bold().LineHeight(TightLine);
+            if (Has(m.CompanyAddress))
+                head.Item().Text(m.CompanyAddress!).LineHeight(TightLine);
 
-            if (Has(m.JobTitle))
-                t.Item().PaddingTop(2).AlignCenter().Text($"Vị trí: {m.JobTitle}")
-                    .FontSize(11).SemiBold().FontColor(p.Muted);
+            // "email | điện thoại" — chỉ nối gạch khi có cả hai, tránh dòng "| 0900..." cụt đầu.
+            var contact = string.Join(" | ", new[] { m.CompanyEmail, m.CompanyPhone }.Where(Has)!);
+            if (contact.Length > 0)
+                head.Item().Text(contact).LineHeight(TightLine);
         });
     }
 
-    private static void ComposeRecipient(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
+    private static void ComposeDateAndRecipient(ColumnDescriptor col, OfferLetterModel m)
     {
+        col.Item().Height(BlockGap);
+        col.Item().Text($"Ngày {m.LetterDate:dd} tháng {m.LetterDate:MM} năm {m.LetterDate:yyyy}");
+
+        col.Item().Height(BlockGap);
         col.Item().Column(to =>
         {
-            to.Item().Text(t =>
-            {
-                t.Span("Kính gửi: ");
-                t.Span(Has(m.CandidateName) ? m.CandidateName! : "Quý ứng viên").Bold();
-            });
-
+            to.Item().Text(Has(m.CandidateName) ? m.CandidateName! : "Quý ứng viên")
+                .Bold().LineHeight(TightLine);
             if (Has(m.CandidateAddress))
-                to.Item().Text(m.CandidateAddress!).FontSize(9.5f).FontColor(p.Muted);
+                to.Item().Text(m.CandidateAddress!).LineHeight(TightLine);
         });
     }
 
-    private static void ComposeIntro(ColumnDescriptor col, OfferLetterModel m)
+    private static void ComposeSubjectAndIntro(ColumnDescriptor col, OfferLetterModel m)
     {
         var title = Has(m.JobTitle) ? m.JobTitle! : "vị trí ứng tuyển";
-        var company = Has(m.CompanyName) ? $" tại {m.CompanyName}" : "";
 
+        col.Item().Height(BlockGap);
+        col.Item().Text($"Chủ đề: Thư mời nhận việc cho vị trí {title}");
+
+        var company = Has(m.CompanyName) ? $" tại {m.CompanyName}" : "";
+        col.Item().Height(BlockGap);
         col.Item().Text(
-            $"Chúng tôi vui mừng thông báo và gửi lời mời bạn đảm nhận vị trí {title}{company}. " +
+            $"Kính gửi {(Has(m.CandidateName) ? m.CandidateName : "Quý ứng viên")}, " +
+            $"chúng tôi vui mừng thông báo và gửi lời mời bạn đảm nhận vị trí {title}{company}. " +
             "Sau khi xem xét trình độ, năng lực và kinh nghiệm của bạn, chúng tôi tin rằng bạn sẽ là " +
             "một thành viên có giá trị đối với đội ngũ của chúng tôi.")
-            .Justify();
+            ;
     }
 
     /// <summary>
-    /// Khối "nhãn — giá trị" (Thông tin vị trí, Lương &amp; Phúc lợi). Nhãn xám cột trái, giá trị
-    /// đậm cột phải: đọc lướt vẫn thấy ngay lương/ngày bắt đầu. Không có dòng nào -> bỏ cả khối.
+    /// 1 khối "tiêu đề đậm + các dòng ❖" như thư mẫu. Không có dòng nào -> bỏ luôn cả khối
+    /// (thư không bao giờ in tiêu đề rỗng).
     /// </summary>
-    private static void ComposeFields(
-        ColumnDescriptor col, string heading,
-        IReadOnlyList<(string Label, string Value)> fields, LetterPalette p, bool highlight)
-    {
-        if (fields.Count == 0) return;
-
-        col.Item().Column(section =>
-        {
-            section.Item().Element(e => ComposeHeading(e, heading, p));
-
-            // Khối lương được tô nền nhạt + viền màu brand: đây là thứ ứng viên tìm đầu tiên.
-            var body = section.Item().PaddingTop(4);
-            body = highlight
-                ? body.Background(p.Tint).BorderLeft(3).BorderColor(p.Accent)
-                      .PaddingVertical(7).PaddingHorizontal(10)
-                : body.PaddingLeft(6);
-
-            body.Column(rows =>
-            {
-                rows.Spacing(3);
-                foreach (var (label, value) in fields)
-                {
-                    rows.Item().Row(row =>
-                    {
-                        row.ConstantItem(128).Text(label).FontColor(p.Muted);
-                        row.RelativeItem().Text(value).SemiBold();
-                    });
-                }
-            });
-        });
-    }
-
-    /// <summary>Khối gạch đầu dòng (điều khoản) — bullet là ô vuông nhỏ màu brand.</summary>
-    private static void ComposeBullets(
+    private static void ComposeSection(
         ColumnDescriptor col, string heading, IReadOnlyList<string> lines, LetterPalette p)
     {
         if (lines.Count == 0) return;
 
-        col.Item().Column(section =>
-        {
-            section.Item().Element(e => ComposeHeading(e, heading, p));
+        col.Item().Height(BlockGap);
+        col.Item().Text(heading).Bold().FontColor(p.Heading);
+        col.Item().Height(7);
 
-            section.Item().PaddingTop(4).PaddingLeft(6).Column(body =>
+        col.Item().PaddingLeft(20).Column(body =>
+        {
+            body.Spacing(3);
+            foreach (var line in lines)
             {
-                body.Spacing(3);
-                foreach (var line in lines)
+                body.Item().Row(row =>
                 {
-                    body.Item().Row(row =>
-                    {
-                        row.ConstantItem(13).PaddingTop(4.5f).Width(4).Height(4).Background(p.Accent);
-                        row.RelativeItem().Text(line).Justify();
-                    });
-                }
-            });
-        });
-    }
-
-    /// <summary>Tiêu đề mục: thanh dọc màu brand + chữ hoa cùng màu.</summary>
-    private static void ComposeHeading(IContainer container, string text, LetterPalette p)
-    {
-        container.Row(row =>
-        {
-            row.ConstantItem(3.5f).Background(p.Accent);
-            row.RelativeItem().PaddingLeft(8).Text(text)
-                .FontSize(10.5f).Bold().FontColor(p.Accent).LetterSpacing(0.04f);
+                    row.ConstantItem(16).Text(Bullet).FontSize(9);
+                    row.RelativeItem().Text(line);
+                });
+            }
         });
     }
 
     private static void ComposeClosing(ColumnDescriptor col, OfferLetterModel m)
     {
         if (Has(m.Note))
-            col.Item().Text(m.Note!).Justify();
+        {
+            col.Item().Height(BlockGap);
+            col.Item().Text(m.Note!);
+        }
 
         var deadline = m.AcceptanceDeadline is DateTime d
             ? $" trước ngày {d:dd/MM/yyyy}"
             : "";
 
-        var hr = BuildHrContactPhrase(m);
+        col.Item().Height(BlockGap);
         col.Item().Text(
             $"Vui lòng phản hồi xác nhận việc bạn đồng ý với lời mời nhận việc này{deadline}. " +
-            $"Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {hr}.")
-            .Justify();
+            $"Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {BuildHrContactPhrase(m)}.")
+            ;
 
+        col.Item().Height(BlockGap);
         col.Item().Text("Chúng tôi rất vui mừng chào đón bạn gia nhập đội ngũ và mong được hợp tác cùng bạn!")
-            .Justify();
+            ;
     }
 
-    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
+    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m)
     {
+        col.Item().Height(BlockGap);
+
         // ShowEntire: nếu buộc phải sang trang thì đẩy CẢ khối ký, không tách
         // "Trân trọng," ở cuối trang 1 còn tên người ký nằm trơ trên trang 2.
-        col.Item().PaddingTop(8).ShowEntire().Row(row =>
+        col.Item().ShowEntire().Column(sign =>
         {
-            row.RelativeItem();                 // chừa trái, chữ ký dạt phải như thư hành chính
-            row.ConstantItem(210).Column(sign =>
-            {
-                sign.Item().AlignCenter().Text("Trân trọng,").Italic();
+            sign.Item().Text("Trân trọng,");
+            sign.Item().Height(BlockGap);
 
-                // Chừa khoảng trống để ký tay rồi mới kẻ dòng — bản in ra ký được luôn.
-                sign.Item().PaddingTop(34).LineHorizontal(0.6f).LineColor(p.SoftLine);
-
-                sign.Item().PaddingTop(4).Column(who =>
-                {
-                    if (Has(m.SignerName))
-                        who.Item().AlignCenter().Text(m.SignerName!).Bold().FontColor(p.Accent);
-                    if (Has(m.SignerTitle))
-                        who.Item().AlignCenter().Text(m.SignerTitle!).FontSize(9.5f).FontColor(p.Muted);
-                    if (Has(m.CompanyName))
-                        who.Item().AlignCenter().Text(m.CompanyName!).FontSize(9.5f).FontColor(p.Muted);
-                });
-            });
+            if (Has(m.SignerName)) sign.Item().Text(m.SignerName!).Bold().LineHeight(TightLine);
+            if (Has(m.SignerTitle)) sign.Item().Text(m.SignerTitle!).LineHeight(TightLine);
+            if (Has(m.CompanyName)) sign.Item().Text(m.CompanyName!).LineHeight(TightLine);
         });
     }
 
     // ============================================================
-    // Dựng nội dung từng dòng
+    // Dựng nội dung từng gạch đầu dòng
     // ============================================================
 
-    private static List<(string Label, string Value)> BuildPositionFields(OfferLetterModel m)
+    private static List<string> BuildPositionLines(OfferLetterModel m)
     {
-        var fields = new List<(string, string)>();
-        AddIf(fields, "Vị trí công việc", m.JobTitle);
-        AddIf(fields, "Phòng ban", m.Department);
-        AddIf(fields, "Báo cáo cho", m.ReportingTo);
+        var lines = new List<string>();
+        AddIf(lines, "Vị trí công việc", m.JobTitle);
+        AddIf(lines, "Phòng ban", m.Department);
+        AddIf(lines, "Báo cáo cho", m.ReportingTo);
         if (m.StartDate is DateTime start)
-            fields.Add(("Ngày bắt đầu", start.ToString("dd/MM/yyyy")));
-        AddIf(fields, "Hình thức làm việc", m.EmploymentType);
-        AddIf(fields, "Địa điểm làm việc", m.WorkLocation);
-        return fields;
+            lines.Add($"Ngày bắt đầu: {start:dd/MM/yyyy}");
+        AddIf(lines, "Hình thức làm việc", m.EmploymentType);
+        AddIf(lines, "Địa điểm làm việc", m.WorkLocation);
+        return lines;
     }
 
-    private static List<(string Label, string Value)> BuildCompensationFields(OfferLetterModel m)
+    private static List<string> BuildCompensationLines(OfferLetterModel m)
     {
-        var fields = new List<(string, string)>
-        {
-            ("Mức lương", FormatSalary(m))
-        };
-        AddIf(fields, "Thưởng/Ưu đãi", m.Bonus);
-        AddIf(fields, "Các phúc lợi khác", m.Benefits);
-        return fields;
+        var lines = new List<string> { $"Mức lương: {FormatSalary(m)}" };
+        AddIf(lines, "Thưởng/Ưu đãi", m.Bonus);
+        AddIf(lines, "Các phúc lợi khác", m.Benefits);
+        return lines;
     }
 
     private static List<string> BuildTermsLines(OfferLetterModel m)
@@ -379,9 +304,9 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
         return $"{amount.ToString("#,##0", Vn)} {currency}{period}";
     }
 
-    private static void AddIf(ICollection<(string, string)> fields, string label, string? value)
+    private static void AddIf(ICollection<string> lines, string label, string? value)
     {
-        if (Has(value)) fields.Add((label, value!.Trim()));
+        if (Has(value)) lines.Add($"{label}: {value!.Trim()}");
     }
 
     private static string BuildHrContactPhrase(OfferLetterModel m)

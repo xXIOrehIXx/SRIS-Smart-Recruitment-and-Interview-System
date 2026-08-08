@@ -50,6 +50,20 @@ public class LetterPaletteTests
     }
 
     [Fact]
+    public void Frame_Should_Keep_The_Brand_Colour_Exactly()
+    {
+        // Khung viền KHÔNG bị làm tối như chữ: viền vàng chanh vẫn phải ra vàng chanh,
+        // nếu không thì công ty chọn màu một đằng, thư in một nẻo.
+        Assert.Equal("#FFE600", LetterPalette.From("#FFE600").Frame);
+    }
+
+    [Fact]
+    public void Frame_Should_Fall_Back_To_The_Reference_Cyan()
+    {
+        Assert.Equal("#29ABE2", LetterPalette.From(null).Frame);
+    }
+
+    [Fact]
     public void Tint_Should_Be_Light_Enough_To_Read_Body_Text_On()
     {
         // Nền khối "Lương & Phúc lợi" — chữ thân thư in đè lên, nên phải gần như trắng.
