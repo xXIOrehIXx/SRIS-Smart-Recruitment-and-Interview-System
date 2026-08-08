@@ -78,7 +78,9 @@ const MailTemplates = () => {
   // dùng được — nếu khai báo sau khi đã tham chiếu sẽ nổ TypeError.
   const templateCategories = [
     { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
-    { value: "OFFER_RESPONSE", label: "Phản hồi offer", color: "green" },
+    // Thư mời nhận việc do hệ thống tự soạn từ form gửi thư mời -> KHÔNG tính là thiếu mẫu.
+    // Vẫn để trong danh sách vì công ty nào muốn tự viết lời thư thì tạo mẫu đè lên được.
+    { value: "OFFER_RESPONSE", label: "Thư mời nhận việc", color: "green", optional: true },
     { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
     { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
     {
@@ -281,12 +283,12 @@ const MailTemplates = () => {
   );
 
   /**
-   * Mỗi trigger email gửi cho ứng viên cần tối thiểu 1 template active.
-   * Liệt kê các loại CHƯA có template active để Human Resource biết đường bổ sung —
-   * nếu không hệ thống sẽ fallback nội dung hard-coded, không đồng nhất giữa
-   * các trigger.
+   * Loại email nào chưa có mẫu riêng của công ty thì hệ thống gửi bằng nội dung mặc định.
+   * Liệt kê ra để người tuyển dụng biết mà bổ sung. Bỏ qua loại `optional` (thư mời nhận
+   * việc) — nội dung của nó lấy từ form gửi thư mời chứ không phải từ mẫu email.
    */
   const missingTypes = templateCategories
+    .filter((cat) => !cat.optional)
     .filter((cat) => !templates.some((t) => t.type === cat.value))
     .map((cat) => cat);
   const hasMissing = missingTypes.length > 0;
@@ -435,11 +437,12 @@ const MailTemplates = () => {
           message={
             <Space>
               <Text strong>
-                {missingTypes.length} loại email CHƯA có template active
+                {missingTypes.length} loại email chưa có mẫu riêng của công ty
               </Text>
               <Text type="secondary">
-                Hệ thống dùng nội dung mặc định cho các trigger này. Bấm vào nhãn bên dưới
-                để tạo mẫu riêng cho công ty bạn (riêng ONBOARDING: chưa có mẫu thì KHÔNG gửi).
+                Hệ thống vẫn gửi được bằng nội dung mặc định. Bấm vào nhãn bên dưới nếu bạn
+                muốn tự viết lời thư cho công ty mình. Riêng thư chào mừng nhận việc: chưa có mẫu
+                thì hệ thống KHÔNG gửi, vì thư đó cần thông tin thật của công ty bạn.
               </Text>
             </Space>
           }
