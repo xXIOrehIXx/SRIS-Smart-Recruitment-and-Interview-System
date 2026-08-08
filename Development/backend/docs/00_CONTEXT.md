@@ -252,6 +252,10 @@ Hệ thống tự đặt lịch nội bộ, KHÔNG Google Calendar. MỘT tính 
   sau KHÔNG được đổi nội dung thư đã phát đi.
 - Liên hệ đầu thư (tên/địa chỉ/email/điện thoại công ty) lấy từ Company (`address`, `contact_email`,
   `phone` — V029), nhập một lần ở hồ sơ công ty.
+- **Thư mang brand của tenant:** đầu thư in `logo_url` + toàn bộ màu (tiêu đề, kẻ, tiêu đề mục, khối
+  lương) lấy từ `primary_color` — cùng bộ brand với Career Site, không cấu hình lần hai. Màu quá sáng
+  bị tự làm tối cho đủ tương phản trên giấy trắng; chưa cấu hình brand thì dùng navy mặc định.
+  Tải logo là best-effort (link hỏng/chậm/không phải ảnh → in thư không logo, không bao giờ lỗi 500).
 - **Luồng:** tại INTERVIEW→OFFER, DM quyết (không DM → Human Resource) → Human Resource soạn thư (form điền sẵn
   từ Job/Company, sửa được) → hệ thống lưu OfferDetail (PENDING) + gửi email kèm link → link mở ra
   **file PDF thư mời** (QuestPDF, font Lato có đủ dấu tiếng Việt) → ứng viên trả lời NGOÀI hệ thống →

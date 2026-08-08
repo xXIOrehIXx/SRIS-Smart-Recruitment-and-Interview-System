@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -7,9 +7,14 @@ using QuestPDF.Infrastructure;
 namespace GP35.SRIS.Lib.Services.Pdf;
 
 /// <summary>
-/// Sinh PDF thư mời nhận việc bằng QuestPDF (docs 5.15) — bám sát mẫu chuẩn:
-/// đầu thư công ty → ngày → người nhận → chủ đề → lời mở → Thông tin vị trí →
-/// Lương &amp; Phúc lợi → Điều khoản &amp; Điều kiện → hạn xác nhận → ký tên.
+/// Sinh PDF thư mời nhận việc bằng QuestPDF (docs 5.15).
+///
+/// Bố cục bám theo thư mẫu (<c>docs/offer letter.png</c>): khung viền mảnh màu brand chạy
+/// quanh trang, nền giấy tím-xám rất nhạt, logo + tiêu đề canh giữa, phần thân canh trái
+/// với các mục gạch đầu dòng ❖.
+///
+/// Màu khung lấy từ <c>Company.primary_color</c> qua <see cref="LetterPalette"/> nên mỗi tenant
+/// ra một lá thư mang màu của chính họ; chưa cấu hình brand thì dùng cyan như thư mẫu.
 ///
 /// Font: Lato (QuestPDF nhúng sẵn trong package) — đã kiểm tra hiển thị đủ dấu tiếng Việt,
 /// nên KHÔNG phụ thuộc font cài trên máy chủ (chạy được cả trên Linux container).
@@ -17,7 +22,21 @@ namespace GP35.SRIS.Lib.Services.Pdf;
 public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
 {
     private const string FontFamily = "Lato";
+
+    /// <summary>Ký tự gạch đầu dòng của thư mẫu.</summary>
     private const string Bullet = "❖";
+
+    /// <summary>Khoảng trắng từ mép giấy tới khung viền.</summary>
+    private const float OuterMargin = 9f;
+
+    /// <summary>Khoảng cách giữa các khối lớn (thư mẫu để trống chừng một dòng).</summary>
+    private const float BlockGap = 11f;
+
+    /// <summary>Giãn dòng của khối địa chỉ — thư mẫu xếp sít, không giãn như đoạn văn.</summary>
+    private const float TightLine = 1.08f;
+
+    /// <summary>Bề ngang khối ký (đủ chỗ ký tay, không kéo dài hết trang).</summary>
+    private const float SignatureWidth = 210f;
 
     private static readonly CultureInfo Vn = CultureInfo.GetCultureInfo("vi-VN");
 
@@ -29,49 +48,65 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
         "Mỗi bên có thể chấm dứt thỏa thuận lao động theo chính sách của công ty và quy định pháp luật."
     });
 
-    public byte[] Generate(OfferLetterModel m) => BuildDocument(m).GeneratePdf();
+    public byte[] Generate(OfferLetterModel m)
+    {
+        try
+        {
+            return BuildDocument(m).GeneratePdf();
+        }
+        catch (Exception) when (m.LogoBytes is not null)
+        {
+            // File logo lạ (đúng magic bytes nhưng hỏng ruột) làm QuestPDF ném lúc render.
+            // Thà mất logo còn hơn ứng viên bấm tải thư mời và nhận về lỗi 500.
+            m.LogoBytes = null;
+            return BuildDocument(m).GeneratePdf();
+        }
+    }
 
     /// <summary>
     /// Dựng document thư mời. Tách khỏi <see cref="Generate"/> để còn xuất được ra ảnh
-    /// (<c>GenerateImages</c>) khi cần xem lại bố cục — kiểm tra bằng mắt thay vì đoán.
+    /// (<c>GenerateImages</c>) khi cần đối chiếu bố cục với thư mẫu — kiểm bằng mắt thay vì đoán.
     /// </summary>
     public Document BuildDocument(OfferLetterModel m)
     {
+        var p = LetterPalette.From(m.BrandColor);
+
         return Document.Create(container =>
         {
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
-                // Lề + cỡ chữ đã căn để một lá thư đủ mục (6 dòng vị trí + 3 dòng lương +
-                // 3 điều khoản + lời nhắn) vẫn gọn trong MỘT trang A4 — thư mời tràn sang
-                // trang 2 chỉ để chứa mỗi chữ ký trông rất nghiệp dư.
-                page.Margin(1.9f, Unit.Centimetre);
-                page.DefaultTextStyle(t => t.FontFamily(FontFamily).FontSize(10.5f).LineHeight(1.28f));
+                page.Margin(0);
+                page.PageColor(Colors.White);
+                page.DefaultTextStyle(t => t.FontFamily(FontFamily).FontSize(10)
+                    .LineHeight(1.22f).FontColor(p.Body));
 
-                page.Content().Column(col =>
-                {
-                    col.Spacing(9);
+                // Khung viền + nền giấy vẽ ở lớp Background nên phủ TRỌN trang, không co theo
+                // chiều cao nội dung — thư ngắn vẫn có khung chạy hết trang như thư mẫu.
+                page.Background()
+                    .Padding(OuterMargin)
+                    .Border(1.4f).BorderColor(p.Frame)
+                    .Background(p.Paper);
 
-                    ComposeLetterhead(col, m);
-                    ComposeRecipient(col, m);
-                    ComposeSubjectAndIntro(col, m);
+                // Nội dung nằm trong khung: cộng thêm lề trong cho chữ không dính viền.
+                page.Content()
+                    .PaddingHorizontal(OuterMargin + 26)
+                    .PaddingTop(OuterMargin + 22)
+                    .PaddingBottom(OuterMargin + 20)
+                    .Column(col =>
+                    {
+                        ComposeHeader(col, m, p);
+                        ComposeSenderBlock(col, m);
+                        ComposeDateAndRecipient(col, m);
+                        ComposeSubjectAndIntro(col, m);
 
-                    ComposeSection(col, "Thông tin vị trí:", BuildPositionLines(m));
-                    ComposeSection(col, "Lương & Phúc lợi:", BuildCompensationLines(m));
-                    ComposeSection(col, "Điều khoản & Điều kiện:", BuildTermsLines(m));
+                        ComposeSection(col, "Thông tin vị trí:", BuildPositionLines(m), p);
+                        ComposeSection(col, "Lương & Phúc lợi:", BuildCompensationLines(m), p);
+                        ComposeSection(col, "Điều khoản & Điều kiện:", BuildTermsLines(m), p);
 
-                    ComposeClosing(col, m);
-                    ComposeSignature(col, m);
-                });
-
-                // Số trang: thư 2 trang mà không đánh số thì rời tờ là mất thứ tự.
-                page.Footer().AlignCenter().Text(t =>
-                {
-                    t.DefaultTextStyle(s => s.FontSize(9).FontColor(Colors.Grey.Darken1));
-                    t.CurrentPageNumber();
-                    t.Span(" / ");
-                    t.TotalPages();
-                });
+                        ComposeClosing(col, m);
+                        ComposeSignature(col, m, p);
+                    });
             });
         });
     }
@@ -89,34 +124,50 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     // Các khối của lá thư
     // ============================================================
 
-    private static void ComposeLetterhead(ColumnDescriptor col, OfferLetterModel m)
+    /// <summary>Logo canh giữa + tiêu đề lớn canh giữa — đúng thứ tự của thư mẫu.</summary>
+    private static void ComposeHeader(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
+    {
+        if (m.LogoBytes is { Length: > 0 })
+        {
+            col.Item().AlignCenter().MaxHeight(46).MaxWidth(220)
+                .Image(m.LogoBytes).FitArea();
+            col.Item().Height(16);
+        }
+
+        col.Item().AlignCenter().Text("THƯ MỜI NHẬN VIỆC")
+            .FontSize(20).Bold().FontColor(p.Heading);
+
+        col.Item().Height(18);
+    }
+
+    private static void ComposeSenderBlock(ColumnDescriptor col, OfferLetterModel m)
     {
         col.Item().Column(head =>
         {
             if (Has(m.CompanyName))
-                head.Item().Text(m.CompanyName!).FontSize(15).Bold();
+                head.Item().Text(m.CompanyName!).Bold().LineHeight(TightLine);
             if (Has(m.CompanyAddress))
-                head.Item().Text(m.CompanyAddress!);
+                head.Item().Text(m.CompanyAddress!).LineHeight(TightLine);
 
             // "email | điện thoại" — chỉ nối gạch khi có cả hai, tránh dòng "| 0900..." cụt đầu.
-            var contact = string.Join("  |  ",
-                new[] { m.CompanyEmail, m.CompanyPhone }.Where(Has)!);
+            var contact = string.Join(" | ", new[] { m.CompanyEmail, m.CompanyPhone }.Where(Has)!);
             if (contact.Length > 0)
-                head.Item().Text(contact);
+                head.Item().Text(contact).LineHeight(TightLine);
         });
-
-        col.Item().PaddingTop(4).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
-        col.Item().Text($"Ngày {m.LetterDate:dd} tháng {m.LetterDate:MM} năm {m.LetterDate:yyyy}");
     }
 
-    private static void ComposeRecipient(ColumnDescriptor col, OfferLetterModel m)
+    private static void ComposeDateAndRecipient(ColumnDescriptor col, OfferLetterModel m)
     {
+        col.Item().Height(BlockGap);
+        col.Item().Text($"Ngày {m.LetterDate:dd} tháng {m.LetterDate:MM} năm {m.LetterDate:yyyy}");
+
+        col.Item().Height(BlockGap);
         col.Item().Column(to =>
         {
-            if (Has(m.CandidateName))
-                to.Item().Text(m.CandidateName!).Bold();
+            to.Item().Text(Has(m.CandidateName) ? m.CandidateName! : "Quý ứng viên")
+                .Bold().LineHeight(TightLine);
             if (Has(m.CandidateAddress))
-                to.Item().Text(m.CandidateAddress!);
+                to.Item().Text(m.CandidateAddress!).LineHeight(TightLine);
         });
     }
 
@@ -124,37 +175,40 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     {
         var title = Has(m.JobTitle) ? m.JobTitle! : "vị trí ứng tuyển";
 
-        col.Item().Text(t =>
-        {
-            t.Span("Chủ đề: ").Bold();
-            t.Span($"Thư mời nhận việc cho vị trí {title}");
-        });
-
-        col.Item().Text($"Kính gửi {(Has(m.CandidateName) ? m.CandidateName : "Quý ứng viên")},");
+        col.Item().Height(BlockGap);
+        col.Item().Text($"Chủ đề: Thư mời nhận việc cho vị trí {title}");
 
         var company = Has(m.CompanyName) ? $" tại {m.CompanyName}" : "";
+        col.Item().Height(BlockGap);
         col.Item().Text(
-            $"Chúng tôi vui mừng thông báo và gửi lời mời bạn đảm nhận vị trí {title}{company}. " +
+            $"Kính gửi {(Has(m.CandidateName) ? m.CandidateName : "Quý ứng viên")}, " +
+            $"chúng tôi vui mừng thông báo và gửi lời mời bạn đảm nhận vị trí {title}{company}. " +
             "Sau khi xem xét trình độ, năng lực và kinh nghiệm của bạn, chúng tôi tin rằng bạn sẽ là " +
             "một thành viên có giá trị đối với đội ngũ của chúng tôi.")
-            .Justify();
+            ;
     }
 
-    /// <summary>In 1 khối "tiêu đề + gạch đầu dòng". Không có dòng nào -> bỏ luôn cả khối.</summary>
-    private static void ComposeSection(ColumnDescriptor col, string heading, IReadOnlyList<string> lines)
+    /// <summary>
+    /// 1 khối "tiêu đề đậm + các dòng ❖" như thư mẫu. Không có dòng nào -> bỏ luôn cả khối
+    /// (thư không bao giờ in tiêu đề rỗng).
+    /// </summary>
+    private static void ComposeSection(
+        ColumnDescriptor col, string heading, IReadOnlyList<string> lines, LetterPalette p)
     {
         if (lines.Count == 0) return;
 
-        col.Item().Column(section =>
-        {
-            section.Spacing(4);
-            section.Item().Text(heading).Bold();
+        col.Item().Height(BlockGap);
+        col.Item().Text(heading).Bold().FontColor(p.Heading);
+        col.Item().Height(7);
 
+        col.Item().PaddingLeft(20).Column(body =>
+        {
+            body.Spacing(3);
             foreach (var line in lines)
             {
-                section.Item().PaddingLeft(14).Row(row =>
+                body.Item().Row(row =>
                 {
-                    row.ConstantItem(16).Text(Bullet);
+                    row.ConstantItem(16).Text(Bullet).FontSize(9);
                     row.RelativeItem().Text(line);
                 });
             }
@@ -164,34 +218,71 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     private static void ComposeClosing(ColumnDescriptor col, OfferLetterModel m)
     {
         if (Has(m.Note))
-            col.Item().Text(m.Note!).Justify();
+        {
+            col.Item().Height(BlockGap);
+            col.Item().Text(m.Note!);
+        }
 
         var deadline = m.AcceptanceDeadline is DateTime d
             ? $" trước ngày {d:dd/MM/yyyy}"
             : "";
 
-        var hr = BuildHrContactPhrase(m);
+        col.Item().Height(BlockGap);
         col.Item().Text(
             $"Vui lòng phản hồi xác nhận việc bạn đồng ý với lời mời nhận việc này{deadline}. " +
-            $"Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {hr}.")
-            .Justify();
+            $"Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {BuildHrContactPhrase(m)}.")
+            ;
 
+        col.Item().Height(BlockGap);
         col.Item().Text("Chúng tôi rất vui mừng chào đón bạn gia nhập đội ngũ và mong được hợp tác cùng bạn!")
-            .Justify();
+            ;
     }
 
-    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m)
+    /// <summary>
+    /// Khối ký của bên tuyển dụng. Thư mời là văn bản đối ngoại — không có chỗ ký thì nhìn
+    /// như bản nháp, nên in đủ ba phần: chữ ký dạng chữ (typed signature) của người ký,
+    /// dòng kẻ để ký tay khi in ra, rồi họ tên/chức danh/công ty bên dưới.
+    /// </summary>
+    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
     {
+        col.Item().Height(BlockGap);
+
         // ShowEntire: nếu buộc phải sang trang thì đẩy CẢ khối ký, không tách
         // "Trân trọng," ở cuối trang 1 còn tên người ký nằm trơ trên trang 2.
-        col.Item().PaddingTop(6).ShowEntire().Column(sign =>
+        col.Item().ShowEntire().Column(sign =>
         {
             sign.Item().Text("Trân trọng,");
-            sign.Item().PaddingTop(26).Column(who =>
+            sign.Item().Height(6);
+
+            sign.Item().Width(SignatureWidth).Column(box =>
             {
-                if (Has(m.SignerName)) who.Item().Text(m.SignerName!).Bold();
-                if (Has(m.SignerTitle)) who.Item().Text(m.SignerTitle!);
-                if (Has(m.CompanyName)) who.Item().Text(m.CompanyName!);
+                if (Has(m.SignerName))
+                {
+                    // Chữ ký dạng chữ: nghiêng, to hơn thân thư — đọc ra ngay là chữ ký,
+                    // nhưng vẫn là văn bản nên bản PDF gửi email không cần ảnh scan.
+                    box.Item().PaddingTop(6).PaddingBottom(2).AlignCenter()
+                        .Text(m.SignerName!).FontSize(17).Italic().FontColor(p.Accent);
+                }
+                else
+                {
+                    // Chưa cấu hình người ký -> vẫn chừa chỗ ký tay, không in chữ ký giả.
+                    box.Item().Height(30);
+                }
+
+                box.Item().LineHorizontal(0.8f).LineColor(p.SoftLine);
+
+                box.Item().PaddingTop(4).Column(who =>
+                {
+                    if (Has(m.SignerName))
+                        who.Item().AlignCenter().Text(m.SignerName!).Bold().LineHeight(TightLine);
+                    if (Has(m.SignerTitle))
+                        who.Item().AlignCenter().Text(m.SignerTitle!).LineHeight(TightLine);
+                    if (Has(m.CompanyName))
+                        who.Item().AlignCenter().Text(m.CompanyName!).LineHeight(TightLine);
+
+                    who.Item().PaddingTop(2).AlignCenter()
+                        .Text("(Ký và ghi rõ họ tên)").FontSize(8.5f).Italic().FontColor(p.Muted);
+                });
             });
         });
     }
@@ -215,9 +306,7 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
 
     private static List<string> BuildCompensationLines(OfferLetterModel m)
     {
-        var lines = new List<string>();
-        var salary = FormatSalary(m);
-        if (salary is not null) lines.Add($"Mức lương: {salary}");
+        var lines = new List<string> { $"Mức lương: {FormatSalary(m)}" };
         AddIf(lines, "Thưởng/Ưu đãi", m.Bonus);
         AddIf(lines, "Các phúc lợi khác", m.Benefits);
         return lines;
@@ -235,7 +324,7 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     }
 
     /// <summary>"15.000.000 VND/tháng". Không nhập lương -> "Thỏa thuận" (vẫn in dòng cho rõ ràng).</summary>
-    private static string? FormatSalary(OfferLetterModel m)
+    private static string FormatSalary(OfferLetterModel m)
     {
         if (m.SalaryAmount is not decimal amount || amount <= 0)
             return "Thỏa thuận";

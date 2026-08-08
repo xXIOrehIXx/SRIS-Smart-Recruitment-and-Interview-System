@@ -69,6 +69,9 @@ namespace GP35.SRIS.HostBase.Extensions
             QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
             services.AddSingleton<GP35.SRIS.Lib.Services.Pdf.IOfferLetterPdfGenerator,
                 GP35.SRIS.Lib.Services.Pdf.OfferLetterPdfGenerator>();
+            // Logo brand in ở đầu thư — singleton vì có cache ảnh trong bộ nhớ.
+            services.AddSingleton<GP35.SRIS.Lib.Services.Pdf.IBrandLogoFetcher,
+                GP35.SRIS.Lib.Services.Pdf.BrandLogoFetcher>();
 
             // Lưu trữ file (MinIO, tương thích S3) — đổi sang S3 chỉ cần đổi config/registration này
             services.AddMinioStorage();
