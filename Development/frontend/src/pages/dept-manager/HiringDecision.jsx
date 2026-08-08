@@ -60,10 +60,11 @@ const HiringDecision = () => {
   
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  // Chi tiết để DM quyết: điểm TIÊU CHÍ phỏng vấn từng vòng + CV gốc.
-  // (Điểm CV/AI cố tình KHÔNG hiện ở đây — đó là công cụ sàng lọc của Human Resource.)
+  // Chi tiết để DM quyết: KẾT LUẬN của người phỏng vấn (nên tuyển hay không + vì sao)
+  // kèm note theo tiêu chí và ghi chú nội bộ. KHÔNG có điểm số — người quyết đọc nhận
+  // xét rồi chốt, chứ không phải tự dịch một con số trung bình ra ý người chấm.
   const [detailLoading, setDetailLoading] = useState(false);
-  const [interviewRounds, setInterviewRounds] = useState([]);
+  const [brief, setBrief] = useState(null);
   const [appDetail, setAppDetail] = useState(null);
   const [cvLoading, setCvLoading] = useState(false);
   
@@ -88,30 +89,32 @@ const HiringDecision = () => {
         // V023: BE (DashboardRepo) đã thu hẹp về đúng phòng ban của DM đang đăng nhập —
         // FE không lọc lại, tránh 2 nơi giữ cùng một luật.
         
-        // Lọc thêm: chỉ lấy những ứng viên đã có điểm phỏng vấn (submittedInterviewers > 0)
+        // Chỉ hiện hồ sơ ĐÃ CÓ phiếu phỏng vấn nộp — chưa ai chấm thì không có gì để quyết.
         const rawCandidates = interviewColumn.cards;
-        const aggregatesRes = await Promise.all(
-          rawCandidates.map(c => interviewAPI.getApplicationAggregate(c.applicationId).catch(() => ({ data: [] })))
+        const briefs = await Promise.all(
+          rawCandidates.map(c => interviewAPI.getDecisionBrief(c.applicationId).catch(() => ({ data: null })))
         );
 
-        const filteredCards = rawCandidates.filter((c, index) => {
-          const rounds = aggregatesRes[index].data || [];
-          return rounds.some(r => r.submittedInterviewers > 0);
-        });
-
-        const formattedData = filteredCards.map(c => ({
-          id: c.applicationId,
-          candidateName: c.candidateName,
-          candidateEmail: c.candidateEmail,
-          position: c.jobTitle,
-          department: c.department || 'Chưa gán phòng ban',
-          requestTitle: c.jobTitle,
-          appliedDate: c.appliedAt,
-          status: 'PENDING',
-          avatar: null,
-          candidateId: c.candidateId,
-          jobId: c.jobId,
-        }));
+        const formattedData = rawCandidates
+          .map((c, index) => ({ card: c, brief: briefs[index].data }))
+          .filter(({ brief: b }) => (b?.totalSubmitted || 0) > 0)
+          .map(({ card: c, brief: b }) => ({
+            id: c.applicationId,
+            candidateName: c.candidateName,
+            candidateEmail: c.candidateEmail,
+            position: c.jobTitle,
+            department: c.department || 'Chưa gán phòng ban',
+            requestTitle: c.jobTitle,
+            appliedDate: c.appliedAt,
+            status: 'PENDING',
+            avatar: null,
+            candidateId: c.candidateId,
+            jobId: c.jobId,
+            hireCount: b.hireCount,
+            considerCount: b.considerCount,
+            noHireCount: b.noHireCount,
+            totalSubmitted: b.totalSubmitted,
+          }));
 
         setCandidates(formattedData);
       } else {
@@ -143,27 +146,43 @@ const HiringDecision = () => {
     return <Tag color={c.color} icon={c.icon}>{c.label}</Tag>;
   };
 
-  // Điểm tiêu chí chấm trên thang maxScore (thường 10) — tô màu theo tỉ lệ, không theo thang 100.
-  const getRatioColor = (value, max) => {
-    if (value == null || !max) return '#999';
-    const pct = (Number(value) / Number(max)) * 100;
-    if (pct >= 70) return '#52c41a';
-    if (pct >= 50) return '#faad14';
-    return '#f5222d';
+  // Kết luận của người phỏng vấn — 4 mức, cùng bộ nhãn với phiếu chấm bên Interviewer.
+  const recommendationTag = (value) => {
+    const map = {
+      STRONG_HIRE: { color: 'success', label: 'Rất nên tuyển' },
+      HIRE: { color: 'success', label: 'Nên tuyển' },
+      CONSIDER: { color: 'warning', label: 'Cân nhắc' },
+      NO_HIRE: { color: 'error', label: 'Không nên tuyển' },
+    };
+    const c = map[value];
+    if (!c) return <Tag>Chưa ghi kết luận</Tag>;
+    return <Tag color={c.color}>{c.label}</Tag>;
+  };
+
+  /// Tóm tắt 1 dòng: "2/3 nên tuyển" — đủ để lướt bảng, chi tiết xem trong modal.
+  const verdictSummary = (record) => {
+    if (!record.totalSubmitted) return <Text type="secondary">—</Text>;
+    const color = record.noHireCount > 0 ? 'warning' : 'success';
+    return (
+      <Space size={4} wrap>
+        <Tag color={color}>{record.hireCount}/{record.totalSubmitted} nên tuyển</Tag>
+        {record.noHireCount > 0 && <Tag color="error">{record.noHireCount} phản đối</Tag>}
+      </Space>
+    );
   };
 
   const openDetail = async (record) => {
     setSelectedRecord(record);
     setDetailModalOpen(true);
-    setInterviewRounds([]);
+    setBrief(null);
     setAppDetail(null);
     setDetailLoading(true);
     try {
-      const [roundsRes, appRes] = await Promise.all([
-        interviewAPI.getApplicationAggregate(record.id),
+      const [briefRes, appRes] = await Promise.all([
+        interviewAPI.getDecisionBrief(record.id),
         applicationAPI.getById(record.id),
       ]);
-      setInterviewRounds(roundsRes.data || []);
+      setBrief(briefRes.data || null);
       setAppDetail(appRes.data || null);
     } catch (error) {
       console.error(error);
@@ -223,6 +242,12 @@ const HiringDecision = () => {
       dataIndex: 'department',
       key: 'department',
       width: 160,
+    },
+    {
+      title: 'Phỏng vấn kết luận',
+      key: 'verdict',
+      width: 190,
+      render: (_, record) => verdictSummary(record),
     },
     {
       title: 'Ngày ứng tuyển',
@@ -452,111 +477,97 @@ const HiringDecision = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            {/* Điểm phỏng vấn theo TIÊU CHÍ — căn cứ chính để DM quyết (docs 5.7/5.18). */}
-            <Title level={5} style={{ marginTop: 24 }}>Điểm phỏng vấn theo tiêu chí</Title>
+            {/* Căn cứ để DM chốt: người phỏng vấn kết luận gì và VÌ SAO (docs 5.14).
+                Cố tình không bày điểm — điểm là công cụ của người chấm, không phải của người quyết. */}
+            <Title level={5} style={{ marginTop: 24 }}>Kết luận của hội đồng phỏng vấn</Title>
+
             {detailLoading ? (
               <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
-            ) : interviewRounds.length === 0 ? (
-              <Text type="secondary">Hồ sơ này chưa có buổi phỏng vấn nào.</Text>
+            ) : !brief || brief.totalSubmitted === 0 ? (
+              <Text type="secondary">
+                Chưa có phiếu phỏng vấn nào được nộp — chưa có căn cứ để quyết (blind review).
+              </Text>
             ) : (
-              interviewRounds.map((round) => (
-                <Card
-                  key={round.scheduleId}
-                  size="small"
-                  style={{ marginBottom: 12 }}
-                  title={
-                    <Space wrap>
-                      <Text strong>Vòng {round.roundNumber ?? '-'}</Text>
-                      {round.scheduledAt && (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {dayjs(round.scheduledAt).format('DD/MM/YYYY HH:mm')}
-                        </Text>
-                      )}
-                      <Tag color={round.submittedInterviewers > 0 ? 'green' : 'default'}>
-                        {round.submittedInterviewers} phiếu đã nộp
-                      </Tag>
-                    </Space>
-                  }
-                  extra={
-                    round.submittedInterviewers > 0 && (
-                      <Text strong style={{ color: MATCHA_GREEN }}>
-                        TB có trọng số: {round.panelWeightedPercent}%
-                      </Text>
-                    )
-                  }
-                >
-                  {round.submittedInterviewers === 0 ? (
-                    // Blind Review: điểm chỉ lộ khi interviewer đã NỘP phiếu.
-                    <Text type="secondary">
-                      Chưa có phiếu chấm nào được nộp — điểm còn ẩn (blind review).
+              <>
+                <Space size={8} wrap style={{ marginBottom: 16 }}>
+                  <Tag color={brief.hireCount > 0 ? 'success' : 'default'} style={{ fontSize: 13, padding: '4px 10px' }}>
+                    {brief.hireCount}/{brief.totalSubmitted} nên tuyển
+                  </Tag>
+                  {brief.considerCount > 0 && (
+                    <Tag color="warning" style={{ fontSize: 13, padding: '4px 10px' }}>
+                      {brief.considerCount} cân nhắc
+                    </Tag>
+                  )}
+                  {brief.noHireCount > 0 && (
+                    <Tag color="error" style={{ fontSize: 13, padding: '4px 10px' }}>
+                      {brief.noHireCount} không nên tuyển
+                    </Tag>
+                  )}
+                </Space>
+
+                {brief.rounds.map((round) => (
+                  <div key={round.scheduleId} style={{ marginBottom: 16 }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Vòng {round.roundNumber}
+                      {round.scheduledAt ? ` · ${dayjs(round.scheduledAt).format('DD/MM/YYYY HH:mm')}` : ''}
                     </Text>
-                  ) : (
-                    <Table
-                      size="small"
-                      pagination={false}
-                      rowKey="criteriaId"
-                      dataSource={round.criteria}
-                      columns={[
-                        {
-                          title: 'Tiêu chí',
-                          dataIndex: 'name',
-                          key: 'name',
-                          render: (name, c) => (
-                            <Space direction="vertical" size={0}>
-                              <Text>{name}</Text>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                Trọng số {c.weight} · thang {c.maxScore}
-                              </Text>
+
+                    {round.verdicts.length === 0 ? (
+                      <div style={{ marginTop: 6 }}>
+                        <Text type="secondary">Chưa ai nộp phiếu ở vòng này.</Text>
+                      </div>
+                    ) : (
+                      round.verdicts.map((v) => (
+                        <Card
+                          key={v.interviewerId}
+                          size="small"
+                          style={{ marginTop: 8 }}
+                          title={
+                            <Space wrap>
+                              <Text strong>{v.interviewerName || `#${v.interviewerId}`}</Text>
+                              {recommendationTag(v.recommendation)}
                             </Space>
-                          ),
-                        },
-                        {
-                          title: 'Điểm TB',
-                          dataIndex: 'average',
-                          key: 'average',
-                          width: 110,
-                          render: (avg, c) => (
-                            <Text strong style={{ color: getRatioColor(avg, c.maxScore) }}>
-                              {avg} / {c.maxScore}
-                            </Text>
-                          ),
-                        },
-                        {
-                          title: 'Đồng thuận',
-                          key: 'consensus',
-                          width: 150,
-                          render: (_, c) =>
-                            c.needsDiscussion ? (
-                              <Tag color="warning">Lệch nhiều (σ {c.stdDev})</Tag>
-                            ) : (
-                              <Text type="secondary" style={{ fontSize: 12 }}>σ {c.stdDev}</Text>
-                            ),
-                        },
-                        {
-                          title: 'Từng người chấm',
-                          key: 'scores',
-                          render: (_, c) => (
-                            <Space direction="vertical" size={2}>
-                              {(c.scores || []).map((s) => (
-                                <div key={s.interviewerId}>
-                                  <Text style={{ fontSize: 12 }}>
-                                    {s.interviewerName || `#${s.interviewerId}`}: <strong>{s.score}</strong>
-                                  </Text>
-                                  {s.note && (
-                                    <div>
-                                      <Text type="secondary" style={{ fontSize: 12 }}>“{s.note}”</Text>
-                                    </div>
-                                  )}
+                          }
+                        >
+                          {v.summary ? (
+                            <Text style={{ whiteSpace: 'pre-wrap' }}>{v.summary}</Text>
+                          ) : (
+                            <Text type="secondary">Không ghi nhận xét tổng.</Text>
+                          )}
+
+                          {v.notes.length > 0 && (
+                            <div style={{ marginTop: 10 }}>
+                              {v.notes.map((n, i) => (
+                                <div key={i} style={{ marginBottom: 4 }}>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>{n.criteriaName}: </Text>
+                                  <Text style={{ fontSize: 13 }}>“{n.note}”</Text>
                                 </div>
                               ))}
-                            </Space>
-                          ),
-                        },
-                      ]}
-                    />
-                  )}
-                </Card>
-              ))
+                            </div>
+                          )}
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                ))}
+
+                {brief.internalNotes.length > 0 && (
+                  <>
+                    <Title level={5} style={{ marginTop: 20 }}>Ghi chú nội bộ</Title>
+                    {brief.internalNotes.map((n, i) => (
+                      <div key={i} style={{ marginBottom: 8 }}>
+                        <Text style={{ fontSize: 13 }}>{n.content}</Text>
+                        <div>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {n.authorName || 'Không rõ'}
+                            {n.createdAt ? ` · ${dayjs(n.createdAt).format('DD/MM/YYYY HH:mm')}` : ''}
+                          </Text>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </div>
         )}

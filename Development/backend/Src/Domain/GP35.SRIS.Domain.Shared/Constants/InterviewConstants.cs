@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Domain.Shared.Constants;
+﻿namespace GP35.SRIS.Domain.Shared.Constants;
 
 /// <summary>Trạng thái 1 lịch phỏng vấn / 1 vòng (InterviewSchedule.status) — docs 15.4.</summary>
 public static class InterviewScheduleStatus
@@ -32,12 +32,19 @@ public static class InterviewScoreStatus
 /// </summary>
 public static class InterviewRecommendation
 {
+    public const string StrongHire = "STRONG_HIRE";
     public const string Hire = "HIRE";
+
+    /// <summary>Còn lăn tăn — không phải "không", nhưng cũng chưa dám gật.</summary>
+    public const string Consider = "CONSIDER";
     public const string NoHire = "NO_HIRE";
-    public const string Unsure = "UNSURE";
 
     public static bool IsValid(string? value) =>
-        value is Hire or NoHire or Unsure;
+        value is StrongHire or Hire or Consider or NoHire;
+
+    /// <summary>Gật đầu (mạnh hay thường đều tính là đề xuất tuyển).</summary>
+    public static bool IsPositive(string? value) =>
+        value is StrongHire or Hire;
 }
 
 /// <summary>

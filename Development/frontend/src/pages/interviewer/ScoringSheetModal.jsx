@@ -48,18 +48,6 @@ const RECOMMENDATIONS = [
   { key: 'NO_HIRE', label: 'Không trúng tuyển', color: '#f5222d' },
 ];
 
-const parseGeneralNote = (note) => {
-  if (!note || typeof note !== 'string') return { feedback: '', recommendation: null };
-  const m = note.match(/^\[Nhận xét chung\] ([\s\S]*?)(?: — \[Đề xuất\] (\w+))?$/);
-  if (!m) return { feedback: note, recommendation: null };
-  return { feedback: m[1] || '', recommendation: m[2] || null };
-};
-
-const buildGeneralNote = (feedback, recommendation) => {
-  if (!feedback && !recommendation) return null;
-  return `[Nhận xét chung] ${feedback || ''}${recommendation ? ` — [Đề xuất] ${recommendation}` : ''}`;
-};
-
 const BarChartOutlined = () => <span>📊</span>;
 
 const RadarPanel = ({ myScores, criteria, aggregateRows }) => {
@@ -189,10 +177,9 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
       setScores(scoreMap);
       setNotes(noteMap);
 
-      const firstNote = noteMap[cs[0]?.criteriaId] || '';
-      const parsed = parseGeneralNote(firstNote);
-      setFeedback(parsed.feedback);
-      setRecommendation(parsed.recommendation);
+      // Nhận xét tổng + đề xuất là cột riêng ở BE (V031) — người quyết tuyển đọc chính nó.
+      setFeedback(data.mySummary || '');
+      setRecommendation(data.myRecommendation || null);
 
       const status = data.myStatus || (data.status === 'SUBMITTED' ? 'SUBMITTED' : 'DRAFT');
       setMyStatus(status);
@@ -262,13 +249,13 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
       const payload = {
         items: criteria
           .filter((c) => typeof c.id === 'number')
-          .map((c, idx) => ({
+          .map((c) => ({
             criteriaId: c.id,
             score: (s ?? scores)[c.id] ?? null,
-            note: idx === 0
-              ? (buildGeneralNote(feedback, recommendation) ?? (n ?? notes)[c.id] ?? null)
-              : ((n ?? notes)[c.id] || null),
+            note: (n ?? notes)[c.id] || null,
           })),
+        recommendation: recommendation || null,
+        summary: feedback || null,
       };
       if (payload.items.length === 0) return;
       await interviewAPI.updateMySheet(schedule.id, payload);
@@ -293,13 +280,13 @@ const ScoringSheetModal = ({ schedule, open, onClose, onSubmitted }) => {
       await interviewAPI.updateMySheet(schedule.id, {
         items: criteria
           .filter((c) => typeof c.id === 'number')
-          .map((c, idx) => ({
+          .map((c) => ({
             criteriaId: c.id,
             score: scores[c.id],
-            note: idx === 0
-              ? (buildGeneralNote(feedback, recommendation) ?? notes[c.id] ?? null)
-              : (notes[c.id] || null),
+            note: notes[c.id] || null,
           })),
+        recommendation,
+        summary: feedback || null,
       });
       await interviewAPI.submitMySheet(schedule.id);
       message.success(

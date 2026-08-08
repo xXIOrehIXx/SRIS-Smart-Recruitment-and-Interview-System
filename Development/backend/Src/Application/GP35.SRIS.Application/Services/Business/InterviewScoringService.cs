@@ -84,7 +84,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         // Kết luận đi cùng vòng đời với điểm: nháp lưu được dù chưa chọn đề xuất.
         var recommendation = Trim(dto.Recommendation)?.ToUpperInvariant();
         if (recommendation is not null && !InterviewRecommendation.IsValid(recommendation))
-            throw Bad("Đề xuất phải là HIRE, NO_HIRE hoặc UNSURE.");
+            throw Bad("Đề xuất không hợp lệ (STRONG_HIRE | HIRE | CONSIDER | NO_HIRE).");
 
         await _scoreRepo.UpsertFeedbackAsync(
             companyId, scheduleId, interviewerId, recommendation, Trim(dto.Summary));
@@ -287,7 +287,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             // Người nói KHÔNG nên tuyển đưa lên trước: ý kiến phản đối là thứ người quyết
             // dễ bỏ sót nhất khi lướt nhanh.
             .OrderBy(v => v.Recommendation == InterviewRecommendation.NoHire ? 0
-                        : v.Recommendation == InterviewRecommendation.Unsure ? 1 : 2)
+                        : v.Recommendation == InterviewRecommendation.Consider ? 1 : 2)
             .ToList();
 
             brief.Rounds.Add(new DecisionRoundDto
@@ -305,9 +305,9 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
 
         var all = brief.Rounds.SelectMany(r => r.Verdicts).ToList();
         brief.TotalSubmitted = all.Count;
-        brief.HireCount = all.Count(v => v.Recommendation == InterviewRecommendation.Hire);
+        brief.HireCount = all.Count(v => InterviewRecommendation.IsPositive(v.Recommendation));
+        brief.ConsiderCount = all.Count(v => v.Recommendation == InterviewRecommendation.Consider);
         brief.NoHireCount = all.Count(v => v.Recommendation == InterviewRecommendation.NoHire);
-        brief.UnsureCount = all.Count(v => v.Recommendation == InterviewRecommendation.Unsure);
 
         var notes = await _serviceProvider.GetRequiredService<IInternalNoteRepo>()
             .GetByApplicationAsync(companyId, applicationId);

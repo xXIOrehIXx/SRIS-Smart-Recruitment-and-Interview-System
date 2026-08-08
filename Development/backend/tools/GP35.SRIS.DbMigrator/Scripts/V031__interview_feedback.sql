@@ -7,7 +7,7 @@
    có trọng số.
 
    InterviewFeedback = MỘT dòng cho mỗi (buổi, người chấm):
-     - recommendation: HIRE / NO_HIRE / UNSURE  → câu trả lời thẳng
+     - recommendation: STRONG_HIRE / HIRE / CONSIDER / NO_HIRE → câu trả lời thẳng
      - summary: vì sao (nhận xét tổng, viết tự do)
 
    Blind review giữ nguyên luật của InterviewScore: submitted_at NULL = còn nháp,
@@ -33,7 +33,7 @@ BEGIN
         CONSTRAINT FK_Feedback_Interviewer  FOREIGN KEY (interviewer_id) REFERENCES dbo.[User](user_id),
         CONSTRAINT UQ_Feedback_unique       UNIQUE (schedule_id, interviewer_id),
         CONSTRAINT CK_Feedback_recommend    CHECK (recommendation IS NULL
-                                                   OR recommendation IN ('HIRE','NO_HIRE','UNSURE'))
+                                                   OR recommendation IN ('STRONG_HIRE','HIRE','CONSIDER','NO_HIRE'))
     );
     CREATE INDEX IX_Feedback_schedule ON dbo.InterviewFeedback(company_id, schedule_id);
 END

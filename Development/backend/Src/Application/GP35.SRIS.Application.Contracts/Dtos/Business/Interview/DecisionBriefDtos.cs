@@ -13,7 +13,7 @@ public class InterviewerVerdictDto
     public long InterviewerId { get; set; }
     public string? InterviewerName { get; set; }
 
-    /// <summary>HIRE | NO_HIRE | UNSURE. Null = người này nộp điểm nhưng chưa ghi kết luận.</summary>
+    /// <summary>STRONG_HIRE | HIRE | CONSIDER | NO_HIRE. Null = nộp điểm nhưng chưa ghi kết luận.</summary>
     public string? Recommendation { get; set; }
 
     /// <summary>Nhận xét tổng — lý do chính để người quyết đọc.</summary>
@@ -70,12 +70,12 @@ public class DecisionBriefDto
     public long CvId { get; set; }
     public string? CvFileName { get; set; }
 
-    /// <summary>Đếm nhanh trên MỌI vòng: bao nhiêu người nói tuyển / không / chưa chắc.</summary>
+    /// <summary>Đếm nhanh trên MỌI vòng: gật (mạnh + thường) / cân nhắc / lắc đầu.</summary>
     public int HireCount { get; set; }
+    public int ConsiderCount { get; set; }
     public int NoHireCount { get; set; }
-    public int UnsureCount { get; set; }
 
-    /// <summary>Tổng số phiếu đã nộp (= Hire + NoHire + Unsure + số người nộp mà không ghi kết luận).</summary>
+    /// <summary>Tổng phiếu đã nộp (gồm cả phiếu cũ chưa có kết luận).</summary>
     public int TotalSubmitted { get; set; }
 
     public List<DecisionRoundDto> Rounds { get; set; } = new();

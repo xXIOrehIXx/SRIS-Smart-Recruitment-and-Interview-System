@@ -272,6 +272,14 @@ export const interviewAPI = {
   //        panelWeightedPercent }]   — weightedPercent/panelWeightedPercent là % 0–100.
   getApplicationAggregate: (applicationId) =>
     api.get(`/applications/${applicationId}/interview-aggregate`),
+
+  // Bản tóm tắt để CHỐT tuyển — KHÔNG có điểm, chỉ đề xuất + lý do (V031).
+  // Trả { candidateName, jobTitle, cvId, hireCount, considerCount, noHireCount, totalSubmitted,
+  //       rounds: [{ roundNumber, scheduledAt, submittedInterviewers,
+  //                  verdicts: [{ interviewerName, recommendation, summary, notes: [{criteriaName, note}] }] }],
+  //       internalNotes: [{ authorName, content, createdAt }] }
+  getDecisionBrief: (applicationId) =>
+    api.get(`/applications/${applicationId}/decision-brief`),
 };
 
 // ==================== CANDIDATE (Magic Link) ====================
