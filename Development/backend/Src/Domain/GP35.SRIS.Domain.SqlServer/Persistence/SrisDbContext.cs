@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Shared.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -54,6 +54,12 @@ public class SrisDbContext : DbContext
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<EmploymentType> EmploymentTypes => Set<EmploymentType>();
 
+    /// <summary>
+    /// Lưu ý về các <c>e.Ignore(...)</c> bên dưới: cột tương ứng trong DB ĐÃ BỎ ở migration
+    /// V032 (chúng là di sản schema cũ, chưa tính năng nào dùng). Property vẫn còn trên entity
+    /// nên phải Ignore, nếu không EF sẽ đi tìm cột không tồn tại. Muốn dùng lại một trường thì
+    /// viết migration tạo cột rồi mới bỏ dòng Ignore của nó — đừng bỏ Ignore trước.
+    /// </summary>
     protected override void OnModelCreating(ModelBuilder b)
     {
         // Tên cột (snake_case) + khóa chính đã khai báo bằng [Column]/[Key] trên entity,
@@ -136,7 +142,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("InterviewSchedule");
             e.HasKey(x => x.ScheduleId);
-            e.Ignore(x => x.RoundName); // chưa có ở schema local
+            e.Ignore(x => x.RoundName); // cột đã bỏ ở V032 — property giữ lại vô hại
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -153,7 +159,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("InterviewSlot");
             e.HasKey(x => x.SlotId);
-            e.Ignore(x => x.EndTime);     // chưa có ở schema local
+            e.Ignore(x => x.EndTime);     // 3 cột này đã bỏ ở V032
             e.Ignore(x => x.Location);
             e.Ignore(x => x.MeetingLink);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
@@ -176,7 +182,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("EvaluationCriteria");
             e.HasKey(x => x.CriteriaId);
-            e.Ignore(x => x.Description);   // chưa có ở schema local
+            e.Ignore(x => x.Description);   // cột đã bỏ ở V032
             e.Ignore(x => x.DisplayOrder);
             e.Property(x => x.Weight).HasColumnType("decimal(6,2)");
             e.Property(x => x.MaxScore).HasColumnType("decimal(6,2)");
@@ -216,7 +222,7 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("InterviewScore");
             e.HasKey(x => x.ScoreId);
-            e.Ignore(x => x.SubmittedAt);   // chưa có ở schema local (suy từ status + updated_at)
+            e.Ignore(x => x.SubmittedAt);   // cột đã bỏ ở V032 (mốc nộp suy từ status + updated_at)
             e.Property(x => x.Score).HasColumnType("decimal(6,2)");
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
