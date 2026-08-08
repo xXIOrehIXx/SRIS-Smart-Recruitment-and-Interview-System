@@ -156,7 +156,7 @@ const DepartmentManagement = () => {
       ),
     },
     {
-      title: "Người duyệt tuyển (DM)",
+      title: "Trưởng bộ phận",
       dataIndex: "managerName",
       key: "managerName",
       width: 220,
@@ -277,14 +277,14 @@ const DepartmentManagement = () => {
           </Form.Item>
           <Form.Item
             name="managerUserId"
-            label="Trưởng phòng / Người duyệt tuyển (DM)"
-            tooltip="Tin tuyển dụng chọn phòng ban này sẽ tự lấy DM đây làm người quyết tuyển ở bước Offer. Bỏ trống = tin phải chọn DM tay."
+            label="Trưởng bộ phận"
+            tooltip="Tin tuyển dụng thuộc phòng ban này sẽ tự lấy người ở đây làm người chốt tuyển. Bỏ trống thì mỗi tin tự chọn."
           >
             <Select
               allowClear
               showSearch
               optionFilterProp="label"
-              placeholder="Bỏ trống = tin tuyển dụng tự chọn DM"
+              placeholder="Bỏ trống thì mỗi tin tự chọn"
               options={managers.map((u) => ({
                 value: u.userId,
                 label: `${u.fullName || u.email}${u.role === "Admin" ? " (Admin)" : ""}`,

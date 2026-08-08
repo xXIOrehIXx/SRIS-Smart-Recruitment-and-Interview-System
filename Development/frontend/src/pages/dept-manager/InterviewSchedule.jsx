@@ -136,7 +136,7 @@ const DeptInterviewSchedule = () => {
       title: 'Điểm panel',
       key: 'aggregate',
       render: (_, record) => (
-        <Tooltip title="Tổng hợp điểm panel (chỉ hiện phiếu ĐÃ NỘP — blind review)">
+        <Tooltip title="Tổng hợp điểm của hội đồng phỏng vấn (chỉ hiện phiếu đã nộp, để người chấm không nhìn điểm của nhau)">
           <Button
             size="small"
             icon={<EyeOutlined />}

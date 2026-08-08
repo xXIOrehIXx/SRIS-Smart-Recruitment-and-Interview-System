@@ -280,7 +280,7 @@ const CandidateDetail = () => {
             <Divider />
 
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Tooltip title="Phát magic link STATUS — ứng viên tự xem trạng thái hồ sơ, không cần tài khoản">
+              <Tooltip title="Gửi cho ứng viên đường dẫn tự tra cứu tình trạng hồ sơ — họ không cần tài khoản">
                 <Button block icon={<LinkOutlined />} onClick={handleSendStatusLink} loading={sendingLink}>
                   Gửi link theo dõi trạng thái
                 </Button>
