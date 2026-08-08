@@ -55,6 +55,24 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
             .FirstOrDefaultAsync();
     }
 
+    public async Task<CvSummaryInfo?> GetSummaryAsync(long companyId, long cvId)
+    {
+        // Global Query Filter tự kèm company_id.
+        return await _db.CvDocuments.AsNoTracking()
+            .Where(c => c.CvId == cvId)
+            .Select(c => new CvSummaryInfo(c.Summary, c.SummaryAt, c.ExtractedText))
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task UpdateSummaryAsync(long companyId, long cvId, string summary)
+    {
+        await _db.CvDocuments
+            .Where(c => c.CvId == cvId && c.CompanyId == companyId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Summary, summary)
+                .SetProperty(c => c.SummaryAt, DateTime.UtcNow));
+    }
+
     public async Task UpdateEmbeddingAsync(long companyId, long cvId, float[] embedding)
     {
         // CAST chuỗi JSON -> VECTOR(1024) ở phía SQL Server (cửa thoát raw SQL — 5.11).
