@@ -359,7 +359,11 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         {
             var template = await _templateRepo.GetActiveByTypeAsync(companyId, type.ToUpperInvariant());
             if (template is null) return null;
-            return (Render(template.Subject, placeholders), Render(template.Body, placeholders));
+
+            // Người tuyển dụng chỉ soạn RUỘT thư; vỏ (logo + vạch brand + chân trang) bọc ở đây.
+            // Ai lỡ dán nguyên một email hoàn chỉnh thì EmailLayout tự nhận ra và không bọc chồng.
+            var body = EmailLayout.Wrap(template.Body);
+            return (Render(template.Subject, placeholders), Render(body, placeholders));
         }
         catch (Exception ex)
         {

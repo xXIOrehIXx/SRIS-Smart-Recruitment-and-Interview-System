@@ -579,7 +579,7 @@ const Criteria = () => {
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditTemplate(record)} />
           </Tooltip>
           <Popconfirm
-            title="Ẩn template này?"
+            title="Ẩn bộ mẫu này?"
             description="Template bị ẩn khỏi danh sách chọn (không xóa cứng)."
             onConfirm={() => handleDeleteTemplate(record)}
             okText="Ẩn"
@@ -823,7 +823,7 @@ const Criteria = () => {
         <>
           <div style={{ marginBottom: 16, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
             <Input
-              placeholder="Tìm kiếm template..."
+              placeholder="Tìm kiếm bộ mẫu..."
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -950,7 +950,7 @@ const Criteria = () => {
           type="info"
           showIcon
           style={{ margin: '16px 0' }}
-          message="Từng dòng của template sẽ được sao chép thành tiêu chí APPROVED của vị trí (dùng chấm CV được ngay, sửa per-job không ảnh hưởng template gốc)."
+          message="Từng tiêu chí trong bộ mẫu sẽ được chép sang vị trí này và có hiệu lực ngay. Sửa ở vị trí không làm đổi bộ mẫu gốc."
         />
         <Form
           form={applyForm}
@@ -961,18 +961,18 @@ const Criteria = () => {
           validateTrigger={['onBlur', 'onChange']}
         >
           <Form.Item
-            label="Chọn template"
+            label="Chọn bộ mẫu"
             name="templateId"
             rules={[{ required: true, message: 'Vui lòng chọn template' }]}
           >
             <Select
-              placeholder="-- Chọn template --"
+              placeholder="-- Chọn bộ mẫu --"
               showSearch
               optionFilterProp="label"
               options={templates
                 .filter(t => t.active !== false)
                 .map(t => ({ value: t.templateId, label: `${t.name} (${t.itemCount ?? 0} tiêu chí)` }))}
-              notFoundContent="Chưa có template đang hoạt động"
+              notFoundContent="Chưa có bộ mẫu nào đang dùng"
             />
           </Form.Item>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -1004,7 +1004,7 @@ const Criteria = () => {
           style={{ marginTop: 16 }}
         >
           <Form.Item
-            label="Tên template"
+            label="Tên bộ mẫu"
             name="name"
             rules={RULES.templateName()}
           >
@@ -1015,7 +1015,7 @@ const Criteria = () => {
             name="description"
             rules={RULES.templateDescription()}
           >
-            <Input.TextArea rows={2} placeholder="Mô tả ngắn về template..." maxLength={500} showCount />
+            <Input.TextArea rows={2} placeholder="Mô tả ngắn về bộ mẫu..." maxLength={500} showCount />
           </Form.Item>
           {templateItemsList(templateForm)}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
@@ -1047,7 +1047,7 @@ const Criteria = () => {
           style={{ marginTop: 16 }}
         >
           <Form.Item
-            label="Tên template"
+            label="Tên bộ mẫu"
             name="name"
             rules={RULES.templateName()}
           >
@@ -1084,7 +1084,7 @@ const Criteria = () => {
         {selectedTemplate && (
           <>
             <Descriptions column={1} bordered size="small" style={{ marginTop: 16 }}>
-              <Descriptions.Item label="Tên template">
+              <Descriptions.Item label="Tên bộ mẫu">
                 <Text strong>{selectedTemplate.name}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Mô tả">{selectedTemplate.description || '-'}</Descriptions.Item>

@@ -530,7 +530,7 @@ const InterviewScheduleRecruit = () => {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Mỗi ứng viên được mời sẽ nhận email kèm magic link để tự chọn khung giờ. Chỉ mời được hồ sơ đang ở bước Phỏng vấn."
+          message="Mỗi ứng viên được mời sẽ nhận email kèm đường dẫn để tự chọn khung giờ. Chỉ mời được hồ sơ đang ở bước Phỏng vấn."
         />
         <Form form={inviteForm} layout="vertical" onFinish={handleInvite}>
           <Form.Item

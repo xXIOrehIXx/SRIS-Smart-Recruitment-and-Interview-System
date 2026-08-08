@@ -29,6 +29,7 @@ import {
   PlusOutlined,
 } from "@ant-design/icons";
 import { mailTemplateAPI } from "../../services/api";
+import EmailContentEditor, { fillSampleValues } from "../../components/EmailContentEditor";
 import "./css/MailTemplates.css";
 
 const { Title, Text } = Typography;
@@ -38,37 +39,6 @@ const MATCHA_GREEN = "#5D8C3E";
 
 // BE NotificationService.cs truyền các placeholder này theo từng trigger.
 // Liệt kê trong UI để Human Resource khỏi gõ {{companyName}} / {{interviewDate}} sai.
-const SUPPORTED_VARIABLES = [
-  { key: "{{candidateName}}", desc: "Tên ứng viên — mọi loại email" },
-  { key: "{{jobTitle}}",      desc: "Vị trí ứng tuyển — mọi loại email" },
-  {
-    key: "{{link}}",
-    desc:
-      "Magic link cho SCHEDULE / STATUS / OFFER_RESPONSE; " +
-      "Google Calendar URL cho INTERVIEW_CONFIRMED (không phải magic link)",
-  },
-  {
-    key: "{{expiresAt}}",
-    desc:
-      "Thời điểm magic link hết hạn (UTC, dd/MM/yyyy HH:mm) — chỉ SCHEDULE / STATUS / OFFER_RESPONSE",
-  },
-  {
-    key: "{{startTime}}",
-    desc: "Giờ phỏng vấn (UTC, HH:mm dd/MM/yyyy) — chỉ INTERVIEW_CONFIRMED / INTERVIEW_CANCELLED",
-  },
-  {
-    key: "{{reason}}",
-    desc: "Lý do hủy (tùy chọn) — chỉ INTERVIEW_CANCELLED",
-  },
-  // Nhóm dưới đây do email onboarding dùng (hệ thống tự điền từ hồ sơ công ty + thư mời).
-  { key: "{{companyName}}",    desc: "Tên công ty — mọi loại email" },
-  { key: "{{startDate}}",      desc: "Ngày vào làm lấy từ thư mời (dd/MM/yyyy) — chỉ ONBOARDING" },
-  { key: "{{companyAddress}}", desc: "Địa chỉ công ty — chỉ ONBOARDING" },
-  { key: "{{hrEmail}}",        desc: "Email liên hệ nhân sự — chỉ ONBOARDING" },
-  { key: "{{emailDomain}}",    desc: "Tên miền email nội bộ — chỉ ONBOARDING" },
-  { key: "{{brandColor}}",     desc: "Màu brand công ty (dùng trong style) — mọi loại email" },
-  { key: "{{companyLogoImg}}", desc: "Thẻ <img> logo công ty (Admin → Thương Hiệu), rỗng nếu chưa có — mọi loại email" },
-];
 const codeStyle = {
   background: "#fff",
   border: "1px solid #e7e7e6",
@@ -85,6 +55,8 @@ const MailTemplates = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [loadingDefault, setLoadingDefault] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
 
   // Modal states
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -106,7 +78,9 @@ const MailTemplates = () => {
   // dùng được — nếu khai báo sau khi đã tham chiếu sẽ nổ TypeError.
   const templateCategories = [
     { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
-    { value: "OFFER_RESPONSE", label: "Phản hồi offer", color: "green" },
+    // Thư mời nhận việc do hệ thống tự soạn từ form gửi thư mời -> KHÔNG tính là thiếu mẫu.
+    // Vẫn để trong danh sách vì công ty nào muốn tự viết lời thư thì tạo mẫu đè lên được.
+    { value: "OFFER_RESPONSE", label: "Thư mời nhận việc", color: "green", optional: true },
     { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
     { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
     {
@@ -199,6 +173,12 @@ const MailTemplates = () => {
     } finally {
       setLoadingDefault(false);
     }
+  };
+
+  // Xem thử: điền dữ liệu mẫu vào các chỗ tự động, hiện đúng như ứng viên sẽ thấy.
+  const openPreview = () => {
+    setPreviewHtml(fillSampleValues(editForm.getFieldValue("body") || ""));
+    setPreviewOpen(true);
   };
 
   const handleEditClick = (record) => {
@@ -303,12 +283,12 @@ const MailTemplates = () => {
   );
 
   /**
-   * Mỗi trigger email gửi cho ứng viên cần tối thiểu 1 template active.
-   * Liệt kê các loại CHƯA có template active để Human Resource biết đường bổ sung —
-   * nếu không hệ thống sẽ fallback nội dung hard-coded, không đồng nhất giữa
-   * các trigger.
+   * Loại email nào chưa có mẫu riêng của công ty thì hệ thống gửi bằng nội dung mặc định.
+   * Liệt kê ra để người tuyển dụng biết mà bổ sung. Bỏ qua loại `optional` (thư mời nhận
+   * việc) — nội dung của nó lấy từ form gửi thư mời chứ không phải từ mẫu email.
    */
   const missingTypes = templateCategories
+    .filter((cat) => !cat.optional)
     .filter((cat) => !templates.some((t) => t.type === cat.value))
     .map((cat) => cat);
   const hasMissing = missingTypes.length > 0;
@@ -321,7 +301,7 @@ const MailTemplates = () => {
     // BE hỗ trợ thêm các biến khác ({{link}}, {{expiresAt}}, {{startTime}}) — preview
     // chỉ render biến có dữ liệu mẫu để Human Resource khỏi nhầm là biến hỏng.
     preview = preview
-      .replace(/{{\s*link\s*}}/g, "https://example.com/schedule?token=xxx")
+      .replace(/{{\s*link\s*}}/g, "https://cong-ty-cua-ban.vn/chon-lich")
       .replace(/{{\s*expiresAt\s*}}/g, "25/12/2026 23:59 UTC")
       .replace(/{{\s*startTime\s*}}/g, "10:00 25/12/2026 (UTC)");
     return preview;
@@ -457,11 +437,12 @@ const MailTemplates = () => {
           message={
             <Space>
               <Text strong>
-                {missingTypes.length} loại email CHƯA có template active
+                {missingTypes.length} loại email chưa có mẫu riêng của công ty
               </Text>
               <Text type="secondary">
-                Hệ thống dùng nội dung mặc định cho các trigger này. Bấm vào nhãn bên dưới
-                để tạo mẫu riêng cho công ty bạn (riêng ONBOARDING: chưa có mẫu thì KHÔNG gửi).
+                Hệ thống vẫn gửi được bằng nội dung mặc định. Bấm vào nhãn bên dưới nếu bạn
+                muốn tự viết lời thư cho công ty mình. Riêng thư chào mừng nhận việc: chưa có mẫu
+                thì hệ thống KHÔNG gửi, vì thư đó cần thông tin thật của công ty bạn.
               </Text>
             </Space>
           }
@@ -623,6 +604,20 @@ const MailTemplates = () => {
         )}
       </Modal>
 
+      {/* Xem thử nội dung với dữ liệu mẫu */}
+      <Modal
+        title="Xem thử email"
+        open={previewOpen}
+        onCancel={() => setPreviewOpen(false)}
+        footer={[<Button key="close" onClick={() => setPreviewOpen(false)}>Đóng</Button>]}
+        width={720}
+      >
+        <div
+          style={{ border: "1px solid #f0f0f0", borderRadius: 8, padding: 16, background: "#fff" }}
+          dangerouslySetInnerHTML={{ __html: previewHtml }}
+        />
+      </Modal>
+
       {/* Modal Chỉnh sửa */}
       <Modal
         title={
@@ -690,35 +685,27 @@ const MailTemplates = () => {
 
           <Form.Item
             label={
-              <span>
-                Nội dung email
-                <Button
-                  type="link"
-                  size="small"
-                  loading={loadingDefault}
-                  onClick={applyDefaultTemplate}
-                  style={{ paddingLeft: 8 }}
-                >
-                  Dùng mẫu có sẵn
+              <Space>
+                <span>Nội dung email</span>
+                <Button type="link" size="small" loading={loadingDefault} onClick={applyDefaultTemplate}>
+                  Dùng nội dung mẫu
                 </Button>
-              </span>
+                <Button type="link" size="small" onClick={openPreview}>
+                  Xem thử
+                </Button>
+              </Space>
             }
             name="body"
             rules={[{ required: true, message: "Vui lòng nhập nội dung" }]}
           >
-            <TextArea rows={10} placeholder="Nhập nội dung email..." />
+            <EmailContentEditor />
           </Form.Item>
 
           <div style={{ background: "#f5f5f4", padding: 12, borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              <b>Biến được hỗ trợ:</b>{" "}
-              {SUPPORTED_VARIABLES.map((v, idx) => (
-                <span key={v.key}>
-                  <code style={codeStyle}>{v.key}</code>
-                  {idx < SUPPORTED_VARIABLES.length - 1 ? ", " : ""}
-                </span>
-              ))}
-              {" "}— <Text type="warning">dùng sai biến sẽ không render</Text>.
+              Bấm <b>Chèn thông tin</b> trên thanh công cụ để đưa tên ứng viên, vị trí, ngày giờ…
+              vào thư — hệ thống tự điền khi gửi cho từng người. Logo và màu thương hiệu của công ty
+              được thêm tự động, bạn không cần chèn.
             </Text>
           </div>
         </Form>

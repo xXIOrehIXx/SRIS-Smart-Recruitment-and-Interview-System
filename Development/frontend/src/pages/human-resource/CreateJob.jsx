@@ -538,8 +538,8 @@ const CreateJob = () => {
                 <Col xs={24} md={12}>
                   <Form.Item
                     name="departmentManagerId"
-                    label="Người quyết tuyển (DM)"
-                    tooltip="DM sẽ là người CHỐT tuyển/loại ở bước Offer."
+                    label="Trưởng bộ phận phụ trách"
+                    tooltip="Người này chốt tuyển hay loại ở bước Quyết định. Bỏ trống thì bộ phận nhân sự tự quyết."
                   >
                     <Select
                       allowClear
