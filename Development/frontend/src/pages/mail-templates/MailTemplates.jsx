@@ -75,6 +75,8 @@ const MailTemplates = () => {
   const [searchText, setSearchText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [loadingDefault, setLoadingDefault] = useState(false);
+
   // Modal states
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -112,6 +114,11 @@ const MailTemplates = () => {
       value: "INTERVIEW_CANCELLED",
       label: "Hủy lịch phỏng vấn",
       color: "volcano",
+    },
+    {
+      value: "ONBOARDING",
+      label: "Chào mừng nhận việc (onboarding)",
+      color: "purple",
     },
   ];
 
@@ -169,6 +176,32 @@ const MailTemplates = () => {
       body: record.body,
     });
     setEditModalOpen(true);
+  };
+
+  // Điền sẵn khung mẫu do backend giữ (hiện có cho ONBOARDING) — HR chỉ việc sửa
+  // các chỗ trong [ngoặc vuông] thay vì tự viết một email HTML từ số 0.
+  const applyDefaultTemplate = async () => {
+    const type = editForm.getFieldValue("type");
+    if (!type) {
+      message.warning("Chọn loại mẫu trước đã.");
+      return;
+    }
+    try {
+      setLoadingDefault(true);
+      const res = await mailTemplateAPI.getDefault(type);
+      const { subject, body } = res.data || {};
+      if (!body) {
+        message.info("Loại mẫu này chưa có khung sẵn.");
+        return;
+      }
+      editForm.setFieldsValue({ body, subject: editForm.getFieldValue("subject") || subject });
+      message.success("Đã điền khung mẫu — sửa các chỗ trong [ngoặc vuông] cho đúng công ty bạn.");
+    } catch (error) {
+      console.error("getDefault error", error);
+      message.error("Không lấy được mẫu có sẵn.");
+    } finally {
+      setLoadingDefault(false);
+    }
   };
 
   const handleEditConfirm = () => {
@@ -598,7 +631,20 @@ const MailTemplates = () => {
           </Row>
 
           <Form.Item
-            label="Nội dung email"
+            label={
+              <span>
+                Nội dung email
+                <Button
+                  type="link"
+                  size="small"
+                  loading={loadingDefault}
+                  onClick={applyDefaultTemplate}
+                  style={{ paddingLeft: 8 }}
+                >
+                  Dùng mẫu có sẵn
+                </Button>
+              </span>
+            }
             name="body"
             rules={[{ required: true, message: "Vui lòng nhập nội dung" }]}
           >

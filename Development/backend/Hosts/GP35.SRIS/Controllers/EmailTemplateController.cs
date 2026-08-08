@@ -32,6 +32,19 @@ public class EmailTemplateController : ControllerBase
     public async Task<IActionResult> List()
         => Ok(await _service.GetListAsync(_contextData.CompanyId));
 
+    /// <summary>
+    /// Nội dung khởi điểm cho 1 loại template — FE điền sẵn vào ô soạn thảo khi tạo mới.
+    /// Hiện chỉ ONBOARDING có khung mẫu (các loại khác nội dung ngắn, đã có sẵn fallback).
+    /// </summary>
+    [HttpGet("defaults/{type}")]
+    public IActionResult GetDefault(string type)
+    {
+        if (!string.Equals(type, EmailTemplateType.Onboarding, StringComparison.OrdinalIgnoreCase))
+            return Ok(new { subject = (string?)null, body = (string?)null });
+
+        return Ok(new { subject = OnboardingEmailDefault.Subject, body = OnboardingEmailDefault.Body });
+    }
+
     [HttpGet("{templateId:long}")]
     public async Task<IActionResult> Get(long templateId)
         => Ok(await _service.GetByIdAsync(_contextData.CompanyId, templateId));

@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Domain.Shared.Constants;
+﻿namespace GP35.SRIS.Domain.Shared.Constants;
 
 /// <summary>
 /// Loại email template động (M4) — khớp các điểm trigger của <c>NotificationService</c>.
@@ -15,8 +15,15 @@ public static class EmailTemplateType
     public const string InterviewConfirmed = "INTERVIEW_CONFIRMED";
     public const string InterviewCancelled = "INTERVIEW_CANCELLED";
 
+    /// <summary>
+    /// Email chào mừng + hướng dẫn ngày đầu đi làm, gửi khi hồ sơ sang HIRED.
+    /// KHÁC <see cref="Hired"/> (thông báo kết quả): loại này chứa thông tin thực tế của công
+    /// ty nên chỉ gửi khi người tuyển dụng đã soạn mẫu — xem <see cref="OnboardingEmailDefault"/>.
+    /// </summary>
+    public const string Onboarding = "ONBOARDING";
+
     public static readonly string[] All =
-        { Schedule, OfferResponse, Status, Hired, Rejected, InterviewConfirmed, InterviewCancelled };
+        { Schedule, OfferResponse, Status, Hired, Rejected, InterviewConfirmed, InterviewCancelled, Onboarding };
 
     public static bool IsValid(string? type) =>
         type is not null && All.Any(t => string.Equals(t, type, StringComparison.OrdinalIgnoreCase));

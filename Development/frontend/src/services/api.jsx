@@ -396,6 +396,10 @@ export const mailTemplateAPI = {
 
   delete: (templateId) =>
     api.delete(`/email-templates/${templateId}`),
+
+  // Khung mẫu sẵn cho 1 loại (hiện có ONBOARDING) — trả { subject, body }, body null nếu chưa có.
+  getDefault: (type) =>
+    api.get(`/email-templates/defaults/${type}`),
 };
 
 // ==================== DASHBOARD ====================
