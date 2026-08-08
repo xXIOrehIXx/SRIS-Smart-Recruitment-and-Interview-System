@@ -82,16 +82,16 @@ public class OfferService : BaseService<OfferService>, IOfferService
 
             JobTitle = job?.Title ?? info?.JobTitle,
             Department = job?.Department,
-            ReportingTo = manager?.FullName,
+            ReportingTo = NameOrEmail(manager),
             EmploymentType = job?.EmploymentType,
             WorkLocation = job?.Location,
             SalaryAmount = job?.SalaryMax ?? job?.SalaryMin,
             Currency = string.IsNullOrWhiteSpace(job?.Currency) ? "VND" : job!.Currency,
             SalaryPeriod = SalaryPeriods.Month,
             Terms = OfferLetterPdfGenerator.DefaultTerms,
-            SignerName = signer?.FullName,
+            SignerName = NameOrEmail(signer),
             SignerTitle = signer is null ? null : RoleTitle(signer.Role),
-            HrContactName = signer?.FullName,
+            HrContactName = NameOrEmail(signer),
             HrContactEmail = signer?.Email ?? company?.ContactEmail,
             ExpiresInDays = DefaultOfferTtlDays
         };
@@ -324,6 +324,13 @@ public class OfferService : BaseService<OfferService>, IOfferService
         ExpiresAt = o.ExpiresAt,
         RespondedAt = o.RespondedAt
     };
+
+    /// <summary>
+    /// Tên hiển thị của một user trong thư offer. Họ tên là tùy chọn, nên tên rỗng thì lấy email —
+    /// thư offer để trống chỗ "Người ký" / "Báo cáo cho" thì trông như lỗi.
+    /// </summary>
+    private static string? NameOrEmail(User? user)
+        => user is null ? null : (string.IsNullOrWhiteSpace(user.FullName) ? user.Email : user.FullName);
 
     /// <summary>Chức danh gợi ý cho người ký, suy từ role (người soạn sửa lại được).</summary>
     private static string? RoleTitle(string? role) => (role ?? "").Trim() switch
