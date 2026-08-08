@@ -61,6 +61,13 @@ public class OfferLetterDefaultsDto
     public decimal? SalaryAmount { get; set; }
     public string? Currency { get; set; }
     public string? SalaryPeriod { get; set; }
+
+    /// <summary>
+    /// Phúc lợi của job (bảng JobBenefit, mỗi dòng 1 mục) gộp thành text nhiều dòng.
+    /// Người tuyển dụng đã gõ ở tin tuyển dụng rồi — không bắt gõ lại khi soạn thư.
+    /// </summary>
+    public string? Benefits { get; set; }
+
     public string? Terms { get; set; }
     public string? SignerName { get; set; }
     public string? SignerTitle { get; set; }

@@ -23,6 +23,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
 {
     private const string Purpose = "OFFER_RESPONSE";
     private const int DefaultOfferTtlDays = 7; // khớp TTL link OFFER_RESPONSE (5.13)
+    private const int MaxBenefitsLength = 1000; // sức chứa cột OfferDetail.benefits (V029)
 
     private readonly IApplicationRepo _appRepo;
     private readonly IJobRepo _jobRepo;
@@ -70,6 +71,16 @@ public class OfferService : BaseService<OfferService>, IOfferService
             ? await _userRepo.GetByIdAsync(companyId, dmId)
             : null;
 
+        // Phúc lợi đã nhập ở tin tuyển dụng (và trước đó là Yêu cầu tuyển dụng của DM) — kéo sang
+        // làm gợi ý, mỗi mục 1 dòng cho khớp ô textarea bên form soạn thư.
+        // Cắt theo sức chứa cột OfferDetail.benefits (NVARCHAR(1000), V029): tin tuyển dụng không
+        // giới hạn số mục, gợi ý dài quá thì lưu thư sẽ vỡ.
+        var benefits = await _jobRepo.GetBenefitsAsync(companyId, app.JobId);
+        var benefitText = string.Join("\n",
+            benefits.Select(b => b.Content).Where(c => !string.IsNullOrWhiteSpace(c)));
+        if (benefitText.Length > MaxBenefitsLength)
+            benefitText = benefitText[..MaxBenefitsLength];
+
         return new OfferLetterDefaultsDto
         {
             CompanyName = company?.Name,
@@ -88,6 +99,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
             SalaryAmount = job?.SalaryMax ?? job?.SalaryMin,
             Currency = string.IsNullOrWhiteSpace(job?.Currency) ? "VND" : job!.Currency,
             SalaryPeriod = SalaryPeriods.Month,
+            Benefits = benefitText.Length == 0 ? null : benefitText,
             Terms = OfferLetterPdfGenerator.DefaultTerms,
             SignerName = NameOrEmail(signer),
             SignerTitle = signer is null ? null : RoleTitle(signer.Role),

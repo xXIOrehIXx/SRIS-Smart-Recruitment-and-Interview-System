@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form,
   Input, Select, DatePicker, InputNumber, message, Popconfirm, Drawer,
-  Descriptions, Divider, Tooltip, Alert, Spin
+  Descriptions, Divider, Tooltip, Spin
 } from 'antd';
 import {
   CheckCircleOutlined, CloseCircleOutlined,
@@ -173,7 +173,6 @@ const OfferManagement = () => {
         hrContactEmail: values.hrContactEmail,
         signerName: values.signerName,
         signerTitle: values.signerTitle,
-        candidateAddress: values.candidateAddress,
         note: values.note,
 
         expiresInDays: values.deadline
@@ -300,6 +299,7 @@ const OfferManagement = () => {
         salaryAmount: d.salaryAmount,
         currency: d.currency || 'VND',
         salaryPeriod: d.salaryPeriod || 'THANG',
+        benefits: d.benefits,
         terms: d.terms,
         signerName: d.signerName,
         signerTitle: d.signerTitle,
@@ -635,10 +635,6 @@ const OfferManagement = () => {
               </div>
             )}
 
-            <Form.Item label="Địa chỉ ứng viên (in ở đầu thư)" name="candidateAddress">
-              <Input placeholder="VD: 12 Nguyễn Trãi, Thanh Xuân, Hà Nội" maxLength={500} />
-            </Form.Item>
-
             <Divider orientation="left" plain style={{ marginTop: 4 }}>Thông tin vị trí</Divider>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -756,14 +752,6 @@ const OfferManagement = () => {
             <Form.Item label="Lời nhắn thêm cho ứng viên" name="note">
               <TextArea rows={2} placeholder="In ở cuối thư, trước phần xác nhận" maxLength={1000} showCount />
             </Form.Item>
-
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message="Ứng viên không bấm đồng ý/từ chối trong hệ thống"
-              description="Họ nhận email + bản PDF và trả lời trực tiếp cho bạn. Sau khi có câu trả lời, bấm Đã nhận việc / Từ chối ở danh sách để chốt hồ sơ."
-            />
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <Button onClick={() => {
