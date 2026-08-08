@@ -254,16 +254,20 @@ const AdminLayout = () => {
                 trigger={["click"]}
               >
                 <div className="user-dropdown">
-                  {/* Ảnh của CHÍNH người đang đăng nhập; chưa đặt thì mới rơi về logo công ty. */}
+                  {/* Ảnh của CHÍNH người đang đăng nhập. KHÔNG rơi về logo công ty: logo đã nằm
+                      ở sidebar, và nếu dùng làm avatar thì mọi tài khoản trong công ty trông y hệt
+                      nhau — nhìn header không biết đang đăng nhập bằng ai. Chưa đặt ảnh thì để
+                      antd rơi về icon người trên nền màu thương hiệu. */}
                   <Avatar
                     size={36}
                     icon={<UserOutlined />}
-                    src={user?.avatarUrl || company?.logoUrl}
+                    src={user?.avatarUrl}
                     style={{ backgroundColor: company?.primaryColor || "#5D8C3E" }}
                   />
                   <div className="user-details">
+                    {/* Họ tên là tùy chọn -> rơi về email, đừng hiện chữ "User" vô nghĩa. */}
                     <span className="user-name">
-                      {user.fullName || user.name || "User"}
+                      {user.fullName || user.name || user.email || "User"}
                     </span>
                     <span className="user-role">{getRoleLabel(user.role)}</span>
                   </div>

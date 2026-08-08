@@ -604,10 +604,12 @@ const MailTemplates = () => {
         )}
       </Modal>
 
-      {/* Xem thử nội dung với dữ liệu mẫu */}
+      {/* Xem thử nội dung với dữ liệu mẫu. zIndex phải CAO HƠN modal chỉnh sửa: để mặc định
+          thì hai modal cùng z-index 1000, bản xem thử nằm sau và người dùng tưởng nút hỏng. */}
       <Modal
         title="Xem thử email"
         open={previewOpen}
+        zIndex={1100}
         onCancel={() => setPreviewOpen(false)}
         footer={[<Button key="close" onClick={() => setPreviewOpen(false)}>Đóng</Button>]}
         width={720}
@@ -703,9 +705,7 @@ const MailTemplates = () => {
 
           <div style={{ background: "#f5f5f4", padding: 12, borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Bấm <b>Chèn thông tin</b> trên thanh công cụ để đưa tên ứng viên, vị trí, ngày giờ…
-              vào thư — hệ thống tự điền khi gửi cho từng người. Logo và màu thương hiệu của công ty
-              được thêm tự động, bạn không cần chèn.
+              Bấm <b>Chèn thông tin</b> để đưa tên ứng viên, vị trí… vào thư — hệ thống tự điền khi gửi.
             </Text>
           </div>
         </Form>

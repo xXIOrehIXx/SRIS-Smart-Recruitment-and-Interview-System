@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts;
+﻿using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
@@ -31,7 +31,6 @@ public class CompanyService : BaseService<CompanyService>, ICompanyService
         Normalize(dto.Name),
         Normalize(dto.LogoUrl),
         Normalize(dto.PrimaryColor),
-        Normalize(dto.Industry),
         Normalize(dto.Address),
         Normalize(dto.ContactEmail),
         Normalize(dto.Phone));
