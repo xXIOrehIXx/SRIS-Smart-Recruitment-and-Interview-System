@@ -35,9 +35,6 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     /// <summary>Giãn dòng của khối địa chỉ — thư mẫu xếp sít, không giãn như đoạn văn.</summary>
     private const float TightLine = 1.08f;
 
-    /// <summary>Bề ngang khối ký (đủ chỗ ký tay, không kéo dài hết trang).</summary>
-    private const float SignatureWidth = 210f;
-
     private static readonly CultureInfo Vn = CultureInfo.GetCultureInfo("vi-VN");
 
     /// <summary>Điều khoản mặc định theo mẫu, dùng khi người soạn để trống ô "Điều khoản".</summary>
@@ -105,7 +102,7 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
                         ComposeSection(col, "Điều khoản & Điều kiện:", BuildTermsLines(m), p);
 
                         ComposeClosing(col, m);
-                        ComposeSignature(col, m, p);
+                        ComposeSignature(col, m);
                     });
             });
         });
@@ -173,16 +170,22 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
 
     private static void ComposeSubjectAndIntro(ColumnDescriptor col, OfferLetterModel m)
     {
-        var title = Has(m.JobTitle) ? m.JobTitle! : "vị trí ứng tuyển";
+        // Thiếu tên vị trí thì BỎ HẲN cụm "cho vị trí ..." — nhét chữ thay thế vào sau chữ
+        // "vị trí" đẻ ra câu "cho vị trí vị trí ứng tuyển" ngay trên văn bản gửi ứng viên.
+        var hasTitle = Has(m.JobTitle);
 
         col.Item().Height(BlockGap);
-        col.Item().Text($"Chủ đề: Thư mời nhận việc cho vị trí {title}");
+        col.Item().Text(hasTitle
+            ? $"Chủ đề: Thư mời nhận việc cho vị trí {m.JobTitle}"
+            : "Chủ đề: Thư mời nhận việc");
 
+        var position = hasTitle ? $"vị trí {m.JobTitle}" : "vị trí bạn đã ứng tuyển";
         var company = Has(m.CompanyName) ? $" tại {m.CompanyName}" : "";
+
         col.Item().Height(BlockGap);
         col.Item().Text(
             $"Kính gửi {(Has(m.CandidateName) ? m.CandidateName : "Quý ứng viên")}, " +
-            $"chúng tôi vui mừng thông báo và gửi lời mời bạn đảm nhận vị trí {title}{company}. " +
+            $"chúng tôi vui mừng thông báo và gửi lời mời bạn đảm nhận {position}{company}. " +
             "Sau khi xem xét trình độ, năng lực và kinh nghiệm của bạn, chúng tôi tin rằng bạn sẽ là " +
             "một thành viên có giá trị đối với đội ngũ của chúng tôi.")
             ;
@@ -239,11 +242,10 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     }
 
     /// <summary>
-    /// Khối ký của bên tuyển dụng. Thư mời là văn bản đối ngoại — không có chỗ ký thì nhìn
-    /// như bản nháp, nên in đủ ba phần: chữ ký dạng chữ (typed signature) của người ký,
-    /// dòng kẻ để ký tay khi in ra, rồi họ tên/chức danh/công ty bên dưới.
+    /// Chân thư: lời chào + người ký. KHÔNG có ô ký tay — thư mời ở đây là thông báo gửi
+    /// qua email, ứng viên trả lời bằng email chứ không in ra ký rồi gửi lại (5.15).
     /// </summary>
-    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
+    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m)
     {
         col.Item().Height(BlockGap);
 
@@ -252,38 +254,11 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
         col.Item().ShowEntire().Column(sign =>
         {
             sign.Item().Text("Trân trọng,");
-            sign.Item().Height(6);
+            sign.Item().Height(BlockGap);
 
-            sign.Item().Width(SignatureWidth).Column(box =>
-            {
-                if (Has(m.SignerName))
-                {
-                    // Chữ ký dạng chữ: nghiêng, to hơn thân thư — đọc ra ngay là chữ ký,
-                    // nhưng vẫn là văn bản nên bản PDF gửi email không cần ảnh scan.
-                    box.Item().PaddingTop(6).PaddingBottom(2).AlignCenter()
-                        .Text(m.SignerName!).FontSize(17).Italic().FontColor(p.Accent);
-                }
-                else
-                {
-                    // Chưa cấu hình người ký -> vẫn chừa chỗ ký tay, không in chữ ký giả.
-                    box.Item().Height(30);
-                }
-
-                box.Item().LineHorizontal(0.8f).LineColor(p.SoftLine);
-
-                box.Item().PaddingTop(4).Column(who =>
-                {
-                    if (Has(m.SignerName))
-                        who.Item().AlignCenter().Text(m.SignerName!).Bold().LineHeight(TightLine);
-                    if (Has(m.SignerTitle))
-                        who.Item().AlignCenter().Text(m.SignerTitle!).LineHeight(TightLine);
-                    if (Has(m.CompanyName))
-                        who.Item().AlignCenter().Text(m.CompanyName!).LineHeight(TightLine);
-
-                    who.Item().PaddingTop(2).AlignCenter()
-                        .Text("(Ký và ghi rõ họ tên)").FontSize(8.5f).Italic().FontColor(p.Muted);
-                });
-            });
+            if (Has(m.SignerName)) sign.Item().Text(m.SignerName!).Bold().LineHeight(TightLine);
+            if (Has(m.SignerTitle)) sign.Item().Text(m.SignerTitle!).LineHeight(TightLine);
+            if (Has(m.CompanyName)) sign.Item().Text(m.CompanyName!).LineHeight(TightLine);
         });
     }
 

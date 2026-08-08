@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Pipeline;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -105,6 +105,11 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
 
         // Email kết quả khi chốt (HIRED/REJECTED). Best-effort — không làm rớt transition.
         await _notify.SendResultAsync(companyId, applicationId, toState);
+
+        // Trúng tuyển thì gửi thêm email onboarding (giờ làm, ngày đầu đi làm, hồ sơ cần nộp).
+        // Chỉ gửi khi công ty đã soạn mẫu — service tự kiểm, không có mẫu thì im lặng bỏ qua.
+        if (string.Equals(toState, ApplicationState.Hired, StringComparison.OrdinalIgnoreCase))
+            await _notify.SendOnboardingAsync(companyId, applicationId);
 
         return new ApplicationStateDto
         {

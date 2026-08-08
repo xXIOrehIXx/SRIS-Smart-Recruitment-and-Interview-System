@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Services.Business;
+﻿using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Configs;
 using GP35.SRIS.Domain.Shared.Constants;
@@ -15,10 +15,15 @@ namespace GP35.SRIS.Application.Services.Business;
 public class NotificationService : BaseService<NotificationService>, INotificationService
 {
     private const string DefaultBaseUrl = "http://localhost:3000";
+
+    /// <summary>Màu nhấn khi công ty chưa cấu hình brand (cùng tông với thư mời PDF).</summary>
+    private const string DefaultBrandColor = "#1CA0E3";
     private const int InterviewDurationMinutes = 60; // schema chưa lưu end_time -> dùng độ dài mặc định
 
     private readonly IApplicationRepo _appRepo;
     private readonly IEmailTemplateRepo _templateRepo;
+    private readonly ICompanyRepo _companyRepo;
+    private readonly IOfferRepo _offerRepo;
     private readonly IEmailService _email;
     private readonly DefaultConfig _config;
     private readonly ILogger _logger;
@@ -27,6 +32,8 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     {
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _templateRepo = serviceProvider.GetRequiredService<IEmailTemplateRepo>();
+        _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
+        _offerRepo = serviceProvider.GetRequiredService<IOfferRepo>();
         _email = serviceProvider.GetRequiredService<IEmailService>();
         _config = serviceProvider.GetRequiredService<DefaultConfig>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<NotificationService>();
@@ -137,6 +144,58 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         {
             _logger.Error(ex, "Notify: lỗi gửi email kết quả {State} (app={AppId}) — bỏ qua (best-effort).",
                 toState, applicationId);
+        }
+    }
+
+    public async Task SendOnboardingAsync(long companyId, long applicationId)
+    {
+        try
+        {
+            var info = await _appRepo.GetContactInfoAsync(companyId, applicationId);
+            if (info is null || string.IsNullOrWhiteSpace(info.CandidateEmail)) return;
+
+            var company = await _companyRepo.GetByCompanyId(companyId);
+            var offer = await _offerRepo.GetByApplicationAsync(companyId, applicationId);
+
+            var placeholders = new Dictionary<string, string>
+            {
+                ["candidateName"] = info.CandidateName ?? "",
+                ["jobTitle"] = offer?.JobTitle ?? info.JobTitle ?? "",
+                ["companyName"] = company?.Name ?? "",
+                // Ngày vào làm lấy từ thư mời đã gửi; chưa có thì để người tuyển dụng tự điền
+                // trong mẫu, KHÔNG in ngày bịa.
+                ["startDate"] = offer?.StartDate is DateTime d ? d.ToString("dd/MM/yyyy") : "[ngày vào làm]",
+                ["companyAddress"] = company?.Address ?? "[địa chỉ văn phòng]",
+                ["hrEmail"] = offer?.HrContactEmail ?? company?.ContactEmail ?? "",
+
+                // Brand của tenant: màu nhấn + logo. Không có logo -> chuỗi RỖNG chứ không
+                // phải thẻ <img src="">, tránh ô ảnh vỡ chình ình ở đầu email.
+                ["brandColor"] = Has(company?.PrimaryColor) ? company!.PrimaryColor! : DefaultBrandColor,
+                ["companyLogoImg"] = Has(company?.LogoUrl)
+                    ? $"<img src=\"{company!.LogoUrl}\" alt=\"{company.Name}\" height=\"40\" " +
+                      "style=\"display:block;border:0;max-height:40px;\">"
+                    : ""
+            };
+
+            // Không có mẫu ACTIVE -> KHÔNG gửi. Mẫu mặc định đầy chỗ "[điền...]" chỉ để làm
+            // khung soạn thảo, gửi thẳng cho ứng viên thì phản tác dụng.
+            var rendered = await TryRenderTemplateAsync(companyId, EmailTemplateType.Onboarding, placeholders);
+            if (rendered is null)
+            {
+                _logger.Information(
+                    "Notify: công ty {CompanyId} chưa bật mẫu ONBOARDING — bỏ qua email onboarding (app={AppId}).",
+                    companyId, applicationId);
+                return;
+            }
+
+            await _email.SendEmailAsync(rendered.Value.Subject, rendered.Value.Body, info.CandidateEmail, string.Empty);
+            _logger.Information("Notify: gửi email onboarding cho {Email} (app={AppId}).",
+                info.CandidateEmail, applicationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Notify: lỗi gửi email onboarding (app={AppId}) — bỏ qua (best-effort).",
+                applicationId);
         }
     }
 
@@ -283,6 +342,8 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             return null;
         }
     }
+
+    private static bool Has(string? s) => !string.IsNullOrWhiteSpace(s);
 
     /// <summary>Thay placeholder {{key}} (cho phép khoảng trắng: {{ key }}) bằng giá trị. Không phân biệt hoa thường.</summary>
     private static string Render(string template, IReadOnlyDictionary<string, string> values)

@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Application.Contracts.Services.Business;
+﻿namespace GP35.SRIS.Application.Contracts.Services.Business;
 
 /// <summary>
 /// Email tự động cho ứng viên (docs 5.13 "Actionable Email" / Việc 6). Best-effort: lỗi gửi mail
@@ -14,6 +14,13 @@ public interface INotificationService : IBaseService
 
     /// <summary>Email thông báo kết quả khi hồ sơ chốt: HIRED (chúc mừng) / REJECTED (cảm ơn lịch sự).</summary>
     Task SendResultAsync(long companyId, long applicationId, string toState);
+
+    /// <summary>
+    /// Email chào mừng + hướng dẫn ngày đầu đi làm (gửi khi HIRED). CHỈ gửi khi công ty đã
+    /// soạn mẫu ONBOARDING và bật dùng — nội dung này toàn thông tin thực tế của công ty,
+    /// hệ thống không tự bịa được. Không có mẫu -> im lặng bỏ qua.
+    /// </summary>
+    Task SendOnboardingAsync(long companyId, long applicationId);
 
     /// <summary>
     /// Email xác nhận lịch phỏng vấn sau khi ứng viên chốt khung: kèm file .ics đính kèm +

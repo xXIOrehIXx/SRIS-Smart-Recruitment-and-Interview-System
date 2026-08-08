@@ -1,6 +1,7 @@
-using GP35.SRIS.Application.Services.Business;
+﻿using GP35.SRIS.Application.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -76,6 +77,15 @@ public class InterviewScoringServiceTests
         _scoreRepo.Setup(r => r.GetByScheduleAndInterviewerAsync(1L, 10L, 100L)).ReturnsAsync(scores);
         _schedulingRepo.Setup(r => r.GetPanelSizeAsync(1L, 10L)).ReturnsAsync(1);
 
+        // Nộp phiếu = đưa ra kết luận: phải có đề xuất thì mới nộp được (V031).
+        _scoreRepo.Setup(r => r.GetFeedbackAsync(1L, 10L, 100L)).ReturnsAsync(new InterviewFeedback
+        {
+            ScheduleId = 10,
+            InterviewerId = 100,
+            Recommendation = InterviewRecommendation.Hire,
+            Summary = "Nền tảng chắc, giao tiếp tốt."
+        });
+
         // Mock for BuildSheetFullAsync inner dependencies
         _jobRepo.Setup(r => r.GetByIdAsync(1L, 2L)).ReturnsAsync(new Job { Title = "Dev" });
         _candidateRepo.Setup(r => r.GetByIdAsync(1L, 3L)).ReturnsAsync(new Candidate { FullName = "Nam" });
@@ -87,5 +97,32 @@ public class InterviewScoringServiceTests
         Assert.NotNull(result);
         Assert.Equal(10, result.ScheduleId);
         _scoreRepo.Verify(r => r.SubmitAsync(1L, 10L, 100L), Times.Once);
+        _scoreRepo.Verify(r => r.SubmitFeedbackAsync(1L, 10L, 100L), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitAsync_Should_Throw_If_No_Recommendation_Written()
+    {
+        // Chấm đủ điểm nhưng không ghi kết luận -> màn quyết định của người quyết tuyển sẽ
+        // trống trơn, nên chặn ngay ở cửa nộp phiếu.
+        var svc = CreateService();
+        _schedulingRepo.Setup(r => r.IsInterviewerOnScheduleAsync(1L, 10L, 100L)).ReturnsAsync(true);
+        _schedulingRepo.Setup(r => r.GetScheduleByIdAsync(1L, 10L))
+            .ReturnsAsync(new InterviewSchedule { ScheduleId = 10, ApplicationId = 5, RoundNumber = 1, Status = "CONFIRMED" });
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 5L))
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application { ApplicationId = 5, JobId = 2, CandidateId = 3, CurrentState = "INTERVIEW" });
+        _criteriaRepo.Setup(r => r.GetByJobAsync(1L, 2L, true)).ReturnsAsync(new List<EvaluationCriteria>
+        {
+            new EvaluationCriteria { CriteriaId = 1, Name = "Skill" }
+        });
+        _scoreRepo.Setup(r => r.GetByScheduleAndInterviewerAsync(1L, 10L, 100L)).ReturnsAsync(new List<InterviewScore>
+        {
+            new InterviewScore { CriteriaId = 1, Score = 8 }
+        });
+        _scoreRepo.Setup(r => r.GetFeedbackAsync(1L, 10L, 100L)).ReturnsAsync((InterviewFeedback?)null);
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.SubmitAsync(1L, 100L, 10L));
+        Assert.Equal("BAD_REQUEST", ex.ErrorCode);
+        _scoreRepo.Verify(r => r.SubmitAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>()), Times.Never);
     }
 }
