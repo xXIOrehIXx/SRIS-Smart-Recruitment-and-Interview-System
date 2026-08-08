@@ -189,6 +189,14 @@ export const cvAPI = {
   // Trả { url } — presigned URL (~1h) để mở/tải file CV gốc
   getCvFileUrl: (cvId) =>
     api.get(`/cvs/${cvId}/file-url`),
+
+  // Tóm tắt CV đã lưu — { cvId, highlights[], generatedAt, canSummarize }. KHÔNG gọi AI.
+  getSummary: (cvId) =>
+    api.get(`/cvs/${cvId}/summary`),
+
+  // Sinh tóm tắt mới bằng AI rồi lưu. Chạy vài giây (LLM chạy local).
+  generateSummary: (cvId) =>
+    api.post(`/cvs/${cvId}/summary`),
 };
 
 // ==================== APPLICATIONS ====================
