@@ -3,6 +3,8 @@ using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Configs;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Lib.Services;
+using GP35.SRIS.Lib.Services.Email;
+using GP35.SRIS.Lib.Services.Pdf;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -56,17 +58,37 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var expiresText = $"{expiresAt:dd/MM/yyyy HH:mm} UTC";
 
             // Template động (M4): ưu tiên template active theo loại; không có thì dùng nội dung mặc định.
+            // Brand của tenant cho MỌI loại email: template do người dùng soạn muốn chèn logo
+            // thì chỉ cần đặt {{companyLogoImg}}, khỏi phải tự đi tìm URL và gõ thẻ <img>.
+            var brandCompany = await _companyRepo.GetByCompanyId(companyId);
+
             var placeholders = new Dictionary<string, string>
             {
                 ["candidateName"] = info.CandidateName ?? "",
                 ["jobTitle"] = info.JobTitle ?? "",
                 ["link"] = link,
-                ["expiresAt"] = expiresText
+                ["expiresAt"] = expiresText,
+                ["companyName"] = brandCompany?.Name ?? "",
+                ["brandColor"] = Has(brandCompany?.PrimaryColor) ? brandCompany!.PrimaryColor! : DefaultBrandColor,
+                ["companyLogoImg"] = BuildLogoImg(brandCompany?.LogoUrl, brandCompany?.Name)
             };
 
             string subject, body;
+
+            // Thư mời nhận việc: THÂN EMAIL chính là lá thư — ứng viên mở hộp thư là đọc được
+            // ngay trên điện thoại, không phải bấm link hay tải file (5.15). Bản PDF vẫn đính
+            // kèm bên dưới làm văn bản chính thức để lưu/in.
+            var letter = string.Equals(purpose, EmailTemplateType.OfferResponse, StringComparison.OrdinalIgnoreCase)
+                ? await TryBuildLetterModelAsync(companyId, applicationId)
+                : null;
+
             var rendered = await TryRenderTemplateAsync(companyId, purpose, placeholders);
-            if (rendered is not null)
+            if (rendered is null && letter is not null)
+            {
+                subject = OfferLetterEmailBuilder.BuildSubject(letter);
+                body = OfferLetterEmailBuilder.BuildHtml(letter);
+            }
+            else if (rendered is not null)
             {
                 (subject, body) = rendered.Value;
             }
@@ -78,7 +100,11 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                     $"Liên kết có hiệu lực đến {expiresText}.");
             }
 
+            // KHÔNG đính kèm file: thư mời nằm ngay trong thân email, ứng viên đọc và bấm
+            // Reply để trả lời. Kèm thêm một bản PDF y hệt chỉ làm nặng hộp thư và dễ bị bộ
+            // lọc thư rác soi. Ai cần bản để lưu/in thì tải trong Portal.
             await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
+
             _logger.Information("Notify: gửi email {Purpose} cho {Email} (app={AppId}).",
                 purpose, info.CandidateEmail, applicationId);
         }
@@ -173,10 +199,7 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                 // Tên miền email nội bộ (V017) — dòng "cấp email @công-ty.com" trong mẫu.
                 ["emailDomain"] = Has(company?.EmailDomain) ? company!.EmailDomain! : "[tên miền công ty]",
                 ["brandColor"] = Has(company?.PrimaryColor) ? company!.PrimaryColor! : DefaultBrandColor,
-                ["companyLogoImg"] = Has(company?.LogoUrl)
-                    ? $"<img src=\"{company!.LogoUrl}\" alt=\"{company.Name}\" height=\"40\" " +
-                      "style=\"display:block;border:0;max-height:40px;\">"
-                    : ""
+                ["companyLogoImg"] = BuildLogoImg(company?.LogoUrl, company?.Name)
             };
 
             // Không có mẫu ACTIVE -> KHÔNG gửi. Mẫu mặc định đầy chỗ "[điền...]" chỉ để làm
@@ -344,6 +367,35 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             return null;
         }
     }
+
+    /// <summary>Gom OfferDetail + Company + tên ứng viên thành dữ liệu in thư. Null = chưa có offer.</summary>
+    private async Task<OfferLetterModel?> TryBuildLetterModelAsync(long companyId, long applicationId)
+    {
+        try
+        {
+            var offer = await _offerRepo.GetByApplicationAsync(companyId, applicationId);
+            if (offer is null) return null;
+
+            var info = await _appRepo.GetContactInfoAsync(companyId, applicationId);
+            var company = await _companyRepo.GetByCompanyId(companyId);
+            return OfferService.BuildLetterModel(offer, company, info?.CandidateName);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Notify: không dựng được dữ liệu thư mời (app={AppId}).", applicationId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Thẻ &lt;img&gt; logo công ty cho thân email. Chưa cấu hình logo -> trả chuỗi RỖNG chứ
+    /// không phải &lt;img src=""&gt;, tránh ô ảnh vỡ chình ình ở đầu thư.
+    /// </summary>
+    private static string BuildLogoImg(string? logoUrl, string? companyName) =>
+        Has(logoUrl)
+            ? $"<img src=\"{logoUrl}\" alt=\"{companyName}\" " +
+              "style=\"display:inline-block;border:0;height:auto;max-height:64px;max-width:320px;\">"
+            : "";
 
     private static bool Has(string? s) => !string.IsNullOrWhiteSpace(s);
 

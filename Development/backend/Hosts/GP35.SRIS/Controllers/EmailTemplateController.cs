@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.EmailTemplate;
+﻿using GP35.SRIS.Application.Contracts.Dtos.EmailTemplate;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
@@ -48,6 +48,11 @@ public class EmailTemplateController : ControllerBase
     [HttpGet("{templateId:long}")]
     public async Task<IActionResult> Get(long templateId)
         => Ok(await _service.GetByIdAsync(_contextData.CompanyId, templateId));
+
+    /// <summary>Tạo bộ mẫu dựng sẵn cho công ty (bỏ qua loại đã có). Trả { added }.</summary>
+    [HttpPost("defaults")]
+    public async Task<IActionResult> SeedDefaults()
+        => Ok(new { added = await _service.EnsureDefaultsAsync(_contextData.CompanyId) });
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] EmailTemplateUpsertDto dto)

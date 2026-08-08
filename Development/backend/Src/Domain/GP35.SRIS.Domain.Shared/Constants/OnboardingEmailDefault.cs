@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Domain.Shared.Constants;
+﻿namespace GP35.SRIS.Domain.Shared.Constants;
 
 /// <summary>
 /// Nội dung KHỞI ĐIỂM cho email onboarding (loại <see cref="EmailTemplateType.Onboarding"/>) —
@@ -47,7 +47,7 @@ public static class OnboardingEmailDefault
 
         <!-- ===== HEADER: logo công ty ===== -->
         <tr>
-          <td style="background-color:#FFFFFF;padding:28px 40px 0 40px;" align="left">
+          <td style="background-color:#FFFFFF;padding:28px 40px 0 40px;" align="center">
             {{companyLogoImg}}
           </td>
         </tr>

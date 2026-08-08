@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -6,6 +6,7 @@ using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
 using GP35.SRIS.Application.Contracts.Dtos.Auth;
 using GP35.SRIS.Domain.Entities;
+using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Configs;
 using GP35.SRIS.Domain.Shared.Constants;
@@ -105,6 +106,22 @@ public class AuthService : BaseService<AuthService>, IAuthService
         };
         admin.UserId = await _userRepo.InsertForNewCompanyAsync(companyId, admin);
         admin.CompanyId = companyId;
+
+        // Mở tài khoản là có sẵn bộ mẫu email — công ty không phải tự viết HTML từ số 0 mới
+        // gửi được thư. Best-effort: hỏng bước này thì vẫn đăng ký xong, mẫu tạo lại được
+        // bằng nút trên trang Mẫu Email.
+        try
+        {
+            var added = await _serviceProvider.GetRequiredService<IEmailTemplateService>()
+                .EnsureDefaultsAsync(companyId);
+            _logger.Information("Register: tạo sẵn {Added} mẫu email cho công ty {CompanyId}.",
+                added, companyId);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Register: không tạo được bộ mẫu email mặc định (company={CompanyId}).",
+                companyId);
+        }
 
         _logger.Information("Register: công ty mới id={CompanyId} slug={Slug}, Admin={Email}.",
             companyId, slug, email);
