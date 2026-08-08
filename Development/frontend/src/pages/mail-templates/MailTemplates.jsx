@@ -705,9 +705,7 @@ const MailTemplates = () => {
 
           <div style={{ background: "#f5f5f4", padding: 12, borderRadius: 8 }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Bấm <b>Chèn thông tin</b> trên thanh công cụ để đưa tên ứng viên, vị trí, ngày giờ…
-              vào thư — hệ thống tự điền khi gửi cho từng người. Logo và màu thương hiệu của công ty
-              được thêm tự động, bạn không cần chèn.
+              Bấm <b>Chèn thông tin</b> để đưa tên ứng viên, vị trí… vào thư — hệ thống tự điền khi gửi.
             </Text>
           </div>
         </Form>
