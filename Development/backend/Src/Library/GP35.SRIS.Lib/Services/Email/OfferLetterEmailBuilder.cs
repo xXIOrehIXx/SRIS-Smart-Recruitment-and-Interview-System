@@ -54,8 +54,16 @@ public static class OfferLetterEmailBuilder
           .Append($"style=\"width:600px;max-width:600px;background-color:{p.Paper};")
           .Append($"border:1px solid {p.Frame};\">");
 
-        // ----- Đầu thư: logo + tên/địa chỉ/liên hệ công ty -----
-        sb.Append(Row(p, "padding:28px 34px 0 34px;", Letterhead(m, p)));
+        // ----- Banner logo (canh giữa, ngay trên tiêu đề) -----
+        if (Has(m.CompanyLogoUrl))
+            sb.Append(Row(p, "padding:26px 34px 0 34px;",
+                $"<div style=\"text-align:center;\"><img src=\"{E(m.CompanyLogoUrl!)}\" " +
+                $"alt=\"{E(m.CompanyName ?? "")}\" style=\"display:inline-block;border:0;height:auto;" +
+                "max-height:64px;max-width:320px;\"></div>"));
+
+        // ----- Đầu thư: tên/địa chỉ/liên hệ công ty -----
+        sb.Append(Row(p, Has(m.CompanyLogoUrl) ? "padding:18px 34px 0 34px;" : "padding:28px 34px 0 34px;",
+            Letterhead(m, p)));
 
         // ----- Tiêu đề -----
         sb.Append(Row(p, "padding:22px 34px 0 34px;",
@@ -116,11 +124,6 @@ public static class OfferLetterEmailBuilder
     private static string Letterhead(OfferLetterModel m, LetterPalette p)
     {
         var sb = new StringBuilder();
-
-        // Logo là URL công ty tự cấu hình; chưa có thì bỏ hẳn thẻ img, không để ô ảnh vỡ.
-        if (Has(m.CompanyLogoUrl))
-            sb.Append($"<img src=\"{E(m.CompanyLogoUrl!)}\" alt=\"{E(m.CompanyName ?? "")}\" ")
-              .Append("style=\"display:block;border:0;height:auto;max-height:44px;margin-bottom:12px;\">");
 
         if (Has(m.CompanyName))
             sb.Append($"<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;")

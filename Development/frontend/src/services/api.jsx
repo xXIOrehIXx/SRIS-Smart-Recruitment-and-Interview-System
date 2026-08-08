@@ -397,9 +397,13 @@ export const mailTemplateAPI = {
   delete: (templateId) =>
     api.delete(`/email-templates/${templateId}`),
 
-  // Khung mẫu sẵn cho 1 loại (hiện có ONBOARDING) — trả { subject, body }, body null nếu chưa có.
+  // Khung mẫu sẵn cho 1 loại — trả { subject, body }, body null nếu loại đó chưa có khung.
   getDefault: (type) =>
     api.get(`/email-templates/defaults/${type}`),
+
+  // Tạo đủ bộ mẫu dựng sẵn cho công ty (bỏ qua loại đã có) — trả { added }.
+  seedDefaults: () =>
+    api.post('/email-templates/defaults'),
 };
 
 // ==================== DASHBOARD ====================

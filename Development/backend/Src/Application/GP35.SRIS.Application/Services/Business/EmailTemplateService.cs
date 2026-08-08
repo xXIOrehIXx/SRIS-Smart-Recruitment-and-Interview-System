@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.EmailTemplate;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
@@ -30,6 +30,35 @@ public class EmailTemplateService : BaseService<EmailTemplateService>, IEmailTem
         var t = await _repo.GetByIdAsync(companyId, templateId)
             ?? throw NotFound(templateId);
         return ToDto(t);
+    }
+
+    public async Task<int> EnsureDefaultsAsync(long companyId)
+    {
+        // Chỉ thêm loại CÒN THIẾU — không bao giờ ghi đè mẫu người dùng đã sửa.
+        var existing = (await _repo.GetListAsync(companyId))
+            .Select(t => t.Type?.Trim().ToUpperInvariant())
+            .Where(t => t is not null)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase)!;
+
+        var added = 0;
+        foreach (var seed in EmailTemplateDefaults.All)
+        {
+            if (existing.Contains(seed.Type)) continue;
+
+            await _repo.InsertAsync(companyId, new TemplateEntity
+            {
+                Type = seed.Type,
+                Name = seed.Name,
+                Subject = seed.Subject,
+                Body = seed.Body,
+                // ONBOARDING còn nhiều chỗ [điền tay] -> để TẮT, người tuyển dụng sửa xong mới bật.
+                // Các loại còn lại nội dung đã đủ dùng ngay.
+                IsActive = !string.Equals(seed.Type, EmailTemplateType.Onboarding, StringComparison.OrdinalIgnoreCase)
+            });
+            added++;
+        }
+
+        return added;
     }
 
     public async Task<EmailTemplateDto> CreateAsync(long companyId, EmailTemplateUpsertDto dto)

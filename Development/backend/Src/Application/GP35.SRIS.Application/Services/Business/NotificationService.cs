@@ -2,7 +2,6 @@
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Configs;
 using GP35.SRIS.Domain.Shared.Constants;
-using GP35.SRIS.Lib.Models;
 using GP35.SRIS.Lib.Services;
 using GP35.SRIS.Lib.Services.Email;
 using GP35.SRIS.Lib.Services.Pdf;
@@ -27,8 +26,6 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     private readonly IEmailTemplateRepo _templateRepo;
     private readonly ICompanyRepo _companyRepo;
     private readonly IOfferRepo _offerRepo;
-    private readonly IOfferLetterPdfGenerator _pdf;
-    private readonly IBrandLogoFetcher _logoFetcher;
     private readonly IEmailService _email;
     private readonly DefaultConfig _config;
     private readonly ILogger _logger;
@@ -39,8 +36,6 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         _templateRepo = serviceProvider.GetRequiredService<IEmailTemplateRepo>();
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _offerRepo = serviceProvider.GetRequiredService<IOfferRepo>();
-        _pdf = serviceProvider.GetRequiredService<IOfferLetterPdfGenerator>();
-        _logoFetcher = serviceProvider.GetRequiredService<IBrandLogoFetcher>();
         _email = serviceProvider.GetRequiredService<IEmailService>();
         _config = serviceProvider.GetRequiredService<DefaultConfig>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<NotificationService>();
@@ -63,12 +58,19 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var expiresText = $"{expiresAt:dd/MM/yyyy HH:mm} UTC";
 
             // Template động (M4): ưu tiên template active theo loại; không có thì dùng nội dung mặc định.
+            // Brand của tenant cho MỌI loại email: template do người dùng soạn muốn chèn logo
+            // thì chỉ cần đặt {{companyLogoImg}}, khỏi phải tự đi tìm URL và gõ thẻ <img>.
+            var brandCompany = await _companyRepo.GetByCompanyId(companyId);
+
             var placeholders = new Dictionary<string, string>
             {
                 ["candidateName"] = info.CandidateName ?? "",
                 ["jobTitle"] = info.JobTitle ?? "",
                 ["link"] = link,
-                ["expiresAt"] = expiresText
+                ["expiresAt"] = expiresText,
+                ["companyName"] = brandCompany?.Name ?? "",
+                ["brandColor"] = Has(brandCompany?.PrimaryColor) ? brandCompany!.PrimaryColor! : DefaultBrandColor,
+                ["companyLogoImg"] = BuildLogoImg(brandCompany?.LogoUrl, brandCompany?.Name)
             };
 
             string subject, body;
@@ -98,21 +100,13 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                     $"Liên kết có hiệu lực đến {expiresText}.");
             }
 
-            // Thư mời nhận việc: ĐÍNH KÈM luôn file PDF. Ứng viên không phải bấm gì trong hệ
-            // thống nữa (5.15) nên bắt họ mở link chỉ để tải một file là thừa một bước — và
-            // link chỉ sống trong thời hạn token, còn file trong hộp thư thì giữ mãi.
-            var attachments = string.Equals(purpose, EmailTemplateType.OfferResponse, StringComparison.OrdinalIgnoreCase)
-                ? await TryBuildOfferLetterAttachmentAsync(companyId, applicationId)
-                : null;
+            // KHÔNG đính kèm file: thư mời nằm ngay trong thân email, ứng viên đọc và bấm
+            // Reply để trả lời. Kèm thêm một bản PDF y hệt chỉ làm nặng hộp thư và dễ bị bộ
+            // lọc thư rác soi. Ai cần bản để lưu/in thì tải trong Portal.
+            await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
 
-            if (attachments is { Count: > 0 })
-                await _email.SendEmailAttachmentAsync(
-                    subject, body, new List<string> { info.CandidateEmail }, new List<string>(), attachments);
-            else
-                await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
-
-            _logger.Information("Notify: gửi email {Purpose} cho {Email} (app={AppId}, đính kèm={Att}).",
-                purpose, info.CandidateEmail, applicationId, attachments?.Count ?? 0);
+            _logger.Information("Notify: gửi email {Purpose} cho {Email} (app={AppId}).",
+                purpose, info.CandidateEmail, applicationId);
         }
         catch (Exception ex)
         {
@@ -205,10 +199,7 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                 // Tên miền email nội bộ (V017) — dòng "cấp email @công-ty.com" trong mẫu.
                 ["emailDomain"] = Has(company?.EmailDomain) ? company!.EmailDomain! : "[tên miền công ty]",
                 ["brandColor"] = Has(company?.PrimaryColor) ? company!.PrimaryColor! : DefaultBrandColor,
-                ["companyLogoImg"] = Has(company?.LogoUrl)
-                    ? $"<img src=\"{company!.LogoUrl}\" alt=\"{company.Name}\" height=\"40\" " +
-                      "style=\"display:block;border:0;max-height:40px;\">"
-                    : ""
+                ["companyLogoImg"] = BuildLogoImg(company?.LogoUrl, company?.Name)
             };
 
             // Không có mẫu ACTIVE -> KHÔNG gửi. Mẫu mặc định đầy chỗ "[điền...]" chỉ để làm
@@ -397,39 +388,14 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     }
 
     /// <summary>
-    /// Dựng file PDF thư mời để đính kèm email. Best-effort: thiếu offer / sinh PDF lỗi thì
-    /// trả null và email vẫn gửi kèm link như cũ — không để việc dựng file chặn mất thư báo.
+    /// Thẻ &lt;img&gt; logo công ty cho thân email. Chưa cấu hình logo -> trả chuỗi RỖNG chứ
+    /// không phải &lt;img src=""&gt;, tránh ô ảnh vỡ chình ình ở đầu thư.
     /// </summary>
-    private async Task<List<EmailAttachment>?> TryBuildOfferLetterAttachmentAsync(
-        long companyId, long applicationId)
-    {
-        try
-        {
-            var model = await TryBuildLetterModelAsync(companyId, applicationId);
-            if (model is null) return null;
-
-            model.LogoBytes = await _logoFetcher.TryGetAsync(model.CompanyLogoUrl);
-
-            var pdf = _pdf.Generate(model);
-            var fileName = _pdf.BuildFileName(model);
-
-            return new List<EmailAttachment>
-            {
-                new()
-                {
-                    FileName = Path.GetFileNameWithoutExtension(fileName),
-                    FileExtension = Path.GetExtension(fileName),
-                    FileContent = pdf
-                }
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.Warning(ex, "Notify: không dựng được PDF thư mời (app={AppId}) — gửi email không kèm file.",
-                applicationId);
-            return null;
-        }
-    }
+    private static string BuildLogoImg(string? logoUrl, string? companyName) =>
+        Has(logoUrl)
+            ? $"<img src=\"{logoUrl}\" alt=\"{companyName}\" " +
+              "style=\"display:inline-block;border:0;height:auto;max-height:64px;max-width:320px;\">"
+            : "";
 
     private static bool Has(string? s) => !string.IsNullOrWhiteSpace(s);
 

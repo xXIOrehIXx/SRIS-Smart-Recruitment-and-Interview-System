@@ -26,6 +26,7 @@ import {
   EyeOutlined,
   ReloadOutlined,
   SearchOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import { mailTemplateAPI } from "../../services/api";
 import "./css/MailTemplates.css";
@@ -60,13 +61,13 @@ const SUPPORTED_VARIABLES = [
     desc: "Lý do hủy (tùy chọn) — chỉ INTERVIEW_CANCELLED",
   },
   // Nhóm dưới đây do email onboarding dùng (hệ thống tự điền từ hồ sơ công ty + thư mời).
-  { key: "{{companyName}}",    desc: "Tên công ty — chỉ ONBOARDING" },
+  { key: "{{companyName}}",    desc: "Tên công ty — mọi loại email" },
   { key: "{{startDate}}",      desc: "Ngày vào làm lấy từ thư mời (dd/MM/yyyy) — chỉ ONBOARDING" },
   { key: "{{companyAddress}}", desc: "Địa chỉ công ty — chỉ ONBOARDING" },
   { key: "{{hrEmail}}",        desc: "Email liên hệ nhân sự — chỉ ONBOARDING" },
   { key: "{{emailDomain}}",    desc: "Tên miền email nội bộ — chỉ ONBOARDING" },
-  { key: "{{brandColor}}",     desc: "Màu brand công ty (dùng trong style) — chỉ ONBOARDING" },
-  { key: "{{companyLogoImg}}", desc: "Thẻ <img> logo công ty, rỗng nếu chưa có logo — chỉ ONBOARDING" },
+  { key: "{{brandColor}}",     desc: "Màu brand công ty (dùng trong style) — mọi loại email" },
+  { key: "{{companyLogoImg}}", desc: "Thẻ <img> logo công ty (Admin → Thương Hiệu), rỗng nếu chưa có — mọi loại email" },
 ];
 const codeStyle = {
   background: "#fff",
@@ -175,6 +176,31 @@ const MailTemplates = () => {
   };
 
   // Edit flow
+  // Tạo mẫu mới: dùng lại đúng modal chỉnh sửa, chỉ khác là chưa có template nào được chọn.
+  const handleCreateClick = (presetType) => {
+    setSelectedTemplate(null);
+    editForm.resetFields();
+    if (presetType) editForm.setFieldsValue({ type: presetType });
+    setEditModalOpen(true);
+  };
+
+  // Công ty mới đã được tạo sẵn bộ mẫu lúc đăng ký; nút này để công ty cũ (hoặc ai lỡ xoá)
+  // dựng lại phần còn thiếu.
+  const seedDefaults = async () => {
+    try {
+      setLoadingDefault(true);
+      const res = await mailTemplateAPI.seedDefaults();
+      const added = res.data?.added ?? 0;
+      message.success(added > 0 ? `Đã tạo ${added} mẫu email dựng sẵn.` : "Đã có đủ mẫu, không thiếu loại nào.");
+      fetchTemplates();
+    } catch (error) {
+      console.error("seedDefaults error", error);
+      message.error("Không tạo được bộ mẫu dựng sẵn.");
+    } finally {
+      setLoadingDefault(false);
+    }
+  };
+
   const handleEditClick = (record) => {
     setSelectedTemplate(record);
     editForm.setFieldsValue({
@@ -221,8 +247,14 @@ const MailTemplates = () => {
       setSubmitting(true);
       const values = editForm.getFieldsValue();
       const payload = { ...values, isActive: true };
-      await mailTemplateAPI.update(selectedTemplate.templateId || selectedTemplate.id, payload);
-      message.success("Cập nhật mẫu email thành công!");
+
+      if (selectedTemplate) {
+        await mailTemplateAPI.update(selectedTemplate.templateId || selectedTemplate.id, payload);
+        message.success("Cập nhật mẫu email thành công!");
+      } else {
+        await mailTemplateAPI.create(payload);
+        message.success("Đã tạo mẫu email — từ giờ hệ thống gửi theo nội dung này.");
+      }
       setEditModalOpen(false);
       setEditConfirmModalOpen(false);
       editForm.resetFields();
@@ -428,16 +460,21 @@ const MailTemplates = () => {
                 {missingTypes.length} loại email CHƯA có template active
               </Text>
               <Text type="secondary">
-                Hệ thống sẽ gửi nội dung mặc định (hard-coded) cho các trigger này — nội
-                dung không đồng nhất giữa các trigger. Liên hệ Admin để bổ sung template.
+                Hệ thống dùng nội dung mặc định cho các trigger này. Bấm vào nhãn bên dưới
+                để tạo mẫu riêng cho công ty bạn (riêng ONBOARDING: chưa có mẫu thì KHÔNG gửi).
               </Text>
             </Space>
           }
           description={
             <Space wrap style={{ marginTop: 4 }}>
               {missingTypes.map((t) => (
-                <Tag key={t.value} color={t.color}>
-                  {t.label}
+                <Tag
+                  key={t.value}
+                  color={t.color}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => handleCreateClick(t.value)}
+                >
+                  {t.label} +
                 </Tag>
               ))}
             </Space>
@@ -453,14 +490,27 @@ const MailTemplates = () => {
             justifyContent: "flex-end",
           }}
         >
-          <Input
-            placeholder="Tìm kiếm mẫu email..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 280 }}
-            allowClear
-          />
+          <Space>
+            <Input
+              placeholder="Tìm kiếm mẫu email..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{ width: 280 }}
+              allowClear
+            />
+            <Button icon={<MailOutlined />} loading={loadingDefault} onClick={seedDefaults}>
+              Tạo bộ mẫu dựng sẵn
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+              onClick={() => handleCreateClick(null)}
+            >
+              Tạo mẫu
+            </Button>
+          </Space>
         </div>
 
         <Table
@@ -578,7 +628,7 @@ const MailTemplates = () => {
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <EditOutlined style={{ color: MATCHA_GREEN }} />
-            Chỉnh sửa mẫu email
+            {selectedTemplate ? "Chỉnh sửa mẫu email" : "Tạo mẫu email"}
           </div>
         }
         open={editModalOpen}
