@@ -35,6 +35,9 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     /// <summary>Giãn dòng của khối địa chỉ — thư mẫu xếp sít, không giãn như đoạn văn.</summary>
     private const float TightLine = 1.08f;
 
+    /// <summary>Bề ngang khối ký (đủ chỗ ký tay, không kéo dài hết trang).</summary>
+    private const float SignatureWidth = 210f;
+
     private static readonly CultureInfo Vn = CultureInfo.GetCultureInfo("vi-VN");
 
     /// <summary>Điều khoản mặc định theo mẫu, dùng khi người soạn để trống ô "Điều khoản".</summary>
@@ -102,7 +105,7 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
                         ComposeSection(col, "Điều khoản & Điều kiện:", BuildTermsLines(m), p);
 
                         ComposeClosing(col, m);
-                        ComposeSignature(col, m);
+                        ComposeSignature(col, m, p);
                     });
             });
         });
@@ -235,7 +238,12 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
             ;
     }
 
-    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m)
+    /// <summary>
+    /// Khối ký của bên tuyển dụng. Thư mời là văn bản đối ngoại — không có chỗ ký thì nhìn
+    /// như bản nháp, nên in đủ ba phần: chữ ký dạng chữ (typed signature) của người ký,
+    /// dòng kẻ để ký tay khi in ra, rồi họ tên/chức danh/công ty bên dưới.
+    /// </summary>
+    private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
     {
         col.Item().Height(BlockGap);
 
@@ -244,11 +252,38 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
         col.Item().ShowEntire().Column(sign =>
         {
             sign.Item().Text("Trân trọng,");
-            sign.Item().Height(BlockGap);
+            sign.Item().Height(6);
 
-            if (Has(m.SignerName)) sign.Item().Text(m.SignerName!).Bold().LineHeight(TightLine);
-            if (Has(m.SignerTitle)) sign.Item().Text(m.SignerTitle!).LineHeight(TightLine);
-            if (Has(m.CompanyName)) sign.Item().Text(m.CompanyName!).LineHeight(TightLine);
+            sign.Item().Width(SignatureWidth).Column(box =>
+            {
+                if (Has(m.SignerName))
+                {
+                    // Chữ ký dạng chữ: nghiêng, to hơn thân thư — đọc ra ngay là chữ ký,
+                    // nhưng vẫn là văn bản nên bản PDF gửi email không cần ảnh scan.
+                    box.Item().PaddingTop(6).PaddingBottom(2).AlignCenter()
+                        .Text(m.SignerName!).FontSize(17).Italic().FontColor(p.Accent);
+                }
+                else
+                {
+                    // Chưa cấu hình người ký -> vẫn chừa chỗ ký tay, không in chữ ký giả.
+                    box.Item().Height(30);
+                }
+
+                box.Item().LineHorizontal(0.8f).LineColor(p.SoftLine);
+
+                box.Item().PaddingTop(4).Column(who =>
+                {
+                    if (Has(m.SignerName))
+                        who.Item().AlignCenter().Text(m.SignerName!).Bold().LineHeight(TightLine);
+                    if (Has(m.SignerTitle))
+                        who.Item().AlignCenter().Text(m.SignerTitle!).LineHeight(TightLine);
+                    if (Has(m.CompanyName))
+                        who.Item().AlignCenter().Text(m.CompanyName!).LineHeight(TightLine);
+
+                    who.Item().PaddingTop(2).AlignCenter()
+                        .Text("(Ký và ghi rõ họ tên)").FontSize(8.5f).Italic().FontColor(p.Muted);
+                });
+            });
         });
     }
 
