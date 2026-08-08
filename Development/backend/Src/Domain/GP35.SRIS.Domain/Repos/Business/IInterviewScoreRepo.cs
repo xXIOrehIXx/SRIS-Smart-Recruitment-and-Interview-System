@@ -20,4 +20,19 @@ public interface IInterviewScoreRepo : IBaseRepo<long, InterviewScore>
 
     /// <summary>CHỈ phiếu đã SUBMITTED của buổi (cho tổng hợp Radar + std dev — blind đã mở).</summary>
     Task<IReadOnlyList<InterviewScore>> GetSubmittedByScheduleAsync(long companyId, long scheduleId);
+
+    // ----- Kết luận của người phỏng vấn (V031) — cùng vòng đời với phiếu chấm -----
+
+    /// <summary>Kết luận của CHÍNH interviewer này cho buổi (kể cả còn nháp). Null nếu chưa viết.</summary>
+    Task<InterviewFeedback?> GetFeedbackAsync(long companyId, long scheduleId, long interviewerId);
+
+    /// <summary>Lưu/ghi đè kết luận (theo UNIQUE schedule+interviewer). KHÔNG đóng dấu nộp.</summary>
+    Task UpsertFeedbackAsync(
+        long companyId, long scheduleId, long interviewerId, string? recommendation, string? summary);
+
+    /// <summary>Đóng dấu nộp kết luận (mở blind). Trả số dòng cập nhật.</summary>
+    Task<int> SubmitFeedbackAsync(long companyId, long scheduleId, long interviewerId);
+
+    /// <summary>CHỈ kết luận ĐÃ NỘP của buổi — nguồn cho màn quyết định của người quyết tuyển.</summary>
+    Task<IReadOnlyList<InterviewFeedback>> GetSubmittedFeedbackByScheduleAsync(long companyId, long scheduleId);
 }

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -81,6 +81,14 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             await _scoreRepo.UpsertAsync(companyId, scheduleId, interviewerId, item.CriteriaId, item.Score, item.Note);
         }
 
+        // Kết luận đi cùng vòng đời với điểm: nháp lưu được dù chưa chọn đề xuất.
+        var recommendation = Trim(dto.Recommendation)?.ToUpperInvariant();
+        if (recommendation is not null && !InterviewRecommendation.IsValid(recommendation))
+            throw Bad("Đề xuất phải là HIRE, NO_HIRE hoặc UNSURE.");
+
+        await _scoreRepo.UpsertFeedbackAsync(
+            companyId, scheduleId, interviewerId, recommendation, Trim(dto.Summary));
+
         return await BuildSheetFullAsync(companyId, scheduleId, interviewerId);
     }
 
@@ -99,9 +107,16 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         if (missing.Count > 0)
             throw Bad($"Hãy chấm đủ điểm trước khi nộp. Còn thiếu: {string.Join(", ", missing.Select(c => c.Name))}.");
 
+        // Nộp phiếu = đưa ra kết luận. Người quyết tuyển đọc kết luận chứ không đọc điểm,
+        // nên phiếu không có đề xuất thì màn quyết định trống — chặn ngay ở đây.
+        var feedback = await _scoreRepo.GetFeedbackAsync(companyId, scheduleId, interviewerId);
+        if (!InterviewRecommendation.IsValid(feedback?.Recommendation))
+            throw Bad("Hãy chọn đề xuất (nên tuyển / không nên / chưa chắc) trước khi nộp phiếu.");
+
         await _scoreRepo.SubmitAsync(companyId, scheduleId, interviewerId);
-        _logger.Information("Scoring: interviewer {InterviewerId} nộp phiếu buổi {ScheduleId} (mở blind).",
-            interviewerId, scheduleId);
+        await _scoreRepo.SubmitFeedbackAsync(companyId, scheduleId, interviewerId);
+        _logger.Information("Scoring: interviewer {InterviewerId} nộp phiếu buổi {ScheduleId} — đề xuất {Rec} (mở blind).",
+            interviewerId, scheduleId, feedback!.Recommendation);
 
         return await BuildSheetFullAsync(companyId, scheduleId, interviewerId);
     }
@@ -207,6 +222,105 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         return result;
     }
 
+    public async Task<DecisionBriefDto> GetDecisionBriefAsync(long companyId, long applicationId)
+    {
+        var detail = await _appRepo.GetDetailAsync(companyId, applicationId)
+            ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={applicationId}).");
+
+        var job = await _jobRepo.GetByIdAsync(companyId, detail.JobId);
+        var criteriaNames = (await _criteriaRepo.GetByJobAsync(companyId, detail.JobId, activeOnly: false))
+            .ToDictionary(c => c.CriteriaId, c => c.Name);
+
+        var brief = new DecisionBriefDto
+        {
+            ApplicationId = detail.ApplicationId,
+            CurrentState = detail.CurrentState,
+            AppliedAt = detail.AppliedAt,
+            CandidateId = detail.CandidateId,
+            CandidateName = detail.CandidateName,
+            CandidateEmail = detail.CandidateEmail,
+            CandidatePhone = detail.CandidatePhone,
+            JobId = detail.JobId,
+            JobTitle = detail.JobTitle,
+            Department = job?.Department,
+            CvId = detail.CvId,
+            CvFileName = detail.CvFileName
+        };
+
+        var schedules = await _schedulingRepo.GetSchedulesByApplicationAsync(companyId, applicationId);
+        foreach (var s in schedules)
+        {
+            // BLIND REVIEW: cả hai nguồn dưới đây đều đã lọc "đã nộp" ở repo — nháp của người
+            // khác không bao giờ chạm tới màn quyết định.
+            var scores = await _scoreRepo.GetSubmittedByScheduleAsync(companyId, s.ScheduleId);
+            var feedbacks = await _scoreRepo.GetSubmittedFeedbackByScheduleAsync(companyId, s.ScheduleId);
+
+            // Ai đã nộp = có phiếu điểm SUBMITTED. Kết luận có thể thiếu với phiếu nộp từ
+            // trước khi có V031 -> vẫn hiện người đó, chỉ để trống phần đề xuất.
+            var interviewerIds = scores.Select(x => x.InterviewerId)
+                .Union(feedbacks.Select(f => f.InterviewerId))
+                .Distinct()
+                .ToList();
+
+            var names = await GetInterviewerNamesAsync(companyId, interviewerIds);
+
+            var verdicts = interviewerIds.Select(id =>
+            {
+                var fb = feedbacks.FirstOrDefault(f => f.InterviewerId == id);
+                return new InterviewerVerdictDto
+                {
+                    InterviewerId = id,
+                    InterviewerName = names.GetValueOrDefault(id),
+                    Recommendation = fb?.Recommendation,
+                    Summary = fb?.Summary,
+                    SubmittedAt = fb?.SubmittedAt,
+                    Notes = scores
+                        .Where(x => x.InterviewerId == id && !string.IsNullOrWhiteSpace(x.Note))
+                        .Select(x => new CriterionNoteDto
+                        {
+                            CriteriaName = criteriaNames.GetValueOrDefault(x.CriteriaId, "Tiêu chí"),
+                            Note = x.Note!.Trim()
+                        })
+                        .ToList()
+                };
+            })
+            // Người nói KHÔNG nên tuyển đưa lên trước: ý kiến phản đối là thứ người quyết
+            // dễ bỏ sót nhất khi lướt nhanh.
+            .OrderBy(v => v.Recommendation == InterviewRecommendation.NoHire ? 0
+                        : v.Recommendation == InterviewRecommendation.Unsure ? 1 : 2)
+            .ToList();
+
+            brief.Rounds.Add(new DecisionRoundDto
+            {
+                ScheduleId = s.ScheduleId,
+                RoundNumber = s.RoundNumber,
+                ScheduleStatus = s.Status,
+                ScheduledAt = s.ConfirmedSlotId is long slotId
+                    ? (await _schedulingRepo.GetSlotAsync(companyId, slotId))?.StartTime
+                    : null,
+                SubmittedInterviewers = scores.Select(x => x.InterviewerId).Distinct().Count(),
+                Verdicts = verdicts
+            });
+        }
+
+        var all = brief.Rounds.SelectMany(r => r.Verdicts).ToList();
+        brief.TotalSubmitted = all.Count;
+        brief.HireCount = all.Count(v => v.Recommendation == InterviewRecommendation.Hire);
+        brief.NoHireCount = all.Count(v => v.Recommendation == InterviewRecommendation.NoHire);
+        brief.UnsureCount = all.Count(v => v.Recommendation == InterviewRecommendation.Unsure);
+
+        var notes = await _serviceProvider.GetRequiredService<IInternalNoteRepo>()
+            .GetByApplicationAsync(companyId, applicationId);
+        brief.InternalNotes = notes.Select(n => new DecisionNoteDto
+        {
+            AuthorName = n.AuthorEmail,
+            Content = n.Content,
+            CreatedAt = n.CreatedAt
+        }).ToList();
+
+        return brief;
+    }
+
     // ============================================================
 
     /// <summary>user_id -> tên hiển thị (full_name, rơi về email). Rỗng khi không có ai chấm.</summary>
@@ -275,6 +389,10 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         var panelSize = await _schedulingRepo.GetPanelSizeAsync(companyId, scheduleId);
 
         var coreDto = BuildSheet(scheduleId, criteria, mine);
+
+        var myFeedback = await _scoreRepo.GetFeedbackAsync(companyId, scheduleId, interviewerId);
+        coreDto.MyRecommendation = myFeedback?.Recommendation;
+        coreDto.MySummary = myFeedback?.Summary;
 
         // Lấy thông tin Job + Candidate — đã có scope, query trực tiếp qua repo đã đăng ký.
         var job = await _jobRepo.GetByIdAsync(companyId, app.JobId);
@@ -347,6 +465,8 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
     }
 
     private static decimal Round(double v) => Math.Round((decimal)v, 2);
+
+    private static string? Trim(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     private static BaseException Bad(string msg) => new(msg)
     {

@@ -44,6 +44,7 @@ public class SrisDbContext : DbContext
     public DbSet<CriteriaTemplate> CriteriaTemplates => Set<CriteriaTemplate>();
     public DbSet<CriteriaTemplateItem> CriteriaTemplateItems => Set<CriteriaTemplateItem>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
+    public DbSet<InterviewFeedback> InterviewFeedbacks => Set<InterviewFeedback>();
     public DbSet<OfferDetail> OfferDetails => Set<OfferDetail>();
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
@@ -217,6 +218,14 @@ public class SrisDbContext : DbContext
             e.HasKey(x => x.ScoreId);
             e.Ignore(x => x.SubmittedAt);   // chưa có ở schema local (suy từ status + updated_at)
             e.Property(x => x.Score).HasColumnType("decimal(6,2)");
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<InterviewFeedback>(e =>
+        {
+            e.ToTable("InterviewFeedback");
+            e.HasKey(x => x.FeedbackId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

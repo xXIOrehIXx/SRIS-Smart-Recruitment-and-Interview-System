@@ -27,6 +27,20 @@ public static class InterviewScoreStatus
 }
 
 /// <summary>
+/// Kết luận của người phỏng vấn (InterviewFeedback.recommendation — V031). Đây là thứ
+/// người quyết tuyển đọc trước tiên: "nên tuyển hay không", điểm chỉ là phần bổ trợ.
+/// </summary>
+public static class InterviewRecommendation
+{
+    public const string Hire = "HIRE";
+    public const string NoHire = "NO_HIRE";
+    public const string Unsure = "UNSURE";
+
+    public static bool IsValid(string? value) =>
+        value is Hire or NoHire or Unsure;
+}
+
+/// <summary>
 /// Ràng buộc thời gian giữa các buổi phỏng vấn. Hệ thống chỉ lưu giờ BẮT ĐẦU (không có
 /// thời lượng), nên "không trùng" được hiểu là hai buổi phải cách nhau tối thiểu
 /// <see cref="MinGapHours"/> tiếng — áp cho CẢ ứng viên (không thể ngồi 2 buổi một lúc)

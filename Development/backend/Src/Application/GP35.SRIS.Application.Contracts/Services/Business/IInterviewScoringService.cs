@@ -29,4 +29,10 @@ public interface IInterviewScoringService : IBaseService
     /// Buổi chưa ai nộp phiếu vẫn trả về (SubmittedInterviewers = 0) để DM biết là còn thiếu.
     /// </summary>
     Task<IReadOnlyList<ScheduleAggregateDto>> GetAggregatesByApplicationAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// Bản tóm tắt cho người quyết tuyển (5.14): panel kết luận gì và VÌ SAO, kèm note theo
+    /// tiêu chí + ghi chú nội bộ. KHÔNG có điểm số — người quyết đọc nhận xét rồi chốt.
+    /// </summary>
+    Task<DecisionBriefDto> GetDecisionBriefAsync(long companyId, long applicationId);
 }
