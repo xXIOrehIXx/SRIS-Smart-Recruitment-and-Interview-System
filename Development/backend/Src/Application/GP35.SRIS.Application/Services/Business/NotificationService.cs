@@ -170,6 +170,8 @@ public class NotificationService : BaseService<NotificationService>, INotificati
 
                 // Brand của tenant: màu nhấn + logo. Không có logo -> chuỗi RỖNG chứ không
                 // phải thẻ <img src="">, tránh ô ảnh vỡ chình ình ở đầu email.
+                // Tên miền email nội bộ (V017) — dòng "cấp email @công-ty.com" trong mẫu.
+                ["emailDomain"] = Has(company?.EmailDomain) ? company!.EmailDomain! : "[tên miền công ty]",
                 ["brandColor"] = Has(company?.PrimaryColor) ? company!.PrimaryColor! : DefaultBrandColor,
                 ["companyLogoImg"] = Has(company?.LogoUrl)
                     ? $"<img src=\"{company!.LogoUrl}\" alt=\"{company.Name}\" height=\"40\" " +

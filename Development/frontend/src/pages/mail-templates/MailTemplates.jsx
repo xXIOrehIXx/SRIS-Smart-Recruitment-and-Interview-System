@@ -59,6 +59,14 @@ const SUPPORTED_VARIABLES = [
     key: "{{reason}}",
     desc: "Lý do hủy (tùy chọn) — chỉ INTERVIEW_CANCELLED",
   },
+  // Nhóm dưới đây do email onboarding dùng (hệ thống tự điền từ hồ sơ công ty + thư mời).
+  { key: "{{companyName}}",    desc: "Tên công ty — chỉ ONBOARDING" },
+  { key: "{{startDate}}",      desc: "Ngày vào làm lấy từ thư mời (dd/MM/yyyy) — chỉ ONBOARDING" },
+  { key: "{{companyAddress}}", desc: "Địa chỉ công ty — chỉ ONBOARDING" },
+  { key: "{{hrEmail}}",        desc: "Email liên hệ nhân sự — chỉ ONBOARDING" },
+  { key: "{{emailDomain}}",    desc: "Tên miền email nội bộ — chỉ ONBOARDING" },
+  { key: "{{brandColor}}",     desc: "Màu brand công ty (dùng trong style) — chỉ ONBOARDING" },
+  { key: "{{companyLogoImg}}", desc: "Thẻ <img> logo công ty, rỗng nếu chưa có logo — chỉ ONBOARDING" },
 ];
 const codeStyle = {
   background: "#fff",
