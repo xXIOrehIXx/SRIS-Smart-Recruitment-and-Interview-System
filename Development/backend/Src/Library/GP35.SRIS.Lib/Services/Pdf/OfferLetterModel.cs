@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Lib.Services.Pdf;
+﻿namespace GP35.SRIS.Lib.Services.Pdf;
 
 /// <summary>
 /// Dữ liệu để in một thư mời nhận việc (docs 5.15). Thuần dữ liệu — KHÔNG tham chiếu entity
@@ -21,6 +21,12 @@ public class OfferLetterModel
 
     /// <summary>Màu brand (<c>Company.primary_color</c>), vd "#0F62FE". Null/sai -> navy mặc định.</summary>
     public string? BrandColor { get; set; }
+
+    /// <summary>
+    /// URL logo công ty — bản EMAIL nhúng bằng URL (mail client tự tải), khác bản PDF phải
+    /// nhúng bytes. Null = không in logo.
+    /// </summary>
+    public string? CompanyLogoUrl { get; set; }
 
     /// <summary>Ngày phát hành thư (mặc định: ngày gửi).</summary>
     public DateTime LetterDate { get; set; } = DateTime.Now;

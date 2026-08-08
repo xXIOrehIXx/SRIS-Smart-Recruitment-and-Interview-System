@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -262,6 +262,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
             CompanyEmail = company?.ContactEmail,
             CompanyPhone = company?.Phone,
             BrandColor = company?.PrimaryColor,
+            CompanyLogoUrl = company?.LogoUrl,
             LetterDate = o.SentAt ?? o.CreatedAt ?? DateTime.UtcNow,
 
             CandidateName = candidateName,

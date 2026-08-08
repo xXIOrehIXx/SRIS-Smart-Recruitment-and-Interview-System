@@ -160,6 +160,16 @@ BEGIN
     END
     ELSE
     BEGIN
+        -- Kéo hồ sơ về INTERVIEW để demo lại bước quyết định. Hồ sơ đã từng đi tới bước gửi
+        -- thư mời thì phải DỌN offer + magic link của nó: để lại một offer ACCEPTED trên hồ
+        -- sơ đang INTERVIEW là hai bảng nói hai chuyện khác nhau, màn quyết định và KPI đều
+        -- đọc sai (và RecordOutcome sẽ từ chối vì hồ sơ không còn ở OFFER).
+        DELETE FROM dbo.MagicLinkToken
+         WHERE company_id = @companyId AND application_id = @appId AND purpose = 'OFFER_RESPONSE';
+
+        DELETE FROM dbo.OfferDetail
+         WHERE company_id = @companyId AND application_id = @appId;
+
         UPDATE dbo.[Application]
            SET current_state = 'INTERVIEW', reject_reason = NULL, rejected_at = NULL, hired_at = NULL,
                stage_updated_at = DATEADD(DAY, -3, @now)
