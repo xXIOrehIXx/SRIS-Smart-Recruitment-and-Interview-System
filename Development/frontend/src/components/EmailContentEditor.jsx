@@ -7,7 +7,10 @@ import {
   OrderedListOutlined,
   LinkOutlined,
   TagOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
+import { message } from "antd";
+import { mailTemplateAPI } from "../services/api";
 
 const { Text } = Typography;
 
@@ -47,7 +50,9 @@ export const fillSampleValues = (html) =>
 
 const EmailContentEditor = ({ value, onChange, height = 320 }) => {
   const ref = useRef(null);
+  const fileRef = useRef(null);
   const [focused, setFocused] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Chỉ nạp lại HTML từ ngoài khi ô KHÔNG được focus: nạp trong lúc gõ sẽ nhảy con trỏ về đầu.
   useEffect(() => {
@@ -68,6 +73,53 @@ const EmailContentEditor = ({ value, onChange, height = 320 }) => {
     ref.current?.focus();
     document.execCommand("insertText", false, `{{${key}}}`);
     emit();
+  };
+
+  /**
+   * Chèn ảnh: tải file lên trước rồi mới chèn ĐỊA CHỈ ảnh.
+   * Không nhúng thẳng ảnh vào nội dung (base64) vì Gmail/Outlook chặn base64 trong email —
+   * người soạn thấy ảnh nhưng người nhận chỉ thấy ô trống.
+   */
+  const uploadAndInsert = async (file) => {
+    if (!file) return;
+    if (!file.type?.startsWith("image/")) {
+      message.warning("Chỉ chèn được ảnh (PNG, JPG, GIF, WEBP).");
+      return;
+    }
+    try {
+      setUploading(true);
+      const res = await mailTemplateAPI.uploadImage(file);
+      const url = res.data?.url;
+      if (!url) throw new Error("no url");
+
+      const img = `<img src="${url}" alt="" style="display:block;border:0;height:auto;max-width:100%;">`;
+      ref.current?.focus();
+
+      // Chọn file phải mở hộp thoại của hệ điều hành -> con trỏ trong ô soạn thảo mất, lúc đó
+      // execCommand chèn vào hư không. Còn con trỏ thì chèn tại chỗ, mất rồi thì nối vào cuối
+      // — đằng nào ảnh cũng phải xuất hiện, không được im lặng nuốt mất.
+      const sel = window.getSelection();
+      const inEditor = sel && sel.rangeCount > 0 && ref.current?.contains(sel.anchorNode);
+
+      if (inEditor) document.execCommand("insertHTML", false, img);
+      else if (ref.current) ref.current.innerHTML += img;
+
+      emit();
+    } catch (error) {
+      console.error("uploadImage error", error);
+      message.error(error?.response?.data?.error || "Không tải được ảnh lên.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Dán ảnh từ clipboard: chặn hành vi mặc định (nhúng base64) và tải lên như file.
+  const handlePaste = (e) => {
+    const item = Array.from(e.clipboardData?.items || [])
+      .find((i) => i.type?.startsWith("image/"));
+    if (!item) return;
+    e.preventDefault();
+    uploadAndInsert(item.getAsFile());
   };
 
   const insertLink = () => {
@@ -105,6 +157,25 @@ const EmailContentEditor = ({ value, onChange, height = 320 }) => {
         <Tooltip title="Chèn liên kết">
           <Button size="small" type="text" icon={<LinkOutlined />} onClick={insertLink} />
         </Tooltip>
+        <Tooltip title="Chèn ảnh từ máy (logo, banner…)">
+          <Button
+            size="small"
+            type="text"
+            icon={<PictureOutlined />}
+            loading={uploading}
+            onClick={() => fileRef.current?.click()}
+          />
+        </Tooltip>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/gif,image/webp"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            uploadAndInsert(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
 
         <div style={{ flex: 1 }} />
 
@@ -132,6 +203,7 @@ const EmailContentEditor = ({ value, onChange, height = 320 }) => {
         contentEditable
         suppressContentEditableWarning
         onInput={emit}
+        onPaste={handlePaste}
         onBlur={() => { setFocused(false); emit(); }}
         onFocus={() => setFocused(true)}
         style={{

@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Storage;
+﻿namespace GP35.SRIS.Storage;
 
 /// <summary>Kết quả sau khi lưu 1 file lên object storage.</summary>
 public record StoredFileInfo(string ObjectName, long Size, string ContentType);
@@ -14,6 +14,13 @@ public interface IFileStorageService
     Task<StoredFileInfo> UploadAsync(
         string objectName, Stream content, long size, string contentType,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Đọc thẳng nội dung 1 object (dùng cho ảnh phục vụ công khai — URL presigned hết hạn
+    /// sau ~1 giờ nên không nhúng vào email được). Trả null nếu object không tồn tại.
+    /// </summary>
+    Task<(byte[] Content, string ContentType)?> DownloadAsync(
+        string objectName, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Tạo URL tải tạm thời (presigned) cho 1 object.

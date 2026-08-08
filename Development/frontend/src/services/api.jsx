@@ -404,6 +404,15 @@ export const mailTemplateAPI = {
   // Tạo đủ bộ mẫu dựng sẵn cho công ty (bỏ qua loại đã có) — trả { added }.
   seedDefaults: () =>
     api.post('/email-templates/defaults'),
+
+  // Tải ảnh dùng trong email từ máy lên -> trả { url } cố định để nhúng vào thư.
+  uploadImage: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/email-assets', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // ==================== DASHBOARD ====================

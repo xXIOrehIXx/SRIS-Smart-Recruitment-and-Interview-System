@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Shared.Configs;
+﻿using GP35.SRIS.Domain.Shared.Configs;
 using Microsoft.Extensions.DependencyInjection;
 using Minio;
 using Minio.DataModel.Args;
@@ -48,6 +48,28 @@ public class MinioFileStorageService : IFileStorageService
 
         _logger.Information("MinIO uploaded {ObjectName} ({Size} bytes) -> bucket {Bucket}", objectName, size, _bucket);
         return new StoredFileInfo(objectName, size, contentType);
+    }
+
+    public async Task<(byte[] Content, string ContentType)?> DownloadAsync(
+        string objectName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await EnsureBucketAsync(cancellationToken);
+
+            using var ms = new MemoryStream();
+            var stat = await _client.GetObjectAsync(new GetObjectArgs()
+                .WithBucket(_bucket)
+                .WithObject(objectName)
+                .WithCallbackStream(stream => stream.CopyTo(ms)), cancellationToken);
+
+            return (ms.ToArray(), stat.ContentType ?? "application/octet-stream");
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Storage: không đọc được object {ObjectName}.", objectName);
+            return null;
+        }
     }
 
     public async Task<string> GetPresignedUrlAsync(
