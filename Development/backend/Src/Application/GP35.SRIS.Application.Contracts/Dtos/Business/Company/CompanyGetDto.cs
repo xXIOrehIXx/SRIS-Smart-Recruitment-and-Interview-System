@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Application.Contracts.Dtos;
+﻿namespace GP35.SRIS.Application.Contracts.Dtos;
 
 public class CompanyGetDto : BaseEntityDto<long>
 {
@@ -7,7 +7,6 @@ public class CompanyGetDto : BaseEntityDto<long>
   public string Slug { get; set; } = null!;
   public string? LogoUrl { get; set; }
   public string? PrimaryColor { get; set; }
-  public string? Industry { get; set; }
   public string? Address { get; set; }
   public string? ContactEmail { get; set; }
   public string? Phone { get; set; }

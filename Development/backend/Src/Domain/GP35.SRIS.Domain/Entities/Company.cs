@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using GP35.SRIS.Domain;
 
@@ -18,8 +18,6 @@ public class Company : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo
     public string? LogoUrl { get; set; }
     [Column("primary_color")]
     public string? PrimaryColor { get; set; }
-    [Column("industry")]
-    public string? Industry { get; set; }
 
     // Liên hệ in ở đầu thư mời nhận việc (V029) — nhập 1 lần ở hồ sơ công ty.
     [Column("address")]

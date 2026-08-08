@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
@@ -20,7 +20,7 @@ public interface ICompanyRepo : IBaseRepo<long, Company>
   /// </summary>
   Task<Company?> UpdateBrandAsync(
       long companyId, string? name, string? logoUrl, string? primaryColor,
-      string? industry, string? address, string? contactEmail, string? phone);
+      string? address, string? contactEmail, string? phone);
 
   /// <summary>Tạo công ty mới (đăng ký) — Company không dưới RLS nên insert thẳng. Trả company_id.</summary>
   Task<long> InsertAsync(Company company);

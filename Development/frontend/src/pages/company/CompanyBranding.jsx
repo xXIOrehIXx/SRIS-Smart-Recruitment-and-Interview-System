@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   Typography,
@@ -17,13 +17,19 @@ import {
   SaveOutlined,
   LinkOutlined,
   BuildOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  EnvironmentOutlined,
+  GlobalOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
-import { companyAPI } from "../../services/api";
+import { companyAPI, mailTemplateAPI } from "../../services/api";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useBrandTheme } from "../../contexts/BrandThemeContext";
 import "./css/CompanyBranding.css";
 
 const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 const DEFAULT_COLOR = "#5D8C3E";
 
@@ -44,6 +50,39 @@ const CompanyBranding = () => {
   const [company, setCompany] = useState(null);
   const { refreshCompany } = useCompany();
   const { primaryColor, updateBrandColor } = useBrandTheme();
+  const logoFileRef = useRef(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+
+  /**
+   * Tải ảnh logo từ máy lên rồi điền địa chỉ ảnh vào form.
+   * Người dùng không phải biết địa chỉ ảnh là gì — họ chỉ chọn file như đính kèm email.
+   * Dùng chung kho ảnh với mẫu email nên logo hiện được cả trong thư gửi ứng viên
+   * (ảnh trong email bắt buộc là địa chỉ công khai, không nhúng file trực tiếp được).
+   */
+  const uploadLogo = async (file) => {
+    if (!file) return;
+    try {
+      setLogoUploading(true);
+      const res = await mailTemplateAPI.uploadImage(file);
+      const url = res.data?.url;
+      if (!url) throw new Error("no url");
+      setLogoUrl(url);
+      brandForm.setFieldsValue({ logoUrl: url });
+      message.success("Đã tải logo lên — bấm Lưu thương hiệu để áp dụng.");
+    } catch (error) {
+      console.error("uploadLogo error", error);
+      message.error(error?.response?.data?.error || "Không tải được ảnh logo.");
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const removeLogo = () => {
+    setLogoUrl(null);
+    brandForm.setFieldsValue({ logoUrl: null });
+    message.info("Đã gỡ logo — bấm Lưu thương hiệu để áp dụng.");
+  };
 
   useEffect(() => {
     fetchCompany();
@@ -58,13 +97,13 @@ const CompanyBranding = () => {
 
       form.setFieldsValue({
         name: data.name,
-        industry: data.industry,
         // 3 ô này in ở đầu THƯ MỜI NHẬN VIỆC (5.15) — nhập 1 lần, mọi thư sau đều tự có.
         email: data.contactEmail,
         phone: data.phone,
         address: data.address,
       });
 
+      setLogoUrl(data.logoUrl || null);
       brandForm.setFieldsValue({
         logoUrl: data.logoUrl,
         primaryColor: data.primaryColor || DEFAULT_COLOR,
@@ -82,7 +121,6 @@ const CompanyBranding = () => {
       setSaving(true);
       await companyAPI.update({
         name: values.name,
-        industry: values.industry,
         contactEmail: values.email,
         phone: values.phone,
         address: values.address,
@@ -177,11 +215,6 @@ const CompanyBranding = () => {
                     <Input placeholder="VD: SRIS Corp" size="large" />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item label="Ngành nghề" name="industry">
-                    <Input placeholder="VD: Công nghệ thông tin" size="large" />
-                  </Form.Item>
-                </Col>
               </Row>
 
               <Row gutter={16}>
@@ -222,35 +255,8 @@ const CompanyBranding = () => {
               </Form.Item>
 
               <Row gutter={16}>
-                <Col xs={24} md={12}>
-                  <Form.Item label="Website" name="website">
-                    <Input
-                      placeholder="https://company.com"
-                      size="large"
-                      prefix={<GlobalOutlined />}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={6}>
-                  <Form.Item label="Năm thành lập" name="foundedYear">
-                    <Input placeholder="2020" size="large" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={6}>
-                  <Form.Item label="Số nhân viên" name="employeeCount">
-                    <Input placeholder="50-100" size="large" />
-                  </Form.Item>
-                </Col>
               </Row>
 
-              <Form.Item label="Mô tả công ty" name="description">
-                <TextArea
-                  rows={4}
-                  placeholder="Giới thiệu ngắn về công ty..."
-                  maxLength={1000}
-                  showCount
-                />
-              </Form.Item>
 
               <Button
                 type="primary"
@@ -283,24 +289,50 @@ const CompanyBranding = () => {
             <div style={{ textAlign: "center", marginBottom: 16 }}>
               <Avatar
                 size={120}
-                src={company?.logoUrl}
-                style={{
-                  background: previewColor,
-                  fontSize: 48,
-                }}
+                src={logoUrl}
+                style={{ background: previewColor, fontSize: 48 }}
                 icon={<BuildOutlined />}
               />
             </div>
+
             <Form form={brandForm} layout="vertical">
-              <Form.Item label="Logo URL" name="logoUrl">
-                <Input
-                  placeholder="https://example.com/logo.png"
-                  prefix={<LinkOutlined />}
-                />
+              {/* Ô nhập URL vẫn còn nhưng ẨN: người dùng chỉ chọn file, hệ thống tự điền
+                  địa chỉ ảnh sau khi tải lên. Giữ Form.Item để handleSaveBrand đọc như cũ. */}
+              <Form.Item name="logoUrl" hidden>
+                <Input />
               </Form.Item>
-              <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
-                Dán URL logo từ CDN hoặc upload lên MinIO rồi dán link.
-              </Text>
+
+              <Space direction="vertical" style={{ width: "100%" }} size={8}>
+                <input
+                  ref={logoFileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    uploadLogo(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  icon={<UploadOutlined />}
+                  loading={logoUploading}
+                  block
+                  onClick={() => logoFileRef.current?.click()}
+                >
+                  {logoUrl ? "Đổi logo khác" : "Chọn ảnh logo từ máy"}
+                </Button>
+
+                {logoUrl && (
+                  <Button danger type="text" block onClick={removeLogo}>
+                    Gỡ logo
+                  </Button>
+                )}
+
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Ảnh PNG hoặc JPG, tối đa 2MB. Nên dùng logo nền trong suốt, chiều ngang
+                  khoảng 300px. Nhớ bấm <b>Lưu thương hiệu</b> bên dưới sau khi chọn ảnh.
+                </Text>
+              </Space>
             </Form>
           </Card>
 
@@ -324,20 +356,40 @@ const CompanyBranding = () => {
                 />
               </Form.Item>
 
+              {/* Bản xem trước THẬT của đầu email gửi ứng viên. Trước đây chỗ này là một ô
+                  tô màu ghi "Xem trước thương hiệu" — trông y hệt cái nút nên ai cũng bấm,
+                  bấm thì không có gì xảy ra. Giờ nó cho thấy luôn logo + màu sẽ ra sao. */}
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Đầu email gửi ứng viên sẽ trông như thế này:
+              </Text>
               <div
                 style={{
-                  background: previewColor,
-                  height: 60,
+                  border: "1px solid #eee",
                   borderRadius: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#fff",
-                  fontWeight: 700,
-                  marginBottom: 16,
+                  padding: 16,
+                  margin: "8px 0 16px",
+                  background: "#fff",
                 }}
               >
-                Xem trước thương hiệu
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="logo"
+                    style={{ display: "block", maxHeight: 40, maxWidth: 180, marginBottom: 10 }}
+                  />
+                ) : (
+                  <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 10 }}>
+                    (chưa có logo)
+                  </Text>
+                )}
+                <div style={{ width: 48, height: 4, background: previewColor, marginBottom: 10 }} />
+                <div style={{ fontSize: 13, color: "#1F2933" }}>
+                  Chào <b style={{ color: previewColor }}>Nguyễn Văn An</b>,
+                </div>
+                <div style={{ fontSize: 13, color: "#1F2933" }}>
+                  Chúc mừng bạn đã trúng tuyển vị trí{" "}
+                  <b style={{ color: previewColor }}>Lập trình viên Backend</b>…
+                </div>
               </div>
 
               <Button

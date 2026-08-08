@@ -604,10 +604,12 @@ const MailTemplates = () => {
         )}
       </Modal>
 
-      {/* Xem thử nội dung với dữ liệu mẫu */}
+      {/* Xem thử nội dung với dữ liệu mẫu. zIndex phải CAO HƠN modal chỉnh sửa: để mặc định
+          thì hai modal cùng z-index 1000, bản xem thử nằm sau và người dùng tưởng nút hỏng. */}
       <Modal
         title="Xem thử email"
         open={previewOpen}
+        zIndex={1100}
         onCancel={() => setPreviewOpen(false)}
         footer={[<Button key="close" onClick={() => setPreviewOpen(false)}>Đóng</Button>]}
         width={720}

@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Application.Contracts.Dtos;
+﻿namespace GP35.SRIS.Application.Contracts.Dtos;
 
 /// <summary>
 /// Admin cấu hình brand công ty (logo + màu hiển thị trên Career Site/Portal). Slug KHÔNG đổi
@@ -9,7 +9,6 @@ public class UpdateBrandDto
     public string? Name { get; set; }
     public string? LogoUrl { get; set; }
     public string? PrimaryColor { get; set; }
-    public string? Industry { get; set; }
 
     // Liên hệ in ở đầu thư mời nhận việc (5.15). Nhập 1 lần, mọi thư sau đều tự có.
     public string? Address { get; set; }
