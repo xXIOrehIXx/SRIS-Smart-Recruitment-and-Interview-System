@@ -53,7 +53,13 @@ const DeptRecruitmentRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   const { user } = useAuth();
-  const isRecruiter = user?.role === ROLES.HUMAN_RESOURCE || user?.role === ROLES.ADMIN;
+  // Admin là superuser (khớp AuthMiddleware: [WithRole] luôn cho Admin qua) nên đứng CẢ HAI
+  // đầu của luồng 5.17: ra đề như DM và duyệt như Human Resource. Trước đây Admin chỉ được
+  // gộp vào isRecruiter, mà các nút phía DM lại gác bằng `!isRecruiter` -> công ty 1 tài
+  // khoản Admin không có chỗ nào bấm "Tạo Yêu Cầu Mới".
+  const isAdmin = user?.role === ROLES.ADMIN;
+  const isRecruiter = user?.role === ROLES.HUMAN_RESOURCE || isAdmin;
+  const isRequester = user?.role === ROLES.DEPARTMENT_MANAGER || isAdmin;
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -275,8 +281,8 @@ const DeptRecruitmentRequests = () => {
               Tạo tin
             </Button>
           )}
-          {/* DM: sửa lại đề bài khi Human Resource chưa duyệt (duyệt xong BE khóa để giữ audit) */}
-          {!isRecruiter && record.status === 'PENDING' && (
+          {/* DM (và Admin): sửa lại đề bài khi Human Resource chưa duyệt (duyệt xong BE khóa để giữ audit) */}
+          {isRequester && record.status === 'PENDING' && (
             <Button
               type="text"
               size="small"
@@ -285,8 +291,8 @@ const DeptRecruitmentRequests = () => {
               onClick={() => navigate(`/dept/edit-request/${record.id}`)}
             />
           )}
-          {/* DM: hủy yêu cầu của mình khi còn PENDING */}
-          {!isRecruiter && record.status === 'PENDING' && (
+          {/* DM (và Admin): hủy yêu cầu khi còn PENDING */}
+          {isRequester && record.status === 'PENDING' && (
             <Popconfirm
               title="Hủy yêu cầu này?"
               onConfirm={() => handleCancel(record)}
@@ -323,7 +329,7 @@ const DeptRecruitmentRequests = () => {
           <Title level={3} className="page-title">Yêu Cầu Tuyển Dụng</Title>
           <Text type="secondary">Quản lý yêu cầu tuyển dụng từ các phòng ban</Text>
         </div>
-        {!isRecruiter && (
+        {isRequester && (
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -425,7 +431,16 @@ const DeptRecruitmentRequests = () => {
           selectedRequest?.status === 'PENDING' ? (
             <Space>
               <Button onClick={() => setDetailModal(false)}>Đóng</Button>
-              {isRecruiter ? (
+              {/* Cộng dồn chứ không loại trừ nhau: Admin vừa sửa được đề bài vừa duyệt được. */}
+              {isRequester && (
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => navigate(`/dept/edit-request/${selectedRequest.id}`)}
+                >
+                  Sửa yêu cầu
+                </Button>
+              )}
+              {isRecruiter && (
                 <>
                   <Button
                     danger
@@ -451,15 +466,6 @@ const DeptRecruitmentRequests = () => {
                     Phê duyệt
                   </Button>
                 </>
-              ) : (
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-                  onClick={() => navigate(`/dept/edit-request/${selectedRequest.id}`)}
-                >
-                  Sửa yêu cầu
-                </Button>
               )}
             </Space>
           ) : (
