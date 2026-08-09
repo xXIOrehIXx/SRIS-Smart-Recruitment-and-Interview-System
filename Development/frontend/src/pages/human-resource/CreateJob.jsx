@@ -56,6 +56,13 @@ const REQUIREMENT_HINTS = [
   "VD: Sử dụng thành thạo Excel",
 ];
 
+/** Gợi ý quyền lợi — cùng tinh thần: nghề phổ thông, không lấy đãi ngộ kiểu công ty IT. */
+const BENEFIT_HINTS = [
+  "VD: Thưởng lương tháng 13",
+  "VD: Đóng BHXH đầy đủ theo quy định",
+  "VD: Du lịch, teambuilding hằng năm",
+];
+
 /**
  * Quy tắc validate cho từng field — đặt riêng để dễ tái sử dụng giữa
  * "Lưu nháp" (chỉ check required cơ bản) và "Đăng tin" (check full).
@@ -379,6 +386,37 @@ const CreateJob = () => {
   };
 
   /**
+   * Danh sách gạch đầu dòng (yêu cầu ứng viên / quyền lợi) — hai mục nhập y hệt nhau nên
+   * dùng chung một khối, khỏi chép đôi JSX rồi sửa lệch một bên.
+   */
+  const renderBulletList = ({ items, hints, fallbackHint, addLabel, onAdd, onRemove, onChange }) => (
+    <Space direction="vertical" size={8} style={{ width: "100%" }}>
+      {items.map((value, index) => (
+        <Space.Compact key={index} style={{ width: "100%" }}>
+          <Input
+            value={value}
+            placeholder={hints[index] || fallbackHint}
+            onChange={(e) => {
+              onChange(index, e.target.value);
+              dismissFormError();
+            }}
+          />
+          <Button
+            icon={<MinusCircleOutlined />}
+            aria-label="Xoá dòng"
+            // Còn đúng 1 dòng thì khoá nút xoá: xoá nốt là không còn ô nào để gõ.
+            disabled={items.length === 1}
+            onClick={() => onRemove(index)}
+          />
+        </Space.Compact>
+      ))}
+      <Button type="dashed" icon={<PlusOutlined />} onClick={onAdd} block>
+        {addLabel}
+      </Button>
+    </Space>
+  );
+
+  /**
    * Chuẩn hoá giá trị ô Kỹ năng về mảng sạch. Bình thường Select mode="tags" đã trả mảng,
    * nhưng bản nháp lưu trước đây còn giữ chuỗi ngăn phẩy nên vẫn phải chịu được cả hai.
    */
@@ -560,37 +598,33 @@ const CreateJob = () => {
                 label="Yêu cầu ứng viên"
                 tooltip="Thứ ứng viên phải CÓ SẴN trước khi vào làm: bằng cấp, số năm kinh nghiệm, chứng chỉ, ngoại ngữ. Khác với mô tả công việc là thứ họ sẽ làm sau khi vào. AI dựa vào mục này để bóc ra phiếu chấm phỏng vấn."
               >
-                <Space direction="vertical" size={8} style={{ width: "100%" }}>
-                  {requirements.map((req, index) => (
-                    <Space.Compact key={index} style={{ width: "100%" }}>
-                      <Input
-                        value={req}
-                        placeholder={
-                          REQUIREMENT_HINTS[index] || "Thêm một yêu cầu với ứng viên"
-                        }
-                        onChange={(e) => {
-                          handleRequirementChange(index, e.target.value);
-                          dismissFormError();
-                        }}
-                      />
-                      <Button
-                        icon={<MinusCircleOutlined />}
-                        aria-label="Xoá yêu cầu"
-                        // Còn đúng 1 dòng thì khoá nút xoá: xoá nốt là không còn ô nào để gõ.
-                        disabled={requirements.length === 1}
-                        onClick={() => handleRemoveRequirement(index)}
-                      />
-                    </Space.Compact>
-                  ))}
-                  <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    onClick={handleAddRequirement}
-                    block
-                  >
-                    Thêm yêu cầu
-                  </Button>
-                </Space>
+                {renderBulletList({
+                  items: requirements,
+                  hints: REQUIREMENT_HINTS,
+                  fallbackHint: "Thêm một yêu cầu với ứng viên",
+                  addLabel: "Thêm yêu cầu",
+                  onAdd: handleAddRequirement,
+                  onRemove: handleRemoveRequirement,
+                  onChange: handleRequirementChange,
+                })}
+              </Form.Item>
+
+              {/* Quyền lợi cũng từng là ô "tàng hình": state + handler có sẵn, payload có gửi,
+                  nhưng JSX không vẽ nên tin đăng ra luôn trống phần này. Đặt cạnh Yêu cầu vì
+                  cả hai đều là nội dung hiện trên tin đăng công khai. */}
+              <Form.Item
+                label="Quyền lợi"
+                tooltip="Hiển thị trên tin tuyển dụng công khai để ứng viên cân nhắc. Không dùng để đánh giá — AI bóc tiêu chí bỏ qua mục này."
+              >
+                {renderBulletList({
+                  items: benefits,
+                  hints: BENEFIT_HINTS,
+                  fallbackHint: "Thêm một quyền lợi",
+                  addLabel: "Thêm quyền lợi",
+                  onAdd: handleAddBenefit,
+                  onRemove: handleRemoveBenefit,
+                  onChange: handleBenefitChange,
+                })}
               </Form.Item>
 
               <Row gutter={16}>

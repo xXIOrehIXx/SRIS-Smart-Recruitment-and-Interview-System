@@ -185,6 +185,14 @@ test('?edit -> kỹ năng cũ điền lại thành chip (lưu lại không mất
   expect(screen.getByTitle('Viết content')).toBeInTheDocument();
 });
 
+test('?edit -> quyền lợi có sẵn được đổ vào ô nhập', async () => {
+  await renderEdit(JOB_WITH_DEADLINE);
+
+  await waitFor(() =>
+    expect(screen.getByDisplayValue('Trợ cấp thực tập theo tháng')).toBeInTheDocument()
+  );
+});
+
 test('tạo tin mới -> có ô nhập yêu cầu ứng viên kèm gợi ý nghề phổ thông', async () => {
   render(
     <MemoryRouter initialEntries={['/human-resource/jobs/create']}>
