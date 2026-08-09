@@ -14,4 +14,10 @@ public class UpdateBrandDto
     public string? Address { get; set; }
     public string? ContactEmail { get; set; }
     public string? Phone { get; set; }
+
+    /// <summary>
+    /// Quyền lợi mặc định điền sẵn vào tin MỚI (V035). null = client không gửi mục này ->
+    /// giữ nguyên; danh sách RỖNG = người dùng cố ý xoá hết.
+    /// </summary>
+    public List<string>? DefaultBenefits { get; set; }
 }

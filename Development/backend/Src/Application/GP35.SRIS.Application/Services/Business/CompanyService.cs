@@ -33,12 +33,25 @@ public class CompanyService : BaseService<CompanyService>, ICompanyService
         Normalize(dto.PrimaryColor),
         Normalize(dto.Address),
         Normalize(dto.ContactEmail),
-        Normalize(dto.Phone));
+        Normalize(dto.Phone),
+        JoinBenefitLines(dto.DefaultBenefits));
 
     if (company is null)
       throw new KeyNotFoundException($"Không tìm thấy công ty (company_id={companyId}).");
 
     return _mapper.Map<Company, CompanyGetDto>(company);
+  }
+
+  /// <summary>
+  /// Danh sách quyền lợi mặc định -> chuỗi lưu DB (các dòng ngăn bởi '\n').
+  /// Phân biệt HAI ca mà repo xử lý khác nhau: null = client không gửi (giữ nguyên),
+  /// chuỗi rỗng = người dùng cố ý xoá hết. Trộn hai ca này là xoá nhầm dữ liệu.
+  /// </summary>
+  private static string? JoinBenefitLines(List<string>? lines)
+  {
+    if (lines is null) return null;
+    var cleaned = lines.Select(l => l?.Trim()).Where(l => !string.IsNullOrWhiteSpace(l));
+    return string.Join("\n", cleaned);
   }
 
   public async Task<CompanySmtpDto> GetSmtpAsync(long companyId)

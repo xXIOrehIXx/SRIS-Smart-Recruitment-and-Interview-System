@@ -21,8 +21,6 @@ import {
   SaveOutlined,
   SendOutlined,
   ArrowLeftOutlined,
-  PlusOutlined,
-  MinusCircleOutlined,
 } from "@ant-design/icons";
 import {
   jobsAPI,
@@ -30,6 +28,7 @@ import {
   usersAPI,
   departmentAPI,
   employmentTypeAPI,
+  companyAPI,
 } from "../../services/api";
 import {
   EXPERIENCE_LEVEL_TO_JOB,
@@ -37,6 +36,7 @@ import {
   splitRequirements,
 } from "../../services/recruitmentRequest";
 import JobSetupSteps from "../../components/JobSetupSteps";
+import BulletListInput from "../../components/BulletListInput";
 import "./css/CreateJob.css";
 
 // Thiếu Text ở đây là trang SẬP TRẮNG khi vào chế độ sửa: JSX bên dưới có <Text>, không
@@ -62,6 +62,34 @@ const BENEFIT_HINTS = [
   "VD: Đóng BHXH đầy đủ theo quy định",
   "VD: Du lịch, teambuilding hằng năm",
 ];
+
+/**
+ * Gộp quyền lợi riêng của tin với quyền lợi mặc định của công ty (V035).
+ *
+ * Hai thứ này KHÁC vai nên nối vào nhau chứ không tranh chỗ: DM ghi thứ đặc thù vị trí
+ * ("hỗ trợ xăng xe đi thị trường"), mặc định là thứ cả công ty ai cũng có (BHXH, thưởng
+ * T13). Bỏ mặc định đi thì HR lại phải gõ tay BHXH cho từng tin — đúng việc đang muốn dẹp.
+ *
+ * Dòng riêng đứng trước, mặc định nối sau. Khử trùng sau khi trim, không phân biệt hoa
+ * thường — nên chỉ bắt được trùng Y HỆT: "Thưởng T13" với "Thưởng lương tháng 13" vẫn ra
+ * hai dòng, người dùng tự xoá bớt (danh sách sửa được ngay tại chỗ).
+ */
+const mergeBenefits = (current, defaults) => {
+  const own = (current || []).map((b) => (b || "").trim()).filter(Boolean);
+  const seen = new Set(own.map((b) => b.toLowerCase()));
+  const merged = [...own];
+
+  (defaults || []).forEach((b) => {
+    const line = (b || "").trim();
+    if (line && !seen.has(line.toLowerCase())) {
+      seen.add(line.toLowerCase());
+      merged.push(line);
+    }
+  });
+
+  // Luôn chừa 1 ô trống để còn chỗ gõ khi chưa có quyền lợi nào.
+  return merged.length > 0 ? merged : [""];
+};
 
 /**
  * Quy tắc validate cho từng field — đặt riêng để dễ tái sử dụng giữa
@@ -217,6 +245,9 @@ const CreateJob = () => {
   const [dmOptions, setDmOptions] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
   const [employmentOptions, setEmploymentOptions] = useState([]);
+  // Quyền lợi mặc định của công ty (V035) — giữ trong ref vì prefill từ Yêu cầu tuyển dụng
+  // chạy song song, cần đọc giá trị mới nhất chứ không phải bản đóng băng lúc render.
+  const companyDefaultBenefitsRef = useRef([]);
   // mode hiện tại đang validate: "draft" (mặc định — cho phép thiếu field) hay "publish"
   const [mode, setMode] = useState("draft");
   const [formError, setFormError] = useState(null);
@@ -236,6 +267,26 @@ const CreateJob = () => {
     employmentTypeAPI.getAll()
       .then((r) => setEmploymentOptions((r.data || []).filter((t) => t.status === "Active")))
       .catch(() => setEmploymentOptions([]));
+
+    // Quyền lợi mặc định của công ty (V035): chỉ điền sẵn cho tin MỚI. Vào SỬA tin cũ mà
+    // cũng điền là đè mất quyền lợi người dùng đã sửa riêng cho tin đó.
+    // Admin nhập ở /admin/company-branding; HR chỉ ĐỌC (GET /company không gác role).
+    if (!searchParams.get("edit")) {
+      companyAPI.get()
+        .then((r) => {
+          const defaults = r.data?.defaultBenefits || [];
+          companyDefaultBenefitsRef.current = defaults;
+          if (defaults.length === 0) return;
+          // Cập nhật theo hàm: prefill từ Yêu cầu tuyển dụng có thể đã điền quyền lợi của DM
+          // trước khi lời gọi này về — gộp lên cái đang có, không đạp lên.
+          setBenefits((prev) => mergeBenefits(prev, defaults));
+        })
+        .catch(() => {
+          // Không lấy được hồ sơ công ty thì thôi, người dùng vẫn gõ tay được.
+          companyDefaultBenefitsRef.current = [];
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const editJobId = searchParams.get("edit");
@@ -291,7 +342,14 @@ const CreateJob = () => {
         salaryMax: req.salaryMax,
       });
       if (requirementsText) setRequirements(requirementsText.split("\n").filter(Boolean));
-      if (req.benefits) setBenefits(req.benefits.split("\n").filter(Boolean));
+      // Quyền lợi DM ghi là thứ đặc thù vị trí; quyền lợi mặc định của công ty nối vào sau
+      // chứ không bị bỏ — nếu không HR lại phải gõ tay BHXH, thưởng T13 cho từng tin.
+      setBenefits(
+        mergeBenefits(
+          req.benefits ? req.benefits.split("\n").filter(Boolean) : [],
+          companyDefaultBenefitsRef.current
+        )
+      );
       message.info(`Đang tạo tin từ yêu cầu tuyển dụng của ${req.createdByName || "DM"} — "${req.title}"`);
     } catch (error) {
       console.error("Error loading request:", error);
@@ -384,37 +442,6 @@ const CreateJob = () => {
     newBenefits[index] = value;
     setBenefits(newBenefits);
   };
-
-  /**
-   * Danh sách gạch đầu dòng (yêu cầu ứng viên / quyền lợi) — hai mục nhập y hệt nhau nên
-   * dùng chung một khối, khỏi chép đôi JSX rồi sửa lệch một bên.
-   */
-  const renderBulletList = ({ items, hints, fallbackHint, addLabel, onAdd, onRemove, onChange }) => (
-    <Space direction="vertical" size={8} style={{ width: "100%" }}>
-      {items.map((value, index) => (
-        <Space.Compact key={index} style={{ width: "100%" }}>
-          <Input
-            value={value}
-            placeholder={hints[index] || fallbackHint}
-            onChange={(e) => {
-              onChange(index, e.target.value);
-              dismissFormError();
-            }}
-          />
-          <Button
-            icon={<MinusCircleOutlined />}
-            aria-label="Xoá dòng"
-            // Còn đúng 1 dòng thì khoá nút xoá: xoá nốt là không còn ô nào để gõ.
-            disabled={items.length === 1}
-            onClick={() => onRemove(index)}
-          />
-        </Space.Compact>
-      ))}
-      <Button type="dashed" icon={<PlusOutlined />} onClick={onAdd} block>
-        {addLabel}
-      </Button>
-    </Space>
-  );
 
   /**
    * Chuẩn hoá giá trị ô Kỹ năng về mảng sạch. Bình thường Select mode="tags" đã trả mảng,
@@ -598,15 +625,16 @@ const CreateJob = () => {
                 label="Yêu cầu ứng viên"
                 tooltip="Thứ ứng viên phải CÓ SẴN trước khi vào làm: bằng cấp, số năm kinh nghiệm, chứng chỉ, ngoại ngữ. Khác với mô tả công việc là thứ họ sẽ làm sau khi vào. AI dựa vào mục này để bóc ra phiếu chấm phỏng vấn."
               >
-                {renderBulletList({
-                  items: requirements,
-                  hints: REQUIREMENT_HINTS,
-                  fallbackHint: "Thêm một yêu cầu với ứng viên",
-                  addLabel: "Thêm yêu cầu",
-                  onAdd: handleAddRequirement,
-                  onRemove: handleRemoveRequirement,
-                  onChange: handleRequirementChange,
-                })}
+                <BulletListInput
+                  items={requirements}
+                  hints={REQUIREMENT_HINTS}
+                  fallbackHint="Thêm một yêu cầu với ứng viên"
+                  addLabel="Thêm yêu cầu"
+                  onAdd={handleAddRequirement}
+                  onRemove={handleRemoveRequirement}
+                  onChange={handleRequirementChange}
+                  onInteract={dismissFormError}
+                />
               </Form.Item>
 
               {/* Quyền lợi cũng từng là ô "tàng hình": state + handler có sẵn, payload có gửi,
@@ -616,15 +644,16 @@ const CreateJob = () => {
                 label="Quyền lợi"
                 tooltip="Hiển thị trên tin tuyển dụng công khai để ứng viên cân nhắc. Không dùng để đánh giá — AI bóc tiêu chí bỏ qua mục này."
               >
-                {renderBulletList({
-                  items: benefits,
-                  hints: BENEFIT_HINTS,
-                  fallbackHint: "Thêm một quyền lợi",
-                  addLabel: "Thêm quyền lợi",
-                  onAdd: handleAddBenefit,
-                  onRemove: handleRemoveBenefit,
-                  onChange: handleBenefitChange,
-                })}
+                <BulletListInput
+                  items={benefits}
+                  hints={BENEFIT_HINTS}
+                  fallbackHint="Thêm một quyền lợi"
+                  addLabel="Thêm quyền lợi"
+                  onAdd={handleAddBenefit}
+                  onRemove={handleRemoveBenefit}
+                  onChange={handleBenefitChange}
+                  onInteract={dismissFormError}
+                />
               </Form.Item>
 
               <Row gutter={16}>

@@ -59,7 +59,7 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
 
     public async Task<Company?> UpdateBrandAsync(
         long companyId, string? name, string? logoUrl, string? primaryColor,
-        string? address, string? contactEmail, string? phone)
+        string? address, string? contactEmail, string? phone, string? defaultBenefits = null)
     {
         // Tracking (không AsNoTracking) để EF phát UPDATE. Cô lập tenant: WHERE company_id tường minh + RLS.
         var company = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId);
@@ -72,6 +72,10 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
         company.Address = address ?? company.Address;
         company.ContactEmail = contactEmail ?? company.ContactEmail;
         company.Phone = phone ?? company.Phone;
+        // Chuỗi RỖNG ở đây là người dùng cố ý xoá hết quyền lợi mặc định -> lưu NULL.
+        // null là "client không gửi mục này", phải giữ nguyên (endpoint /brand không gửi).
+        if (defaultBenefits is not null)
+            company.DefaultBenefits = defaultBenefits.Length == 0 ? null : defaultBenefits;
         company.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();

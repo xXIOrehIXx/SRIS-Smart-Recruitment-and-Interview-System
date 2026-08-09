@@ -26,12 +26,20 @@ import {
 import { companyAPI, mailTemplateAPI } from "../../services/api";
 import { useCompany } from "../../contexts/CompanyContext";
 import { useBrandTheme } from "../../contexts/BrandThemeContext";
+import BulletListInput from "../../components/BulletListInput";
 import "./css/CompanyBranding.css";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const DEFAULT_COLOR = "#5D8C3E";
+
+/** Gợi ý quyền lợi — nghề phổ thông, vì sản phẩm tuyển mọi vị trí chứ không riêng IT. */
+const BENEFIT_HINTS = [
+  "VD: Thưởng lương tháng 13",
+  "VD: Đóng BHXH đầy đủ theo quy định",
+  "VD: Du lịch, teambuilding hằng năm",
+];
 
 const toHex = (value) => {
   if (!value) return DEFAULT_COLOR;
@@ -53,6 +61,8 @@ const CompanyBranding = () => {
   const logoFileRef = useRef(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(null);
+  // Quyền lợi mặc định (V035) — danh sách dòng, không nằm trong Form nên giữ ở state riêng.
+  const [defaultBenefits, setDefaultBenefits] = useState([""]);
 
   /**
    * Tải ảnh logo từ máy lên rồi điền địa chỉ ảnh vào form.
@@ -103,6 +113,11 @@ const CompanyBranding = () => {
         address: data.address,
       });
 
+      // Luôn chừa 1 ô trống khi công ty chưa khai quyền lợi nào, không thì không có chỗ gõ.
+      setDefaultBenefits(
+        data.defaultBenefits?.length > 0 ? data.defaultBenefits : [""]
+      );
+
       setLogoUrl(data.logoUrl || null);
       brandForm.setFieldsValue({
         logoUrl: data.logoUrl,
@@ -124,6 +139,8 @@ const CompanyBranding = () => {
         contactEmail: values.email,
         phone: values.phone,
         address: values.address,
+        // Mảng rỗng = cố ý xoá hết; BE phân biệt với "không gửi mục này" (giữ nguyên).
+        defaultBenefits: defaultBenefits.map((b) => b.trim()).filter(Boolean),
       });
       message.success("Lưu thông tin công ty thành công!");
       await refreshCompany();
@@ -257,6 +274,30 @@ const CompanyBranding = () => {
               <Row gutter={16}>
               </Row>
 
+              {/* Quyền lợi gần như không đổi giữa các tin (BHXH, thưởng T13, du lịch) —
+                  nhập 1 lần ở đây, mỗi tin MỚI tự điền sẵn, người đăng tin sửa riêng được.
+                  Chỉ Admin sửa được mục này (endpoint PUT /company gác [WithRole(Admin)]),
+                  còn người đăng tin chỉ đọc để điền sẵn. */}
+              <Form.Item
+                label="Quyền lợi mặc định"
+                extra="Tự điền sẵn vào mỗi tin tuyển dụng MỚI. Sửa ở đây KHÔNG đổi các tin đã đăng."
+              >
+                <BulletListInput
+                  items={defaultBenefits}
+                  hints={BENEFIT_HINTS}
+                  fallbackHint="Thêm một quyền lợi"
+                  addLabel="Thêm quyền lợi"
+                  onAdd={() => setDefaultBenefits([...defaultBenefits, ""])}
+                  onRemove={(index) =>
+                    setDefaultBenefits(defaultBenefits.filter((_, i) => i !== index))
+                  }
+                  onChange={(index, value) => {
+                    const next = [...defaultBenefits];
+                    next[index] = value;
+                    setDefaultBenefits(next);
+                  }}
+                />
+              </Form.Item>
 
               <Button
                 type="primary"
