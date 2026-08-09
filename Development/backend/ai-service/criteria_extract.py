@@ -37,15 +37,47 @@ class Criterion(BaseModel):
 
 
 class CriteriaList(BaseModel):
-    criteria: list[Criterion] = Field(min_length=1, max_length=20)
+    # KHÔNG đặt min_length: danh sách RỖNG là kết quả hợp lệ. JD của công ty nhỏ rất hay
+    # chỉ liệt kê đầu việc mà không nêu yêu cầu nào với ứng viên — ép model phải trả về ít
+    # nhất 1 tiêu chí thì nó buộc phải biến đầu việc thành tiêu chí, ra phiếu chấm vô nghĩa
+    # kiểu "Báo cáo doanh số hàng tuần cho quản lý trực tiếp". Rỗng để .NET bảo người dùng
+    # bổ sung phần yêu cầu, đúng hơn là đẻ tiêu chí rác.
+    criteria: list[Criterion] = Field(max_length=20)
 
 
 _PROMPT = """Bạn là chuyên viên tuyển dụng. Đọc yêu cầu tuyển dụng / mô tả công việc dưới đây
 và bóc thành danh sách tiêu chí đánh giá ứng viên có cấu trúc.
 
+Tiêu chí này sẽ thành PHIẾU CHẤM PHỎNG VẤN — người phỏng vấn ngồi cho điểm ứng viên theo
+từng dòng bạn viết ra. Nên mỗi dòng phải là thứ CHẤM ĐIỂM ĐƯỢC cho một ứng viên chưa vào làm.
+
 QUY TẮC:
 - CHỈ bóc tiêu chí có thật trong văn bản. TUYỆT ĐỐI KHÔNG bịa thêm.
 - Bỏ qua phần giới thiệu công ty, phúc lợi, lương thưởng — đó không phải tiêu chí đánh giá.
+
+- PHÂN BIỆT *YÊU CẦU VỚI ỨNG VIÊN* VÀ *ĐẦU VIỆC SẼ LÀM*. Đây là lỗi hay gặp nhất:
+  * YÊU CẦU = thứ ứng viên phải CÓ SẴN từ trước: bằng cấp, chứng chỉ, số năm kinh nghiệm,
+    kỹ năng, công cụ thành thạo, ngoại ngữ. -> BÓC THÀNH TIÊU CHÍ.
+  * ĐẦU VIỆC = thứ họ sẽ LÀM SAU KHI VÀO công ty, thường viết ở thể động từ mô tả công
+    việc hằng ngày. -> KHÔNG PHẢI TIÊU CHÍ, BỎ QUA.
+  Ví dụ ĐẦU VIỆC phải bỏ (không được biến thành tiêu chí):
+    "Báo cáo doanh số hàng tuần cho quản lý trực tiếp"
+    "Cập nhật thông tin khách hàng lên hệ thống"
+    "Trực tổng đài, giải đáp thắc mắc về sản phẩm"
+    "Phối hợp với bộ phận kỹ thuật"
+  Không ai chấm điểm một ứng viên chưa đi làm theo những dòng đó.
+
+- VĂN BẢN CHỈ TOÀN ĐẦU VIỆC, KHÔNG NÊU YÊU CẦU NÀO -> TRẢ VỀ DANH SÁCH RỖNG {{"criteria": []}}.
+  Đây là kết quả ĐÚNG và được chấp nhận. Thà trả rỗng để người tuyển dụng bổ sung phần yêu
+  cầu, còn hơn nặn ra tiêu chí không chấm được.
+  Nhưng ĐỪNG lười: văn bản CÓ nêu yêu cầu thì phải bóc cho đủ, không được trả rỗng cho xong.
+
+- MỖI TIÊU CHÍ CHỈ MỘT KỸ NĂNG. Một dòng phiếu chấm chỉ được cho MỘT điểm, nên gộp nhiều
+  thứ vào một dòng là người phỏng vấn không chấm nổi. Một gạch đầu dòng trong JD liệt kê
+  nhiều kỹ năng thì TÁCH RA thành nhiều tiêu chí.
+  Ví dụ: "Kinh nghiệm với Entity Framework, REST API, kiến trúc microservices"
+  -> TÁCH thành 3 tiêu chí: "Kinh nghiệm Entity Framework" / "Kinh nghiệm REST API" /
+     "Kinh nghiệm kiến trúc microservices".
 - type = "HARD" cho yêu cầu cứng loại-trừ (bằng cấp, chứng chỉ, số năm kinh nghiệm tối thiểu,
   địa điểm làm việc, giấy phép, công nghệ/ngôn ngữ bắt buộc). type = "SOFT" cho kỹ năng, kinh nghiệm, năng lực.
 - cv_matchable = false cho thứ CV không thể hiện được (giao tiếp, thái độ, văn hóa) —

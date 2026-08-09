@@ -29,13 +29,16 @@ public class CriteriaExtractionClient : ICriteriaExtractionClient
         var resp = await _httpService.SendAsync<ExtractResponse>(
             HttpMethod.Post, url, headers: null, data: new { jd_text = jdText });
 
-        if (resp?.Criteria == null || resp.Criteria.Count == 0)
+        // KHÔNG có body / thiếu hẳn trường 'criteria' = AI service hoặc Ollama có vấn đề -> ném.
+        if (resp?.Criteria == null)
         {
-            _logger.Here().Error("CriteriaExtractionClient: AI service trả danh sách rỗng. Url={Url}", url);
+            _logger.Here().Error("CriteriaExtractionClient: AI service không trả trường 'criteria'. Url={Url}", url);
             throw new InvalidOperationException(
-                "AI không bóc được tiêu chí nào từ JD (kiểm tra AI service + Ollama đã chạy chưa).");
+                "AI không phản hồi đúng định dạng (kiểm tra AI service + Ollama đã chạy chưa).");
         }
 
+        // Danh sách RỖNG là kết quả HỢP LỆ, không phải lỗi: JD chỉ liệt kê đầu việc mà không nêu
+        // yêu cầu nào với ứng viên. Caller phân biệt hai ca này để báo đúng việc người dùng cần làm.
         return resp.Criteria.Select(c => new ExtractedCriterion(
                 (c.Name ?? "").Trim(),
                 string.Equals(c.Type, "HARD", StringComparison.OrdinalIgnoreCase) ? "HARD" : "SOFT",
