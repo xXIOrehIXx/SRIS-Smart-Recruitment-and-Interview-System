@@ -18,13 +18,30 @@ public static class EmailLayout
          html.Contains("<!--[if mso]", StringComparison.OrdinalIgnoreCase) ||
          html.Contains("id=\"bodyTable\"", StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Mẫu đã tự có ảnh -> vỏ KHÔNG chèn logo nữa (xem <see cref="Wrap"/>).</summary>
+    private static bool HasOwnImage(string? html) =>
+        html is not null && html.Contains("<img", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     /// Bọc ruột thư vào khung có thương hiệu. Chuỗi trả về vẫn còn placeholder
     /// ({{companyLogoImg}}, {{brandColor}}, {{companyName}}) — thay giá trị ở bước render.
+    ///
+    /// <para><b>Hàng logo tự nhường chỗ:</b> mẫu nào người tuyển dụng đã tự chèn ảnh (banner
+    /// riêng cho thư mời, ảnh chào mừng onboarding…) thì vỏ bỏ hàng logo đi. Chèn thêm logo
+    /// công ty lên trên ảnh họ vừa đặt là ra hai ảnh chồng nhau ở đầu thư — chưa ai muốn thế,
+    /// và họ không có cách nào tắt được vì vỏ này họ không nhìn thấy.</para>
     /// </summary>
     public static string Wrap(string innerHtml)
     {
         if (LooksLikeFullDocument(innerHtml)) return innerHtml;
+
+        var logoRow = HasOwnImage(innerHtml)
+            ? ""
+            : """
+      <tr><td align="center" style="background-color:#FFFFFF;padding:26px 34px 0 34px;">
+        {{companyLogoImg}}
+      </td></tr>
+""";
 
         return """
 <!--[if mso]>
@@ -35,11 +52,7 @@ public static class EmailLayout
   <tr><td align="center" style="background-color:#F4F4F4;padding:0 12px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600"
            style="width:600px;max-width:600px;background-color:#FFFFFF;">
-
-      <tr><td align="center" style="background-color:#FFFFFF;padding:26px 34px 0 34px;">
-        {{companyLogoImg}}
-      </td></tr>
-
+""" + logoRow + """
       <tr><td style="background-color:#FFFFFF;padding:16px 34px 0 34px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
           <td width="48" height="4" bgcolor="{{brandColor}}" style="font-size:0;line-height:0;">&nbsp;</td>

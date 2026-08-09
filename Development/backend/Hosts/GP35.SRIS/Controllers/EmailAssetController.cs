@@ -22,9 +22,6 @@ namespace GP35.SRIS.Controllers;
 [ApiController]
 public class EmailAssetController : ControllerBase
 {
-    /// <summary>Thư mục ảnh email trong storage. Chỉ đường dẫn khớp tiền tố này mới phục vụ công khai.</summary>
-    private const string Folder = "email-assets";
-
     private const int MaxBytes = 2 * 1024 * 1024;
 
     private static readonly Dictionary<string, string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -66,13 +63,15 @@ public class EmailAssetController : ControllerBase
 
         // Tên file do hệ thống sinh: người dùng không đặt được đường dẫn -> không lo tên độc.
         var fileName = $"{Guid.NewGuid():N}{ext!.ToLowerInvariant()}";
-        var objectName = $"{Folder}/{_contextData.CompanyId}/{fileName}";
+        var objectName = EmailAssetPaths.ObjectName(_contextData.CompanyId, fileName);
 
         using var stream = file.OpenReadStream();
         await _storage.UploadAsync(objectName, stream, file.Length, contentType);
 
-        // Địa chỉ tuyệt đối để email client tải được (email không có "trang hiện tại" để suy ra).
-        var url = $"{Request.Scheme}://{Request.Host}/api/public/email-assets/{_contextData.CompanyId}/{fileName}";
+        // Địa chỉ tuyệt đối để trình duyệt (trang Portal) và email client tải được. Riêng email
+        // thì lúc gửi ảnh còn được đính thẳng vào thư theo địa chỉ này — xem EmailInlineImages.
+        var url = $"{Request.Scheme}://{Request.Host}" +
+                  $"{EmailAssetPaths.PublicPrefix}{_contextData.CompanyId}/{fileName}";
         return Ok(new { url });
     }
 
@@ -93,7 +92,7 @@ public class EmailAssetController : ControllerBase
         if (!AllowedTypes.ContainsKey(ext ?? ""))
             return NotFound();
 
-        var file = await _storage.DownloadAsync($"{Folder}/{companyId}/{fileName}");
+        var file = await _storage.DownloadAsync(EmailAssetPaths.ObjectName(companyId, fileName));
         if (file is null) return NotFound();
 
         // Tên file là GUID nên nội dung không bao giờ đổi -> cho cache lâu, email mở lại vẫn nhanh.

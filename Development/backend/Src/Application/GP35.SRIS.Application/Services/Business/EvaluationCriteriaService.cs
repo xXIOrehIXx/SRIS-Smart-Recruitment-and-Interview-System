@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -85,15 +86,22 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
 
     public async Task<IReadOnlyList<CriteriaDto>> ExtractDraftAsync(long companyId, long jobId)
     {
-        var jobInfo = await _jobRepo.GetEmbeddingInfoAsync(companyId, jobId)
+        var job = await _jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
-        if (string.IsNullOrWhiteSpace(jobInfo.JdText))
-            throw Bad("Job chưa có mô tả công việc (jd_text) để bóc tiêu chí.");
+        var requirements = await _jobRepo.GetRequirementsAsync(companyId, jobId);
+
+        // AI phải đọc CẢ BA ô người dùng nhập, không riêng jd_text: "yêu cầu ứng viên" và
+        // "kỹ năng" mới là chỗ chứa thứ bóc được thành tiêu chí, còn mô tả công việc thường
+        // chỉ liệt kê đầu việc. Chỉ gửi jd_text = bỏ đúng phần dữ liệu giá trị nhất, rồi báo
+        // người dùng "chưa nêu yêu cầu nào" trong khi họ đã nhập yêu cầu đầy đủ.
+        var sourceText = BuildSourceText(job.JdText, requirements, job.SkillTags);
+        if (string.IsNullOrWhiteSpace(sourceText))
+            throw Bad("Job chưa có mô tả công việc, yêu cầu ứng viên hay kỹ năng nào để bóc tiêu chí.");
 
         IReadOnlyList<ExtractedCriterion> extracted;
         try
         {
-            extracted = await _extractionClient.ExtractAsync(jobInfo.JdText);
+            extracted = await _extractionClient.ExtractAsync(sourceText);
         }
         catch (Exception ex)
         {
@@ -107,18 +115,20 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             };
         }
 
-        // JD chỉ liệt kê đầu việc, không nêu yêu cầu nào với ứng viên -> AI trả rỗng. Đây KHÔNG
-        // phải AI hỏng: báo đúng việc người dùng cần làm, và ném TRƯỚC khi xoá draft cũ để họ
-        // không mất bộ tiêu chí đang có chỉ vì bấm bóc lại.
+        // Tin tuyển dụng chỉ liệt kê đầu việc, không nêu yêu cầu nào với ứng viên -> AI trả rỗng.
+        // Đây KHÔNG phải AI hỏng: báo đúng việc người dùng cần làm, và ném TRƯỚC khi xoá draft cũ
+        // để họ không mất bộ tiêu chí đang có chỉ vì bấm bóc lại. Thông báo phải chỉ đúng ô cần
+        // sửa — AI đã đọc cả ba mục nên không được nói trống không là "bổ sung phần yêu cầu".
         if (extracted.Count == 0)
         {
-            _logger.Information("ExtractDraft: JD không nêu yêu cầu nào với ứng viên (job={JobId}).", jobId);
-            throw new BaseException("JD chưa nêu yêu cầu nào với ứng viên.")
+            _logger.Information("ExtractDraft: tin tuyển dụng không nêu yêu cầu nào với ứng viên (job={JobId}).", jobId);
+            throw new BaseException("Tin tuyển dụng chưa nêu yêu cầu nào với ứng viên.")
             {
                 ErrorCode = "JD_NO_REQUIREMENTS",
-                ErrorMessage = "Mô tả công việc mới chỉ liệt kê đầu việc, chưa nêu yêu cầu nào với " +
+                ErrorMessage = "Tin tuyển dụng mới chỉ liệt kê đầu việc, chưa nêu yêu cầu nào với " +
                                "ứng viên (bằng cấp, số năm kinh nghiệm, kỹ năng, ngoại ngữ...). " +
-                               "Bổ sung phần yêu cầu rồi bóc lại, hoặc tự nhập tiêu chí.",
+                               "Bổ sung mục \"Yêu cầu ứng viên\" hoặc \"Kỹ năng\" rồi bóc lại, " +
+                               "hoặc tự nhập tiêu chí.",
                 HttpStatus = (int)HttpStatusCode.UnprocessableEntity
             };
         }
@@ -212,6 +222,37 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     }
 
     // ============================================================
+
+    /// <summary>
+    /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc. Giữ tiêu đề
+    /// từng mục để LLM thấy rõ ranh giới đầu việc / yêu cầu — prompt bóc tiêu chí dựa vào đúng
+    /// ranh giới đó. Mục trống thì bỏ hẳn, không để tiêu đề rỗng gây nhiễu.
+    /// </summary>
+    private static string BuildSourceText(
+        string? jdText, IReadOnlyList<JobRequirement> requirements, string? skillTags)
+    {
+        var sb = new StringBuilder();
+
+        if (!string.IsNullOrWhiteSpace(jdText))
+            sb.Append("[Mô tả công việc]\n").Append(jdText.Trim()).Append("\n\n");
+
+        var reqLines = requirements
+            .Select(r => r.Content?.Trim())
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .ToList();
+        if (reqLines.Count > 0)
+        {
+            sb.Append("[Yêu cầu ứng viên]\n");
+            foreach (var line in reqLines)
+                sb.Append("- ").Append(line).Append('\n');
+            sb.Append('\n');
+        }
+
+        if (!string.IsNullOrWhiteSpace(skillTags))
+            sb.Append("[Kỹ năng yêu cầu]\n").Append(skillTags.Trim()).Append('\n');
+
+        return sb.ToString().Trim();
+    }
 
     private static void Validate(string? name, decimal weight, decimal maxScore, string? criteriaType)
     {

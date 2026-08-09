@@ -170,7 +170,15 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddAutoMapper(cfg =>
             {
                 cfg.CreateMap<User, UserGetDto>();
-                cfg.CreateMap<Company, CompanyGetDto>();
+                // default_benefits lưu dạng các dòng ngăn bởi '\n' (V035) -> trả client mảng
+                // sẵn sàng render, khỏi bắt mỗi màn tự tách chuỗi một kiểu.
+                cfg.CreateMap<Company, CompanyGetDto>()
+                    .ForMember(d => d.DefaultBenefits, o => o.MapFrom(s =>
+                        string.IsNullOrWhiteSpace(s.DefaultBenefits)
+                            ? new List<string>()
+                            : s.DefaultBenefits
+                                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                .ToList()));
             });
         }
         public static IConfig InitConfig<IConfig>(this IServiceCollection services, IConfiguration configuration) where IConfig : DefaultConfig

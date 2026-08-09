@@ -32,6 +32,7 @@ import DeptRecruitmentRequests from "./pages/dept-manager/RecruitmentRequests";
 import HiringDecision from "./pages/dept-manager/HiringDecision";
 import CreateRecruitmentRequest from "./pages/dept-manager/CreateRecruitmentRequest";
 import OfferManagement from "./pages/offer/OfferManagement";
+import OfferDetail from "./pages/offer/OfferDetail";
 import CandidateResponse from "./pages/candidate/CandidateResponse";
 import CandidateStatus from "./pages/candidate/CandidateStatus";
 import Schedule from "./pages/candidate/Schedule";
@@ -134,6 +135,7 @@ const App = () => {
         }
       >
         <Route path="/offers" element={<OfferManagement />} />
+        <Route path="/offers/:applicationId" element={<OfferDetail />} />
       </Route>
 
       <Route

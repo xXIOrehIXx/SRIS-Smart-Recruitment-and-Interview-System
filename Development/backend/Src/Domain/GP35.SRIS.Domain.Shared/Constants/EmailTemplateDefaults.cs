@@ -86,6 +86,27 @@ có cơ hội phù hợp hơn.</p>
 <p>Chúc bạn sớm tìm được công việc như ý.</p>
 """),
 
+        new EmailTemplateSeed(EmailTemplateType.OfferResponse, "Thư mời nhận việc",
+            "Thư mời nhận việc — vị trí {{jobTitle}}",
+            """
+{{letterhead}}
+<div style="text-align:center;font-size:22px;font-weight:800;letter-spacing:0.5px;margin:22px 0 20px 0;">
+THƯ MỜI NHẬN VIỆC</div>
+<p>{{letterDate}}</p>
+<p><b>{{candidateName}}</b></p>
+<p><b>Chủ đề:</b> Thư mời nhận việc cho vị trí {{jobTitle}}</p>
+<p>Kính gửi <b>{{candidateName}}</b>, chúng tôi vui mừng thông báo và gửi lời mời bạn đảm nhận vị trí
+<b>{{jobTitle}}</b> tại <b>{{companyName}}</b>. Sau khi xem xét trình độ, năng lực và kinh nghiệm của
+bạn, chúng tôi tin rằng bạn sẽ là một thành viên có giá trị đối với đội ngũ của chúng tôi.</p>
+<div style="margin:18px 0;">{{positionBlock}}</div>
+<div style="margin:18px 0;">{{compensationBlock}}</div>
+<div style="margin:18px 0;">{{termsBlock}}</div>
+<p>Vui lòng phản hồi email này để xác nhận bạn đồng ý với lời mời nhận việc trước ngày
+<b>{{acceptanceDeadline}}</b>. Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {{hrContact}}.</p>
+<p>Chúng tôi rất vui mừng chào đón bạn gia nhập đội ngũ và mong được hợp tác cùng bạn!</p>
+<div style="margin-top:20px;">{{signature}}</div>
+"""),
+
         new EmailTemplateSeed(EmailTemplateType.Onboarding, "Chào mừng nhận việc (onboarding)",
             OnboardingEmailDefault.Subject, OnboardingEmailDefault.Body),
     };

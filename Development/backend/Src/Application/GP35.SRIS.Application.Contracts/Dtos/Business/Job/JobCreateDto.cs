@@ -28,6 +28,15 @@ public class JobCreateDto
     public decimal? SalaryMax { get; set; }
     public string? Currency { get; set; }
     public DateTime? Deadline { get; set; }
+
+    /// <summary>Số lượng cần tuyển. Để trống hoặc ≤ 0 -> 1 (tin nào cũng tuyển ít nhất 1 người).</summary>
+    [Range(1, 999, ErrorMessage = "Số lượng tuyển phải từ 1 đến 999.")]
+    public int? Quantity { get; set; }
+
     public List<string>? Requirements { get; set; }
     public List<string>? Benefits { get; set; }
+
+    /// <summary>Kỹ năng — nhận dạng mảng cho khớp <see cref="JobGetDto.Skills"/>, lưu xuống
+    /// <c>Job.skill_tags</c> dạng chuỗi ngăn bởi dấu phẩy. AI bóc tiêu chí có đọc mục này.</summary>
+    public List<string>? Skills { get; set; }
 }

@@ -33,6 +33,12 @@ public class OfferServiceTests
     {
         _logger.Setup(l => l.ForContext<OfferService>()).Returns(_logger.Object);
 
+        // GetBenefitsAsync không stub thì Moq trả null, mà GetLetterDefaultsAsync gọi
+        // .Select() thẳng lên kết quả -> ArgumentNullException. Repo thật luôn trả list
+        // (ToListAsync), nên mặc định của mock cũng phải là list rỗng chứ không phải null.
+        _jobRepo.Setup(r => r.GetBenefitsAsync(It.IsAny<long>(), It.IsAny<long>()))
+            .ReturnsAsync(new List<JobBenefit>());
+
         var provider = TestHost.Build(s =>
         {
             s.AddSingleton(_appRepo.Object);
@@ -86,6 +92,46 @@ public class OfferServiceTests
     }
 
     [Fact]
+    public async Task MakeOfferAsync_Should_Reject_StartDate_In_The_Past()
+    {
+        // Thư mời là văn bản chính thức, gửi đi rồi không sửa được -> chặn ngày vào làm
+        // đã qua ngay ở bước soạn, không để lọt xuống DB.
+        var svc = CreateService();
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 1L)).ReturnsAsync(
+            new GP35.SRIS.Domain.Entities.Application { ApplicationId = 1, JobId = 7, CurrentState = "Offer" });
+        _offerRepo.Setup(r => r.GetByApplicationAsync(1L, 1L)).ReturnsAsync((OfferDetail)null!);
+
+        var dto = new MakeOfferDto
+        {
+            SalaryAmount = 1000,
+            StartDate = DateTime.UtcNow.Date.AddDays(-1)
+        };
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.MakeOfferAsync(1L, 100L, 1L, dto));
+        Assert.Equal("BAD_REQUEST", ex.ErrorCode);
+        // Không được ghi gì xuống DB khi đã chặn.
+        _offerRepo.Verify(r => r.InsertAsync(It.IsAny<long>(), It.IsAny<OfferDetail>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task MakeOfferAsync_Should_Accept_StartDate_Today()
+    {
+        // Ranh giới: nhận việc NGAY HÔM NAY là hợp lệ, chỉ quá khứ mới bị chặn.
+        var svc = CreateService();
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 1L)).ReturnsAsync(
+            new GP35.SRIS.Domain.Entities.Application { ApplicationId = 1, JobId = 7, CurrentState = "Offer" });
+        _offerRepo.Setup(r => r.GetByApplicationAsync(1L, 1L)).ReturnsAsync((OfferDetail)null!);
+        _offerRepo.Setup(r => r.InsertAsync(1L, It.IsAny<OfferDetail>())).ReturnsAsync(50L);
+        _magicLink.Setup(m => m.IssueAsync(1L, 1L, "OFFER_RESPONSE", It.IsAny<TimeSpan>()))
+            .ReturnsAsync(new MagicLinkIssued(1, "tok", "OFFER_RESPONSE", DateTime.UtcNow.AddDays(7)));
+
+        var dto = new MakeOfferDto { SalaryAmount = 1000, StartDate = DateTime.UtcNow.Date };
+
+        var result = await svc.MakeOfferAsync(1L, 100L, 1L, dto);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
     public async Task MakeOfferAsync_Should_Insert_Offer_And_Issue_MagicLink()
     {
         // Arrange
@@ -101,7 +147,14 @@ public class OfferServiceTests
         _magicLink.Setup(m => m.IssueAsync(1L, 1L, "OFFER_RESPONSE", It.IsAny<TimeSpan>()))
             .ReturnsAsync(new MagicLinkIssued(1, "magic-token-123", "OFFER_RESPONSE", DateTime.UtcNow.AddDays(7)));
 
-        var dto = new MakeOfferDto { SalaryAmount = 2000, Currency = "VND", StartDate = new DateTime(2025, 1, 1) };
+        // Ngày vào làm phải ở tương lai (MakeOfferAsync chặn ngày quá khứ) — dùng mốc tương
+        // đối để test không tự hỏng khi thời gian trôi qua mốc cố định.
+        var dto = new MakeOfferDto
+        {
+            SalaryAmount = 2000,
+            Currency = "VND",
+            StartDate = DateTime.UtcNow.Date.AddDays(30)
+        };
 
         // Act
         var result = await svc.MakeOfferAsync(1L, 100L, 1L, dto);

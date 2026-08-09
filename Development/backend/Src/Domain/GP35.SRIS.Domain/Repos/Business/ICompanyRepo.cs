@@ -17,10 +17,12 @@ public interface ICompanyRepo : IBaseRepo<long, Company>
   /// Cập nhật hồ sơ công ty (name/logo/primary_color/ngành + liên hệ in trên thư mời nhận việc).
   /// Trả về company sau cập nhật, hoặc null nếu không tồn tại.
   /// Trường null trong tham số = giữ nguyên giá trị hiện tại.
+  /// Riêng <paramref name="defaultBenefits"/>: chuỗi RỖNG = xoá hết (khác null = giữ nguyên).
   /// </summary>
   Task<Company?> UpdateBrandAsync(
       long companyId, string? name, string? logoUrl, string? primaryColor,
-      string? address, string? contactEmail, string? phone);
+      string? address, string? contactEmail, string? phone, string? defaultBenefits = null,
+      string? emailDomain = null);
 
   /// <summary>Tạo công ty mới (đăng ký) — Company không dưới RLS nên insert thẳng. Trả company_id.</summary>
   Task<long> InsertAsync(Company company);

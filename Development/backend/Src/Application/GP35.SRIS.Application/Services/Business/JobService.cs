@@ -38,6 +38,10 @@ public class JobService : BaseService<JobService>, IJobService
             SalaryMax = dto.SalaryMax,
             Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "VND" : dto.Currency,
             Deadline = dto.Deadline,
+            SkillTags = JoinSkills(dto.Skills),
+            // Không gửi / gửi số vô lý -> 1: tin tuyển dụng nào cũng cần ít nhất 1 người,
+            // để 0 thì mọi màn đếm "còn tuyển bao nhiêu" đọc ra số sai.
+            Quantity = dto.Quantity is > 0 ? dto.Quantity.Value : 1,
             Status = string.IsNullOrWhiteSpace(dto.Status) ? "Open" : dto.Status.Trim()
         };
 
@@ -109,6 +113,11 @@ public class JobService : BaseService<JobService>, IJobService
             SalaryMax = dto.SalaryMax,
             Currency = dto.Currency,
             Deadline = dto.Deadline,
+            // dto.Skills == null nghĩa là client không gửi mục này -> giữ nguyên kỹ năng cũ,
+            // KHÔNG hiểu thành "xoá hết" (client cũ không biết trường này vẫn phải sửa job được).
+            SkillTags = dto.Skills is null ? existing.SkillTags : JoinSkills(dto.Skills),
+            // Cùng lý do với Skills: client không gửi thì giữ nguyên số cũ, không tụt về 0.
+            Quantity = dto.Quantity is > 0 ? dto.Quantity.Value : existing.Quantity,
             Status = status
         };
 
@@ -158,6 +167,21 @@ public class JobService : BaseService<JobService>, IJobService
     {
         if (deadline is { } d && d.Date < DateTime.UtcNow.Date)
             throw Bad($"Hạn nộp đơn ({d:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
+    }
+
+    /// <summary>
+    /// Mảng kỹ năng -> chuỗi lưu ở <c>Job.skill_tags</c>. Ngăn bằng ", " đúng ký tự mà
+    /// <see cref="ToDtoAsync"/> tách ra khi đọc lại. Danh sách rỗng -> NULL, không lưu chuỗi rỗng.
+    /// </summary>
+    private static string? JoinSkills(List<string>? skills)
+    {
+        if (skills is null) return null;
+        var cleaned = skills
+            .Select(s => s?.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return cleaned.Count == 0 ? null : string.Join(", ", cleaned);
     }
 
     private static BaseException Bad(string msg) => new(msg)
@@ -223,6 +247,7 @@ public class JobService : BaseService<JobService>, IJobService
             Department = job.Department,
             Location = job.Location,
             EmploymentType = job.EmploymentType,
+            Quantity = job.Quantity,
             WorkMode = job.WorkMode,
             ExperienceLevel = job.ExperienceLevel,
             SalaryMin = job.SalaryMin,

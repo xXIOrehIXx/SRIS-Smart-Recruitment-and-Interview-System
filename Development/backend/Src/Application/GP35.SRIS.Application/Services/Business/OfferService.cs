@@ -122,6 +122,12 @@ public class OfferService : BaseService<OfferService>, IOfferService
         if (await _offerRepo.GetByApplicationAsync(companyId, applicationId) is not null)
             throw Conflict("Hồ sơ này đã được gửi thư mời nhận việc.");
 
+        // Ngày vào làm ở quá khứ là gõ nhầm: thư đã gửi đi rồi thì ứng viên đọc được một
+        // ngày không thể nhận, mà thư mời là văn bản chính thức nên không sửa lại được nữa.
+        // So ở mức NGÀY (ô này không nhập giờ) — chọn đúng hôm nay vẫn hợp lệ.
+        if (dto.StartDate is { } startDate && startDate.Date < DateTime.UtcNow.Date)
+            throw Bad($"Ngày bắt đầu làm việc ({startDate:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
+
         // Ô nào để trống thì lấy mặc định từ Job/Company — người soạn không phải gõ lại.
         var defaults = await GetLetterDefaultsAsync(companyId, applicationId);
 
@@ -376,5 +382,10 @@ public class OfferService : BaseService<OfferService>, IOfferService
     private static BaseException Conflict(string msg) => new(msg)
     {
         ErrorCode = "CONFLICT", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.Conflict
+    };
+
+    private static BaseException Bad(string msg) => new(msg)
+    {
+        ErrorCode = "BAD_REQUEST", ErrorMessage = msg, HttpStatus = (int)HttpStatusCode.BadRequest
     };
 }
