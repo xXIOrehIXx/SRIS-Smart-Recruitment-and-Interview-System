@@ -81,6 +81,30 @@
   background-color: #f9faf9;
 }
 
+.candidates-table .candidate-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.candidates-table .candidate-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.candidates-table .candidate-name {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.candidates-table .candidate-email {
+  font-size: 12px;
+  color: #8c8c8b;
+  word-break: break-all;
+}
+
 .pipeline-stats {
   display: flex;
   flex-direction: column;
