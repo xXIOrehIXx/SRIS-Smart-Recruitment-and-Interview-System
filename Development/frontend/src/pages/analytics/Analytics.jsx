@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Row, Col, Statistic, Select, Space, DatePicker, Button, message, Spin } from 'antd';
+import { Card, Typography, Row, Col, Statistic, Select, Space, Button, message, Spin } from 'antd';
 import {
   TeamOutlined, FileTextOutlined, CheckCircleOutlined, ClockCircleOutlined,
   TrophyOutlined, BarChartOutlined, PieChartOutlined,
@@ -11,7 +11,6 @@ import { APPLICATION_STATE_LABELS } from '../../components/ApplicationStateTag';
 import './css/Analytics.css';
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 
 const MATCHA_GREEN = '#5D8C3E';
 
@@ -103,6 +102,16 @@ const Analytics = () => {
       icon: <TeamOutlined />,
       color: '#f5222d',
     },
+    {
+      // Số ngày trung bình từ lúc nộp hồ sơ tới lúc tuyển. Backend vẫn tính sẵn nhưng
+      // trước đây không hiện ở đâu cả — chỉ có một ô trống hứa hẹn "thống kê thời gian".
+      title: 'Thời gian tuyển trung bình',
+      value: overview?.summary?.avgTimeToHireDays != null
+        ? `${Math.round(overview.summary.avgTimeToHireDays)} ngày`
+        : 'Chưa có',
+      icon: <ClockCircleOutlined />,
+      color: '#722ed1',
+    },
   ];
 
   return (
@@ -123,7 +132,6 @@ const Analytics = () => {
             value={selectedJob}
             options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
           />
-          <RangePicker style={{ width: 260 }} placeholder={['Từ ngày', 'Đến ngày']} />
           <Button icon={<ReloadOutlined />} onClick={fetchAnalytics} loading={loading}>
             Làm mới
           </Button>
@@ -216,30 +224,6 @@ const Analytics = () => {
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={12}>
-          <Card
-            title={<span><BarChartOutlined style={{ color: MATCHA_GREEN, marginRight: 8 }} />Xu hướng Tuyển Dụng</span>}
-            className="chart-card"
-            bordered={false}
-          >
-            <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8b' }}>
-              Biểu đồ xu hướng theo thời gian
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card
-            title={<span><TrophyOutlined style={{ color: MATCHA_GREEN, marginRight: 8 }} />Top Vị Trí Tuyển Nhanh</span>}
-            className="chart-card"
-            bordered={false}
-          >
-            <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8b' }}>
-              Thống kê thời gian tuyển dụng trung bình
-            </div>
-          </Card>
-        </Col>
-      </Row>
     </div>
   );
 };

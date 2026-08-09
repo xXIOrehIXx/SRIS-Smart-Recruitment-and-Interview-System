@@ -173,7 +173,8 @@ const Settings = () => {
               )}
             </Space>
           </div>
-          <Form.Item label="Full Name" name="fullName" rules={[{ required: true, message: 'Please enter full name' }]}>
+          {/* Họ tên tùy chọn (cột full_name NULL) — bỏ trống thì hệ thống hiển thị email. */}
+          <Form.Item label="Full Name" name="fullName">
             <Input prefix={<UserOutlined />} />
           </Form.Item>
           <Form.Item label="Email" name="email">

@@ -23,6 +23,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
 {
     private const string Purpose = "OFFER_RESPONSE";
     private const int DefaultOfferTtlDays = 7; // khớp TTL link OFFER_RESPONSE (5.13)
+    private const int MaxBenefitsLength = 1000; // sức chứa cột OfferDetail.benefits (V029)
 
     private readonly IApplicationRepo _appRepo;
     private readonly IJobRepo _jobRepo;
@@ -70,6 +71,16 @@ public class OfferService : BaseService<OfferService>, IOfferService
             ? await _userRepo.GetByIdAsync(companyId, dmId)
             : null;
 
+        // Phúc lợi đã nhập ở tin tuyển dụng (và trước đó là Yêu cầu tuyển dụng của DM) — kéo sang
+        // làm gợi ý, mỗi mục 1 dòng cho khớp ô textarea bên form soạn thư.
+        // Cắt theo sức chứa cột OfferDetail.benefits (NVARCHAR(1000), V029): tin tuyển dụng không
+        // giới hạn số mục, gợi ý dài quá thì lưu thư sẽ vỡ.
+        var benefits = await _jobRepo.GetBenefitsAsync(companyId, app.JobId);
+        var benefitText = string.Join("\n",
+            benefits.Select(b => b.Content).Where(c => !string.IsNullOrWhiteSpace(c)));
+        if (benefitText.Length > MaxBenefitsLength)
+            benefitText = benefitText[..MaxBenefitsLength];
+
         return new OfferLetterDefaultsDto
         {
             CompanyName = company?.Name,
@@ -82,16 +93,17 @@ public class OfferService : BaseService<OfferService>, IOfferService
 
             JobTitle = job?.Title ?? info?.JobTitle,
             Department = job?.Department,
-            ReportingTo = manager?.FullName,
+            ReportingTo = NameOrEmail(manager),
             EmploymentType = job?.EmploymentType,
             WorkLocation = job?.Location,
             SalaryAmount = job?.SalaryMax ?? job?.SalaryMin,
             Currency = string.IsNullOrWhiteSpace(job?.Currency) ? "VND" : job!.Currency,
             SalaryPeriod = SalaryPeriods.Month,
+            Benefits = benefitText.Length == 0 ? null : benefitText,
             Terms = OfferLetterPdfGenerator.DefaultTerms,
-            SignerName = signer?.FullName,
+            SignerName = NameOrEmail(signer),
             SignerTitle = signer is null ? null : RoleTitle(signer.Role),
-            HrContactName = signer?.FullName,
+            HrContactName = NameOrEmail(signer),
             HrContactEmail = signer?.Email ?? company?.ContactEmail,
             ExpiresInDays = DefaultOfferTtlDays
         };
@@ -324,6 +336,13 @@ public class OfferService : BaseService<OfferService>, IOfferService
         ExpiresAt = o.ExpiresAt,
         RespondedAt = o.RespondedAt
     };
+
+    /// <summary>
+    /// Tên hiển thị của một user trong thư offer. Họ tên là tùy chọn, nên tên rỗng thì lấy email —
+    /// thư offer để trống chỗ "Người ký" / "Báo cáo cho" thì trông như lỗi.
+    /// </summary>
+    private static string? NameOrEmail(User? user)
+        => user is null ? null : (string.IsNullOrWhiteSpace(user.FullName) ? user.Email : user.FullName);
 
     /// <summary>Chức danh gợi ý cho người ký, suy từ role (người soạn sửa lại được).</summary>
     private static string? RoleTitle(string? role) => (role ?? "").Trim() switch

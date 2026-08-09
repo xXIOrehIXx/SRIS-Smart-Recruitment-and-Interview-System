@@ -26,9 +26,11 @@ const MATCHA_GREEN = '#5D8C3E';
 // Nhãn + màu trạng thái dùng chung toàn app: components/ApplicationStateTag.jsx
 
 /**
- * Chi tiết 1 hồ sơ (ApplicationDetailDto) — màn sàng lọc của Human Resource:
- * điểm cả-CV + điểm theo tiêu chí, bảng khớp/thiếu TỪNG tiêu chí kèm câu bằng chứng
- * (docs 5.18 — không ném cả JD↔CV lấy 1 con số), lịch sử audit, ghi chú nội bộ.
+ * Chi tiết 1 hồ sơ (ApplicationDetailDto): thông tin ứng viên, file CV gốc, lịch sử audit,
+ * ghi chú nội bộ.
+ *
+ * KHÔNG có điểm số, xếp hạng hay tóm tắt máy sinh: hệ thống không đọc và không đánh giá CV
+ * thay người tuyển dụng.
  */
 const CandidateDetail = () => {
   const { id: applicationId } = useParams();

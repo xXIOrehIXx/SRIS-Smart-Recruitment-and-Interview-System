@@ -28,6 +28,7 @@ public class CvDocument : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHas
     public float[]? Embedding { get; set; }
     [Column("parse_status")]
     public string ParseStatus { get; set; } = null!;
+
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]

@@ -107,9 +107,10 @@ public class UserManageService : BaseService<UserManageService>, IUserManageServ
         var existing = await _userRepo.GetByIdAsync(companyId, userId)
             ?? throw NotFound($"Không tìm thấy tài khoản (user_id={userId}).");
 
+        // Họ tên để trống được: cột full_name NULL, còn Create/Update của Admin cũng cho null —
+        // chặn riêng ở đây thì người dùng không xoá nổi cái tên mà chính Admin đã tạo trống.
+        // Chỗ hiển thị đã tự rơi về email khi tên rỗng.
         var fullName = string.IsNullOrWhiteSpace(dto.FullName) ? null : dto.FullName.Trim();
-        if (fullName is null)
-            throw Bad("Họ tên không được để trống.");
 
         var phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
         if (phone is not null && !IsValidPhone(phone))

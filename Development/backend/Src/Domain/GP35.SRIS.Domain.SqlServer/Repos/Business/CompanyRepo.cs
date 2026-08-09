@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.SqlServer.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -59,7 +59,7 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
 
     public async Task<Company?> UpdateBrandAsync(
         long companyId, string? name, string? logoUrl, string? primaryColor,
-        string? industry, string? address, string? contactEmail, string? phone)
+        string? address, string? contactEmail, string? phone)
     {
         // Tracking (không AsNoTracking) để EF phát UPDATE. Cô lập tenant: WHERE company_id tường minh + RLS.
         var company = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId);
@@ -69,7 +69,6 @@ public class CompanyRepo : BaseRepo<long, Company>, ICompanyRepo
         if (name is not null) company.Name = name;
         company.LogoUrl = logoUrl ?? company.LogoUrl;
         company.PrimaryColor = primaryColor ?? company.PrimaryColor;
-        company.Industry = industry ?? company.Industry;
         company.Address = address ?? company.Address;
         company.ContactEmail = contactEmail ?? company.ContactEmail;
         company.Phone = phone ?? company.Phone;
