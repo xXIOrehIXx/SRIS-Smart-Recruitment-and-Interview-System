@@ -30,4 +30,8 @@ public class JobCreateDto
     public DateTime? Deadline { get; set; }
     public List<string>? Requirements { get; set; }
     public List<string>? Benefits { get; set; }
+
+    /// <summary>Kỹ năng — nhận dạng mảng cho khớp <see cref="JobGetDto.Skills"/>, lưu xuống
+    /// <c>Job.skill_tags</c> dạng chuỗi ngăn bởi dấu phẩy. AI bóc tiêu chí có đọc mục này.</summary>
+    public List<string>? Skills { get; set; }
 }

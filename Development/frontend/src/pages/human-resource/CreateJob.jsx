@@ -21,6 +21,8 @@ import {
   SaveOutlined,
   SendOutlined,
   ArrowLeftOutlined,
+  PlusOutlined,
+  MinusCircleOutlined,
 } from "@ant-design/icons";
 import {
   jobsAPI,
@@ -41,6 +43,18 @@ import "./css/CreateJob.css";
 // destructure thì nó ăn vào class Text của DOM và React gọi class như hàm -> throw.
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+
+/**
+ * Gợi ý cho 3 dòng yêu cầu đầu tiên. Mỗi dòng một KIỂU yêu cầu khác nhau (bằng cấp / kinh
+ * nghiệm / công cụ) để người dùng nhìn ra ngay ranh giới "phải có sẵn" với "sẽ làm sau khi
+ * vào" — chỗ hay nhầm nhất, và nhầm là AI bóc tiêu chí ra rỗng.
+ * Ví dụ cố tình lấy nghề phổ thông, không lấy nghề IT: sản phẩm tuyển mọi vị trí.
+ */
+const REQUIREMENT_HINTS = [
+  "VD: Tốt nghiệp Cao đẳng trở lên",
+  "VD: Có ít nhất 1 năm kinh nghiệm ở vị trí tương đương",
+  "VD: Sử dụng thành thạo Excel",
+];
 
 /**
  * Quy tắc validate cho từng field — đặt riêng để dễ tái sử dụng giữa
@@ -98,7 +112,14 @@ const FIELD_RULES = {
     { type: "integer", max: 999, message: "Số lượng tối đa 999" },
   ],
   skillTags: () => [
-    { max: 500, message: "Kỹ năng tối đa 500 ký tự" },
+    {
+      // Giá trị là MẢNG chip (Select mode="tags"), nên rule {max} của antd sẽ đếm số chip
+      // chứ không phải số ký tự. Tự kiểm trên đúng chuỗi mà BE sẽ lưu vào cột skill_tags.
+      validator: (_, value) =>
+        (value || []).join(", ").length > 500
+          ? Promise.reject(new Error("Kỹ năng tối đa 500 ký tự"))
+          : Promise.resolve(),
+    },
   ],
   expiresAt: () => [
     {
@@ -256,7 +277,8 @@ const CreateJob = () => {
           experienceYearsToJob(req.experienceYearsMin)
           ?? EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
         quantity: req.quantity,
-        skillTags: skills.length > 0 ? skills.join(", ") : undefined,
+        // Ô Kỹ năng là Select mode="tags" -> nhận MẢNG, không phải chuỗi ngăn phẩy.
+        skillTags: skills,
         description: req.description,
         salaryMin: req.salaryMin,
         salaryMax: req.salaryMax,
@@ -300,6 +322,9 @@ const CreateJob = () => {
           location: job.location || job.workLocation,
           workMode: job.workMode,
           description: job.jdText || job.description,
+          // Thiếu dòng này là mỗi lần sửa job sẽ gửi kỹ năng RỖNG lên BE -> xoá sạch
+          // skill_tags cũ, dù người dùng không hề đụng vào ô đó.
+          skillTags: job.skills || [],
           salaryMin: job.salaryMin,
           salaryMax: job.salaryMax,
           currency: job.currency || "VND",
@@ -353,6 +378,15 @@ const CreateJob = () => {
     setBenefits(newBenefits);
   };
 
+  /**
+   * Chuẩn hoá giá trị ô Kỹ năng về mảng sạch. Bình thường Select mode="tags" đã trả mảng,
+   * nhưng bản nháp lưu trước đây còn giữ chuỗi ngăn phẩy nên vẫn phải chịu được cả hai.
+   */
+  const toSkillList = (value) => {
+    const raw = Array.isArray(value) ? value : String(value || "").split(",");
+    return raw.map((s) => s.trim()).filter(Boolean);
+  };
+
   const getFormData = (values) => {
     return {
       title: values.title,
@@ -370,6 +404,10 @@ const CreateJob = () => {
       deadline: values.expiresAt,
       requirements: requirements.filter((r) => r.trim() !== ""),
       benefits: benefits.filter((b) => b.trim() !== ""),
+      // Kỹ năng TỪNG bị bỏ quên ở đây: ô hiện trên form, có validate, có prefill, nhưng
+      // không nằm trong payload nên gõ gì cũng mất trắng mà không báo lỗi. BE nhận mảng
+      // (JobCreateDto.Skills) rồi tự nối thành chuỗi lưu vào skill_tags.
+      skills: toSkillList(values.skillTags),
       isPublished: false,
     };
   };
@@ -496,7 +534,7 @@ const CreateJob = () => {
               >
                 <Input
                   size="large"
-                  placeholder="VD: Senior React Developer"
+                  placeholder="VD: Nhân viên Kinh doanh"
                   onChange={dismissFormError}
                 />
               </Form.Item>
@@ -510,9 +548,49 @@ const CreateJob = () => {
                   rows={6}
                   maxLength={2000}
                   showCount
-                  placeholder="Mô tả chi tiết về trách nhiệm, yêu cầu, quyền lợi..."
+                  placeholder="Những đầu việc ứng viên sẽ làm sau khi vào công ty..."
                   onChange={dismissFormError}
                 />
+              </Form.Item>
+
+              {/* Ô này quyết định AI có bóc được tiêu chí hay không. Mô tả công việc thường
+                  chỉ liệt kê đầu việc — không chấm điểm được cho người chưa vào làm — nên
+                  bỏ trống mục yêu cầu là bấm "AI bóc tiêu chí" sẽ ra rỗng. */}
+              <Form.Item
+                label="Yêu cầu ứng viên"
+                tooltip="Thứ ứng viên phải CÓ SẴN trước khi vào làm: bằng cấp, số năm kinh nghiệm, chứng chỉ, ngoại ngữ. Khác với mô tả công việc là thứ họ sẽ làm sau khi vào. AI dựa vào mục này để bóc ra phiếu chấm phỏng vấn."
+              >
+                <Space direction="vertical" size={8} style={{ width: "100%" }}>
+                  {requirements.map((req, index) => (
+                    <Space.Compact key={index} style={{ width: "100%" }}>
+                      <Input
+                        value={req}
+                        placeholder={
+                          REQUIREMENT_HINTS[index] || "Thêm một yêu cầu với ứng viên"
+                        }
+                        onChange={(e) => {
+                          handleRequirementChange(index, e.target.value);
+                          dismissFormError();
+                        }}
+                      />
+                      <Button
+                        icon={<MinusCircleOutlined />}
+                        aria-label="Xoá yêu cầu"
+                        // Còn đúng 1 dòng thì khoá nút xoá: xoá nốt là không còn ô nào để gõ.
+                        disabled={requirements.length === 1}
+                        onClick={() => handleRemoveRequirement(index)}
+                      />
+                    </Space.Compact>
+                  ))}
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddRequirement}
+                    block
+                  >
+                    Thêm yêu cầu
+                  </Button>
+                </Space>
               </Form.Item>
 
               <Row gutter={16}>
@@ -625,12 +703,24 @@ const CreateJob = () => {
                 <Col xs={24} md={16}>
                   <Form.Item
                     name="skillTags"
-                    label="Kỹ Năng (phân cách bằng dấu phẩy)"
+                    label="Kỹ năng"
                     rules={rules.skillTags}
+                    tooltip="Gõ từng kỹ năng rồi nhấn Enter. Dán cả cụm ngăn bởi dấu phẩy cũng được — hệ thống tự tách."
                   >
-                    <Input
-                      placeholder="VD: React, Node.js, TypeScript"
+                    {/* Chip thay vì ô text ngăn phẩy: gõ liền không phẩy thì người dùng THẤY
+                        ngay nó dồn thành một chip mà sửa, thay vì âm thầm thành một "kỹ năng"
+                        dài cả câu. tokenSeparators nuốt luôn dấu phẩy/chấm phẩy/xuống dòng
+                        khi dán từ Word, Excel. */}
+                    <Select
+                      mode="tags"
                       size="large"
+                      tokenSeparators={[",", ";", "\n"]}
+                      placeholder="Gõ từng kỹ năng rồi nhấn Enter — VD: Excel"
+                      // KHÔNG dùng open={false} để giấu panel: chế độ tags dựa vào panel để
+                      // nhận phím Enter, tắt đi là mất đúng thao tác chính. Chỉ bỏ khung
+                      // "No data" lúc chưa gõ gì.
+                      notFoundContent={null}
+                      suffixIcon={null}
                       onChange={dismissFormError}
                     />
                   </Form.Item>

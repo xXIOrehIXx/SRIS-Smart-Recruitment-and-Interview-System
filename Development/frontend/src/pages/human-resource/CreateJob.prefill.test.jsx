@@ -87,10 +87,13 @@ test('?requestId -> số năm DM nhập thắng cấp bậc cũ khi quy đổi',
   expect(screen.getByTitle('5+ năm')).toBeInTheDocument();
 });
 
-test('?requestId -> tách dòng "Kỹ năng yêu cầu" ra ô Kỹ Năng riêng', async () => {
+test('?requestId -> tách dòng "Kỹ năng yêu cầu" thành từng chip riêng', async () => {
   await renderFromRequest();
 
-  expect(screen.getByDisplayValue('Excel, MISA')).toBeInTheDocument();
+  // Ô Kỹ năng là Select mode="tags": mỗi kỹ năng là một chip riêng, không phải
+  // một chuỗi "Excel, MISA" nằm trong ô text.
+  expect(screen.getByTitle('Excel')).toBeInTheDocument();
+  expect(screen.getByTitle('MISA')).toBeInTheDocument();
   // Dòng kỹ năng KHÔNG được lẫn vào phần yêu cầu dạng gạch đầu dòng.
   expect(screen.queryByDisplayValue(/Kỹ năng yêu cầu:/)).not.toBeInTheDocument();
 });
@@ -129,6 +132,7 @@ const JOB_WITH_DEADLINE = {
   deadline: '2026-08-31T00:00:00',
   requirements: ['Sinh viên năm 3, năm 4'],
   benefits: ['Trợ cấp thực tập theo tháng'],
+  skills: ['Canva', 'Viết content'],
 };
 
 const renderEdit = async (job) => {
@@ -158,5 +162,39 @@ test('?edit -> hạn nộp rỗng hoặc hỏng thì để trống, không sập
 
   await waitFor(() =>
     expect(screen.getByDisplayValue('Thực tập sinh Marketing')).toBeInTheDocument()
+  );
+});
+
+/**
+ * Yêu cầu ứng viên + kỹ năng là hai mục AI đọc để bóc tiêu chí phỏng vấn. Trước đây form
+ * KHÔNG vẽ ô yêu cầu, và ô kỹ năng thì không được điền lại khi sửa tin -> lưu phát nữa là
+ * mất sạch kỹ năng cũ. Hai test dưới giữ đúng hai chỗ đó.
+ */
+test('?edit -> yêu cầu ứng viên có sẵn được đổ vào ô nhập', async () => {
+  await renderEdit(JOB_WITH_DEADLINE);
+
+  await waitFor(() =>
+    expect(screen.getByDisplayValue('Sinh viên năm 3, năm 4')).toBeInTheDocument()
+  );
+});
+
+test('?edit -> kỹ năng cũ điền lại thành chip (lưu lại không mất)', async () => {
+  await renderEdit(JOB_WITH_DEADLINE);
+
+  await waitFor(() => expect(screen.getByTitle('Canva')).toBeInTheDocument());
+  expect(screen.getByTitle('Viết content')).toBeInTheDocument();
+});
+
+test('tạo tin mới -> có ô nhập yêu cầu ứng viên kèm gợi ý nghề phổ thông', async () => {
+  render(
+    <MemoryRouter initialEntries={['/human-resource/jobs/create']}>
+      <CreateJob />
+    </MemoryRouter>
+  );
+
+  await waitFor(() =>
+    expect(
+      screen.getByPlaceholderText('VD: Tốt nghiệp Cao đẳng trở lên')
+    ).toBeInTheDocument()
   );
 });

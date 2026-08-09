@@ -113,6 +113,7 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
                 .SetProperty(j => j.SalaryMax, job.SalaryMax)
                 .SetProperty(j => j.Currency, job.Currency)
                 .SetProperty(j => j.Deadline, job.Deadline)
+                .SetProperty(j => j.SkillTags, job.SkillTags)
                 .SetProperty(j => j.Status, job.Status)
                 .SetProperty(j => j.UpdatedAt, DateTime.UtcNow));
 

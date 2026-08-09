@@ -21,4 +21,7 @@ public class JobUpdateDto
     public DateTime? Deadline { get; set; }
     public List<string>? Requirements { get; set; }
     public List<string>? Benefits { get; set; }
+
+    /// <summary>Kỹ năng — xem <see cref="JobCreateDto.Skills"/>.</summary>
+    public List<string>? Skills { get; set; }
 }

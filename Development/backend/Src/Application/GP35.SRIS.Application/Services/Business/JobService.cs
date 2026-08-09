@@ -38,6 +38,7 @@ public class JobService : BaseService<JobService>, IJobService
             SalaryMax = dto.SalaryMax,
             Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "VND" : dto.Currency,
             Deadline = dto.Deadline,
+            SkillTags = JoinSkills(dto.Skills),
             Status = string.IsNullOrWhiteSpace(dto.Status) ? "Open" : dto.Status.Trim()
         };
 
@@ -109,6 +110,9 @@ public class JobService : BaseService<JobService>, IJobService
             SalaryMax = dto.SalaryMax,
             Currency = dto.Currency,
             Deadline = dto.Deadline,
+            // dto.Skills == null nghĩa là client không gửi mục này -> giữ nguyên kỹ năng cũ,
+            // KHÔNG hiểu thành "xoá hết" (client cũ không biết trường này vẫn phải sửa job được).
+            SkillTags = dto.Skills is null ? existing.SkillTags : JoinSkills(dto.Skills),
             Status = status
         };
 
@@ -158,6 +162,21 @@ public class JobService : BaseService<JobService>, IJobService
     {
         if (deadline is { } d && d.Date < DateTime.UtcNow.Date)
             throw Bad($"Hạn nộp đơn ({d:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
+    }
+
+    /// <summary>
+    /// Mảng kỹ năng -> chuỗi lưu ở <c>Job.skill_tags</c>. Ngăn bằng ", " đúng ký tự mà
+    /// <see cref="ToDtoAsync"/> tách ra khi đọc lại. Danh sách rỗng -> NULL, không lưu chuỗi rỗng.
+    /// </summary>
+    private static string? JoinSkills(List<string>? skills)
+    {
+        if (skills is null) return null;
+        var cleaned = skills
+            .Select(s => s?.Trim())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return cleaned.Count == 0 ? null : string.Join(", ", cleaned);
     }
 
     private static BaseException Bad(string msg) => new(msg)
