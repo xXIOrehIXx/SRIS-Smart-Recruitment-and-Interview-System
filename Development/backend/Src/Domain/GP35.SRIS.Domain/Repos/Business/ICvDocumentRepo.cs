@@ -14,9 +14,6 @@ public record TalentPoolRow(
     DateTime? UploadedAt,
     double Distance);
 
-/// <summary>Tóm tắt CV đã lưu (V033) + mốc sinh. Summary null = chưa tóm tắt lần nào.</summary>
-public record CvSummaryInfo(string? Summary, DateTime? SummaryAt, string? ExtractedText);
-
 public interface ICvDocumentRepo : IBaseRepo<long, CvDocument>
 {
     /// <summary>
@@ -30,15 +27,6 @@ public interface ICvDocumentRepo : IBaseRepo<long, CvDocument>
 
     /// <summary>Lấy text đã bóc từ CV (để chấm nền — Cách A). Null nếu không thấy / chưa có text.</summary>
     Task<string?> GetExtractedTextAsync(long companyId, long cvId);
-
-    /// <summary>
-    /// Tóm tắt đã lưu + text nguồn, đọc 1 lượt (V033). Null = không có CV đó trong công ty này.
-    /// Trả kèm ExtractedText để caller khỏi query lần hai khi phải sinh mới.
-    /// </summary>
-    Task<CvSummaryInfo?> GetSummaryAsync(long companyId, long cvId);
-
-    /// <summary>Lưu tóm tắt vừa sinh + đóng dấu thời điểm.</summary>
-    Task UpdateSummaryAsync(long companyId, long cvId, string summary);
 
     /// <summary>
     /// Cập nhật riêng vector embedding cho 1 CV đã lưu (CAST JSON -> VECTOR(1024)). Dùng khi chấm nền:

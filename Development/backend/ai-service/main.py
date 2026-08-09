@@ -14,8 +14,6 @@ Endpoint hiện có:
                         (model BAAI/bge-m3 chạy QUA OLLAMA -> VECTOR(1024))
   - /extract-criteria : bóc tiêu chí từ Yêu cầu tuyển dụng/JD qua Local LLM
                         (Ollama — docs 5.18, Việc B4; DRAFT cho người duyệt)
-  - /summarize-cv     : tóm tắt CV thành gạch đầu dòng cho người tuyển dụng đọc lướt
-                        (Ollama — CHỈ trích xuất, không chấm điểm, không nhận JD)
 
 Vì sao embed qua Ollama (không phải sentence-transformers + torch)?
   - Ollama đã chạy sẵn cho /extract-criteria -> 1 runtime AI duy nhất, không thêm torch.
@@ -32,7 +30,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from criteria_extract import CriteriaList, extract_criteria
-from cv_summary import CvSummary, summarize_cv
 
 app = FastAPI(title="SRIS AI Service")
 
@@ -98,28 +95,6 @@ def extract_criteria_endpoint(req: ExtractCriteriaRequest):
         return extract_criteria(req.jd_text)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Boc tieu chi that bai: {e}")
-
-
-# ============================================================
-#  SUMMARIZE-CV — tóm tắt CV cho người tuyển dụng đọc lướt
-#  CHỈ trích xuất nội dung CV. Không nhận JD, không so khớp, không chấm điểm:
-#  hệ thống đã bỏ hẳn việc máy đánh giá ứng viên (chốt 08/08/2026).
-# ============================================================
-class SummarizeCvRequest(BaseModel):
-    cv_text: str
-
-
-@app.post("/summarize-cv", response_model=CvSummary)
-def summarize_cv_endpoint(req: SummarizeCvRequest):
-    """
-    Nhận text đã bóc từ CV -> 3-6 gạch đầu dòng mô tả kinh nghiệm/kỹ năng/học vấn.
-    Lỗi (Ollama chưa chạy / LLM không ra JSON hợp lệ) -> HTTP 502; .NET nuốt êm,
-    tab CV vẫn mở được, chỉ là chưa có tóm tắt.
-    """
-    try:
-        return summarize_cv(req.cv_text)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Tom tat CV that bai: {e}")
 
 
 # Chạy:   uvicorn main:app --port 8000

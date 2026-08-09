@@ -13,8 +13,7 @@ import {
   FileTextOutlined,
   ReloadOutlined,
   CloseCircleOutlined,
-  LinkOutlined,
-  BulbOutlined
+  LinkOutlined
 } from '@ant-design/icons';
 import { applicationAPI, cvAPI } from '../../services/api';
 import ApplicationStateTag, { stateLabel } from '../../components/ApplicationStateTag';
@@ -27,11 +26,11 @@ const MATCHA_GREEN = '#5D8C3E';
 // Nhãn + màu trạng thái dùng chung toàn app: components/ApplicationStateTag.jsx
 
 /**
- * Chi tiết 1 hồ sơ (ApplicationDetailDto): thông tin ứng viên, CV kèm tóm tắt do AI sinh,
- * lịch sử audit, ghi chú nội bộ.
+ * Chi tiết 1 hồ sơ (ApplicationDetailDto): thông tin ứng viên, file CV gốc, lịch sử audit,
+ * ghi chú nội bộ.
  *
- * KHÔNG có điểm số hay xếp hạng: hệ thống không chấm CV thay người tuyển dụng. Tóm tắt CV
- * chỉ rút gọn nội dung để đọc lướt — người dùng tự đối chiếu với JD và tự quyết.
+ * KHÔNG có điểm số, xếp hạng hay tóm tắt máy sinh: hệ thống không đọc và không đánh giá CV
+ * thay người tuyển dụng.
  */
 const CandidateDetail = () => {
   const { id: applicationId } = useParams();
@@ -41,9 +40,6 @@ const CandidateDetail = () => {
   const [history, setHistory] = useState([]);
   const [notes, setNotes] = useState([]);
   const [sendingLink, setSendingLink] = useState(false);
-  // Tóm tắt CV: đọc bản đã lưu lúc mở trang (không gọi AI), sinh mới khi người dùng bấm nút.
-  const [cvSummary, setCvSummary] = useState(null);
-  const [summarizing, setSummarizing] = useState(false);
 
   const fetchApplicationDetails = useCallback(async () => {
     try {
@@ -66,30 +62,6 @@ const CandidateDetail = () => {
   useEffect(() => {
     if (applicationId) fetchApplicationDetails();
   }, [applicationId, fetchApplicationDetails]);
-
-  // Tóm tắt là phần phụ: hỏng thì bỏ qua, phần còn lại của hồ sơ vẫn hiện bình thường.
-  useEffect(() => {
-    const cvId = application?.cvId;
-    if (!cvId) return;
-    let cancelled = false;
-    cvAPI.getSummary(cvId)
-      .then((res) => { if (!cancelled) setCvSummary(res.data || null); })
-      .catch(() => { /* không có tóm tắt thì thôi */ });
-    return () => { cancelled = true; };
-  }, [application?.cvId]);
-
-  const handleSummarizeCv = async () => {
-    try {
-      setSummarizing(true);
-      const res = await cvAPI.generateSummary(application.cvId);
-      setCvSummary(res.data || null);
-    } catch (error) {
-      console.error('Error summarizing CV:', error);
-      message.error(error?.response?.data?.userMsg || 'Không tóm tắt được CV');
-    } finally {
-      setSummarizing(false);
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -169,55 +141,6 @@ const CandidateDetail = () => {
               <Text type="secondary">Chưa có CV</Text>
             )}
           </div>
-
-          {/* Tóm tắt CV — rút gọn để đọc lướt, KHÔNG phải điểm số hay đánh giá.
-              Người tuyển dụng tự đối chiếu với tin tuyển dụng và tự quyết. */}
-          {application?.cvId && cvSummary?.canSummarize && (
-            <div className="cv-summary">
-              <Divider orientation="left" plain style={{ marginTop: 8 }}>
-                Tóm tắt CV
-              </Divider>
-
-              {cvSummary.highlights?.length > 0 ? (
-                <>
-                  <ul style={{ paddingLeft: 20, marginBottom: 8 }}>
-                    {cvSummary.highlights.map((line, i) => (
-                      <li key={i} style={{ marginBottom: 4 }}>{line}</li>
-                    ))}
-                  </ul>
-                  <Space size="small" wrap>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      AI rút gọn nội dung CV — không phải đánh giá ứng viên, và có thể chép
-                      sai chi tiết. Cần chắc chắn thì mở CV gốc.
-                      {cvSummary.generatedAt && ` Tạo lúc ${formatDateTime(cvSummary.generatedAt)}.`}
-                    </Text>
-                    <Button
-                      size="small"
-                      type="link"
-                      icon={<ReloadOutlined />}
-                      loading={summarizing}
-                      onClick={handleSummarizeCv}
-                    >
-                      Tóm tắt lại
-                    </Button>
-                  </Space>
-                </>
-              ) : (
-                <Space direction="vertical" size="small">
-                  <Text type="secondary">
-                    Chưa có tóm tắt. Bấm để AI rút gọn CV thành vài ý chính, khỏi phải mở file.
-                  </Text>
-                  <Button
-                    icon={<BulbOutlined />}
-                    loading={summarizing}
-                    onClick={handleSummarizeCv}
-                  >
-                    Tóm tắt bằng AI
-                  </Button>
-                </Space>
-              )}
-            </div>
-          )}
         </Card>
       ),
     },
