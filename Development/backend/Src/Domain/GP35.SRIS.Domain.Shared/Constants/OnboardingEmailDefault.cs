@@ -58,12 +58,12 @@ nhất trong ngày làm việc đầu tiên:</p>
 </ul>
 
 <p><b>4. Để hiểu về công ty rõ hơn, bạn đọc qua nội quy nhé</b></p>
-<p>Nội quy {{companyName}}: <a href="[dán liên kết nội quy]" target="_blank">tại đây</a></p>
+<!-- Chỗ trống để dạng CHỮ, không phải <a href="[…]">: link chưa điền mà đã bọc thẻ <a> thì
+     trình duyệt hiểu "[dán liên kết nội quy]" là đường dẫn tương đối, ứng viên bấm vào ra trang
+     lỗi. Để dạng chữ thì người soạn nhìn thấy ngay là còn thiếu, mà lỡ quên cũng chỉ là chữ. -->
+<p>Nội quy {{companyName}}: [dán liên kết nội quy]</p>
 <p>Like và follow các kênh của công ty để cập nhật thông tin mới nhất:
-<a href="[link Facebook]" target="_blank">Facebook</a> ·
-<a href="[link LinkedIn]" target="_blank">LinkedIn</a> ·
-<a href="[link TikTok]" target="_blank">TikTok</a> ·
-<a href="[link Website]" target="_blank">Website</a></p>
+[link Facebook] · [link LinkedIn] · [link TikTok] · [link Website]</p>
 
 <p><b>5. Danh sách hồ sơ và thông tin cần cung cấp cho nhân sự</b></p>
 <ul>
