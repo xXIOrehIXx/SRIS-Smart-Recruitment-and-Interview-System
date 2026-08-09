@@ -29,17 +29,6 @@ public class CvDocument : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHas
     [Column("parse_status")]
     public string ParseStatus { get; set; } = null!;
 
-    /// <summary>
-    /// Tóm tắt CV do AI sinh, mỗi gạch đầu dòng một dòng (V033). Chỉ mô tả nội dung CV —
-    /// không có điểm, không so với JD (hệ thống không chấm CV).
-    /// </summary>
-    [Column("summary")]
-    public string? Summary { get; set; }
-
-    /// <summary>Thời điểm sinh tóm tắt. Null = chưa tóm tắt lần nào.</summary>
-    [Column("summary_at")]
-    public DateTime? SummaryAt { get; set; }
-
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]

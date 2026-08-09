@@ -53,7 +53,6 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
             services.AddScoped<IEmbeddingClient, EmbeddingClient>();
             services.AddScoped<ICriteriaExtractionClient, CriteriaExtractionClient>();
-            services.AddScoped<ICvSummaryClient, CvSummaryClient>();
 
             // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
             // Đổi sang EmailService nếu muốn gửi qua NotificationCenter (HTTP).
@@ -142,7 +141,6 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvIntakeService, CvIntakeService>();
-            services.AddScoped<ICvSummaryService, CvSummaryService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();

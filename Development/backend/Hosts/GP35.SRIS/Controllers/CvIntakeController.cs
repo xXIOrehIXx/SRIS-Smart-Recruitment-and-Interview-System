@@ -19,16 +19,11 @@ namespace GP35.SRIS.Controllers
     {
         private readonly IContextData _contextData;
         private readonly ICvIntakeService _cvIntakeService;
-        private readonly ICvSummaryService _cvSummaryService;
 
-        public CvIntakeController(
-            IContextData contextData,
-            ICvIntakeService cvIntakeService,
-            ICvSummaryService cvSummaryService)
+        public CvIntakeController(IContextData contextData, ICvIntakeService cvIntakeService)
         {
             _contextData = contextData;
             _cvIntakeService = cvIntakeService;
-            _cvSummaryService = cvSummaryService;
         }
 
         /// <summary>Nộp CV dạng FILE PDF (multipart/form-data) cho một job.</summary>
@@ -79,27 +74,5 @@ namespace GP35.SRIS.Controllers
 
             return Ok(new { url });
         }
-
-        /// <summary>
-        /// Tóm tắt CV đã lưu (không gọi AI) — mở hồ sơ phải nhanh và không phụ thuộc Ollama.
-        /// Chưa tóm tắt lần nào thì trả danh sách rỗng, FE hiện nút để người dùng bấm.
-        /// <para>Mở cho DepartmentManager như file-url: DM đọc hồ sơ trước khi quyết ở bước Offer.</para>
-        /// </summary>
-        [HttpGet("{cvId:long}/summary")]
-        [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
-        public async Task<IActionResult> GetSummary(long cvId)
-            => Ok(await _cvSummaryService.GetAsync(_contextData.CompanyId, cvId));
-
-        /// <summary>
-        /// Sinh tóm tắt CV bằng AI rồi lưu lại. Chạy vài giây (LLM local) nên là hành động
-        /// người dùng chủ động bấm, không tự chạy lúc mở trang.
-        /// <para>
-        /// CHỈ trích xuất nội dung CV — không chấm điểm, không so với JD, không xếp hạng.
-        /// </para>
-        /// </summary>
-        [HttpPost("{cvId:long}/summary")]
-        [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
-        public async Task<IActionResult> GenerateSummary(long cvId)
-            => Ok(await _cvSummaryService.GenerateAsync(_contextData.CompanyId, cvId));
     }
 }
