@@ -21,7 +21,8 @@ public interface ICompanyRepo : IBaseRepo<long, Company>
   /// </summary>
   Task<Company?> UpdateBrandAsync(
       long companyId, string? name, string? logoUrl, string? primaryColor,
-      string? address, string? contactEmail, string? phone, string? defaultBenefits = null);
+      string? address, string? contactEmail, string? phone, string? defaultBenefits = null,
+      string? emailDomain = null);
 
   /// <summary>Tạo công ty mới (đăng ký) — Company không dưới RLS nên insert thẳng. Trả company_id.</summary>
   Task<long> InsertAsync(Company company);

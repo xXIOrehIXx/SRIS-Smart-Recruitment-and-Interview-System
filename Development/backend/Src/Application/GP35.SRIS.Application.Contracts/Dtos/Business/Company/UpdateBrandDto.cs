@@ -16,6 +16,13 @@ public class UpdateBrandDto
     public string? Phone { get; set; }
 
     /// <summary>
+    /// Tên miền email nội bộ ("congty.vn") — mẫu email onboarding dùng cho dòng "cấp email
+    /// @congty.vn". Trước đây cột này chỉ đọc được chứ không có đường ghi, nên ô
+    /// <c>{{emailDomain}}</c> luôn ra "[tên miền công ty]" trong thư gửi ứng viên.
+    /// </summary>
+    public string? EmailDomain { get; set; }
+
+    /// <summary>
     /// Quyền lợi mặc định điền sẵn vào tin MỚI (V035). null = client không gửi mục này ->
     /// giữ nguyên; danh sách RỖNG = người dùng cố ý xoá hết.
     /// </summary>

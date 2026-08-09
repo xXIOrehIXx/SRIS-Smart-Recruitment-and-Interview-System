@@ -34,7 +34,8 @@ public class CompanyService : BaseService<CompanyService>, ICompanyService
         Normalize(dto.Address),
         Normalize(dto.ContactEmail),
         Normalize(dto.Phone),
-        JoinBenefitLines(dto.DefaultBenefits));
+        JoinBenefitLines(dto.DefaultBenefits),
+        Normalize(dto.EmailDomain));
 
     if (company is null)
       throw new KeyNotFoundException($"Không tìm thấy công ty (company_id={companyId}).");

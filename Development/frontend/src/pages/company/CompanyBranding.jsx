@@ -111,6 +111,7 @@ const CompanyBranding = () => {
         email: data.contactEmail,
         phone: data.phone,
         address: data.address,
+        emailDomain: data.emailDomain,
       });
 
       // Luôn chừa 1 ô trống khi công ty chưa khai quyền lợi nào, không thì không có chỗ gõ.
@@ -139,6 +140,7 @@ const CompanyBranding = () => {
         contactEmail: values.email,
         phone: values.phone,
         address: values.address,
+        emailDomain: values.emailDomain,
         // Mảng rỗng = cố ý xoá hết; BE phân biệt với "không gửi mục này" (giữ nguyên).
         defaultBenefits: defaultBenefits.map((b) => b.trim()).filter(Boolean),
       });
@@ -255,6 +257,18 @@ const CompanyBranding = () => {
                       size="large"
                       prefix={<PhoneOutlined />}
                     />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  {/* Mẫu email onboarding có dòng "cấp email nội bộ @tên-miền" — bỏ trống thì
+                      ứng viên nhận được đúng chữ "[tên miền công ty]" trong thư chào mừng. */}
+                  <Form.Item
+                    label="Tên miền email nội bộ"
+                    name="emailDomain"
+                    tooltip="Dùng cho dòng 'cấp email nội bộ @…' trong thư chào mừng nhận việc."
+                    rules={[{ pattern: /^[a-z0-9.-]+\.[a-z]{2,}$/i, message: "Nhập dạng congty.vn (không có @ hay https://)" }]}
+                  >
+                    <Input placeholder="congty.vn" size="large" prefix={<MailOutlined />} />
                   </Form.Item>
                 </Col>
               </Row>
