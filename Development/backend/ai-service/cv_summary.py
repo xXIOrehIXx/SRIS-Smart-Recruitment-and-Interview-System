@@ -47,6 +47,14 @@ QUY TẮC:
 - CV không nói gì về mục nào thì BỎ QUA mục đó, đừng viết "không đề cập".
 - KHÔNG tự cộng trừ để ra "N năm kinh nghiệm". Chỉ ghi con số đó nếu CHÍNH CV viết ra;
   còn lại thì chép khoảng thời gian như CV ghi (vd "06/2019 - nay").
+- TUYỆT ĐỐI KHÔNG bịa ngày tháng. CV không ghi thời gian cho một công việc thì viết câu
+  đó KHÔNG có phần trong ngoặc — thà thiếu mốc thời gian còn hơn ghi một mốc không có thật.
+- PHÂN BIỆT CÔNG VIỆC VỚI DỰ ÁN. Chỉ mục nằm ở phần kinh nghiệm làm việc (Kinh nghiệm /
+  Experience / Work History) mới được viết là "làm tại <công ty>". Mục ở phần dự án
+  (Dự án / PROJECT / Portfolio, thường kèm link GitHub hoặc là bài tập trường) thì phải
+  ghi rõ là DỰ ÁN, vd "Dự án cá nhân: <tên dự án> - <làm gì>". TUYỆT ĐỐI KHÔNG viết
+  "làm việc tại <tên dự án>" — như thế là biến bài tập thành nơi làm việc, sai sự thật.
+- LUÔN có một dòng học vấn nếu CV ghi trường/bằng cấp. Đừng bỏ qua mục này.
 - Chức danh, tên công ty, tên trường, tên chứng chỉ phải chép ĐÚNG NGUYÊN VĂN như trong CV.
   KHÔNG đổi "Kế toán tổng hợp" thành "Kế toán trưởng", không nâng cấp hay rút gọn chức danh.
 - Giữ nguyên LOẠI văn bằng: "chứng chỉ" phải ghi là chứng chỉ, "cử nhân" ghi là cử nhân.
@@ -58,8 +66,8 @@ QUY TẮC:
   Bạn chỉ thuật lại nội dung CV.
 
 VÍ DỤ về VĂN PHONG dòng ĐÚNG (chi tiết bên trong chỉ là minh họa, đừng chép):
-- "Gần nhất: <chức danh đúng như CV ghi> tại <tên công ty> (<thời gian như CV ghi>)."
-- "Trước đó: <chức danh> tại <tên công ty> (<thời gian>)."
+- "Gần nhất: <chức danh đúng như CV ghi> tại <tên công ty> (<thời gian nếu CV có ghi>)."
+- "Trước đó: <chức danh> tại <tên công ty>."   <- CV không ghi thời gian thì bỏ luôn ngoặc
 - "Sử dụng <các công cụ CV liệt kê>."
 - "<bằng cấp> - <tên trường>."
 

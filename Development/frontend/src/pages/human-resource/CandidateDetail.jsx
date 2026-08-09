@@ -180,7 +180,9 @@ const CandidateDetail = () => {
 
               {cvSummary.highlights?.length > 0 ? (
                 <>
-                  <ul style={{ paddingLeft: 20, marginBottom: 8 }}>
+                  {/* listStyle tường minh: CSS reset của app bỏ marker của <ul>, để mặc định
+                      thì các ý dính thành một khối chữ liền, đọc còn khó hơn CV. */}
+                  <ul style={{ paddingLeft: 20, marginBottom: 8, listStyle: 'disc outside' }}>
                     {cvSummary.highlights.map((line, i) => (
                       <li key={i} style={{ marginBottom: 4 }}>{line}</li>
                     ))}
