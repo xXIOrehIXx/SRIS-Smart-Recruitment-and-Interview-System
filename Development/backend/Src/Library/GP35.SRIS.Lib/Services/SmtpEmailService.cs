@@ -1,6 +1,8 @@
 using GP35.SRIS.Domain.Shared.Configs;
 using GP35.SRIS.Domain.Shared.Email;
 using GP35.SRIS.Lib.Models;
+using GP35.SRIS.Lib.Services.Email;
+using GP35.SRIS.Storage;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.DependencyInjection;
@@ -80,7 +82,22 @@ public class SmtpEmailService : IEmailService
             }
 
             msg.Subject = subject;
-            var builder = new BodyBuilder { HtmlBody = body };
+
+            // Ảnh trong thư: đính kèm luôn vào email (cid:) thay vì để người nhận tải từ máy chủ.
+            // Gmail tải ảnh HỘ người nhận từ máy chủ của Google, nên địa chỉ localhost/mạng nội bộ
+            // là ảnh vỡ trong hộp thư ứng viên — xem EmailInlineImages.
+            var (htmlBody, inlineImages) = await EmailInlineImages.InlineAsync(
+                body, _serviceProvider.GetService<IFileStorageService>(), _logger);
+
+            var builder = new BodyBuilder { HtmlBody = htmlBody };
+            foreach (var img in inlineImages)
+            {
+                var resource = builder.LinkedResources.Add(
+                    img.FileName, img.Content, ContentType.Parse(img.ContentType));
+                resource.ContentId = img.Cid;
+                resource.ContentDisposition = new ContentDisposition(ContentDisposition.Inline);
+            }
+
             if (attachments is not null)
                 foreach (var a in attachments.Where(a => a?.FileContent is { Length: > 0 }))
                     builder.Attachments.Add($"{a.FileName}{a.FileExtension}", a.FileContent);
@@ -94,8 +111,11 @@ public class SmtpEmailService : IEmailService
             await client.SendAsync(msg);
             await client.DisconnectAsync(true);
 
-            _logger.Information("SMTP: đã gửi '{Subject}' tới {To}.",
-                subject, string.Join(",", msg.To.Mailboxes.Select(m => m.Address)));
+            // Ghi luôn số ảnh đã nhúng: nhúng ảnh là best-effort (hỏng thì im lặng bỏ qua),
+            // nên khi ứng viên báo "không thấy ảnh" thì log phải nói được là 0 hay N.
+            _logger.Information("SMTP: đã gửi '{Subject}' tới {To} ({InlineImages} ảnh nhúng, {MimeType}).",
+                subject, string.Join(",", msg.To.Mailboxes.Select(m => m.Address)),
+                inlineImages.Count, msg.Body.ContentType.MimeType);
             return "OK";
         }
         catch (Exception ex)
