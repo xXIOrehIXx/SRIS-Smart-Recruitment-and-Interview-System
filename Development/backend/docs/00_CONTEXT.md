@@ -65,7 +65,7 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 - **Bài test online** — công ty ≤200 người hầu như không tổ chức test (4.2 bước 5); cần kiểm tra năng lực thì làm offline, ghi vào Internal Notes.
 - Khác: dynamic subdomain · Super Admin portal · đồng bộ 2 chiều Google/Outlook Calendar (đặt lịch nội bộ CÓ làm; .ics in-scope) · tự dò lịch rảnh interviewer · coding challenge · Core HR · chatbot real-time · chat tự do HR↔AI · LDAP/SSO · mobile native · webcam proctoring · OCR cho PDF scan · **AI tham gia quyết định tuyển** (đã cân nhắc và loại — AI là decision support, người quyết).
 
-> Hạ tầng vector (bảng `CvChunk`, cột embedding, endpoint `/embed`) GIỮ nguyên trong code nhưng KHÔNG tính năng nào gọi. Để đó cho rẻ nếu sau này cần.
+> **Hạ tầng vector đã XOÁ HẲN (V036):** không còn bảng `CvChunk`, không còn cột `embedding` ở Job/CvDocument/EvaluationCriteria, không còn `IEmbeddingClient` / endpoint `/embed`. Giữ code chết chỉ đẻ ra câu hỏi "cái này dùng làm gì" mà không có câu trả lời (bài học V034). Cần mở lại thì đọc §16 trước.
 
 ---
 
@@ -131,8 +131,8 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 |---|---|
 | Bóc tiêu chí từ Yêu cầu tuyển dụng/JD | Local LLM (Ollama, qwen2.5) → danh sách tiêu chí DRAFT cho người duyệt (5.18) |
 
-- Embedding model: **BAAI/bge-m3**, 1024 chiều → `VECTOR(1024)`. Đa ngôn ngữ, đọc tới 8192 token. Hiện chỉ còn hạ tầng, không tính năng nào gọi.
-- Quy tắc RE-EMBEDDING: vector của 2 model khác nhau KHÔNG so sánh được — đổi model thì phải sinh lại toàn bộ vector cũ.
+- **Không còn embedding.** Hệ thống chỉ dùng LLM sinh văn bản có cấu trúc, không dùng vector (V036).
+- Lượt bóc **chạy nền** (V037): API xếp hàng vào bảng `CriteriaExtraction` rồi trả `202`; `CriteriaExtractionWorker` gọi AI; FE hỏi `GET /api/jobs/{id}/criteria/extract-status` tới khi `running=false`. Local LLM trên CPU mất hàng chục giây — gọi đồng bộ là axios (30s) cắt ngang giữa chừng.
 
 ### 5.4 Python vs .NET
 - **Python (FastAPI):** sinh embedding + bóc tiêu chí. Stateless, KHÔNG đụng DB, KHÔNG biết tenant.
@@ -171,7 +171,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - KHÔNG để nút "Đăng nhập" nổi bật ở header Career Site (ứng viên tưởng phải tạo account).
 
 ### 5.11 Tầng truy cập DB — EF Core
-- EF Core 10 hỗ trợ chính thức kiểu VECTOR của SQL Server 2025 (`SqlVector<float>`, `EF.Functions.VectorDistance`). **Hiện code vẫn xử lý vector bằng raw SQL** (`CAST(... AS VECTOR(1024))` + `Ignore(Embedding)`); map native là việc tối ưu riêng, cần spike verify trên SQL Server 2025 thật.
+- Không còn cột VECTOR nào trong schema (V036) — phần bàn về `SqlVector<float>` / `EF.Functions.VectorDistance` không còn áp dụng.
 - Global Query Filter vá lỗi multi-tenant; LINQ khó tạo SQL injection và khó quên `company_id`.
 - Cửa thoát: `FromSqlRaw` cho câu EF dịch không gọn.
 
@@ -364,7 +364,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
   - Chấm vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**; DM quyết chỉ ở OFFER, trống → HR. `reject_reason` tùy chọn.
   - Token (5.13): one-time = đốt khi CHỐT; **3 purpose**: SCHEDULE · STATUS · OFFER_RESPONSE.
   - Role: 4 role, mỗi user 1 role, Admin superuser; **giá trị role của Human Resource trong DB/JWT là `'Recruiter'`**.
-  - Stack: SQL Server 2025 · EF Core · MinIO · Redis · Local AI (Ollama + BAAI/bge-m3). PDPD 2026 = luận điểm tuân thủ.
+  - Stack: SQL Server 2025 · EF Core · MinIO · Redis · Local AI (Ollama + qwen2.5, chỉ bóc tiêu chí). PDPD 2026 = luận điểm tuân thủ.
   - Số liệu: KHÔNG bịa; mọi As-Is chờ B2 hoặc trích desk research có nguồn (4.1).
 
 ---

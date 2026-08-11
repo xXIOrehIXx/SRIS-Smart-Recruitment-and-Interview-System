@@ -48,10 +48,9 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IEncodeService, EncodeService>();
             services.AddScoped<IContextData, ContextData>();
 
-            // AI: gọi HTTP + bóc PDF + sinh embedding (Python AI service)
+            // AI: gọi HTTP + bóc PDF + bóc tiêu chí từ JD (Python AI service)
             services.AddScoped<IHttpService, HttpService>();
             services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
-            services.AddScoped<IEmbeddingClient, EmbeddingClient>();
             services.AddScoped<ICriteriaExtractionClient, CriteriaExtractionClient>();
 
             // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
@@ -101,11 +100,9 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Collaborative scoring
             services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
+            services.AddScoped<ICriteriaExtractionRepo, CriteriaExtractionRepo>();
             services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
-
-            // Hạ tầng vector từng-đoạn CV — giữ lại (bảng CvChunk còn đó), hiện chưa tính năng nào dùng.
-            services.AddScoped<ICvChunkRepo, CvChunkRepo>();
 
             // Offer
             services.AddScoped<IOfferRepo, OfferRepo>();

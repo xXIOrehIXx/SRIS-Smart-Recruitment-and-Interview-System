@@ -216,4 +216,9 @@ describe('recruitmentRequestAPI (5.17)', () => {
     criteriaAPI.approve(3);
     expect(apiInst.post).toHaveBeenCalledWith('/jobs/3/criteria/approve');
   });
+
+  test('criteriaAPI hỏi được trạng thái lượt bóc chạy nền', () => {
+    criteriaAPI.extractStatus(3);
+    expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/criteria/extract-status');
+  });
 });

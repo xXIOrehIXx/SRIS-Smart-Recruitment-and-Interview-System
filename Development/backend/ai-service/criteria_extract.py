@@ -42,7 +42,11 @@ class CriteriaList(BaseModel):
     # nhất 1 tiêu chí thì nó buộc phải biến đầu việc thành tiêu chí, ra phiếu chấm vô nghĩa
     # kiểu "Báo cáo doanh số hàng tuần cho quản lý trực tiếp". Rỗng để .NET bảo người dùng
     # bổ sung phần yêu cầu, đúng hơn là đẻ tiêu chí rác.
-    criteria: list[Criterion] = Field(max_length=20)
+    #
+    # Trần 10: đây là PHIẾU CHẤM người phỏng vấn cầm trong buổi phỏng vấn, không phải danh
+    # sách kiểm kê. Quá 10 dòng thì người chấm không chấm nổi trong một buổi, điểm về sau
+    # thành cho lấy lệ. Prompt cũng dặn model giữ lại tiêu chí quan trọng nhất khi phải cắt.
+    criteria: list[Criterion] = Field(max_length=10)
 
 
 _PROMPT = """Bạn là chuyên viên tuyển dụng. Đọc yêu cầu tuyển dụng / mô tả công việc dưới đây
@@ -92,6 +96,11 @@ QUY TẮC:
     các VÍ DỤ bên dưới hay từ tiêu chí khác (vd tiêu chí về "kế toán" thì KHÔNG có "bán hàng").
 - weight: 1-5, yêu cầu càng quan trọng với vị trí thì càng cao.
 - Mỗi tiêu chí một dòng ngắn gọn, không gộp nhiều kỹ năng vào một tiêu chí.
+
+- TỐI ĐA 10 TIÊU CHÍ. Đây là phiếu chấm người phỏng vấn cầm trong MỘT buổi phỏng vấn, không
+  phải bảng kiểm kê — quá 10 dòng thì không ai chấm nổi cho tử tế. Văn bản nêu nhiều hơn 10
+  yêu cầu thì GIỮ LẠI 10 CÁI QUAN TRỌNG NHẤT với vị trí này (yêu cầu bắt buộc và kỹ năng lõi
+  trước; thứ "ưu tiên/là một lợi thế" bỏ trước), đừng cắt bừa 10 cái đầu danh sách.
 
 VÍ DỤ (nhiều ngành — chú ý keywords song ngữ, cụ thể của tiêu chí HARD):
 - name "Tốt nghiệp Cao đẳng/Đại học" -> type "HARD", keywords ["cao đẳng","đại học","cử nhân","bachelor"]

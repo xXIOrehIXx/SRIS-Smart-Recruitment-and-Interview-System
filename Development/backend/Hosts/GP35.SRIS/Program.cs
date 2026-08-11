@@ -60,6 +60,9 @@ services.AddAutoMapper();
 // Worker quét job quá hạn mỗi 5 phút — tự chuyển Status Open -> Closed để job không còn
 // nằm trên career site / list Open của Human Resource. Soft-close (giữ row cho analytics).
 services.AddHostedService<GP35.SRIS.Workers.JobExpiryWorker>();
+// Worker chạy hàng đợi bóc tiêu chí — Local LLM mất hàng chục giây nên không bắt người dùng
+// ngồi đợi trong request HTTP (V037).
+services.AddHostedService<GP35.SRIS.Workers.CriteriaExtractionWorker>();
 services
   .AddControllers()
   .AddJsonOptions(options =>

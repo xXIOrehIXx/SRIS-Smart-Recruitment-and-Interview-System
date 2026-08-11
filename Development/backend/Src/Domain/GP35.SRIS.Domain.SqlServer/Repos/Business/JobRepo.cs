@@ -39,33 +39,10 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
         return await _db.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.JobId == jobId);
     }
 
-    public async Task<JobEmbeddingInfo?> GetEmbeddingInfoAsync(long companyId, long jobId)
-    {
-        // jd_text lấy qua LINQ (Global Query Filter tự kèm company_id).
-        var job = await _db.Jobs
-            .AsNoTracking()
-            .Where(j => j.JobId == jobId)
-            .Select(j => new { j.JobId, j.JdText })
-            .FirstOrDefaultAsync();
-
-        if (job is null)
-            return null;
-
-        // Cờ "đã có embedding chưa": cột VECTOR không map được nên hỏi bằng raw SQL.
-        var hasEmbedding = await _db.Database
-            .SqlQueryRaw<int>(
-                "SELECT CAST(CASE WHEN embedding IS NULL THEN 0 ELSE 1 END AS INT) AS Value " +
-                "FROM Job WHERE job_id = {0} AND company_id = {1}",
-                jobId, companyId)
-            .SingleAsync();
-
-        return new JobEmbeddingInfo(job.JobId, job.JdText, hasEmbedding == 1);
-    }
-
     public async Task<int> UpdateAsync(long companyId, long jobId, string title, string? jdText,
-        long? departmentManagerId, string status, bool jdChanged)
+        long? departmentManagerId, string status)
     {
-        var rows = await _db.Jobs
+        return await _db.Jobs
             .Where(j => j.JobId == jobId)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.Title, title)
@@ -73,32 +50,11 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
                 .SetProperty(j => j.DepartmentManagerId, departmentManagerId)
                 .SetProperty(j => j.Status, status)
                 .SetProperty(j => j.UpdatedAt, DateTime.UtcNow));
-
-        if (rows > 0 && jdChanged)
-        {
-            // JD đổi -> vector cũ vô nghĩa; NULL để lần chấm sau lazy embed lại.
-            await _db.Database.ExecuteSqlRawAsync(
-                "UPDATE Job SET embedding = NULL WHERE job_id = {0} AND company_id = {1}",
-                jobId, companyId);
-        }
-        return rows;
     }
 
-    public async Task UpdateEmbeddingAsync(long companyId, long jobId, float[] embedding)
+    public async Task<int> UpdateExtendedAsync(long companyId, long jobId, Job job)
     {
-        // CAST chuỗi JSON -> VECTOR(1024) ở phía SQL Server (cửa thoát raw SQL — 5.11).
-        var vectorJson = JsonSerializer.Serialize(embedding);
-        await _db.Database.ExecuteSqlRawAsync(
-            "UPDATE Job SET embedding = CAST({0} AS VECTOR(1024)), updated_at = SYSUTCDATETIME() " +
-            "WHERE company_id = {1} AND job_id = {2}",
-            vectorJson, companyId, jobId);
-    }
-
-    public async Task<int> UpdateExtendedAsync(long companyId, long jobId, Job job, bool jdChanged)
-    {
-        // EF Core ExecuteUpdate không cho NULL-safe từng cột trong 1 lệnh, nên tách 2 nhịp:
-        // nhịp 1 update đầy đủ các cột non-null, nhịp 2 set NULL cho cột nullable nếu DTO thiếu.
-        var rows = await _db.Jobs
+        return await _db.Jobs
             .Where(j => j.JobId == jobId)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.Title, job.Title)
@@ -117,14 +73,6 @@ public class JobRepo : BaseRepo<long, Job>, IJobRepo
                 .SetProperty(j => j.Quantity, job.Quantity)
                 .SetProperty(j => j.Status, job.Status)
                 .SetProperty(j => j.UpdatedAt, DateTime.UtcNow));
-
-        if (rows > 0 && jdChanged)
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "UPDATE Job SET embedding = NULL WHERE job_id = {0} AND company_id = {1}",
-                jobId, companyId);
-        }
-        return rows;
     }
 
     public async Task<IEnumerable<Job>> GetPublicOpenJobsAsync()

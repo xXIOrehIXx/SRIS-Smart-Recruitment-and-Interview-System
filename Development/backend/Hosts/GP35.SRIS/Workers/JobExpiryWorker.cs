@@ -112,10 +112,9 @@ public sealed class JobExpiryWorker : BackgroundService
             return;
         }
 
-        // UpdateAsync không đụng JD nên jdChanged=false -> không chạm embedding.
         await jobRepo.UpdateAsync(
             item.CompanyId, item.JobId, job.Title, job.JdText,
-            job.DepartmentManagerId, "Closed", jdChanged: false);
+            job.DepartmentManagerId, "Closed");
 
         _logger.Information(
             "JobExpiryWorker: job {JobId} '{Title}' (company={Co}) đã quá hạn {Deadline:dd/MM/yyyy} — Closed.",

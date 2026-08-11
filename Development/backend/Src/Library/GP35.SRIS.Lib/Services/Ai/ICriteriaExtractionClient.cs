@@ -6,9 +6,12 @@ public record ExtractedCriterion(
 
 /// <summary>
 /// Gọi Python AI service (<c>POST {BaseUrl}/extract-criteria</c>) bóc tiêu chí từ JD qua Local LLM.
-/// Lỗi (Ollama chưa chạy...) -> ném exception; caller kích hoạt fallback người nhập tay.
+/// Lỗi (Ollama chưa chạy...) -> ném exception; caller ghi lượt bóc là FAILED để người dùng nhập tay.
+/// <para>
+/// Danh sách RỖNG là kết quả HỢP LỆ (JD chỉ liệt kê đầu việc), không phải lỗi — caller phân biệt.
+/// </para>
 /// </summary>
 public interface ICriteriaExtractionClient
 {
-    Task<IReadOnlyList<ExtractedCriterion>> ExtractAsync(string jdText);
+    Task<IReadOnlyList<ExtractedCriterion>> ExtractAsync(string jdText, CancellationToken ct = default);
 }

@@ -58,13 +58,26 @@ public class EvaluationCriteriaController : ControllerBase
     }
 
     /// <summary>
-    /// AI bóc tiêu chí từ JD của job (Local LLM — 5.18) -> danh sách DRAFT chờ duyệt.
-    /// AI/Ollama lỗi -> 502 AI_EXTRACT_FAILED, FE hiện fallback nhập tay.
+    /// XẾP HÀNG một lượt AI bóc tiêu chí từ JD (Local LLM — 5.18). Trả 202 ngay, KHÔNG đợi AI:
+    /// Local LLM chạy CPU mất hàng chục giây nên đây là tác vụ nền (V037). FE hỏi lại
+    /// <c>GET .../criteria/extract-status</c> cho tới khi <c>running=false</c>.
     /// </summary>
     [HttpPost("api/jobs/{jobId:long}/criteria/extract")]
     public async Task<IActionResult> Extract(long jobId)
     {
-        return Ok(await _criteriaService.ExtractDraftAsync(_contextData.CompanyId, jobId));
+        var status = await _criteriaService.RequestExtractAsync(
+            _contextData.CompanyId, jobId, _contextData.UserId);
+        return Accepted(status);
+    }
+
+    /// <summary>
+    /// Trạng thái lượt bóc gần nhất của job. <c>running=true</c> -> FE hỏi lại sau vài giây;
+    /// <c>DONE</c> -> nạp lại danh sách tiêu chí; <c>FAILED</c> -> hiện <c>errorMessage</c>.
+    /// </summary>
+    [HttpGet("api/jobs/{jobId:long}/criteria/extract-status")]
+    public async Task<IActionResult> ExtractStatus(long jobId)
+    {
+        return Ok(await _criteriaService.GetExtractStatusAsync(_contextData.CompanyId, jobId));
     }
 
     /// <summary>Người duyệt chốt bộ tiêu chí: mọi DRAFT của job -> APPROVED (ghi audit ai duyệt).</summary>

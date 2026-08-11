@@ -49,10 +49,10 @@ namespace GP35.SRIS.Domain.Shared.Configs
         public string BaseUrl { get; set; }
 
         /// <summary>
-        /// Ngưỡng cosine similarity (0-1) để tiêu chí SOFT tính là KHỚP với đoạn CV (docs 5.18).
-        /// Giá trị mặc định là điểm khởi đầu — PoC Việc B4 đo trên bộ CV test rồi mới khóa số.
+        /// Trần thời gian chờ AI service bóc xong 1 JD. Chạy Local LLM trên CPU nên phải rộng
+        /// tay hơn hẳn HTTP thường; worker chạy nền nên người dùng không ngồi đợi con số này.
         /// </summary>
-        public double CriteriaMatchThreshold { get; set; } = 0.6;
+        public int ExtractTimeoutSeconds { get; set; } = 300;
     }
 
     public class AuthOptions
