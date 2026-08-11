@@ -79,7 +79,7 @@ const RULES = {
 
 /**
  * Trục tiêu chí (docs 5.17/5.18):
- * AI bóc tiêu chí từ JD → nháp → người duyệt rà + sửa → chốt → thành phiếu chấm phỏng vấn.
+ * AI đề xuất tiêu chí từ JD → nháp → người duyệt rà + sửa → chốt → thành phiếu chấm phỏng vấn.
  * Tab 2: thư viện template cấp company — áp vào job sẽ clone thành tiêu chí đã chốt của job.
  *
  * Một tiêu chí chỉ còn tên + trọng số + điểm tối đa. Ba trường phân loại cũ (criteriaType,
@@ -159,7 +159,7 @@ const Criteria = () => {
     }
   };
 
-  // ===== Luồng AI: bóc bản nháp → người duyệt chốt =====
+  // ===== Luồng AI: đề xuất bản nháp → người duyệt chốt =====
 
   const draftCount = jobCriteria.filter(c => c.status === 'DRAFT').length;
 
@@ -194,7 +194,7 @@ const Criteria = () => {
       return;
     }
     message.warning(
-      status.errorMessage || 'AI chưa bóc được — bạn có thể thêm tiêu chí thủ công hoặc áp template.',
+      status.errorMessage || 'AI chưa đề xuất được tiêu chí nào — bạn có thể thêm thủ công hoặc áp template.',
       6
     );
   }, [fetchJobCriteria, stopPolling]);
@@ -251,12 +251,12 @@ const Criteria = () => {
     setExtracting(true);
     try {
       await criteriaAPI.extractFromJd(selectedJob);
-      message.info('Đã xếp hàng — AI đang bóc tiêu chí. Bạn có thể làm việc khác, xong sẽ có thông báo.', 5);
+      message.info('Đã xếp hàng — AI đang đọc tin tuyển dụng. Bạn có thể làm việc khác, xong sẽ có thông báo.', 5);
       startPolling(selectedJob);
     } catch (error) {
       // Lỗi ở bước XẾP HÀNG (job không tồn tại, JD trống) — biết ngay, không phải đợi AI.
       console.error('Error requesting criteria extraction:', error);
-      message.error(error?.response?.data?.userMsg || 'Không thể bóc tiêu chí từ JD.');
+      message.error(error?.response?.data?.userMsg || 'Không thể đề xuất tiêu chí từ tin tuyển dụng này.');
       setExtracting(false);
     }
   };
@@ -717,7 +717,7 @@ const Criteria = () => {
                     loading={extracting}
                     style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                   >
-                    {extracting ? 'AI đang bóc tiêu chí...' : 'AI bóc tiêu chí từ JD'}
+                    {extracting ? 'AI đang đề xuất tiêu chí...' : 'AI đề xuất tiêu chí'}
                   </Button>
                 </Tooltip>
                 <Button icon={<PlusOutlined />} onClick={() => setAddCriterionModalOpen(true)}>
@@ -761,7 +761,7 @@ const Criteria = () => {
               rowKey="criteriaId"
               pagination={{ pageSize: 10 }}
               locale={{
-                emptyText: 'Chưa có tiêu chí — bấm "AI bóc tiêu chí từ JD" để bắt đầu, hoặc thêm thủ công / áp template',
+                emptyText: 'Chưa có tiêu chí — bấm "AI đề xuất tiêu chí" để bắt đầu, hoặc thêm thủ công / áp template',
               }}
             />
           ) : (
@@ -814,7 +814,7 @@ const Criteria = () => {
         <div>
           <Title level={3} className="page-title">Tiêu Chí Đánh Giá</Title>
           <Text type="secondary">
-            AI bóc tiêu chí từ JD → người duyệt chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn
+            AI đề xuất tiêu chí từ tin tuyển dụng → người duyệt chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn
           </Text>
         </div>
         <Button

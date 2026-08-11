@@ -89,7 +89,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         var requirements = await _jobRepo.GetRequirementsAsync(companyId, jobId);
 
         if (string.IsNullOrWhiteSpace(BuildSourceText(job.JdText, requirements, job.SkillTags)))
-            throw Bad("Job chưa có mô tả công việc, yêu cầu ứng viên hay kỹ năng nào để bóc tiêu chí.");
+            throw Bad("Tin tuyển dụng chưa có mô tả công việc, yêu cầu ứng viên hay kỹ năng nào để AI đọc.");
 
         var entry = await _extractionRepo.EnqueueAsync(companyId, jobId, userId);
         _logger.Information("RequestExtract: job={JobId} đã vào hàng đợi (extraction={Id}).",
@@ -140,7 +140,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                 _logger.Warning(ex, "RunExtraction: AI bóc tiêu chí thất bại (job={JobId}).", jobId);
                 await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, null,
                     ExtractionErrorCode.AiFailed,
-                    "AI bóc tiêu chí thất bại — vui lòng nhập tiêu chí thủ công hoặc áp template.");
+                    "AI chưa đề xuất được tiêu chí — vui lòng thử lại, nhập thủ công hoặc áp template.");
                 return;
             }
 
@@ -191,7 +191,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             {
                 await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, null,
                     ExtractionErrorCode.AiFailed,
-                    "Bóc tiêu chí thất bại — vui lòng thử lại hoặc nhập tiêu chí thủ công.");
+                    "Đề xuất tiêu chí thất bại — vui lòng thử lại hoặc nhập tiêu chí thủ công.");
             }
             catch (Exception closeEx)
             {
