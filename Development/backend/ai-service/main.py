@@ -25,15 +25,19 @@ Vì sao chạy Local LLM (không gọi OpenAI)?
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from criteria_extract import MODEL, CriteriaList, extract_criteria
+from criteria_extract import MODEL, NUM_CTX, CriteriaList, extract_criteria
 
 app = FastAPI(title="SRIS AI Service")
 
 
 @app.get("/health")
 def health():
-    """Kiểm tra service sống + cho biết đang chạy model nào."""
-    return {"status": "ok", "llm_model": MODEL}
+    """
+    Kiểm tra service sống + cho biết đang chạy model nào với cửa sổ ngữ cảnh bao nhiêu.
+    Phơi num_ctx ra đây để kiểm được bằng mắt — tràn ngữ cảnh không báo lỗi, nên cách
+    duy nhất biết cấu hình đã ăn hay chưa là nhìn nó.
+    """
+    return {"status": "ok", "llm_model": MODEL, "num_ctx": NUM_CTX}
 
 
 # ============================================================
