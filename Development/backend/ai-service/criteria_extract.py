@@ -33,11 +33,12 @@ NUM_CTX = int(os.environ.get("SRIS_LLM_NUM_CTX", "8192"))
 class Criterion(BaseModel):
     """1 tiêu chí tuyển dụng có cấu trúc (docs 5.18)."""
     name: str = Field(min_length=2, max_length=150)
-    # HARD = yêu cầu cứng (chứng chỉ, số năm tối thiểu, địa điểm) -> .NET lọc bằng rule/keyword.
-    # SOFT = kỹ năng/năng lực -> .NET so vector.
+    # HARD = yêu cầu cứng (chứng chỉ, số năm tối thiểu, địa điểm); SOFT = kỹ năng/năng lực.
+    # Chỉ là NHÃN mô tả cho người duyệt đọc phiếu chấm — không có code nào lọc hay so khớp
+    # theo nó (sàng lọc CV bằng AI đã loại khỏi scope 08/08/2026, hạ tầng vector xoá ở V036).
     type: str = Field(pattern="^(HARD|SOFT)$")
     # True = thấy được trong CV (kỹ năng, kinh nghiệm); False = chỉ đánh giá khi phỏng vấn
-    # (giao tiếp, văn hóa) — chấm CV bỏ qua nhóm này để không loại oan.
+    # (giao tiếp, văn hóa). Cũng chỉ là nhãn mô tả — hệ thống KHÔNG chấm CV.
     cv_matchable: bool = True
     # Từ khóa nhận diện trong CV cho tiêu chí HARD (tiếng Việt + tiếng Anh nếu có).
     keywords: list[str] = []
