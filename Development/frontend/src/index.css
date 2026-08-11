@@ -1,5 +1,8 @@
-@import "tailwindcss";
+/* Font phai dung TRUOC @import "tailwindcss": Tailwind v4 banh cai import cua no
+   thanh ~350 dong CSS ngay tai cho, nen neu de font o duoi thi @import font khong
+   con dung dau file -> PostCSS bo qua -> mat font Inter/Nunito. */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@300;400;500;600;700;800&display=swap");
+@import "tailwindcss";
 
 :root {
   /* Brand Color (dynamic, set by BrandThemeContext) */
