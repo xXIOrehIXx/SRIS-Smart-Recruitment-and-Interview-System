@@ -43,7 +43,7 @@ nào với ứng viên), không phải lỗi — .NET phân biệt hai ca này.
    `format=CriteriaList.model_json_schema()` — model bị chặn ở tầng giải mã, không phải
    được "dặn" trả JSON trong prompt. `temperature=0` để cùng đầu vào cho cùng đầu ra.
 2. **Validate:** `CriteriaList.model_validate_json()` — sai cú pháp JSON, thiếu trường,
-   `type` ngoài HARD/SOFT, `weight` ngoài 0.1–5, quá 20 tiêu chí đều bị coi là hỏng.
+   `type` ngoài HARD/SOFT, `weight` ngoài 0.1–5, quá 10 tiêu chí đều bị coi là hỏng.
 3. **Retry:** tối đa `MAX_RETRY = 3` lượt. Hết lượt -> ném lỗi -> HTTP 502.
    Lỗi hạ tầng (Ollama chưa chạy) ném thẳng, không phí lượt retry.
 4. **.NET kẹp lại lần nữa:** clamp `weight`, ép `type` lạ về SOFT, bỏ tiêu chí tên < 2 ký tự.
