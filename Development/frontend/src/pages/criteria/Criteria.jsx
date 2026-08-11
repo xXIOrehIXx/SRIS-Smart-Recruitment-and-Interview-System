@@ -119,9 +119,11 @@ const RULES = {
 
 /**
  * Trục tiêu chí (docs 5.17/5.18):
- * AI bóc tiêu chí từ JD → DRAFT → người duyệt rà + sửa → APPROVED → mới dùng để chấm CV
- * (HARD lọc rule/keyword, SOFT so vector; chỉ tiêu chí CvMatchable mới tính khi chấm CV).
+ * AI bóc tiêu chí từ JD → DRAFT → người duyệt rà + sửa → APPROVED → thành phiếu chấm phỏng vấn.
  * Tab 2: thư viện template cấp company — áp vào job sẽ clone thành tiêu chí APPROVED của job.
+ *
+ * Hệ thống KHÔNG chấm CV (bỏ 08/08/2026 — V030). `cvMatchable` giờ chỉ nói cho người phỏng vấn
+ * biết nên tìm bằng chứng ở đâu: có thứ đọc CV là thấy, có thứ phải hỏi mới biết.
  */
 const Criteria = () => {
   const [loading, setLoading] = useState(false);
@@ -223,7 +225,7 @@ const Criteria = () => {
     try {
       setSubmitting(true);
       const response = await criteriaAPI.approve(selectedJob);
-      message.success(`Đã duyệt ${response.data?.approved ?? draftCount} tiêu chí — bộ tiêu chí sẵn sàng chấm CV.`);
+      message.success(`Đã duyệt ${response.data?.approved ?? draftCount} tiêu chí — phiếu chấm phỏng vấn đã sẵn sàng.`);
       fetchJobCriteria(selectedJob);
     } catch (error) {
       console.error('Error approving criteria:', error);
@@ -311,7 +313,7 @@ const Criteria = () => {
     try {
       setSubmitting(true);
       const response = await criteriaAPI.applyTemplateToJob(values.templateId, selectedJob);
-      message.success(`Đã áp template — thêm ${response.data?.length ?? 0} tiêu chí APPROVED cho vị trí (dùng chấm CV ngay).`);
+      message.success(`Đã áp template — thêm ${response.data?.length ?? 0} tiêu chí APPROVED cho vị trí, dùng phỏng vấn được ngay.`);
       setApplyModalOpen(false);
       applyForm.resetFields();
       fetchJobCriteria(selectedJob);
@@ -478,13 +480,17 @@ const Criteria = () => {
       onFilter: (value, record) => record.criteriaType === value,
     },
     {
-      title: 'Chấm CV',
+      title: 'Căn cứ đánh giá',
       key: 'cvMatchable',
-      width: 110,
+      width: 130,
       render: (_, record) =>
         record.cvMatchable
-          ? <Tag color="cyan">Có</Tag>
-          : <Tooltip title="Chỉ đánh giá khi phỏng vấn — chấm CV bỏ qua"><Tag>Chỉ PV</Tag></Tooltip>,
+          ? <Tooltip title="Ứng viên thường ghi điều này trong CV — đối chiếu CV trước rồi hỏi thêm khi phỏng vấn">
+              <Tag color="cyan">CV + PV</Tag>
+            </Tooltip>
+          : <Tooltip title="CV không thể hiện được (thái độ, giao tiếp...) — chỉ đánh giá khi phỏng vấn">
+              <Tag>Chỉ PV</Tag>
+            </Tooltip>,
     },
     {
       title: 'Trọng số',
@@ -721,7 +727,7 @@ const Criteria = () => {
           name="cvMatchable"
           valuePropName="checked"
           initialValue={true}
-          tooltip="Tắt = chỉ đánh giá khi phỏng vấn, chấm CV bỏ qua tiêu chí này"
+          tooltip="Tắt = CV không thể hiện được (thái độ, giao tiếp...), chỉ đánh giá khi phỏng vấn"
         >
           <Switch checkedChildren="Có" unCheckedChildren="Chỉ PV" />
         </Form.Item>
@@ -781,11 +787,11 @@ const Criteria = () => {
               icon={<RobotOutlined />}
               style={{ marginBottom: 16 }}
               message={`AI đã bóc ${draftCount} tiêu chí đang chờ duyệt (DRAFT)`}
-              description="Rà lại từng dòng (sửa/gỡ nếu cần) rồi bấm Duyệt. Chỉ tiêu chí ĐÃ DUYỆT mới được dùng để chấm CV — AI không tự quyết."
+              description="Rà lại từng dòng (sửa/gỡ nếu cần) rồi bấm Duyệt. Chỉ tiêu chí ĐÃ DUYỆT mới vào phiếu chấm phỏng vấn — AI không tự quyết."
               action={
                 <Popconfirm
                   title={`Duyệt toàn bộ ${draftCount} tiêu chí DRAFT?`}
-                  description="Sau khi duyệt, bộ tiêu chí sẽ dùng để chấm CV và làm phiếu chấm phỏng vấn."
+                  description="Sau khi duyệt, bộ tiêu chí này trở thành phiếu chấm phỏng vấn của vị trí."
                   onConfirm={handleApprove}
                   okText="Duyệt"
                   cancelText="Để sau"
@@ -858,7 +864,7 @@ const Criteria = () => {
         <div>
           <Title level={3} className="page-title">Tiêu Chí Đánh Giá</Title>
           <Text type="secondary">
-            AI bóc tiêu chí từ JD → người duyệt chốt → cùng bộ tiêu chí dùng cho chấm CV và phỏng vấn
+            AI bóc tiêu chí từ JD → người duyệt chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn
           </Text>
         </div>
         <Button

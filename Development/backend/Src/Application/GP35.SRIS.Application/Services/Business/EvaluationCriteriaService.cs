@@ -107,6 +107,22 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             };
         }
 
+        // JD chỉ liệt kê đầu việc, không nêu yêu cầu nào với ứng viên -> AI trả rỗng. Đây KHÔNG
+        // phải AI hỏng: báo đúng việc người dùng cần làm, và ném TRƯỚC khi xoá draft cũ để họ
+        // không mất bộ tiêu chí đang có chỉ vì bấm bóc lại.
+        if (extracted.Count == 0)
+        {
+            _logger.Information("ExtractDraft: JD không nêu yêu cầu nào với ứng viên (job={JobId}).", jobId);
+            throw new BaseException("JD chưa nêu yêu cầu nào với ứng viên.")
+            {
+                ErrorCode = "JD_NO_REQUIREMENTS",
+                ErrorMessage = "Mô tả công việc mới chỉ liệt kê đầu việc, chưa nêu yêu cầu nào với " +
+                               "ứng viên (bằng cấp, số năm kinh nghiệm, kỹ năng, ngoại ngữ...). " +
+                               "Bổ sung phần yêu cầu rồi bóc lại, hoặc tự nhập tiêu chí.",
+                HttpStatus = (int)HttpStatusCode.UnprocessableEntity
+            };
+        }
+
         // Bóc lại = thay trọn bộ DRAFT cũ (tiêu chí đã APPROVED giữ nguyên).
         await _criteriaRepo.DeleteDraftsAsync(companyId, jobId);
 

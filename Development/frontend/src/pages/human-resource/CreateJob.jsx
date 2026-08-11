@@ -52,8 +52,9 @@ const { TextArea } = Input;
  *  - JobGetDto.Description: TextArea max 2000
  *  - Job entity: quantity min 1, salary thuộc decimal (lớn)
  *
- * FE validate CHẶT hơn BE (vd: description min 50 ký tự) là chủ ý — muốn
- * cảnh báo Human Resource sớm vì JD ngắn quá hệ thống chấm CV vector sẽ kém chính xác.
+ * FE validate CHẶT hơn BE (vd: description min 50 ký tự) là chủ ý — muốn cảnh báo Human
+ * Resource sớm vì AI bóc tiêu chí đọc chính JD này; JD ngắn quá thì không bóc ra tiêu chí
+ * nào (ai-service từ chối JD dưới 30 ký tự) và phải tự nhập tay cả bộ.
  */
 /**
  * Đổi giá trị ngày từ API sang thứ <DatePicker> nhận được (dayjs), an toàn với dữ liệu bẩn.
@@ -77,7 +78,7 @@ const FIELD_RULES = {
   description: () => [
     { required: true, message: "Vui lòng nhập mô tả công việc" },
     { whitespace: true, message: "Mô tả không được chỉ chứa khoảng trắng" },
-    { min: 50, message: "Mô tả tối thiểu 50 ký tự (JD quá ngắn sẽ ảnh hưởng chấm điểm CV)" },
+    { min: 50, message: "Mô tả tối thiểu 50 ký tự (JD càng rõ yêu cầu thì AI bóc tiêu chí càng đúng)" },
     { max: 2000, message: "Mô tả tối đa 2000 ký tự" },
   ],
   department: () => [
