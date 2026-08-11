@@ -21,27 +21,31 @@ MODEL = os.environ.get("SRIS_LLM_MODEL", "qwen2.5")
 MAX_RETRY = 3
 
 # Cửa sổ ngữ cảnh — PHẢI đặt tường minh, đừng để mặc định của Ollama (4096).
-# Cộng thử một lượt bóc thật: prompt cố định ~1700 token + schema ~600 + JD tiếng Việt
-# cỡ vừa ~1500-3000 + đầu ra 10 tiêu chí ~800-1500 => 4600-6800 token. Tràn 4096.
+# Cửa sổ này tính CẢ prompt lẫn phần sinh ra: prompt cố định + schema + JD tiếng Việt cỡ
+# vừa + đầu ra 10 tiêu chí là đã sát 4096, JD dài thì vượt.
 # Ollama tràn thì CẮT BỚT VÀ CHẠY TIẾP, không báo lỗi: hoặc mất phần đầu prompt (các quy
 # tắc), hoặc mất phần cuối JD -> AI bỏ sót tiêu chí mà không có dấu hiệu gì. Đây là kiểu
 # hỏng tệ nhất vì JD ngắn lúc thử vẫn chạy tốt.
 # 8192 đủ rộng cho JD dài mà vẫn nằm trong 16GB RAM với qwen2.5 7B lượng tử hóa 4-bit.
+# (V038 bỏ 3 trường khỏi schema nên cả prompt lẫn đầu ra đã ngắn đi đáng kể — vẫn giữ 8192
+# cho JD dài, phần dư không tốn thêm thời gian sinh.)
 NUM_CTX = int(os.environ.get("SRIS_LLM_NUM_CTX", "8192"))
 
 
 class Criterion(BaseModel):
-    """1 tiêu chí tuyển dụng có cấu trúc (docs 5.18)."""
+    """
+    1 dòng phiếu chấm phỏng vấn (docs 5.18) — đúng hai trường, và chỉ cần hai trường.
+
+    Từng có thêm type (HARD/SOFT), cv_matchable, keywords. Cả ba sinh ra cho tính năng máy
+    chấm CV: HARD dò keyword, SOFT so vector, cv_matchable để khỏi loại oan người không viết
+    kỹ năng mềm vào CV. Chấm CV cắt khỏi scope 08/08/2026, vector xoá ở V036 — từ đó không
+    còn dòng code nào đọc chúng, nhưng nhãn vẫn hiện lên màn hình và vẫn phải giải thích cho
+    người dùng. Xoá hẳn (V038): cắt tính năng thì cắt cả mô hình dữ liệu của nó.
+
+    Bỏ được ba trường còn kéo theo hai cái lợi: prompt ngắn đi đáng kể, và mỗi tiêu chí sinh
+    ra ít token hơn nhiều — trên CPU thì đó là thời gian chờ thật của người bấm nút.
+    """
     name: str = Field(min_length=2, max_length=150)
-    # HARD = yêu cầu cứng (chứng chỉ, số năm tối thiểu, địa điểm); SOFT = kỹ năng/năng lực.
-    # Chỉ là NHÃN mô tả cho người duyệt đọc phiếu chấm — không có code nào lọc hay so khớp
-    # theo nó (sàng lọc CV bằng AI đã loại khỏi scope 08/08/2026, hạ tầng vector xoá ở V036).
-    type: str = Field(pattern="^(HARD|SOFT)$")
-    # True = thấy được trong CV (kỹ năng, kinh nghiệm); False = chỉ đánh giá khi phỏng vấn
-    # (giao tiếp, văn hóa). Cũng chỉ là nhãn mô tả — hệ thống KHÔNG chấm CV.
-    cv_matchable: bool = True
-    # Từ khóa nhận diện trong CV cho tiêu chí HARD (tiếng Việt + tiếng Anh nếu có).
-    keywords: list[str] = []
     # Trọng số gợi ý 1-5 (người duyệt chỉnh lại).
     weight: float = Field(default=1, ge=0.1, le=5)
 
@@ -70,8 +74,8 @@ QUY TẮC:
 - Bỏ qua phần giới thiệu công ty, phúc lợi, lương thưởng — đó không phải tiêu chí đánh giá.
 
 - PHÂN BIỆT *YÊU CẦU VỚI ỨNG VIÊN* VÀ *ĐẦU VIỆC SẼ LÀM*. Đây là lỗi hay gặp nhất:
-  * YÊU CẦU = thứ ứng viên phải CÓ SẴN từ trước: bằng cấp, chứng chỉ, số năm kinh nghiệm,
-    kỹ năng, công cụ thành thạo, ngoại ngữ. -> BÓC THÀNH TIÊU CHÍ.
+  * YÊU CẦU = thứ ứng viên phải CÓ SẴN từ trước: kỹ năng, mức thành thạo công cụ, kinh
+    nghiệm đã làm, ngoại ngữ, năng lực làm việc. -> BÓC THÀNH TIÊU CHÍ.
   * ĐẦU VIỆC = thứ họ sẽ LÀM SAU KHI VÀO công ty, thường viết ở thể động từ mô tả công
     việc hằng ngày. -> KHÔNG PHẢI TIÊU CHÍ, BỎ QUA.
   Ví dụ ĐẦU VIỆC phải bỏ (không được biến thành tiêu chí):
@@ -81,9 +85,10 @@ QUY TẮC:
     "Phối hợp với bộ phận kỹ thuật"
   Không ai chấm điểm một ứng viên chưa đi làm theo những dòng đó.
 
-- VĂN BẢN CHỈ TOÀN ĐẦU VIỆC, KHÔNG NÊU YÊU CẦU NÀO -> TRẢ VỀ DANH SÁCH RỖNG {{"criteria": []}}.
-  Đây là kết quả ĐÚNG và được chấp nhận. Thà trả rỗng để người tuyển dụng bổ sung phần yêu
-  cầu, còn hơn nặn ra tiêu chí không chấm được.
+- KHÔNG CÒN GÌ ĐỂ BÓC SAU KHI LỌC -> TRẢ VỀ DANH SÁCH RỖNG {{"criteria": []}}.
+  Xảy ra khi văn bản chỉ toàn đầu việc, hoặc chỉ nêu những thứ đọc hồ sơ là biết (bằng cấp,
+  chứng chỉ, nơi ở). Đây là kết quả ĐÚNG và được chấp nhận. Thà trả rỗng để người tuyển dụng
+  bổ sung phần yêu cầu, còn hơn nặn ra tiêu chí không chấm được.
   Nhưng ĐỪNG lười: văn bản CÓ nêu yêu cầu thì phải bóc cho đủ, không được trả rỗng cho xong.
 
 - MỖI TIÊU CHÍ CHỈ MỘT KỸ NĂNG. Một dòng phiếu chấm chỉ được cho MỘT điểm, nên gộp nhiều
@@ -92,35 +97,39 @@ QUY TẮC:
   Ví dụ: "Kinh nghiệm với Entity Framework, REST API, kiến trúc microservices"
   -> TÁCH thành 3 tiêu chí: "Kinh nghiệm Entity Framework" / "Kinh nghiệm REST API" /
      "Kinh nghiệm kiến trúc microservices".
-- type = "HARD" cho yêu cầu cứng loại-trừ (bằng cấp, chứng chỉ, số năm kinh nghiệm tối thiểu,
-  địa điểm làm việc, giấy phép, công nghệ/ngôn ngữ bắt buộc). type = "SOFT" cho kỹ năng, kinh nghiệm, năng lực.
-- cv_matchable = false cho thứ CV không thể hiện được (giao tiếp, thái độ, văn hóa) —
-  nhóm này chỉ đánh giá khi phỏng vấn.
-- keywords: BẮT BUỘC điền cho MỌI tiêu chí type="HARD". Đây là các CỤM TỪ CỤ THỂ sẽ dò
-  literal trong CV. Quy tắc:
-  * Điền cả BIẾN THỂ SONG NGỮ và cách viết khác nhau (vd "tiếng Anh" + "English" + "IELTS"/"TOEIC";
-    "kế toán" + "accounting"; "REST API" + "RESTful"). CV người ta viết lẫn Việt–Anh.
-  * Phải là cụm ĐẶC TRƯNG, đủ dài để không khớp bừa. KHÔNG dùng từ đơn chung chung
-    (vd đừng để mỗi "API", "rest", "quản lý"). KHÔNG chép nguyên câu tiêu chí.
-  * keywords CHỈ suy ra từ CHÍNH tiêu chí đang xét. TUYỆT ĐỐI không sao chép keyword từ
-    các VÍ DỤ bên dưới hay từ tiêu chí khác (vd tiêu chí về "kế toán" thì KHÔNG có "bán hàng").
+- BỎ THỨ CHỈ CẦN ĐỌC HỒ SƠ LÀ BIẾT. Đây là bộ lọc thứ hai, áp SAU khi đã loại đầu việc.
+  PHÉP THỬ: cầm hồ sơ và bằng cấp của ứng viên lên đọc, kết luận được NGAY hay chưa?
+  * KẾT LUẬN ĐƯỢC NGAY (bằng cấp, chứng chỉ, giấy phép, bằng lái, nơi ở, độ tuổi, giới tính)
+    -> BỎ, KHÔNG bóc thành tiêu chí. Người tuyển dụng đã đối chiếu ở bước sàng lọc hồ sơ rồi.
+    Không ai ngồi trong buổi phỏng vấn cho điểm 0-10 dòng "có bằng lái xe B2" — có là có,
+    không là không, chấm điểm nó chỉ làm loãng phiếu.
+  * PHẢI HỎI, PHẢI NGHE, PHẢI QUAN SÁT MỚI BIẾT (mức thành thạo, chiều sâu kinh nghiệm,
+    ngoại ngữ thực tế, cách xử lý tình huống, thái độ) -> GIỮ.
+  Ứng viên nào cũng viết "thành thạo Excel" trong CV; chỉ khi hỏi hàm và PivotTable mới biết
+  thật hay không. Đúng những dòng như thế mới đáng nằm trên phiếu chấm.
 - weight: 1-5, yêu cầu càng quan trọng với vị trí thì càng cao.
 - Mỗi tiêu chí một dòng ngắn gọn, không gộp nhiều kỹ năng vào một tiêu chí.
 
 - TỐI ĐA 10 TIÊU CHÍ. Đây là phiếu chấm người phỏng vấn cầm trong MỘT buổi phỏng vấn, không
   phải bảng kiểm kê — quá 10 dòng thì không ai chấm nổi cho tử tế. Văn bản nêu nhiều hơn 10
-  yêu cầu thì GIỮ LẠI 10 CÁI QUAN TRỌNG NHẤT với vị trí này (yêu cầu bắt buộc và kỹ năng lõi
-  trước; thứ "ưu tiên/là một lợi thế" bỏ trước), đừng cắt bừa 10 cái đầu danh sách.
+  yêu cầu thì GIỮ LẠI 10 CÁI QUAN TRỌNG NHẤT với vị trí này (kỹ năng lõi của vị trí trước;
+  thứ "ưu tiên/là một lợi thế" bỏ trước), đừng cắt bừa 10 cái đầu danh sách.
 
-VÍ DỤ (nhiều ngành — chú ý keywords song ngữ, cụ thể của tiêu chí HARD):
-- name "Tốt nghiệp Cao đẳng/Đại học" -> type "HARD", keywords ["cao đẳng","đại học","cử nhân","bachelor"]
-- name "Thành thạo Excel" -> type "HARD", keywords ["Excel","Microsoft Excel","MS Excel"]
-- name "Có chứng chỉ hành nghề kế toán" -> type "HARD", keywords ["chứng chỉ kế toán","CPA","ACCA","chứng chỉ hành nghề"]
-- name "Sử dụng phần mềm kế toán MISA/Fast" -> type "HARD", keywords ["MISA","Fast","phần mềm kế toán"]
-- name "Có bằng lái xe B2" -> type "HARD", keywords ["bằng lái xe B2","GPLX B2","bằng B2"]
-- name "Tiếng Anh giao tiếp" -> type "HARD", keywords ["tiếng Anh","English","IELTS","TOEIC"]
-- name "Thành thạo SQL Server" -> type "HARD", keywords ["SQL Server","MS SQL","T-SQL"]
-- name "Kỹ năng giao tiếp, làm việc nhóm" -> type "SOFT", cv_matchable false, keywords []
+VÍ DỤ (nhiều ngành):
+GIỮ — phải hỏi/nghe mới biết:
+- "Thành thạo Excel"
+- "Tiếng Anh giao tiếp"
+- "Thành thạo SQL Server"
+- "Kinh nghiệm sử dụng phần mềm kế toán MISA/Fast"
+- "Kinh nghiệm làm kế toán tổng hợp"
+- "Kỹ năng giao tiếp"
+- "Kỹ năng làm việc nhóm"
+BỎ — đọc hồ sơ là kết luận được:
+- "Tốt nghiệp Cao đẳng/Đại học"
+- "Có chứng chỉ hành nghề kế toán (CPA/ACCA)"
+- "Có bằng lái xe B2"
+- "Làm việc tại Hà Nội"
+- "Độ tuổi 22-30"
 
 VĂN BẢN:
 {jd_text}

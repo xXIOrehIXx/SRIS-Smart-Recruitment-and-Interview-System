@@ -186,8 +186,11 @@ DM đứng HAI đầu: ra đề (Yêu cầu tuyển dụng — 5.17) và chốt 
    KHÔNG thêm state INTERVIEW_1/_2. Sơ đồ 6 state/8 transition giữ nguyên.
 
 4. **Tiêu chí (EvaluationCriteria):** AI bóc → `DRAFT` → người duyệt chốt. AI KHÔNG quyết tiêu chí.
-   Tiêu chí đã duyệt dùng cho phiếu chấm phỏng vấn. Cột `criteria_type`/`cv_matchable`/
-   `keywords` còn trong DB nhưng chỉ là mô tả — KHÔNG còn code nào chấm CV theo chúng.
+   Tiêu chí đã duyệt dùng cho phiếu chấm phỏng vấn. Một tiêu chí CHỈ CÒN `name` + `weight` +
+   `max_score` — `criteria_type` (HARD/SOFT), `cv_matchable`, `keywords` đã xoá hẳn ở V038
+   (mô hình dữ liệu của máy chấm CV, chết theo tính năng). Đừng thêm lại.
+   Prompt chỉ bóc thứ PHẢI HỎI MỚI BIẾT: bằng cấp/chứng chỉ/bằng lái không lên phiếu chấm,
+   vì người tuyển dụng đã đối chiếu ở bước sàng lọc và không ai cho điểm 0-10 dòng "có bằng B2".
    Lượt bóc chạy NỀN: `RequestExtractAsync` chỉ xếp hàng, `RunExtractionAsync` (worker gọi)
    mới chạy thật và TỰ đóng trạng thái DONE/FAILED — không được để nó ném lỗi ra ngoài,
    vì dòng hàng đợi kẹt `RUNNING` là lượt bóc treo vĩnh viễn dưới mắt người dùng.

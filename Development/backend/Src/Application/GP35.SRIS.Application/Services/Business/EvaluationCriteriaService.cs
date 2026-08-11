@@ -38,7 +38,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
 
     public async Task<CriteriaDto> CreateAsync(long companyId, long jobId, CriteriaInputDto dto)
     {
-        Validate(dto.Name, dto.Weight, dto.MaxScore, dto.CriteriaType);
+        Validate(dto.Name, dto.Weight, dto.MaxScore);
 
         var entity = new EvaluationCriteria
         {
@@ -47,9 +47,6 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             Weight = dto.Weight,
             MaxScore = dto.MaxScore,
             Active = true,
-            CriteriaType = dto.CriteriaType.ToUpperInvariant(),
-            CvMatchable = dto.CvMatchable,
-            Keywords = NormalizeKeywords(dto.Keywords),
             // Người gõ trực tiếp = tự ra đề cho mình -> APPROVED luôn, không cần vòng duyệt.
             Source = CriteriaSource.Manual,
             Status = CriteriaStatus.Approved
@@ -68,21 +65,18 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
 
     public async Task<CriteriaDto> UpdateAsync(long companyId, long criteriaId, CriteriaUpdateDto dto)
     {
-        Validate(dto.Name, dto.Weight, dto.MaxScore, dto.CriteriaType);
+        Validate(dto.Name, dto.Weight, dto.MaxScore);
 
         var existing = await _criteriaRepo.GetByIdAsync(companyId, criteriaId)
             ?? throw NotFound($"Không tìm thấy tiêu chí (criteria_id={criteriaId}).");
 
         await _criteriaRepo.UpdateAsync(companyId, criteriaId, dto.Name.Trim(), dto.Weight, dto.MaxScore,
-            dto.Active, dto.CriteriaType.ToUpperInvariant(), dto.CvMatchable, NormalizeKeywords(dto.Keywords));
+            dto.Active);
 
         existing.Name = dto.Name.Trim();
         existing.Weight = dto.Weight;
         existing.MaxScore = dto.MaxScore;
         existing.Active = dto.Active;
-        existing.CriteriaType = dto.CriteriaType.ToUpperInvariant();
-        existing.CvMatchable = dto.CvMatchable;
-        existing.Keywords = NormalizeKeywords(dto.Keywords);
         return Map(existing);
     }
 
@@ -159,9 +153,9 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                 _logger.Information("RunExtraction: tin tuyển dụng không nêu yêu cầu nào (job={JobId}).", jobId);
                 await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, 0,
                     ExtractionErrorCode.NoRequirements,
-                    "Tin tuyển dụng mới chỉ liệt kê đầu việc, chưa nêu yêu cầu nào với ứng viên " +
-                    "(bằng cấp, số năm kinh nghiệm, kỹ năng, ngoại ngữ...). Bổ sung mục " +
-                    "\"Yêu cầu ứng viên\" hoặc \"Kỹ năng\" rồi bóc lại, hoặc tự nhập tiêu chí.");
+                    "Tin tuyển dụng chưa nêu yêu cầu nào cần đánh giá khi phỏng vấn — mới chỉ có " +
+                    "đầu việc, hoặc chỉ có những thứ đọc hồ sơ là biết (bằng cấp, chứng chỉ). " +
+                    "Bổ sung mục \"Yêu cầu ứng viên\" hoặc \"Kỹ năng\" rồi bóc lại, hoặc tự nhập tiêu chí.");
                 return;
             }
 
@@ -177,9 +171,6 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                     Weight = c.Weight,
                     MaxScore = 10,
                     Active = true,
-                    CriteriaType = c.Type,
-                    CvMatchable = c.CvMatchable,
-                    Keywords = c.Keywords.Count > 0 ? string.Join(";", c.Keywords) : null,
                     Source = CriteriaSource.AiExtracted,
                     Status = CriteriaStatus.Draft
                 };
@@ -316,7 +307,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         return sb.ToString().Trim();
     }
 
-    private static void Validate(string? name, decimal weight, decimal maxScore, string? criteriaType)
+    private static void Validate(string? name, decimal weight, decimal maxScore)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw Bad("Tên tiêu chí không được để trống.");
@@ -324,13 +315,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             throw Bad("Trọng số (weight) phải > 0.");
         if (maxScore <= 0)
             throw Bad("Điểm tối đa (maxScore) phải > 0.");
-        var type = (criteriaType ?? "").Trim().ToUpperInvariant();
-        if (type != CriteriaType.Hard && type != CriteriaType.Soft)
-            throw Bad($"criteriaType không hợp lệ: '{criteriaType}'. Hợp lệ: HARD, SOFT.");
     }
-
-    private static string? NormalizeKeywords(string? keywords) =>
-        string.IsNullOrWhiteSpace(keywords) ? null : keywords.Trim();
 
     private static CriteriaDto Map(EvaluationCriteria c) => new()
     {
@@ -340,9 +325,6 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         Weight = c.Weight,
         MaxScore = c.MaxScore,
         Active = c.Active,
-        CriteriaType = c.CriteriaType,
-        CvMatchable = c.CvMatchable,
-        Keywords = c.Keywords,
         Status = c.Status,
         Source = c.Source
     };

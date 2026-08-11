@@ -19,9 +19,9 @@ public interface IEvaluationCriteriaRepo : IBaseRepo<long, EvaluationCriteria>
 
     Task<EvaluationCriteria?> GetByIdAsync(long companyId, long criteriaId);
 
-    /// <summary>Cập nhật 1 tiêu chí (gồm phân loại HARD/SOFT + keywords). Trả số dòng (0 = không thấy).</summary>
+    /// <summary>Cập nhật 1 tiêu chí (gồm bật/tắt). Trả số dòng (0 = không thấy).</summary>
     Task<int> UpdateAsync(long companyId, long criteriaId, string name, decimal weight, decimal maxScore,
-        bool active, string criteriaType, bool cvMatchable, string? keywords);
+        bool active);
 
     /// <summary>Xóa tiêu chí DRAFT của job (trước khi AI bóc lại — tránh trùng lặp).</summary>
     Task<int> DeleteDraftsAsync(long companyId, long jobId);

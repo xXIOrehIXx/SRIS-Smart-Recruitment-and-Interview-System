@@ -25,8 +25,6 @@ const MATCHA_GREEN = '#5D8C3E';
  *  - Weight : 0.5 – 10 (trùng min/max của InputNumber) — không cho 0 vì tiêu chí
  *    có trọng số 0 = không có ý nghĩa khi chấm
  *  - MaxScore : 1 – 100
- *  - Keywords  : chỉ cho phép khi criteriaType = HARD; pattern kiểm tra KHÔNG chứa
- *    ký tự đặc biệt vì BE tách theo ';' (nếu có ';' trong keyword sẽ gãy split)
  *  - Items     : tối thiểu 1 dòng (template rỗng vô nghĩa)
  */
 const RULES = {
@@ -77,53 +75,16 @@ const RULES = {
       },
     },
   ],
-  /**
-   * Validator keywords: chỉ áp dụng khi HARD (theo trường criteriaType trong form).
-   * - HARD: bắt buộc có, không chỉ whitespace, mỗi từ khóa tối đa 50 ký tự,
-   *   không chứa ';' (BE tách theo ';').
-   * - SOFT: KHÔNG được nhập (BE lưu nhưng không dùng — gây hiểu nhầm).
-   */
-  keywords: ({ getFieldValue }) => ({
-    rules: [
-      {
-        validator: (_, value) => {
-          const type = getFieldValue('criteriaType') || 'SOFT';
-          const trimmed = (value || '').trim();
-          if (type === 'SOFT') {
-            if (trimmed) {
-              return Promise.reject(new Error('Tiêu chí "Theo mức độ" không cần từ khóa — để trống.'));
-            }
-            return Promise.resolve();
-          }
-          // HARD
-          if (!trimmed) {
-            return Promise.reject(new Error('Tiêu chí "Bắt buộc" phải có từ khóa (phân tách bằng ;)'));
-          }
-          if (value.includes(';;')) {
-            return Promise.reject(new Error('Từ khóa không được chứa 2 dấu ";" liên tiếp'));
-          }
-          const tokens = value.split(';').map(s => s.trim()).filter(Boolean);
-          if (tokens.length === 0) {
-            return Promise.reject(new Error('Tiêu chí "Bắt buộc" phải có từ khóa'));
-          }
-          const tooLong = tokens.find(t => t.length > 50);
-          if (tooLong) {
-            return Promise.reject(new Error(`Từ khóa "${tooLong}" quá dài (max 50 ký tự)`));
-          }
-          return Promise.resolve();
-        },
-      },
-    ],
-  }),
 };
 
 /**
  * Trục tiêu chí (docs 5.17/5.18):
- * AI bóc tiêu chí từ JD → DRAFT → người duyệt rà + sửa → APPROVED → thành phiếu chấm phỏng vấn.
- * Tab 2: thư viện template cấp company — áp vào job sẽ clone thành tiêu chí APPROVED của job.
+ * AI bóc tiêu chí từ JD → nháp → người duyệt rà + sửa → chốt → thành phiếu chấm phỏng vấn.
+ * Tab 2: thư viện template cấp company — áp vào job sẽ clone thành tiêu chí đã chốt của job.
  *
- * Hệ thống KHÔNG chấm CV (bỏ 08/08/2026 — V030). `cvMatchable` giờ chỉ nói cho người phỏng vấn
- * biết nên tìm bằng chứng ở đâu: có thứ đọc CV là thấy, có thứ phải hỏi mới biết.
+ * Một tiêu chí chỉ còn tên + trọng số + điểm tối đa. Ba trường phân loại cũ (criteriaType,
+ * cvMatchable, keywords) thuộc về tính năng máy chấm CV đã cắt khỏi scope — xoá ở V038.
+ * Đừng hiện lại nhãn kỹ thuật nào lên màn hình mà người làm tuyển dụng không hành động được.
  */
 const Criteria = () => {
   const [loading, setLoading] = useState(false);
@@ -198,7 +159,7 @@ const Criteria = () => {
     }
   };
 
-  // ===== Luồng AI: bóc DRAFT → duyệt =====
+  // ===== Luồng AI: bóc bản nháp → người duyệt chốt =====
 
   const draftCount = jobCriteria.filter(c => c.status === 'DRAFT').length;
 
@@ -222,7 +183,7 @@ const Criteria = () => {
     setExtracting(false);
 
     if (status.status === 'DONE') {
-      message.success(`AI đã bóc ${status.criteriaCount ?? 0} tiêu chí (DRAFT) — rà lại rồi bấm Duyệt.`);
+      message.success(`AI đã đề xuất ${status.criteriaCount ?? 0} tiêu chí — rà lại rồi bấm Duyệt.`);
       fetchJobCriteria(jobId);
       return;
     }
@@ -323,11 +284,8 @@ const Criteria = () => {
         name: values.name,
         weight: values.weight ?? 1,
         maxScore: values.maxScore ?? 10,
-        criteriaType: values.criteriaType || 'SOFT',
-        cvMatchable: values.cvMatchable !== false,
-        keywords: values.keywords || null,
       });
-      message.success('Đã thêm tiêu chí (APPROVED — nhập tay không cần duyệt).');
+      message.success('Đã thêm tiêu chí — dùng được ngay, tiêu chí bạn tự nhập không cần duyệt.');
       setAddCriterionModalOpen(false);
       criterionForm.resetFields();
       fetchJobCriteria(selectedJob);
@@ -345,9 +303,6 @@ const Criteria = () => {
       name: record.name,
       weight: record.weight,
       maxScore: record.maxScore,
-      criteriaType: record.criteriaType,
-      cvMatchable: record.cvMatchable,
-      keywords: record.keywords,
       active: record.active,
     });
     setEditCriterionModalOpen(true);
@@ -361,9 +316,6 @@ const Criteria = () => {
         weight: values.weight ?? 1,
         maxScore: values.maxScore ?? 10,
         active: values.active !== false,
-        criteriaType: values.criteriaType || 'SOFT',
-        cvMatchable: values.cvMatchable !== false,
-        keywords: values.keywords || null,
       });
       message.success('Đã cập nhật tiêu chí.');
       setEditCriterionModalOpen(false);
@@ -392,7 +344,7 @@ const Criteria = () => {
     try {
       setSubmitting(true);
       const response = await criteriaAPI.applyTemplateToJob(values.templateId, selectedJob);
-      message.success(`Đã áp template — thêm ${response.data?.length ?? 0} tiêu chí APPROVED cho vị trí, dùng phỏng vấn được ngay.`);
+      message.success(`Đã áp template — thêm ${response.data?.length ?? 0} tiêu chí cho vị trí, dùng phỏng vấn được ngay.`);
       setApplyModalOpen(false);
       applyForm.resetFields();
       fetchJobCriteria(selectedJob);
@@ -521,55 +473,11 @@ const Criteria = () => {
 
   // ===== Render helpers =====
 
-  // Nhãn hiển thị KHÔNG dùng chữ HARD/SOFT: đó là tên kỹ thuật nói về CÁCH MÁY KIỂM TRA,
-  // người làm tuyển dụng đọc không hiểu. Giá trị lưu DB/API vẫn là HARD/SOFT.
-  const typeTag = (type) =>
-    type === 'HARD' ? (
-      <Tooltip title="Đạt hoặc không đạt — hệ thống dò từ khóa bạn khai trong CV ứng viên">
-        <Tag color="volcano">Bắt buộc</Tag>
-      </Tooltip>
-    ) : (
-      <Tooltip title="Chấm theo mức độ phù hợp — AI so ý nghĩa, ứng viên không cần viết trùng từ">
-        <Tag color="geekblue">Theo mức độ</Tag>
-      </Tooltip>
-    );
-
   const jobCriteriaColumns = [
     {
       title: 'Tiêu chí',
       key: 'name',
-      render: (_, record) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{record.name}</div>
-          {record.keywords && (
-            <Text type="secondary" style={{ fontSize: 12 }}>Từ khóa: {record.keywords}</Text>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Loại',
-      key: 'type',
-      width: 90,
-      render: (_, record) => typeTag(record.criteriaType),
-      filters: [
-        { text: 'Bắt buộc', value: 'HARD' },
-        { text: 'Theo mức độ', value: 'SOFT' },
-      ],
-      onFilter: (value, record) => record.criteriaType === value,
-    },
-    {
-      title: 'Căn cứ đánh giá',
-      key: 'cvMatchable',
-      width: 130,
-      render: (_, record) =>
-        record.cvMatchable
-          ? <Tooltip title="Ứng viên thường ghi điều này trong CV — đối chiếu CV trước rồi hỏi thêm khi phỏng vấn">
-              <Tag color="cyan">CV + PV</Tag>
-            </Tooltip>
-          : <Tooltip title="CV không thể hiện được (thái độ, giao tiếp...) — chỉ đánh giá khi phỏng vấn">
-              <Tag>Chỉ PV</Tag>
-            </Tooltip>,
+      render: (_, record) => <div style={{ fontWeight: 600 }}>{record.name}</div>,
     },
     {
       title: 'Trọng số',
@@ -591,14 +499,14 @@ const Criteria = () => {
       render: (_, record) => (
         <Space direction="vertical" size={2}>
           {record.status === 'DRAFT'
-            ? <Tag color="gold">DRAFT — chờ duyệt</Tag>
+            ? <Tag color="gold">Chờ duyệt</Tag>
             : <Tag color="success">Đã duyệt</Tag>}
           {record.source === 'AI_EXTRACTED' && (
-            <Tag icon={<RobotOutlined />} color="purple" style={{ fontSize: 11 }}>AI bóc</Tag>
+            <Tag icon={<RobotOutlined />} color="purple" style={{ fontSize: 11 }}>AI đề xuất</Tag>
           )}
         </Space>
       ),
-      filters: [{ text: 'DRAFT', value: 'DRAFT' }, { text: 'Đã duyệt', value: 'APPROVED' }],
+      filters: [{ text: 'Chờ duyệt', value: 'DRAFT' }, { text: 'Đã duyệt', value: 'APPROVED' }],
       onFilter: (value, record) => record.status === value,
     },
     {
@@ -744,7 +652,7 @@ const Criteria = () => {
   );
 
   // Form fields dùng chung cho thêm/sửa tiêu chí per-job
-  const criterionFormFields = (form, isEdit) => (
+  const criterionFormFields = (isEdit) => (
     <>
       <Form.Item
         label="Tên tiêu chí"
@@ -755,60 +663,16 @@ const Criteria = () => {
       </Form.Item>
       <Space size={16} style={{ display: 'flex' }}>
         <Form.Item
-          label="Loại tiêu chí"
-          name="criteriaType"
-          initialValue="SOFT"
-          style={{ width: 260 }}
-          tooltip="Bắt buộc: đạt/không đạt, dò từ khóa. Theo mức độ: AI chấm mức phù hợp, không cần trùng từ."
+          label="Trọng số"
+          name="weight"
+          initialValue={1}
+          rules={RULES.weight()}
+          tooltip="Tiêu chí càng quan trọng với vị trí thì đặt càng cao — dùng để tính điểm tổng."
         >
-          <Select
-            options={[
-              { value: 'SOFT', label: 'Theo mức độ (AI chấm)' },
-              { value: 'HARD', label: 'Bắt buộc (dò từ khóa)' },
-            ]}
-          />
-        </Form.Item>
-        <Form.Item label="Trọng số" name="weight" initialValue={1} rules={RULES.weight()}>
           <InputNumber min={0.5} max={10} step={0.5} style={{ width: 100 }} />
         </Form.Item>
         <Form.Item label="Điểm tối đa" name="maxScore" initialValue={10} rules={RULES.maxScore()}>
           <InputNumber min={1} max={100} style={{ width: 100 }} />
-        </Form.Item>
-      </Space>
-      <Form.Item
-        label="Từ khóa nhận diện (chỉ dùng cho HARD, phân tách bằng ';')"
-        name="keywords"
-        dependencies={['criteriaType']}
-        rules={RULES.keywords({ getFieldValue: form.getFieldValue }).rules}
-      >
-        <Input placeholder="VD: java; spring boot; jpa (trống = dùng tên tiêu chí)" />
-      </Form.Item>
-      <Form.Item shouldUpdate noStyle>
-        {() => {
-          const t = form.getFieldValue('criteriaType') || 'SOFT';
-          return (
-            <Alert
-              type={t === 'HARD' ? 'warning' : 'info'}
-              showIcon
-              style={{ marginBottom: 16 }}
-              message={
-                t === 'HARD'
-                  ? 'HARD bắt buộc có từ khóa — hệ thống lọc CV theo từ khóa (tách bằng dấu ";")'
-                  : 'SOFT dùng để so khớp ngữ nghĩa bằng vector — để trống từ khóa.'
-              }
-            />
-          );
-        }}
-      </Form.Item>
-      <Space size={24}>
-        <Form.Item
-          label="Thấy được trong CV"
-          name="cvMatchable"
-          valuePropName="checked"
-          initialValue={true}
-          tooltip="Tắt = CV không thể hiện được (thái độ, giao tiếp...), chỉ đánh giá khi phỏng vấn"
-        >
-          <Switch checkedChildren="Có" unCheckedChildren="Chỉ PV" />
         </Form.Item>
         {isEdit && (
           <Form.Item label="Đang dùng" name="active" valuePropName="checked" initialValue={true}>
@@ -816,6 +680,13 @@ const Criteria = () => {
           </Form.Item>
         )}
       </Space>
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Mỗi tiêu chí là một dòng người phỏng vấn cho điểm trong buổi phỏng vấn."
+        description="Nên đặt thứ phải hỏi mới biết (mức thành thạo, chiều sâu kinh nghiệm). Bằng cấp và chứng chỉ thì đối chiếu hồ sơ ở bước sàng lọc, không cần cho điểm."
+      />
     </>
   );
 
@@ -838,7 +709,7 @@ const Criteria = () => {
             />
             {selectedJob && (
               <>
-                <Tooltip title="AI đọc JD của vị trí và đề xuất bộ tiêu chí (DRAFT — cần duyệt trước khi dùng). Chạy nền: bấm xong bạn có thể làm việc khác.">
+                <Tooltip title="AI đọc tin tuyển dụng và đề xuất bộ tiêu chí — bạn duyệt rồi mới dùng được. Chạy nền: bấm xong có thể làm việc khác.">
                   <Button
                     type="primary"
                     icon={<ThunderboltOutlined />}
@@ -865,11 +736,11 @@ const Criteria = () => {
               showIcon
               icon={<RobotOutlined />}
               style={{ marginBottom: 16 }}
-              message={`AI đã bóc ${draftCount} tiêu chí đang chờ duyệt (DRAFT)`}
+              message={`AI đã đề xuất ${draftCount} tiêu chí đang chờ bạn duyệt`}
               description="Rà lại từng dòng (sửa/gỡ nếu cần) rồi bấm Duyệt. Chỉ tiêu chí ĐÃ DUYỆT mới vào phiếu chấm phỏng vấn — AI không tự quyết."
               action={
                 <Popconfirm
-                  title={`Duyệt toàn bộ ${draftCount} tiêu chí DRAFT?`}
+                  title={`Duyệt toàn bộ ${draftCount} tiêu chí?`}
                   description="Sau khi duyệt, bộ tiêu chí này trở thành phiếu chấm phỏng vấn của vị trí."
                   onConfirm={handleApprove}
                   okText="Duyệt"
@@ -977,7 +848,7 @@ const Criteria = () => {
           validateTrigger={['onBlur', 'onChange']}
           style={{ marginTop: 16 }}
         >
-          {criterionFormFields(criterionForm, false)}
+          {criterionFormFields(false)}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <Button onClick={() => { setAddCriterionModalOpen(false); criterionForm.resetFields(); }}>Hủy</Button>
             <Button type="primary" htmlType="submit" loading={submitting}
@@ -1006,13 +877,13 @@ const Criteria = () => {
           validateTrigger={['onBlur', 'onChange']}
           style={{ marginTop: 16 }}
         >
-          {criterionFormFields(editCriterionForm, true)}
+          {criterionFormFields(true)}
           {selectedCriterion?.status === 'DRAFT' && (
             <Alert
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
-              message="Tiêu chí này đang DRAFT — sửa xong vẫn cần bấm Duyệt ở ngoài danh sách."
+              message="Tiêu chí này đang chờ duyệt — sửa xong vẫn cần bấm Duyệt ở ngoài danh sách."
             />
           )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
