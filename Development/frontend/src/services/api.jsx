@@ -362,9 +362,14 @@ export const criteriaAPI = {
   removeFromJob: (criteriaId) =>
     api.delete(`/evaluation-criteria/${criteriaId}`),
 
-  // AI bóc tiêu chí từ JD → DRAFT (người duyệt chốt sau)
+  // XẾP HÀNG lượt AI bóc tiêu chí từ JD → trả 202 ngay, worker nền mới gọi AI.
+  // Local LLM chạy CPU mất hàng chục giây nên không đợi trong request (timeout axios 30s).
   extractFromJd: (jobId) =>
     api.post(`/jobs/${jobId}/criteria/extract`),
+
+  // Hỏi trạng thái lượt bóc — gọi lặp cho tới khi running=false.
+  extractStatus: (jobId) =>
+    api.get(`/jobs/${jobId}/criteria/extract-status`),
 
   // Chốt bộ tiêu chí DRAFT → ACTIVE
   approve: (jobId) =>

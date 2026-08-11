@@ -40,7 +40,7 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
     public DbSet<InterviewSlotInterviewer> InterviewSlotInterviewers => Set<InterviewSlotInterviewer>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
-    public DbSet<CvChunk> CvChunks => Set<CvChunk>();
+    public DbSet<CriteriaExtraction> CriteriaExtractions => Set<CriteriaExtraction>();
     public DbSet<CriteriaTemplate> CriteriaTemplates => Set<CriteriaTemplate>();
     public DbSet<CriteriaTemplateItem> CriteriaTemplateItems => Set<CriteriaTemplateItem>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
@@ -82,7 +82,6 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("Job");
             e.HasKey(x => x.JobId);
-            e.Ignore(x => x.Embedding); // VECTOR(1024) -> xử lý bằng raw SQL
             e.Ignore(x => x.Quantity);
             e.Ignore(x => x.CvScoreThreshold);
             e.Ignore(x => x.ClosedAt);
@@ -97,7 +96,6 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("CvDocument");
             e.HasKey(x => x.CvId);
-            e.Ignore(x => x.Embedding); // VECTOR(1024) -> xử lý bằng raw SQL
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -186,16 +184,14 @@ public class SrisDbContext : DbContext
             e.Ignore(x => x.DisplayOrder);
             e.Property(x => x.Weight).HasColumnType("decimal(6,2)");
             e.Property(x => x.MaxScore).HasColumnType("decimal(6,2)");
-            // Cột embedding VECTOR(1024) (V013) không có trên entity — xử lý bằng raw SQL (5.11).
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
-        b.Entity<CvChunk>(e =>
+        b.Entity<CriteriaExtraction>(e =>
         {
-            e.ToTable("CvChunk");
-            e.HasKey(x => x.ChunkId);
-            e.Ignore(x => x.Embedding); // VECTOR(1024) -> xử lý bằng raw SQL
+            e.ToTable("CriteriaExtraction");
+            e.HasKey(x => x.ExtractionId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

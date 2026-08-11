@@ -29,6 +29,13 @@ public interface IHttpService
   Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, TimeSpan timeout, Dictionary<string, string> headers = null, object data = null);
 
   /// <summary>
+  /// Như trên nhưng huỷ được giữa chừng. Cần cho tác vụ nền gọi Local LLM: timeout tính bằng
+  /// phút, không có token thì app tắt phải đợi hết chừng ấy mới thoát.
+  /// </summary>
+  Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, TimeSpan timeout,
+    CancellationToken cancellationToken, Dictionary<string, string> headers = null, object data = null);
+
+  /// <summary>
   /// Call http
   /// </summary>
   /// <param name="method">method</param>

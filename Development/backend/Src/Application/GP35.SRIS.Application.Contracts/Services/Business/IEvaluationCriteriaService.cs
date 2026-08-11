@@ -19,11 +19,22 @@ public interface IEvaluationCriteriaService : IBaseService
     Task<CriteriaDto> UpdateAsync(long companyId, long criteriaId, CriteriaUpdateDto dto);
 
     /// <summary>
-    /// AI bóc tiêu chí từ JD của job (Local LLM — 5.18) -> lưu DRAFT (thay DRAFT cũ nếu có).
-    /// AI KHÔNG quyết tiêu chí — người duyệt sửa/thêm-bớt rồi gọi <see cref="ApproveDraftsAsync"/>.
-    /// AI service lỗi -> ném lỗi 502 để FE hiện fallback nhập tay.
+    /// XẾP HÀNG một lượt AI bóc tiêu chí từ JD (Local LLM — 5.18). Trả về NGAY với trạng thái
+    /// PENDING; worker nền mới là chỗ gọi AI. Người dùng không phải ngồi đợi Local LLM chạy
+    /// trên CPU — đó là lý do luồng này chuyển sang chạy nền (V037).
+    /// <para>Ném lỗi ngay tại đây nếu job không tồn tại hoặc chưa có gì để bóc.</para>
     /// </summary>
-    Task<IReadOnlyList<CriteriaDto>> ExtractDraftAsync(long companyId, long jobId);
+    Task<CriteriaExtractionStatusDto> RequestExtractAsync(long companyId, long jobId, long userId);
+
+    /// <summary>Trạng thái lượt bóc gần nhất của job — FE hỏi lại cho tới khi DONE/FAILED.</summary>
+    Task<CriteriaExtractionStatusDto> GetExtractStatusAsync(long companyId, long jobId);
+
+    /// <summary>
+    /// Worker gọi: thật sự chạy một lượt bóc đã giành được, rồi tự đóng trạng thái DONE/FAILED.
+    /// KHÔNG ném lỗi ra ngoài — mọi thất bại được ghi vào chính dòng hàng đợi để người dùng đọc.
+    /// AI KHÔNG quyết tiêu chí: kết quả là DRAFT, người duyệt chốt qua <see cref="ApproveDraftsAsync"/>.
+    /// </summary>
+    Task RunExtractionAsync(long companyId, long jobId, long extractionId, CancellationToken ct = default);
 
     /// <summary>Người duyệt chốt: mọi DRAFT của job -> APPROVED (ghi ai duyệt, lúc nào). Trả số tiêu chí được duyệt.</summary>
     Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId);

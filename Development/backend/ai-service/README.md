@@ -3,14 +3,12 @@
 Microservice Python phục vụ AI cho .NET API (`GP35.SRIS`). Stateless —
 không đụng database, không biết tenant. Toàn bộ điều phối + ghi DB do .NET lo.
 
-1. **Embedding** (`/embed`) — sinh **vector embedding** cho text (CV / JD / tiêu chí).
-   - Model: `BAAI/bge-m3` (đa ngôn ngữ, hỗ trợ tiếng Việt, **1024 chiều**, đọc tới **8192 token**
-     nên embed trọn cả CV 2 trang mà không bị cắt cụt).
-   - Khớp với cột `embedding VECTOR(1024)` trong các bảng `Job`, `CvDocument`, `CvChunk`, `EvaluationCriteria`.
-2. **Bóc tiêu chí** (`/extract-criteria`) — bóc danh sách tiêu chí có cấu trúc từ JD/Yêu cầu
-   tuyển dụng qua Local LLM (docs 5.18, Việc B4; tái dùng pattern JSON schema + validate + retry của Việc 4).
-   - Cần [Ollama](https://ollama.com) chạy sẵn + `ollama pull qwen2.5` (đổi model qua env `SRIS_LLM_MODEL`).
-   - Output luôn là DRAFT — người duyệt chốt bên .NET. AI không quyết tiêu chí.
+**Bóc tiêu chí** (`/extract-criteria`) — bóc danh sách tiêu chí có cấu trúc từ JD/Yêu cầu
+tuyển dụng qua Local LLM. Đây là **endpoint duy nhất**: hạ tầng embedding/vector đã bỏ
+hẳn ở V036 (không còn `/embed`, không còn `bge-m3`).
+
+- Cần [Ollama](https://ollama.com) chạy sẵn + `ollama pull qwen2.5` (đổi model qua env `SRIS_LLM_MODEL`).
+- Output luôn là DRAFT — người duyệt chốt bên .NET. AI không quyết tiêu chí.
 
 ## Chạy
 
@@ -23,26 +21,48 @@ pip install -r requirements.txt
 uvicorn main:app --port 8000
 ```
 
-Lần chạy đầu sẽ tự tải model embedding (~2.2GB). Khi thấy `Model san sang. So chieu vector = 1024`
-là sẵn sàng. Để cửa sổ này chạy nền.
+Không tải model nào lúc khởi động — model nằm trong Ollama. Kiểm tra sẵn sàng bằng
+`curl http://127.0.0.1:8000/health`.
+
+> **Làm nóng trước khi demo.** Lần gọi đầu sau khi khởi động Ollama phải nạp ~4,7GB model
+> vào RAM nên chậm hơn hẳn các lần sau. Bắn một lần `/extract-criteria` bỏ đi trước khi trình bày.
 
 ## Endpoints
 
 | Method | Path             | Mô tả                                            |
 |--------|------------------|--------------------------------------------------|
-| GET    | `/health`        | Kiểm tra service sống, trả về số chiều vector.   |
-| POST   | `/embed`         | Body `{ "text": "..." }` -> `{ "vector": [...], "dim": 1024 }` |
-| POST   | `/extract-criteria` | Body `{ "jd_text": "..." }` -> `{ "criteria": [{ "name", "type": "HARD\|SOFT", "cv_matchable", "keywords", "weight" }] }`. Lỗi → HTTP 502 (để .NET fallback nhập tay). |
+| GET    | `/health`        | Kiểm tra service sống + tên model đang chạy.     |
+| POST   | `/extract-criteria` | Body `{ "jd_text": "..." }` -> `{ "criteria": [{ "name", "type": "HARD\|SOFT", "cv_matchable", "keywords", "weight" }] }`. Lỗi → HTTP 502. |
 
-`/embed` hoạt động độc lập, không cần Ollama.
+Danh sách `criteria` **rỗng là kết quả hợp lệ** (JD chỉ liệt kê đầu việc, không nêu yêu cầu
+nào với ứng viên), không phải lỗi — .NET phân biệt hai ca này.
+
+## Cách đầu ra được giữ đúng cấu trúc
+
+1. **Ràng buộc lúc sinh:** schema Pydantic được đưa thẳng vào Ollama qua
+   `format=CriteriaList.model_json_schema()` — model bị chặn ở tầng giải mã, không phải
+   được "dặn" trả JSON trong prompt. `temperature=0` để cùng đầu vào cho cùng đầu ra.
+2. **Validate:** `CriteriaList.model_validate_json()` — sai cú pháp JSON, thiếu trường,
+   `type` ngoài HARD/SOFT, `weight` ngoài 0.1–5, quá 20 tiêu chí đều bị coi là hỏng.
+3. **Retry:** tối đa `MAX_RETRY = 3` lượt. Hết lượt -> ném lỗi -> HTTP 502.
+   Lỗi hạ tầng (Ollama chưa chạy) ném thẳng, không phí lượt retry.
+4. **.NET kẹp lại lần nữa:** clamp `weight`, ép `type` lạ về SOFT, bỏ tiêu chí tên < 2 ký tự.
 
 ## Liên kết với .NET API
 
 `appsettings.json` của host:
 
 ```json
-"AiService": { "BaseUrl": "http://127.0.0.1:8000" }
+"AiService": {
+  "BaseUrl": "http://127.0.0.1:8000",
+  "ExtractTimeoutSeconds": 300
+}
 ```
 
-`EmbeddingClient` gọi `POST {BaseUrl}/embed`; `CriteriaExtractionClient` gọi
-`POST {BaseUrl}/extract-criteria` (cả hai trong `GP35.SRIS.Lib`).
+`CriteriaExtractionClient` (trong `GP35.SRIS.Lib`) gọi `POST {BaseUrl}/extract-criteria`.
+
+**Lượt bóc chạy nền (V037):** .NET không gọi endpoint này trong request của người dùng.
+`POST /api/jobs/{id}/criteria/extract` chỉ xếp một dòng `CriteriaExtraction` trạng thái
+`PENDING` rồi trả `202`; `CriteriaExtractionWorker` mới là chỗ gọi sang đây. Lý do: Local LLM
+chạy CPU mất hàng chục giây, gọi đồng bộ thì trình duyệt bỏ cuộc (axios timeout 30s) trong khi
+backend vẫn đang chạy — người dùng thấy "lỗi mạng" dù AI vẫn làm việc bình thường.

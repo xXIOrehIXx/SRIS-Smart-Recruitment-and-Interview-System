@@ -26,6 +26,7 @@ _cho Doanh nghiệp (Smart Recruitment and Interview System)_
 | --- | --- | --- |
 | v1.0 | 19/05/2026 | Bản đầu — đối tượng doanh nghiệp IT ≥ 100 nhân sự, có module Quiz, dùng OpenAI |
 | v2.0 | 04/08/2026 | **Cập nhật theo tái định vị hậu hội đồng:** thu hẹp đối tượng còn ≤ 200 nhân sự (mọi ngành), **loại module Quiz**, chuyển sang **chấm CV theo từng tiêu chí**, nâng Talent Pool thành tính năng đinh, chuyển từ OpenAI sang **Local AI**, gia hạn tới 31/08/2026, bổ sung kế hoạch chi tiết + WBS |
+| v2.1 | 08/08/2026 | **Cắt phạm vi sau khi đo:** bỏ **chấm CV bằng AI** và **Talent Pool** (thí nghiệm cho thấy chấm bằng ngưỡng vector không dùng được — xem 5.2). AI còn đúng một việc: **bóc tiêu chí từ JD**. Các mục nhắc tới chấm CV / Talent Pool ở phần kế hoạch & mốc bên dưới là **ghi nhận lịch sử**, không phải tính năng hiện có. |
 
 # Mục lục
 
@@ -64,14 +65,14 @@ quá đắt so với quy mô này.
 Hệ thống không thêm quy trình mới cho doanh nghiệp — nó **cấu trúc hóa** đúng những bước họ đang
 làm rời rạc. Nguyên tắc thiết kế xuyên suốt: **đơn giản là mặc định, phức tạp là tùy chọn.**
 
-Sản phẩm tích hợp ba ứng dụng AI cốt lõi, tất cả chạy trên **hạ tầng cục bộ (Local AI)**:
+Sản phẩm dùng AI cho **đúng một việc**, chạy trên **hạ tầng cục bộ (Local AI)**:
 
 - **Bóc tiêu chí tuyển dụng từ JD** — mô hình ngôn ngữ đọc mô tả công việc và đề xuất bộ tiêu chí
   đánh giá dạng **bản nháp**; người phụ trách chỉnh sửa và chốt. AI đề xuất, con người quyết định.
-- **Chấm CV theo từng tiêu chí đã chốt** — mỗi tiêu chí được kết luận khớp hay thiếu, **kèm câu
-  trích dẫn nguyên văn từ CV làm bằng chứng**, thay vì trả về một điểm số duy nhất không giải thích được.
-- **Talent Pool — truy hồi ngược kho CV cũ** — mỗi khi mở tin tuyển dụng mới, hệ thống tự quét
-  kho CV đã tích lũy của chính doanh nghiệp để tìm ứng viên phù hợp.
+  Bộ tiêu chí đã chốt trở thành **phiếu chấm phỏng vấn**.
+
+Hệ thống **không** chấm điểm hay xếp hạng ứng viên — đây là quyết định có căn cứ đo lường,
+trình bày ở mục 5.2.
 
 Bên cạnh đó, sản phẩm giải quyết các đặc thù thực tế của thị trường Việt Nam: **ứng viên không
 cần tạo tài khoản** (mọi tương tác qua magic link gửi email), **đặt lịch phỏng vấn theo pool
@@ -222,7 +223,7 @@ suốt từ lọc CV đến phỏng vấn.
 - Hệ thống gửi mô tả công việc sang mô hình ngôn ngữ chạy cục bộ → nhận về danh sách tiêu chí
   dạng **bản nháp**, mỗi tiêu chí gồm: tên, loại (bắt buộc / mong muốn), từ khóa nhận diện, trọng số.
 - Người phụ trách xem lại, sửa, thêm, bớt rồi **chốt** bộ tiêu chí.
-- Bộ tiêu chí đã chốt được dùng cho **cả hai việc**: chấm CV và làm phiếu chấm phỏng vấn.
+- Bộ tiêu chí đã chốt trở thành **phiếu chấm phỏng vấn** — người phỏng vấn cho điểm theo từng dòng.
 
 **⭐ Nguyên tắc thiết kế**
 
@@ -232,41 +233,25 @@ AI **không được quyết** tiêu chí. Đầu ra của AI luôn ở trạng 
 Với doanh nghiệp chưa biết bắt đầu từ đâu, hệ thống cung cấp **thư viện tiêu chí mẫu** theo nhóm
 vị trí để chọn nhanh rồi tùy chỉnh.
 
-## 5.2 Chấm CV theo từng tiêu chí, kèm bằng chứng
+## 5.2 Vì sao hệ thống KHÔNG để máy chấm CV
 
-Thay vì đưa cả mô tả công việc và cả CV vào mô hình để lấy về một điểm số 0–100 không giải thích
-được, hệ thống chấm **theo từng tiêu chí một**:
+Đây là một quyết định phạm vi có chủ đích, không phải phần còn thiếu.
 
-- CV được bóc text, chia thành các đoạn (chunk) và sinh vector biểu diễn ngữ nghĩa.
-- Tiêu chí **bắt buộc** (ví dụ: bằng cấp, số năm kinh nghiệm, chứng chỉ) được đối chiếu bằng **rule**.
-- Tiêu chí **mong muốn** (ví dụ: khả năng làm việc nhóm, kinh nghiệm ngành) được truy hồi bằng
-  **vector similarity** để tìm đúng đoạn CV liên quan.
-- Kết quả trả về theo từng tiêu chí: **khớp / thiếu**, kèm **câu trích nguyên văn từ CV** làm bằng chứng,
-  và điểm tổng có trọng số.
+Nhóm đã dựng thử hướng chấm CV bằng vector và **đo lại trước khi tin**: trên bộ 72 cặp
+(tiêu chí, đoạn CV) có nhãn người gán, phân bố similarity của cặp đạt và cặp không đạt
+**chồng lên nhau gần như hoàn toàn** — ngưỡng tốt nhất chỉ đạt accuracy 0,611 so với đoán
+ngẫu nhiên 0,500. Không con số ngưỡng nào cứu được, vì embedding đo *cùng chủ đề hay không*
+chứ không đo *có chứng minh được hay không*.
 
-**💡 Bài học từ đo lường thực tế**
+Kết luận đưa vào thiết kế: **máy không phán ai đạt ai trượt.** Sàng lọc hồ sơ trở lại là việc
+của con người; phần máy làm là chuẩn bị bộ tiêu chí để việc đó có căn cứ và nhất quán.
+Chi tiết số liệu: `ai-experiments/exp_criteria_threshold/out/KET_QUA.md`.
 
-Nhóm đã chạy thí nghiệm đo ngưỡng similarity trên bộ dữ liệu tự dựng và **kết quả bác bỏ cách chấm
-thuần ngưỡng**: độ tương đồng của cặp "đạt" và "không đạt" chồng lên nhau (độ chính xác tốt nhất
-0,611 so với đoán ngẫu nhiên 0,500), trong khi để mô hình ngôn ngữ phán xét đạt 0,972. Kết luận
-được ghi nhận và đưa vào kế hoạch: **vector giữ đúng vai trò truy hồi bằng chứng, việc kết luận
-đạt/không do mô hình ngôn ngữ đảm nhiệm, và người dùng vẫn là người quyết cuối.**
-Đây là minh chứng cho kỷ luật đo lường của nhóm — chi tiết ở `ai-experiments/exp_criteria_threshold/`.
+## 5.3 Nhận và lưu hồ sơ
 
-## 5.3 Talent Pool - Truy hồi ngược kho CV cũ
-
-Với doanh nghiệp nhỏ, mỗi CV nhận được là một tài sản. Nhưng thực tế CV bị loại ở đợt tuyển
-trước gần như không bao giờ được xem lại.
-
-**Cách hoạt động:** khi mở một tin tuyển dụng mới, hệ thống lấy vector của tin đó quét ngược
-toàn bộ kho CV đã tích lũy **của chính công ty**, xếp hạng theo độ phù hợp và có bộ lọc theo mốc
-thời gian nộp. Recruiter chỉ việc xem danh sách gợi ý và chủ động liên hệ.
-
-**⭐ Vì sao đây là tính năng đinh**
-
-Giá trị của tính năng này **tăng dần theo thời gian sử dụng** — càng dùng lâu, kho CV càng dày,
-gợi ý càng tốt. Đây là lý do doanh nghiệp gắn bó với nền tảng, và là điểm mà một file Excel
-không thể làm được.
+Ứng viên nộp CV qua trang tuyển dụng công khai; hệ thống bóc text từ PDF, lưu file gốc và tạo
+hồ sơ ứng tuyển. CV scan ảnh không có lớp text được chuyển sang luồng nhập tay thay vì lưu
+một bản rỗng. Không có bước chấm điểm nào ở đây.
 
 ## 5.4 Đặt lịch phỏng vấn theo pool khung giờ dùng chung
 
@@ -356,11 +341,10 @@ trạng thái.
 
 ## Phase 3 - Sàng lọc
 
-- Recruiter xem danh sách xếp hạng, mở từng hồ sơ để đọc **bằng chứng theo tiêu chí** chứ không
-  chỉ nhìn điểm.
+- Recruiter mở từng hồ sơ và tự đọc — hệ thống không xếp hạng, không chấm điểm thay.
+- **Bộ tiêu chí đã chốt** hiện sẵn bên cạnh hồ sơ để việc đọc có cùng một khung cho mọi ứng viên.
 - Ghi chú nội bộ, trao đổi trong hệ thống.
 - Quyết định giữ (chuyển sang pha Phỏng vấn) hoặc loại — mọi thao tác được ghi vào nhật ký hoạt động.
-- Song song: hệ thống gợi ý thêm ứng viên phù hợp từ **Talent Pool** (kho CV cũ).
 
 ## Phase 4 - Phỏng vấn
 

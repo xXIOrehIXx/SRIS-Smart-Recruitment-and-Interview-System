@@ -1,9 +1,8 @@
 <#
 =====================================================================
- SRIS - Script chay AI service THAT (embedding model)
+ SRIS - Script chay AI service
 ---------------------------------------------------------------------
- Tu dong: tim Python 3.11/3.12/3.13 -> tao venv -> cai thu vien
-          -> chay uvicorn (model that, KHONG phai stub).
+ Tu dong: tim Python -> tao venv -> cai thu vien -> chay uvicorn.
 
  Cach dung (mo PowerShell, dung dau cham):
    .\run_ai.ps1            # setup (neu can) roi chay AI service o port 8000
@@ -12,7 +11,10 @@
    .\run_ai.ps1 -Force     # neu port dang ban -> tu kill tien trinh cu
    .\run_ai.ps1 -Reinstall # cai lai thu vien (khi loi/hong venv)
 
- Lan dau chay se tai torch (~200-300MB) + model BAAI/bge-m3 (~2.2GB) -> doi vai phut.
+ Thu vien rat nhe (fastapi + uvicorn + ollama + pydantic) - KHONG con torch,
+ KHONG con sentence-transformers: model nam trong Ollama, service chi goi sang.
+
+ YEU CAU: Ollama dang chay + da `ollama pull qwen2.5`.
 =====================================================================
 #>
 [CmdletBinding()]
@@ -38,7 +40,7 @@ function Warn($m)  { Write-Host "[!] $m" -ForegroundColor Yellow }
 function Die($m)   { Write-Host "[X] $m" -ForegroundColor Red; exit 1 }
 
 # ---------------------------------------------------------------
-# 1) Dam bao co venv chay bang Python 3.11/3.12/3.13 (KHONG 3.14)
+# 1) Dam bao co venv
 # ---------------------------------------------------------------
 if ($Reinstall -and (Test-Path $VenvDir)) {
     Warn "Xoa venv cu de cai lai..."
@@ -58,7 +60,7 @@ if (-not (Test-Path $VenvPython)) {
     }
 
     if (-not $chosen) {
-        Die ("Khong tim thay Python 3.11/3.12/3.13. May dang co Python 3.14 (torch chua ho tro).`n" +
+        Die ("Khong tim thay Python 3.11/3.12/3.13.`n" +
              "    -> Cai Python 3.12 tai https://www.python.org/downloads/windows/ roi chay lai script nay.")
     }
 
@@ -68,12 +70,7 @@ if (-not (Test-Path $VenvPython)) {
     Ok "Da tao venv tai .venv"
 }
 
-# Version sanity check (chan 3.14+ lot vao - torch chua ho tro)
-$pyVer   = (& $VenvPython -c "import sys; print('%d.%d' % sys.version_info[:2])").Trim()
-$pyMinor = [int](& $VenvPython -c "import sys; print(sys.version_info[1])").Trim()
-if ($pyMinor -ge 14) {
-    Die "venv dang dung Python $pyVer (qua moi cho torch). Xoa .venv va cai Python 3.12, roi chay -Reinstall."
-}
+$pyVer = (& $VenvPython -c "import sys; print('%d.%d' % sys.version_info[:2])").Trim()
 Ok "venv Python = $pyVer"
 
 # ---------------------------------------------------------------
@@ -84,15 +81,14 @@ Ok "venv Python = $pyVer"
 # script. Catch de coi nhu "chua co deps" roi di cai tiep.
 $depsOk = $false
 try {
-    & $VenvPython -c "import fastapi, uvicorn, sentence_transformers" 2>$null
+    & $VenvPython -c "import fastapi, uvicorn, ollama, pydantic" 2>$null
     $depsOk = ($LASTEXITCODE -eq 0)
 } catch {
     $depsOk = $false
 }
 
 if ($Reinstall -or -not $depsOk) {
-    Info "Cai/cap nhat thu vien (fastapi, uvicorn, sentence-transformers, torch)..."
-    Info "Lan dau se tai torch ~200-300MB, vui long doi..."
+    Info "Cai/cap nhat thu vien (fastapi, uvicorn, ollama, pydantic)..."
     & $VenvPython -m pip install --upgrade pip
     & $VenvPython -m pip install -r (Join-Path $Root 'requirements.txt')
     if ($LASTEXITCODE -ne 0) { Die "pip install that bai. Kiem tra mang/Python roi chay lai voi -Reinstall." }
@@ -114,7 +110,7 @@ if ($busy) {
         $owner | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
         Start-Sleep -Seconds 1
     } else {
-        Die ("Port $Port dang bi chiem boi PID $owner (co the la stub_embed.py).`n" +
+        Die ("Port $Port dang bi chiem boi PID $owner.`n" +
              "    -> Tat tien trinh do, hoac chay lai voi -Force, hoac doi -Port khac.")
     }
 }
@@ -122,6 +118,8 @@ if ($busy) {
 # ---------------------------------------------------------------
 # 4) Chay AI service (chiem cua so nay - Ctrl+C de dung)
 # ---------------------------------------------------------------
-Ok "Khoi dong AI service THAT tai http://127.0.0.1:$Port  (Ctrl+C de dung)"
-Info "Lan dau se tai model BAAI/bge-m3 ~2.2GB; doi den khi thay 'Model san sang. So chieu vector = 1024'."
+Ok "Khoi dong AI service tai http://127.0.0.1:$Port  (Ctrl+C de dung)"
+Warn "Nho: Ollama phai dang chay va da 'ollama pull qwen2.5'."
+Warn "Lan goi /extract-criteria DAU TIEN phai nap ~4.7GB model vao RAM -> cham hon han."
+Warn "Truoc khi demo, ban mot lan bo di de lam nong."
 & $VenvPython -m uvicorn main:app --port $Port

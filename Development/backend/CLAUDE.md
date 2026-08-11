@@ -19,10 +19,8 @@ ASP.NET Core 10 Web API — hệ thống tuyển dụng và phỏng vấn thông
 - AutoMapper
 - Swashbuckle (Swagger)
 
-> **Vector handling:** dùng SQL Server 2025 `VECTOR(1024)`. EF Core 10 hỗ trợ native kiểu
-> vector (`SqlVector<float>` + `EF.Functions.VectorDistance("cosine", ...)`), không cần extension.
-> Hiện code vẫn xử lý vector bằng raw SQL (`CAST(... AS VECTOR(1024))` + `Ignore(Embedding)` trong
-> `SrisDbContext`); chuyển sang map native là việc tối ưu riêng, cần spike verify trên SQL Server 2025 thật trước.
+> **Không còn vector.** Hạ tầng embedding/VECTOR đã xoá hẳn ở V036 (xem "Business Context" bên dưới).
+> SQL Server 2025 vẫn là DB nhưng không tính năng nào dùng kiểu `VECTOR`.
 
 ## Solution Structure
 
@@ -147,13 +145,22 @@ người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng v�
 > Hệ thống KHÔNG chấm điểm / xếp hạng ứng viên: bỏ cả điểm tổng JD↔CV lẫn chấm CV
 > theo từng tiêu chí, bỏ Talent Pool. Không thiết kế, không code, không tài liệu gì
 > thêm cho việc máy chấm CV. Nhận hồ sơ = `CvIntakeService` (parse PDF + lưu, không chấm).
-> Hạ tầng vector (CvChunk, cột embedding, `/embed`) GIỮ nguyên nhưng KHÔNG ai gọi.
+>
+> **HẠ TẦNG VECTOR ĐÃ XOÁ HẲN (V036).** Không còn `CvChunk`, không còn cột `embedding`
+> ở Job/CvDocument/EvaluationCriteria, không còn `IEmbeddingClient` / endpoint `/embed`.
+> AI của hệ thống chỉ còn ĐÚNG MỘT đường: bóc tiêu chí từ JD. Đừng thêm lại vector cho
+> tính năng nào mà chưa có quyết định mở lại scope.
 
 ### AI Service (Python FastAPI — port riêng)
 - .NET **không gọi AI trực tiếp** — chỉ gọi qua HTTP nội bộ đến Python service
 - Python stateless, không đụng DB, không biết tenant
-- Embedding: `BAAI/bge-m3` → `VECTOR(1024)` (đổi từ `paraphrase-multilingual-MiniLM-L12-v2`/384: 1024 chiều + đọc tới 8192 token để embed trọn CV dài / CV tiếng Việt, không cắt cụt)
-- Endpoint đang dùng: **`/extract-criteria`** (Ollama qwen2.5 — bóc tiêu chí từ JD). `/embed` còn đó nhưng .NET không gọi nữa (Talent Pool + chấm CV đã loại).
+- Endpoint DUY NHẤT: **`/extract-criteria`** (Ollama `qwen2.5`, `temperature=0`, output ràng buộc
+  bằng JSON schema + validate Pydantic + retry 3 lượt). Lỗi → HTTP 502.
+- **Chạy NỀN (V037):** `POST /api/jobs/{id}/criteria/extract` chỉ xếp hàng rồi trả `202`;
+  `CriteriaExtractionWorker` nhặt việc, gọi AI, ghi kết quả vào bảng `CriteriaExtraction`.
+  FE hỏi `GET .../criteria/extract-status` tới khi `running=false`.
+  Lý do: Local LLM trên CPU mất hàng chục giây — gọi đồng bộ là axios (30s) cắt ngang
+  trong khi backend vẫn đang chạy.
 
 ### Magic link purposes (chỉ của Candidate)
 `SCHEDULE` · `STATUS` · `OFFER_RESPONSE` (3 purpose — QUIZ đã loại)  
@@ -181,6 +188,9 @@ DM đứng HAI đầu: ra đề (Yêu cầu tuyển dụng — 5.17) và chốt 
 4. **Tiêu chí (EvaluationCriteria):** AI bóc → `DRAFT` → người duyệt chốt. AI KHÔNG quyết tiêu chí.
    Tiêu chí đã duyệt dùng cho phiếu chấm phỏng vấn. Cột `criteria_type`/`cv_matchable`/
    `keywords` còn trong DB nhưng chỉ là mô tả — KHÔNG còn code nào chấm CV theo chúng.
+   Lượt bóc chạy NỀN: `RequestExtractAsync` chỉ xếp hàng, `RunExtractionAsync` (worker gọi)
+   mới chạy thật và TỰ đóng trạng thái DONE/FAILED — không được để nó ném lỗi ra ngoài,
+   vì dòng hàng đợi kẹt `RUNNING` là lượt bóc treo vĩnh viễn dưới mắt người dùng.
 
 5. **Blind Review (InterviewScore):** điểm/note ẩn cho tới khi `status='SUBMITTED'`.
    Query lộ điểm trước submit = phá blind review. (Blind chỉ tự bật khi job có >1 interviewer — 5.7.)

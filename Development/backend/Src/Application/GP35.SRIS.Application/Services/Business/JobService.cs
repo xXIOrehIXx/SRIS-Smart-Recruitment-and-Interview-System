@@ -97,8 +97,6 @@ public class JobService : BaseService<JobService>, IJobService
         if (dto.Deadline != existing.Deadline)
             ValidateDeadline(dto.Deadline);
 
-        var jdChanged = !string.Equals(existing.JdText ?? "", dto.JdText ?? "", StringComparison.Ordinal);
-
         var updatedJob = new Job
         {
             Title = dto.Title.Trim(),
@@ -121,7 +119,7 @@ public class JobService : BaseService<JobService>, IJobService
             Status = status
         };
 
-        await jobRepo.UpdateExtendedAsync(companyId, jobId, updatedJob, jdChanged);
+        await jobRepo.UpdateExtendedAsync(companyId, jobId, updatedJob);
 
         if (dto.Requirements is not null)
             await jobRepo.ReplaceRequirementsAsync(companyId, jobId, dto.Requirements);
@@ -138,7 +136,7 @@ public class JobService : BaseService<JobService>, IJobService
             ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
         // Soft close — giữ hồ sơ + analytics; không đổi JD nên không đụng embedding.
         await jobRepo.UpdateAsync(companyId, jobId, job.Title, job.JdText,
-            job.DepartmentManagerId, "Closed", jdChanged: false);
+            job.DepartmentManagerId, "Closed");
     }
 
     /// <summary>
