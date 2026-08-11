@@ -42,6 +42,9 @@ nào với ứng viên), không phải lỗi — .NET phân biệt hai ca này.
 1. **Ràng buộc lúc sinh:** schema Pydantic được đưa thẳng vào Ollama qua
    `format=CriteriaList.model_json_schema()` — model bị chặn ở tầng giải mã, không phải
    được "dặn" trả JSON trong prompt. `temperature=0` để cùng đầu vào cho cùng đầu ra.
+   `num_ctx=8192` đặt tường minh (env `SRIS_LLM_NUM_CTX`): mặc định 4096 của Ollama KHÔNG
+   đủ — prompt + schema đã ~2300 token, cộng JD và đầu ra là tràn, mà tràn thì Ollama cắt
+   bớt rồi chạy tiếp **không báo lỗi**. Kiểm bằng `curl .../health` xem `num_ctx` đã ăn chưa.
 2. **Validate:** `CriteriaList.model_validate_json()` — sai cú pháp JSON, thiếu trường,
    `type` ngoài HARD/SOFT, `weight` ngoài 0.1–5, quá 10 tiêu chí đều bị coi là hỏng.
 3. **Retry:** tối đa `MAX_RETRY = 3` lượt. Hết lượt -> ném lỗi -> HTTP 502.

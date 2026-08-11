@@ -20,15 +20,25 @@ from pydantic import BaseModel, Field, ValidationError
 MODEL = os.environ.get("SRIS_LLM_MODEL", "qwen2.5")
 MAX_RETRY = 3
 
+# Cửa sổ ngữ cảnh — PHẢI đặt tường minh, đừng để mặc định của Ollama (4096).
+# Cộng thử một lượt bóc thật: prompt cố định ~1700 token + schema ~600 + JD tiếng Việt
+# cỡ vừa ~1500-3000 + đầu ra 10 tiêu chí ~800-1500 => 4600-6800 token. Tràn 4096.
+# Ollama tràn thì CẮT BỚT VÀ CHẠY TIẾP, không báo lỗi: hoặc mất phần đầu prompt (các quy
+# tắc), hoặc mất phần cuối JD -> AI bỏ sót tiêu chí mà không có dấu hiệu gì. Đây là kiểu
+# hỏng tệ nhất vì JD ngắn lúc thử vẫn chạy tốt.
+# 8192 đủ rộng cho JD dài mà vẫn nằm trong 16GB RAM với qwen2.5 7B lượng tử hóa 4-bit.
+NUM_CTX = int(os.environ.get("SRIS_LLM_NUM_CTX", "8192"))
+
 
 class Criterion(BaseModel):
     """1 tiêu chí tuyển dụng có cấu trúc (docs 5.18)."""
     name: str = Field(min_length=2, max_length=150)
-    # HARD = yêu cầu cứng (chứng chỉ, số năm tối thiểu, địa điểm) -> .NET lọc bằng rule/keyword.
-    # SOFT = kỹ năng/năng lực -> .NET so vector.
+    # HARD = yêu cầu cứng (chứng chỉ, số năm tối thiểu, địa điểm); SOFT = kỹ năng/năng lực.
+    # Chỉ là NHÃN mô tả cho người duyệt đọc phiếu chấm — không có code nào lọc hay so khớp
+    # theo nó (sàng lọc CV bằng AI đã loại khỏi scope 08/08/2026, hạ tầng vector xoá ở V036).
     type: str = Field(pattern="^(HARD|SOFT)$")
     # True = thấy được trong CV (kỹ năng, kinh nghiệm); False = chỉ đánh giá khi phỏng vấn
-    # (giao tiếp, văn hóa) — chấm CV bỏ qua nhóm này để không loại oan.
+    # (giao tiếp, văn hóa). Cũng chỉ là nhãn mô tả — hệ thống KHÔNG chấm CV.
     cv_matchable: bool = True
     # Từ khóa nhận diện trong CV cho tiêu chí HARD (tiếng Việt + tiếng Anh nếu có).
     keywords: list[str] = []
@@ -129,7 +139,7 @@ def extract_criteria(jd_text: str) -> CriteriaList:
                 model=MODEL,
                 messages=[{"role": "user", "content": _PROMPT.format(jd_text=jd_text.strip())}],
                 format=CriteriaList.model_json_schema(),
-                options={"temperature": 0},
+                options={"temperature": 0, "num_ctx": NUM_CTX},
             )
             return CriteriaList.model_validate_json(resp["message"]["content"])
         except (ValidationError, json.JSONDecodeError, KeyError) as e:
