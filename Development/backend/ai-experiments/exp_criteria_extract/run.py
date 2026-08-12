@@ -113,8 +113,12 @@ def main() -> int:
             cac_giay.append(giay)
             if loi:
                 cac_loi.append(loi)
+            # flush=True: một lượt chạy đầy đủ mất hàng chục phút trên CPU. Không flush thì
+            # Python gom buffer khi output bị chuyển hướng ra file, và người chạy ngồi nhìn
+            # màn hình trống không biết nó còn sống hay đã treo.
             print(f"    {job['id']:<20} lượt {lan + 1}/{args.repeat}  "
-                  f"{len(names):>2} tiêu chí  {giay:>6.1f}s" + (f"  LỖI: {loi[:60]}" if loi else ""))
+                  f"{len(names):>2} tiêu chí  {giay:>6.1f}s" + (f"  LỖI: {loi[:60]}" if loi else ""),
+                  flush=True)
 
         # Lượt 1 là lượt đem đi chấm tay — chọn cố định chứ không chọn lượt "đẹp nhất",
         # vì chọn lượt đẹp là tự chấm điểm cho mình.
