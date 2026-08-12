@@ -26,6 +26,32 @@
    ============================================================================= */
 
 /* ---------------------------------------------------------------------------
+   Drop CHECK constraint trước — V013 gắn CK_Crit_type (criteria_type IN
+   ('HARD','SOFT')) lên đúng cột sắp xoá, và SQL Server chặn DROP COLUMN chừng
+   nào còn constraint bám vào (lỗi 5074). Tra ngược qua sql_expression_dependencies
+   thay vì gọi thẳng tên: bắt được cả check nhiều cột lẫn check do bản DB cũ đặt
+   tên khác.
+   --------------------------------------------------------------------------- */
+DECLARE @sqlCheck NVARCHAR(MAX) = N'';
+
+SELECT @sqlCheck = @sqlCheck + N'ALTER TABLE dbo.EvaluationCriteria DROP CONSTRAINT '
+                             + QUOTENAME(cc.name) + N';' + CHAR(13)
+FROM sys.check_constraints cc
+WHERE cc.parent_object_id = OBJECT_ID('dbo.EvaluationCriteria')
+  AND EXISTS (
+        SELECT 1
+        FROM sys.sql_expression_dependencies d
+        JOIN sys.columns c
+          ON c.object_id = d.referenced_id
+         AND c.column_id = d.referenced_minor_id
+        WHERE d.referencing_id = cc.object_id
+          AND d.referenced_id = OBJECT_ID('dbo.EvaluationCriteria')
+          AND c.name IN ('criteria_type', 'cv_matchable', 'keywords'));
+
+IF @sqlCheck <> N'' EXEC sp_executesql @sqlCheck;
+GO
+
+/* ---------------------------------------------------------------------------
    Drop default constraint trước rồi mới drop cột — cột có DEFAULT thì
    ALTER TABLE ... DROP COLUMN bị chặn, và tên constraint do SQL Server tự sinh
    nên phải tra ngược từ sys.default_constraints chứ không đoán được.
