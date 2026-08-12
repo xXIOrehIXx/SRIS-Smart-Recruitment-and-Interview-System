@@ -54,7 +54,7 @@ const CreateAccount = () => {
       if (error.response?.data?.message) {
         message.error(error.response.data.message);
       } else {
-        message.error("Không thể tạo tài khoản");
+        message.error("Email đã tồn tại, vui lý nhập email khác.");
       }
     } finally {
       setLoading(false);
