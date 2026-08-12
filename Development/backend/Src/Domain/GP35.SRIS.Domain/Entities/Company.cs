@@ -27,6 +27,13 @@ public class Company : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo
     [Column("phone")]
     public string? Phone { get; set; }
 
+    /// <summary>
+    /// Quyền lợi mặc định, các dòng ngăn bởi '\n' (V035). Điền sẵn vào tin tuyển dụng MỚI —
+    /// chép một lần lúc tạo, sửa ở đây không đổi các tin đã đăng.
+    /// </summary>
+    [Column("default_benefits")]
+    public string? DefaultBenefits { get; set; }
+
     [Column("email_domain")]
     public string? EmailDomain { get; set; }
     [Column("smtp_host")]

@@ -10,6 +10,10 @@ public class CompanyGetDto : BaseEntityDto<long>
   public string? Address { get; set; }
   public string? ContactEmail { get; set; }
   public string? Phone { get; set; }
+
+  /// <summary>Quyền lợi mặc định — tách sẵn thành từng dòng cho client (V035).</summary>
+  public List<string> DefaultBenefits { get; set; } = new();
+
   public string? EmailDomain { get; set; }
   public string? SmtpHost { get; set; }
   public int? SmtpPort { get; set; }

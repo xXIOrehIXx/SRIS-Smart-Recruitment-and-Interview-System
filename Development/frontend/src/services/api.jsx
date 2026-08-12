@@ -317,16 +317,12 @@ export const offerAPI = {
     api.get(`/applications/${applicationId}/offer/defaults`),
 
   // data: toàn bộ các mục của thư mời (xem MakeOfferDto ở BE) — ô để trống thì BE tự
-  // điền mặc định. Trả { offer, magicToken, ... }: link để ứng viên mở PDF thư mời.
+  // điền mặc định. BE gửi luôn email mà thân thư CHÍNH LÀ lá thư mời.
   create: (applicationId, data) =>
     api.post(`/applications/${applicationId}/offer`, data),
 
   getByApplication: (applicationId) =>
     api.get(`/applications/${applicationId}/offer`),
-
-  // Bản PDF thư đã gửi — mở trong tab mới (cần token nên tải qua axios rồi tạo blob URL).
-  getLetterBlob: (applicationId) =>
-    api.get(`/applications/${applicationId}/offer/letter`, { responseType: 'blob' }),
 
   // Ứng viên trả lời NGOÀI hệ thống -> Human Resource ghi nhận: accepted=true -> HIRED, false -> REJECTED
   recordOutcome: (applicationId, accepted, note) =>
@@ -366,9 +362,14 @@ export const criteriaAPI = {
   removeFromJob: (criteriaId) =>
     api.delete(`/evaluation-criteria/${criteriaId}`),
 
-  // AI bóc tiêu chí từ JD → DRAFT (người duyệt chốt sau)
+  // XẾP HÀNG lượt AI bóc tiêu chí từ JD → trả 202 ngay, worker nền mới gọi AI.
+  // Local LLM chạy CPU mất hàng chục giây nên không đợi trong request (timeout axios 30s).
   extractFromJd: (jobId) =>
     api.post(`/jobs/${jobId}/criteria/extract`),
+
+  // Hỏi trạng thái lượt bóc — gọi lặp cho tới khi running=false.
+  extractStatus: (jobId) =>
+    api.get(`/jobs/${jobId}/criteria/extract-status`),
 
   // Chốt bộ tiêu chí DRAFT → ACTIVE
   approve: (jobId) =>

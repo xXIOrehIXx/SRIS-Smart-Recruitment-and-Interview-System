@@ -39,6 +39,19 @@ export const EMAIL_VARIABLES = [
   { key: "companyAddress", label: "Địa chỉ công ty", sample: "68 Nguyễn Huệ, Quận 1" },
   { key: "hrEmail", label: "Email bộ phận nhân sự", sample: "tuyendung@congty.vn" },
   { key: "emailDomain", label: "Tên miền email nội bộ", sample: "congty.vn" },
+
+  // --- Chỉ có dữ liệu ở mẫu "Thư mời nhận việc" ---
+  // 4 ô *Block là CẢ MỘT BẢNG do hệ thống dựng, không phải một giá trị lẻ: hệ thống tự bỏ
+  // những mục công ty để trống nên thư không bao giờ ra dòng cụt kiểu "Thưởng/Ưu đãi:" trống.
+  { key: "letterhead", label: "Đầu thư: tên + địa chỉ công ty", sample: "(khối tên, địa chỉ, liên hệ công ty)" },
+  { key: "letterDate", label: "Ngày viết thư", sample: "Ngày 09 tháng 08 năm 2026" },
+  { key: "positionBlock", label: "Bảng: Thông tin vị trí", sample: "(bảng vị trí, phòng ban, ngày bắt đầu…)" },
+  { key: "compensationBlock", label: "Bảng: Lương & Phúc lợi", sample: "(bảng lương, thưởng, phúc lợi)" },
+  { key: "termsBlock", label: "Bảng: Điều khoản & Điều kiện", sample: "(bảng các điều khoản)" },
+  { key: "salary", label: "Mức lương (một dòng)", sample: "28.000.000 VND/tháng" },
+  { key: "acceptanceDeadline", label: "Hạn xác nhận nhận việc", sample: "15/08/2026" },
+  { key: "hrContact", label: "Người liên hệ nhân sự", sample: "Chị Lê Thu Hà qua tuyendung@congty.vn" },
+  { key: "signature", label: "Khối ký tên cuối thư", sample: "(Trân trọng, + tên người ký)" },
 ];
 
 /** Giá trị mẫu để xem trước — thay chỗ {{...}} bằng dữ liệu giả cho dễ hình dung. */

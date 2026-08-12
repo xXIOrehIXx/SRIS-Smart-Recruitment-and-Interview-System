@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Domain\GP35.SRIS.Domain.Shared\GP35.SRIS.Domain.Shared.csproj" />
+    <ProjectReference Include="..\GP35.SRIS.Storage\GP35.SRIS.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>

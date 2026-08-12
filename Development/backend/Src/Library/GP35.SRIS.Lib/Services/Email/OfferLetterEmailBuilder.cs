@@ -25,6 +25,52 @@ public static class OfferLetterEmailBuilder
             ? $"Thư mời nhận việc — vị trí {m.JobTitle}"
             : "Thư mời nhận việc";
 
+    // ============================================================
+    // KHỐI DÙNG LẠI CHO MẪU EMAIL OFFER_RESPONSE
+    //
+    // Người tuyển dụng soạn lời thư trong trang Mẫu email, nhưng mấy bảng số liệu thì KHÔNG
+    // giao cho họ gõ tay: ô soạn thảo chỉ biết thay chuỗi {{...}}, không có "nếu trống thì bỏ
+    // dòng" — để họ tự đặt "Thưởng: {{bonus}}" là công ty nào không nhập thưởng sẽ gửi cho ứng
+    // viên một dòng cụt. Nên code dựng sẵn cả khối (đã bỏ dòng rỗng, đã format tiền/ngày) rồi
+    // đưa lên làm MỘT placeholder; mẫu chỉ việc đặt khối đó vào chỗ mong muốn.
+    //
+    // Khối trả về là HTML đứng độc lập (không có <tr>) để bỏ vừa vào vỏ email của EmailLayout.
+    // ============================================================
+
+    /// <summary>Tên + địa chỉ + liên hệ công ty, kèm đường kẻ dưới.</summary>
+    public static string BuildLetterhead(OfferLetterModel m) => Letterhead(m, Palette(m));
+
+    /// <summary>Khối "Thông tin vị trí" — rỗng hết mọi mục thì trả chuỗi rỗng.</summary>
+    public static string BuildPositionBlock(OfferLetterModel m) =>
+        SectionInner(Palette(m), "Thông tin vị trí", PositionLines(m));
+
+    /// <summary>Khối "Lương &amp; Phúc lợi".</summary>
+    public static string BuildCompensationBlock(OfferLetterModel m) =>
+        SectionInner(Palette(m), "Lương & Phúc lợi", CompensationLines(m));
+
+    /// <summary>Khối "Điều khoản &amp; Điều kiện".</summary>
+    public static string BuildTermsBlock(OfferLetterModel m) =>
+        SectionInner(Palette(m), "Điều khoản & Điều kiện", TermsLines(m));
+
+    /// <summary>Khối ký tên: đường kẻ + "Trân trọng," + tên/chức danh người ký + công ty.</summary>
+    public static string BuildSignature(OfferLetterModel m) => Signature(m, Palette(m));
+
+    /// <summary>"Ngày 08 tháng 08 năm 2026".</summary>
+    public static string BuildLetterDate(OfferLetterModel m) =>
+        $"Ngày {m.LetterDate:dd} tháng {m.LetterDate:MM} năm {m.LetterDate:yyyy}";
+
+    /// <summary>Hạn xác nhận "15/08/2026"; không đặt hạn -> rỗng.</summary>
+    public static string BuildAcceptanceDeadline(OfferLetterModel m) =>
+        m.AcceptanceDeadline is DateTime d ? d.ToString("dd/MM/yyyy") : "";
+
+    /// <summary>"Chị Lê Thu Hà qua &lt;a&gt;tuyendung@…&lt;/a&gt;" — đã tự lùi về bộ phận nhân sự khi thiếu tên.</summary>
+    public static string BuildHrContact(OfferLetterModel m) => HrContact(m, Palette(m));
+
+    /// <summary>"28.000.000 VND/tháng" — không nhập lương thì "Thỏa thuận".</summary>
+    public static string BuildSalary(OfferLetterModel m) => E(FormatSalary(m));
+
+    private static LetterPalette Palette(OfferLetterModel m) => LetterPalette.From(m.BrandColor);
+
     public static string BuildHtml(OfferLetterModel m)
     {
         var p = LetterPalette.From(m.BrandColor);
@@ -107,13 +153,7 @@ public static class OfferLetterEmailBuilder
         sb.Append(Row(p, "padding:20px 34px 0 34px;", closing.ToString()));
 
         // ----- Ký tên -----
-        var sign = new StringBuilder(
-            $"<div style=\"border-top:2px solid {p.Frame};margin-bottom:16px;font-size:0;line-height:0;\">&nbsp;</div>"
-            + Text("Trân trọng,") + "<div style=\"height:14px;\">&nbsp;</div>");
-        if (Has(m.SignerName)) sign.Append(Text($"<b>{E(m.SignerName!)}</b>"));
-        if (Has(m.SignerTitle)) sign.Append(Text(E(m.SignerTitle!)));
-        if (Has(m.CompanyName)) sign.Append(Text(E(m.CompanyName!)));
-        sb.Append(Row(p, "padding:20px 34px 30px 34px;", sign.ToString()));
+        sb.Append(Row(p, "padding:20px 34px 30px 34px;", Signature(m, p)));
 
         sb.Append("</table></td></tr></table>");
         return sb.ToString();
@@ -138,8 +178,15 @@ public static class OfferLetterEmailBuilder
         return sb.ToString();
     }
 
-    /// <summary>1 khối "tiêu đề đậm + các dòng ❖". Không có dòng nào -> bỏ luôn cả khối.</summary>
+    /// <summary>1 khối "tiêu đề đậm + các dòng ❖", bọc thành hàng của bảng thư. Rỗng -> bỏ cả hàng.</summary>
     private static string Section(LetterPalette p, string heading, IReadOnlyList<string> lines)
+    {
+        var inner = SectionInner(p, heading, lines);
+        return inner.Length == 0 ? "" : Row(p, "padding:18px 34px 0 34px;", inner);
+    }
+
+    /// <summary>Ruột của một khối — dùng cả cho thư tự sinh lẫn placeholder của mẫu email.</summary>
+    private static string SectionInner(LetterPalette p, string heading, IReadOnlyList<string> lines)
     {
         if (lines.Count == 0) return "";
 
@@ -159,7 +206,18 @@ public static class OfferLetterEmailBuilder
         }
         sb.Append("</table>");
 
-        return Row(p, "padding:18px 34px 0 34px;", sb.ToString());
+        return sb.ToString();
+    }
+
+    private static string Signature(OfferLetterModel m, LetterPalette p)
+    {
+        var sb = new StringBuilder(
+            $"<div style=\"border-top:2px solid {p.Frame};margin-bottom:16px;font-size:0;line-height:0;\">&nbsp;</div>"
+            + Text("Trân trọng,") + "<div style=\"height:14px;\">&nbsp;</div>");
+        if (Has(m.SignerName)) sb.Append(Text($"<b>{E(m.SignerName!)}</b>"));
+        if (Has(m.SignerTitle)) sb.Append(Text(E(m.SignerTitle!)));
+        if (Has(m.CompanyName)) sb.Append(Text(E(m.CompanyName!)));
+        return sb.ToString();
     }
 
     private static List<string> PositionLines(OfferLetterModel m)

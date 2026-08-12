@@ -2,12 +2,9 @@ using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
-/// <summary>Đoạn CV khớp nhất với 1 tiêu chí SOFT (Distance nhỏ = khớp nhiều).</summary>
-public record SoftCriterionMatch(long CriteriaId, double Distance, string Content);
-
 /// <summary>
-/// Tiêu chí đánh giá — PER-JOB, trục xuyên suốt từ lọc CV đến phỏng vấn (docs 5.18).
-/// AI bóc ra DRAFT; người duyệt APPROVED; chấm CV/phỏng vấn chỉ dùng APPROVED.
+/// Tiêu chí đánh giá — PER-JOB (docs 5.18). AI bóc ra DRAFT; người duyệt chốt APPROVED;
+/// phiếu chấm phỏng vấn chỉ dùng APPROVED.
 /// </summary>
 public interface IEvaluationCriteriaRepo : IBaseRepo<long, EvaluationCriteria>
 {
@@ -41,17 +38,4 @@ public interface IEvaluationCriteriaRepo : IBaseRepo<long, EvaluationCriteria>
 
     /// <summary>Người duyệt chốt: DRAFT -> APPROVED, ghi ai duyệt lúc nào (audit 5.18).</summary>
     Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId);
-
-    /// <summary>Id các tiêu chí SOFT đã duyệt còn thiếu embedding (lazy — như JD).</summary>
-    Task<IReadOnlyList<long>> GetSoftCriteriaNeedingEmbeddingAsync(long companyId, long jobId);
-
-    /// <summary>Sinh & lưu embedding cho 1 tiêu chí (cột VECTOR — raw SQL 5.11).</summary>
-    Task UpdateEmbeddingAsync(long companyId, long criteriaId, float[] embedding);
-
-    /// <summary>
-    /// Mỗi tiêu chí SOFT (đã duyệt, đang bật, cv_matchable) đi tìm đoạn CV khớp nhất —
-    /// VECTOR_DISTANCE đo trong SQL Server (docs 5.18: "mỗi tiêu chí đi tìm đoạn CV khớp nhất").
-    /// </summary>
-    Task<IReadOnlyList<SoftCriterionMatch>> GetBestChunkPerSoftCriterionAsync(
-        long companyId, long jobId, long cvId);
 }

@@ -42,3 +42,29 @@ public class CriteriaDto
     /// <summary>MANUAL | AI_EXTRACTED — audit "tiêu chí từ đâu ra" (5.18).</summary>
     public string Source { get; set; } = "MANUAL";
 }
+
+/// <summary>
+/// Trạng thái lượt AI bóc tiêu chí chạy nền (V037) — FE hỏi lại cho tới khi Running=false.
+/// </summary>
+public class CriteriaExtractionStatusDto
+{
+    public long JobId { get; set; }
+
+    /// <summary>PENDING | RUNNING | DONE | FAILED | NONE (job này chưa bao giờ bóc).</summary>
+    public string Status { get; set; } = "NONE";
+
+    /// <summary>true khi còn PENDING/RUNNING — FE cứ thấy true là hỏi lại sau vài giây.</summary>
+    public bool Running { get; set; }
+
+    /// <summary>Số tiêu chí DRAFT bóc được (chỉ có nghĩa khi Status = DONE).</summary>
+    public int? CriteriaCount { get; set; }
+
+    /// <summary>AI_EXTRACT_FAILED | JD_NO_REQUIREMENTS (chỉ có nghĩa khi Status = FAILED).</summary>
+    public string? ErrorCode { get; set; }
+
+    /// <summary>Câu hiện thẳng cho người dùng khi hỏng.</summary>
+    public string? ErrorMessage { get; set; }
+
+    public DateTime? RequestedAt { get; set; }
+    public DateTime? FinishedAt { get; set; }
+}

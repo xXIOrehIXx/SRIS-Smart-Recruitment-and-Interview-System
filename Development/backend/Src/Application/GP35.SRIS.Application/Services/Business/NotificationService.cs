@@ -58,29 +58,23 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var expiresText = $"{expiresAt:dd/MM/yyyy HH:mm} UTC";
 
             // Template động (M4): ưu tiên template active theo loại; không có thì dùng nội dung mặc định.
-            // Brand của tenant cho MỌI loại email: template do người dùng soạn muốn chèn logo
-            // thì chỉ cần đặt {{companyLogoImg}}, khỏi phải tự đi tìm URL và gõ thẻ <img>.
-            var brandCompany = await _companyRepo.GetByCompanyId(companyId);
-
-            var placeholders = new Dictionary<string, string>
-            {
-                ["candidateName"] = info.CandidateName ?? "",
-                ["jobTitle"] = info.JobTitle ?? "",
-                ["link"] = link,
-                ["expiresAt"] = expiresText,
-                ["companyName"] = brandCompany?.Name ?? "",
-                ["brandColor"] = Has(brandCompany?.PrimaryColor) ? brandCompany!.PrimaryColor! : DefaultBrandColor,
-                ["companyLogoImg"] = BuildLogoImg(brandCompany?.LogoUrl, brandCompany?.Name)
-            };
+            var placeholders = await BrandPlaceholdersAsync(companyId);
+            placeholders["candidateName"] = info.CandidateName ?? "";
+            placeholders["jobTitle"] = info.JobTitle ?? "";
+            placeholders["link"] = link;
+            placeholders["expiresAt"] = expiresText;
 
             string subject, body;
 
             // Thư mời nhận việc: THÂN EMAIL chính là lá thư — ứng viên mở hộp thư là đọc được
-            // ngay trên điện thoại, không phải bấm link hay tải file (5.15). Bản PDF vẫn đính
-            // kèm bên dưới làm văn bản chính thức để lưu/in.
+            // ngay trên điện thoại, không phải bấm link hay tải file (5.15).
             var letter = string.Equals(purpose, EmailTemplateType.OfferResponse, StringComparison.OrdinalIgnoreCase)
                 ? await TryBuildLetterModelAsync(companyId, applicationId)
                 : null;
+
+            // Có dữ liệu thư mời -> mở thêm các ô {{positionBlock}}, {{compensationBlock}}...
+            // để công ty tự viết lời thư trong trang Mẫu email mà số liệu vẫn do code dựng.
+            if (letter is not null) AddOfferLetterPlaceholders(placeholders, letter);
 
             var rendered = await TryRenderTemplateAsync(companyId, purpose, placeholders);
             if (rendered is null && letter is not null)
@@ -132,11 +126,9 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                 return;
             }
 
-            var placeholders = new Dictionary<string, string>
-            {
-                ["candidateName"] = info.CandidateName ?? "",
-                ["jobTitle"] = info.JobTitle ?? ""
-            };
+            var placeholders = await BrandPlaceholdersAsync(companyId);
+            placeholders["candidateName"] = info.CandidateName ?? "";
+            placeholders["jobTitle"] = info.JobTitle ?? "";
 
             string subject, body;
             var rendered = await TryRenderTemplateAsync(companyId, toState, placeholders);
@@ -183,24 +175,16 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var company = await _companyRepo.GetByCompanyId(companyId);
             var offer = await _offerRepo.GetByApplicationAsync(companyId, applicationId);
 
-            var placeholders = new Dictionary<string, string>
-            {
-                ["candidateName"] = info.CandidateName ?? "",
-                ["jobTitle"] = offer?.JobTitle ?? info.JobTitle ?? "",
-                ["companyName"] = company?.Name ?? "",
-                // Ngày vào làm lấy từ thư mời đã gửi; chưa có thì để người tuyển dụng tự điền
-                // trong mẫu, KHÔNG in ngày bịa.
-                ["startDate"] = offer?.StartDate is DateTime d ? d.ToString("dd/MM/yyyy") : "[ngày vào làm]",
-                ["companyAddress"] = company?.Address ?? "[địa chỉ văn phòng]",
-                ["hrEmail"] = offer?.HrContactEmail ?? company?.ContactEmail ?? "",
-
-                // Brand của tenant: màu nhấn + logo. Không có logo -> chuỗi RỖNG chứ không
-                // phải thẻ <img src="">, tránh ô ảnh vỡ chình ình ở đầu email.
-                // Tên miền email nội bộ (V017) — dòng "cấp email @công-ty.com" trong mẫu.
-                ["emailDomain"] = Has(company?.EmailDomain) ? company!.EmailDomain! : "[tên miền công ty]",
-                ["brandColor"] = Has(company?.PrimaryColor) ? company!.PrimaryColor! : DefaultBrandColor,
-                ["companyLogoImg"] = BuildLogoImg(company?.LogoUrl, company?.Name)
-            };
+            var placeholders = await BrandPlaceholdersAsync(companyId);
+            placeholders["candidateName"] = info.CandidateName ?? "";
+            placeholders["jobTitle"] = offer?.JobTitle ?? info.JobTitle ?? "";
+            // Ngày vào làm lấy từ thư mời đã gửi; chưa có thì để người tuyển dụng tự điền
+            // trong mẫu, KHÔNG in ngày bịa.
+            placeholders["startDate"] = offer?.StartDate is DateTime d ? d.ToString("dd/MM/yyyy") : "[ngày vào làm]";
+            placeholders["companyAddress"] = company?.Address ?? "[địa chỉ văn phòng]";
+            placeholders["hrEmail"] = offer?.HrContactEmail ?? company?.ContactEmail ?? "";
+            // Tên miền email nội bộ (V017) — dòng "cấp email @công-ty.com" trong mẫu.
+            placeholders["emailDomain"] = Has(company?.EmailDomain) ? company!.EmailDomain! : "[tên miền công ty]";
 
             // Không có mẫu ACTIVE -> KHÔNG gửi. Mẫu mặc định đầy chỗ "[điền...]" chỉ để làm
             // khung soạn thảo, gửi thẳng cho ứng viên thì phản tác dụng.
@@ -245,13 +229,11 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var gcalUrl = CalendarInviteBuilder.BuildGoogleCalendarUrl(summary, description, startUtc, endUtc);
 
             var startText = $"{startUtc:HH:mm dd/MM/yyyy} (UTC)";
-            var placeholders = new Dictionary<string, string>
-            {
-                ["candidateName"] = info.CandidateName ?? "",
-                ["jobTitle"] = info.JobTitle ?? "",
-                ["startTime"] = startText,
-                ["link"] = gcalUrl
-            };
+            var placeholders = await BrandPlaceholdersAsync(companyId);
+            placeholders["candidateName"] = info.CandidateName ?? "";
+            placeholders["jobTitle"] = info.JobTitle ?? "";
+            placeholders["startTime"] = startText;
+            placeholders["link"] = gcalUrl;
 
             string body;
             var rendered = await TryRenderTemplateAsync(
@@ -310,13 +292,11 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                 : "";
             var reasonText = string.IsNullOrWhiteSpace(reason) ? "" : reason.Trim();
 
-            var placeholders = new Dictionary<string, string>
-            {
-                ["candidateName"] = info.CandidateName ?? "",
-                ["jobTitle"] = info.JobTitle ?? "",
-                ["startTime"] = startText,
-                ["reason"] = reasonText
-            };
+            var placeholders = await BrandPlaceholdersAsync(companyId);
+            placeholders["candidateName"] = info.CandidateName ?? "";
+            placeholders["jobTitle"] = info.JobTitle ?? "";
+            placeholders["startTime"] = startText;
+            placeholders["reason"] = reasonText;
 
             string subject, body;
             var rendered = await TryRenderTemplateAsync(
@@ -363,13 +343,83 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             // Người tuyển dụng chỉ soạn RUỘT thư; vỏ (logo + vạch brand + chân trang) bọc ở đây.
             // Ai lỡ dán nguyên một email hoàn chỉnh thì EmailLayout tự nhận ra và không bọc chồng.
             var body = EmailLayout.Wrap(template.Body);
-            return (Render(template.Subject, placeholders), Render(body, placeholders));
+            var renderedSubject = Render(template.Subject, placeholders);
+            var renderedBody = Render(body, placeholders);
+
+            WarnLeftoverPlaceholders(type, renderedSubject, renderedBody);
+            return (renderedSubject, renderedBody);
         }
         catch (Exception ex)
         {
             _logger.Warning(ex, "Notify: lỗi tra template '{Type}' — dùng nội dung mặc định.", type);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Ba ô brand mà VỎ email (<see cref="EmailLayout"/>) luôn dùng, nên MỌI loại email đều
+    /// phải có — kể cả loại mà ruột thư không nhắc tới chúng.
+    ///
+    /// <para>Đây từng là bẫy: mỗi hàm Send* tự dựng dictionary riêng, hàm nào quên 3 ô này thì
+    /// vỏ thư không thay được và ứng viên nhận nguyên chuỗi "{{companyLogoImg}}" ở đầu thư
+    /// (email trúng tuyển / hủy lịch / xác nhận lịch đều từng dính). Giờ mọi hàm bắt đầu từ
+    /// đây rồi mới thêm ô riêng của mình.</para>
+    /// </summary>
+    private async Task<Dictionary<string, string>> BrandPlaceholdersAsync(long companyId)
+    {
+        var company = await _companyRepo.GetByCompanyId(companyId);
+        return new Dictionary<string, string>
+        {
+            ["companyName"] = company?.Name ?? "",
+            ["brandColor"] = Has(company?.PrimaryColor) ? company!.PrimaryColor! : DefaultBrandColor,
+            ["companyLogoImg"] = BuildLogoImg(company?.LogoUrl, company?.Name)
+        };
+    }
+
+    /// <summary>
+    /// Kêu lên khi thư gửi đi vẫn còn <c>{{ô}}</c> chưa thay — nghĩa là mẫu dùng một ô không
+    /// tồn tại ở loại email đó (vd đặt {{salary}} vào mẫu Hủy lịch phỏng vấn), và ứng viên sẽ
+    /// nhận được đúng chuỗi "{{salary}}" trong thư. Chỉ cảnh báo, KHÔNG chặn gửi: mẫu sai một ô
+    /// không đáng để nuốt cả email.
+    /// </summary>
+    private void WarnLeftoverPlaceholders(string type, string subject, string body)
+    {
+        var leftovers = System.Text.RegularExpressions.Regex
+            .Matches(subject + " " + body, @"\{\{\s*(\w+)\s*\}\}")
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (leftovers.Length > 0)
+            _logger.Warning("Notify: mẫu '{Type}' còn ô chưa thay được: {Placeholders} — thư gửi đi " +
+                            "sẽ hiện nguyên chuỗi đó.", type, string.Join(", ", leftovers));
+    }
+
+    /// <summary>
+    /// Mở các ô riêng của thư mời nhận việc cho mẫu email OFFER_RESPONSE.
+    ///
+    /// <para>Mấy ô <c>*Block</c> là HTML nguyên khối do code dựng (bảng ✦, đã bỏ dòng rỗng, đã
+    /// format tiền và ngày). Cố ý KHÔNG tách thành {{salaryAmount}}, {{bonus}}, {{benefits}}…
+    /// rời: engine template ở đây chỉ thay chuỗi, không có "nếu trống thì bỏ dòng", nên ô rời
+    /// nào bỏ trống là ứng viên nhận được một dòng cụt trong văn bản chính thức.</para>
+    /// </summary>
+    private static void AddOfferLetterPlaceholders(
+        IDictionary<string, string> placeholders, OfferLetterModel letter)
+    {
+        placeholders["letterhead"] = OfferLetterEmailBuilder.BuildLetterhead(letter);
+        placeholders["positionBlock"] = OfferLetterEmailBuilder.BuildPositionBlock(letter);
+        placeholders["compensationBlock"] = OfferLetterEmailBuilder.BuildCompensationBlock(letter);
+        placeholders["termsBlock"] = OfferLetterEmailBuilder.BuildTermsBlock(letter);
+        placeholders["signature"] = OfferLetterEmailBuilder.BuildSignature(letter);
+
+        placeholders["letterDate"] = OfferLetterEmailBuilder.BuildLetterDate(letter);
+        placeholders["acceptanceDeadline"] = OfferLetterEmailBuilder.BuildAcceptanceDeadline(letter);
+        placeholders["hrContact"] = OfferLetterEmailBuilder.BuildHrContact(letter);
+        placeholders["salary"] = OfferLetterEmailBuilder.BuildSalary(letter);
+
+        // {{jobTitle}} của luồng magic link lấy từ Job; thư mời cho phép sửa lại tên vị trí
+        // ngay trên form -> ưu tiên tên đã chốt trong thư, tránh email nói khác lá thư.
+        if (!string.IsNullOrWhiteSpace(letter.JobTitle)) placeholders["jobTitle"] = letter.JobTitle!;
     }
 
     /// <summary>Gom OfferDetail + Company + tên ứng viên thành dữ liệu in thư. Null = chưa có offer.</summary>

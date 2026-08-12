@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using GP35.SRIS.Domain.Shared.Constants;
+using GP35.SRIS.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -24,11 +26,13 @@ public class BrandLogoFetcher : IBrandLogoFetcher
     private static readonly ConcurrentDictionary<string, (DateTime Expires, byte[]? Data)> Cache = new();
 
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IFileStorageService? _storage;
     private readonly ILogger _logger;
 
     public BrandLogoFetcher(IServiceProvider serviceProvider)
     {
         _httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+        _storage = serviceProvider.GetService<IFileStorageService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<BrandLogoFetcher>();
     }
 
@@ -54,6 +58,16 @@ public class BrandLogoFetcher : IBrandLogoFetcher
         {
             if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                 return Validate(ReadDataUri(url), url);
+
+            // Logo do chính hệ thống lưu -> đọc thẳng từ kho, không đi vòng qua HTTP. Lúc demo
+            // URL là localhost (bị chặn ở IsPrivateHost bên dưới) nên nếu chờ HTTP thì thư mời
+            // luôn mất logo trên máy dev.
+            var objectName = EmailAssetPaths.TryGetObjectName(url);
+            if (objectName is not null && _storage is not null)
+            {
+                var stored = await _storage.DownloadAsync(objectName, cancellationToken);
+                return Validate(stored?.Content, url);
+            }
 
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))

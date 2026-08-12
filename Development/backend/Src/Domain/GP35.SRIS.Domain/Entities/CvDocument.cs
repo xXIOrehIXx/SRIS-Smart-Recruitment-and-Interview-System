@@ -24,8 +24,6 @@ public class CvDocument : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHas
     public string? MimeType { get; set; }
     [Column("extracted_text")]
     public string? ExtractedText { get; set; }
-    [Column("embedding")]
-    public float[]? Embedding { get; set; }
     [Column("parse_status")]
     public string ParseStatus { get; set; } = null!;
 

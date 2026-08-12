@@ -28,6 +28,7 @@ import {
   usersAPI,
   departmentAPI,
   employmentTypeAPI,
+  companyAPI,
 } from "../../services/api";
 import {
   EXPERIENCE_LEVEL_TO_JOB,
@@ -35,12 +36,60 @@ import {
   splitRequirements,
 } from "../../services/recruitmentRequest";
 import JobSetupSteps from "../../components/JobSetupSteps";
+import BulletListInput from "../../components/BulletListInput";
 import "./css/CreateJob.css";
 
 // Thiếu Text ở đây là trang SẬP TRẮNG khi vào chế độ sửa: JSX bên dưới có <Text>, không
 // destructure thì nó ăn vào class Text của DOM và React gọi class như hàm -> throw.
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+
+/**
+ * Gợi ý cho 3 dòng yêu cầu đầu tiên. Mỗi dòng một KIỂU yêu cầu khác nhau (bằng cấp / kinh
+ * nghiệm / công cụ) để người dùng nhìn ra ngay ranh giới "phải có sẵn" với "sẽ làm sau khi
+ * vào" — chỗ hay nhầm nhất, và nhầm là AI bóc tiêu chí ra rỗng.
+ * Ví dụ cố tình lấy nghề phổ thông, không lấy nghề IT: sản phẩm tuyển mọi vị trí.
+ */
+const REQUIREMENT_HINTS = [
+  "VD: Tốt nghiệp Cao đẳng trở lên",
+  "VD: Có ít nhất 1 năm kinh nghiệm ở vị trí tương đương",
+  "VD: Sử dụng thành thạo Excel",
+];
+
+/** Gợi ý quyền lợi — cùng tinh thần: nghề phổ thông, không lấy đãi ngộ kiểu công ty IT. */
+const BENEFIT_HINTS = [
+  "VD: Thưởng lương tháng 13",
+  "VD: Đóng BHXH đầy đủ theo quy định",
+  "VD: Du lịch, teambuilding hằng năm",
+];
+
+/**
+ * Gộp quyền lợi riêng của tin với quyền lợi mặc định của công ty (V035).
+ *
+ * Hai thứ này KHÁC vai nên nối vào nhau chứ không tranh chỗ: DM ghi thứ đặc thù vị trí
+ * ("hỗ trợ xăng xe đi thị trường"), mặc định là thứ cả công ty ai cũng có (BHXH, thưởng
+ * T13). Bỏ mặc định đi thì HR lại phải gõ tay BHXH cho từng tin — đúng việc đang muốn dẹp.
+ *
+ * Dòng riêng đứng trước, mặc định nối sau. Khử trùng sau khi trim, không phân biệt hoa
+ * thường — nên chỉ bắt được trùng Y HỆT: "Thưởng T13" với "Thưởng lương tháng 13" vẫn ra
+ * hai dòng, người dùng tự xoá bớt (danh sách sửa được ngay tại chỗ).
+ */
+const mergeBenefits = (current, defaults) => {
+  const own = (current || []).map((b) => (b || "").trim()).filter(Boolean);
+  const seen = new Set(own.map((b) => b.toLowerCase()));
+  const merged = [...own];
+
+  (defaults || []).forEach((b) => {
+    const line = (b || "").trim();
+    if (line && !seen.has(line.toLowerCase())) {
+      seen.add(line.toLowerCase());
+      merged.push(line);
+    }
+  });
+
+  // Luôn chừa 1 ô trống để còn chỗ gõ khi chưa có quyền lợi nào.
+  return merged.length > 0 ? merged : [""];
+};
 
 /**
  * Quy tắc validate cho từng field — đặt riêng để dễ tái sử dụng giữa
@@ -98,7 +147,14 @@ const FIELD_RULES = {
     { type: "integer", max: 999, message: "Số lượng tối đa 999" },
   ],
   skillTags: () => [
-    { max: 500, message: "Kỹ năng tối đa 500 ký tự" },
+    {
+      // Giá trị là MẢNG chip (Select mode="tags"), nên rule {max} của antd sẽ đếm số chip
+      // chứ không phải số ký tự. Tự kiểm trên đúng chuỗi mà BE sẽ lưu vào cột skill_tags.
+      validator: (_, value) =>
+        (value || []).join(", ").length > 500
+          ? Promise.reject(new Error("Kỹ năng tối đa 500 ký tự"))
+          : Promise.resolve(),
+    },
   ],
   expiresAt: () => [
     {
@@ -189,6 +245,9 @@ const CreateJob = () => {
   const [dmOptions, setDmOptions] = useState([]);
   const [deptOptions, setDeptOptions] = useState([]);
   const [employmentOptions, setEmploymentOptions] = useState([]);
+  // Quyền lợi mặc định của công ty (V035) — giữ trong ref vì prefill từ Yêu cầu tuyển dụng
+  // chạy song song, cần đọc giá trị mới nhất chứ không phải bản đóng băng lúc render.
+  const companyDefaultBenefitsRef = useRef([]);
   // mode hiện tại đang validate: "draft" (mặc định — cho phép thiếu field) hay "publish"
   const [mode, setMode] = useState("draft");
   const [formError, setFormError] = useState(null);
@@ -208,6 +267,26 @@ const CreateJob = () => {
     employmentTypeAPI.getAll()
       .then((r) => setEmploymentOptions((r.data || []).filter((t) => t.status === "Active")))
       .catch(() => setEmploymentOptions([]));
+
+    // Quyền lợi mặc định của công ty (V035): chỉ điền sẵn cho tin MỚI. Vào SỬA tin cũ mà
+    // cũng điền là đè mất quyền lợi người dùng đã sửa riêng cho tin đó.
+    // Admin nhập ở /admin/company-branding; HR chỉ ĐỌC (GET /company không gác role).
+    if (!searchParams.get("edit")) {
+      companyAPI.get()
+        .then((r) => {
+          const defaults = r.data?.defaultBenefits || [];
+          companyDefaultBenefitsRef.current = defaults;
+          if (defaults.length === 0) return;
+          // Cập nhật theo hàm: prefill từ Yêu cầu tuyển dụng có thể đã điền quyền lợi của DM
+          // trước khi lời gọi này về — gộp lên cái đang có, không đạp lên.
+          setBenefits((prev) => mergeBenefits(prev, defaults));
+        })
+        .catch(() => {
+          // Không lấy được hồ sơ công ty thì thôi, người dùng vẫn gõ tay được.
+          companyDefaultBenefitsRef.current = [];
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const editJobId = searchParams.get("edit");
@@ -256,13 +335,21 @@ const CreateJob = () => {
           experienceYearsToJob(req.experienceYearsMin)
           ?? EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
         quantity: req.quantity,
-        skillTags: skills.length > 0 ? skills.join(", ") : undefined,
+        // Ô Kỹ năng là Select mode="tags" -> nhận MẢNG, không phải chuỗi ngăn phẩy.
+        skillTags: skills,
         description: req.description,
         salaryMin: req.salaryMin,
         salaryMax: req.salaryMax,
       });
       if (requirementsText) setRequirements(requirementsText.split("\n").filter(Boolean));
-      if (req.benefits) setBenefits(req.benefits.split("\n").filter(Boolean));
+      // Quyền lợi DM ghi là thứ đặc thù vị trí; quyền lợi mặc định của công ty nối vào sau
+      // chứ không bị bỏ — nếu không HR lại phải gõ tay BHXH, thưởng T13 cho từng tin.
+      setBenefits(
+        mergeBenefits(
+          req.benefits ? req.benefits.split("\n").filter(Boolean) : [],
+          companyDefaultBenefitsRef.current
+        )
+      );
       message.info(`Đang tạo tin từ yêu cầu tuyển dụng của ${req.createdByName || "DM"} — "${req.title}"`);
     } catch (error) {
       console.error("Error loading request:", error);
@@ -300,6 +387,9 @@ const CreateJob = () => {
           location: job.location || job.workLocation,
           workMode: job.workMode,
           description: job.jdText || job.description,
+          // Thiếu dòng này là mỗi lần sửa job sẽ gửi kỹ năng RỖNG lên BE -> xoá sạch
+          // skill_tags cũ, dù người dùng không hề đụng vào ô đó.
+          skillTags: job.skills || [],
           salaryMin: job.salaryMin,
           salaryMax: job.salaryMax,
           currency: job.currency || "VND",
@@ -353,6 +443,15 @@ const CreateJob = () => {
     setBenefits(newBenefits);
   };
 
+  /**
+   * Chuẩn hoá giá trị ô Kỹ năng về mảng sạch. Bình thường Select mode="tags" đã trả mảng,
+   * nhưng bản nháp lưu trước đây còn giữ chuỗi ngăn phẩy nên vẫn phải chịu được cả hai.
+   */
+  const toSkillList = (value) => {
+    const raw = Array.isArray(value) ? value : String(value || "").split(",");
+    return raw.map((s) => s.trim()).filter(Boolean);
+  };
+
   const getFormData = (values) => {
     return {
       title: values.title,
@@ -370,6 +469,10 @@ const CreateJob = () => {
       deadline: values.expiresAt,
       requirements: requirements.filter((r) => r.trim() !== ""),
       benefits: benefits.filter((b) => b.trim() !== ""),
+      // Kỹ năng TỪNG bị bỏ quên ở đây: ô hiện trên form, có validate, có prefill, nhưng
+      // không nằm trong payload nên gõ gì cũng mất trắng mà không báo lỗi. BE nhận mảng
+      // (JobCreateDto.Skills) rồi tự nối thành chuỗi lưu vào skill_tags.
+      skills: toSkillList(values.skillTags),
       isPublished: false,
     };
   };
@@ -496,7 +599,7 @@ const CreateJob = () => {
               >
                 <Input
                   size="large"
-                  placeholder="VD: Senior React Developer"
+                  placeholder="VD: Nhân viên Kinh doanh"
                   onChange={dismissFormError}
                 />
               </Form.Item>
@@ -510,8 +613,46 @@ const CreateJob = () => {
                   rows={6}
                   maxLength={2000}
                   showCount
-                  placeholder="Mô tả chi tiết về trách nhiệm, yêu cầu, quyền lợi..."
+                  placeholder="Những đầu việc ứng viên sẽ làm sau khi vào công ty..."
                   onChange={dismissFormError}
+                />
+              </Form.Item>
+
+              {/* Ô này quyết định AI có bóc được tiêu chí hay không. Mô tả công việc thường
+                  chỉ liệt kê đầu việc — không chấm điểm được cho người chưa vào làm — nên
+                  bỏ trống mục yêu cầu là bấm "AI bóc tiêu chí" sẽ ra rỗng. */}
+              <Form.Item
+                label="Yêu cầu ứng viên"
+                tooltip="Thứ ứng viên phải CÓ SẴN trước khi vào làm: bằng cấp, số năm kinh nghiệm, chứng chỉ, ngoại ngữ. Khác với mô tả công việc là thứ họ sẽ làm sau khi vào. AI dựa vào mục này để bóc ra phiếu chấm phỏng vấn."
+              >
+                <BulletListInput
+                  items={requirements}
+                  hints={REQUIREMENT_HINTS}
+                  fallbackHint="Thêm một yêu cầu với ứng viên"
+                  addLabel="Thêm yêu cầu"
+                  onAdd={handleAddRequirement}
+                  onRemove={handleRemoveRequirement}
+                  onChange={handleRequirementChange}
+                  onInteract={dismissFormError}
+                />
+              </Form.Item>
+
+              {/* Quyền lợi cũng từng là ô "tàng hình": state + handler có sẵn, payload có gửi,
+                  nhưng JSX không vẽ nên tin đăng ra luôn trống phần này. Đặt cạnh Yêu cầu vì
+                  cả hai đều là nội dung hiện trên tin đăng công khai. */}
+              <Form.Item
+                label="Quyền lợi"
+                tooltip="Hiển thị trên tin tuyển dụng công khai để ứng viên cân nhắc. Không dùng để đánh giá — AI bóc tiêu chí bỏ qua mục này."
+              >
+                <BulletListInput
+                  items={benefits}
+                  hints={BENEFIT_HINTS}
+                  fallbackHint="Thêm một quyền lợi"
+                  addLabel="Thêm quyền lợi"
+                  onAdd={handleAddBenefit}
+                  onRemove={handleRemoveBenefit}
+                  onChange={handleBenefitChange}
+                  onInteract={dismissFormError}
                 />
               </Form.Item>
 
@@ -625,12 +766,24 @@ const CreateJob = () => {
                 <Col xs={24} md={16}>
                   <Form.Item
                     name="skillTags"
-                    label="Kỹ Năng (phân cách bằng dấu phẩy)"
+                    label="Kỹ năng"
                     rules={rules.skillTags}
+                    tooltip="Gõ từng kỹ năng rồi nhấn Enter. Dán cả cụm ngăn bởi dấu phẩy cũng được — hệ thống tự tách."
                   >
-                    <Input
-                      placeholder="VD: React, Node.js, TypeScript"
+                    {/* Chip thay vì ô text ngăn phẩy: gõ liền không phẩy thì người dùng THẤY
+                        ngay nó dồn thành một chip mà sửa, thay vì âm thầm thành một "kỹ năng"
+                        dài cả câu. tokenSeparators nuốt luôn dấu phẩy/chấm phẩy/xuống dòng
+                        khi dán từ Word, Excel. */}
+                    <Select
+                      mode="tags"
                       size="large"
+                      tokenSeparators={[",", ";", "\n"]}
+                      placeholder="Gõ từng kỹ năng rồi nhấn Enter — VD: Excel"
+                      // KHÔNG dùng open={false} để giấu panel: chế độ tags dựa vào panel để
+                      // nhận phím Enter, tắt đi là mất đúng thao tác chính. Chỉ bỏ khung
+                      // "No data" lúc chưa gõ gì.
+                      notFoundContent={null}
+                      suffixIcon={null}
                       onChange={dismissFormError}
                     />
                   </Form.Item>

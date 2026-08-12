@@ -4,7 +4,7 @@
 > ngay trong cùng commit (thêm dòng vào đúng section, đánh dấu **MỚI dd/mm** hoặc **ĐỔI dd/mm**,
 > sửa dòng "Cập nhật:" bên dưới). Đây là nguồn duy nhất FE dựa vào — file lệch code là FE gọi sai API.
 
-> Cập nhật: 2026-07-17. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
+> Cập nhật: 2026-08-09. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
 > Tất cả path đã có tiền tố `/api`. **KHÔNG** thêm `/api` lần hai ở FE (bug cũ trong `api.js`).
 >
 > **Auth:** gửi `Authorization: Bearer <accessToken>`. Token hết hạn → gọi `POST /api/Account/refresh-token`.
@@ -27,6 +27,8 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | POST | `/api/Account/change-password` | *auth | tự đổi mật khẩu, body `{ oldPassword, newPassword }` — thu hồi các phiên khác |
 | GET | `/api/Account/me` | *auth | **MỚI 17/07** — hồ sơ người đang đăng nhập `{ userId, email, fullName, phone, role, companyId }`. FE gọi sau login/refresh để route theo role. `fullName`/`phone` đọc từ DB (token chỉ đổi khi đăng nhập lại) |
 | PUT | `/api/Account/me` | *auth | **MỚI 01/08** — tự sửa hồ sơ mình, body `{ fullName, phone? }`. Giữ nguyên role/status (không leo quyền, không tự mở khóa). Màn Settings dùng cái này, KHÔNG dùng `PUT /api/users/{id}` (Admin-only) |
+| POST | `/api/Account/me/avatar` | *auth | **MỚI 09/08** — đổi ảnh đại diện của chính mình (multipart, field `file`) → `{ avatarUrl }` |
+| DELETE | `/api/Account/me/avatar` | *auth | **MỚI 09/08** — gỡ ảnh đại diện → `{ avatarUrl: null }` |
 
 ## 2. Quản lý người dùng — `users` (Admin)
 | Method | Path | Role | Ghi chú |
@@ -49,6 +51,24 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | PUT | `/api/Company/smtp` | Adm | cập nhật SMTP (email đi từ tên miền công ty) |
 | POST | `/api/Company/smtp/test` | Adm | gửi email thử — body `{ toEmail }` |
 
+## 3b. Danh mục phòng ban — `departments` — **MỚI 09/08**
+| Method | Path | Role | Ghi chú |
+|---|---|---|---|
+| GET | `/api/departments` | *auth | danh mục phòng ban của công ty — form Job / Yêu cầu tuyển dụng dùng làm dropdown (thay ô text tự do) |
+| GET | `/api/departments/{departmentId}` | *auth | |
+| POST | `/api/departments` | Adm | thêm phòng ban |
+| PUT | `/api/departments/{departmentId}` | Adm | đổi tên → service tự đồng bộ tên đã lưu trong Job / Yêu cầu tuyển dụng |
+| DELETE | `/api/departments/{departmentId}` | Adm | |
+
+## 3c. Danh mục loại hình làm việc — `employment-types` — **MỚI 09/08**
+| Method | Path | Role | Ghi chú |
+|---|---|---|---|
+| GET | `/api/employment-types` | *auth | dropdown cho form Job / Yêu cầu tuyển dụng / thư mời |
+| GET | `/api/employment-types/{employmentTypeId}` | *auth | |
+| POST | `/api/employment-types` | Adm | |
+| PUT | `/api/employment-types/{employmentTypeId}` | Adm | |
+| DELETE | `/api/employment-types/{employmentTypeId}` | Adm | |
+
 ## 4. Tin tuyển dụng — `Jobs` (Rec/Adm)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
@@ -57,6 +77,21 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | GET | `/api/Jobs/{jobId}` | Rec/Adm | chi tiết job |
 | PUT | `/api/Jobs/{jobId}` | Rec | sửa job (đổi JD → xóa embedding, cần bóc lại tiêu chí) |
 | DELETE | `/api/Jobs/{jobId}` | Rec | đóng job (soft, status=Closed) |
+
+## 4b. Yêu cầu tuyển dụng — `recruitment-requests` — **MỚI 09/08**
+> DM "ra đề" → Human Resource duyệt → tạo Job từ yêu cầu (docs 5.17). **TÙY CHỌN**: công ty nhỏ bỏ qua,
+> tạo Job thẳng ở §4. Trạng thái: `PENDING → APPROVED → CONVERTED` / `REJECTED`, DM tự hủy khi
+> còn PENDING → `CANCELLED`.
+
+| Method | Path | Role | Ghi chú |
+|---|---|---|---|
+| POST | `/api/recruitment-requests` | DM | tạo yêu cầu (PENDING) — vị trí, số lượng, tiêu chí cần thiết, mức lương, ngày cần người |
+| GET | `/api/recruitment-requests` | DM/Rec | danh sách, `?status=PENDING/APPROVED/...` để lọc |
+| GET | `/api/recruitment-requests/{requestId}` | DM/Rec | chi tiết |
+| PUT | `/api/recruitment-requests/{requestId}` | DM | sửa — **chỉ khi còn PENDING** (giữ audit đề bài sau khi đã duyệt) |
+| DELETE | `/api/recruitment-requests/{requestId}` | DM | hủy (soft → CANCELLED) — chỉ khi còn PENDING |
+| POST | `/api/recruitment-requests/{requestId}/review` | Rec | duyệt — body `{ approve, note? }` → APPROVED / REJECTED |
+| POST | `/api/recruitment-requests/{requestId}/convert` | Rec | gắn Job đã tạo từ yêu cầu — body `{ jobId }` → CONVERTED (truy vết đề bài → job) |
 
 ## 5. Tiêu chí đánh giá — `EvaluationCriteria` (Rec)
 | Method | Path | Role | Ghi chú |
@@ -98,7 +133,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/transition` | Rec/DM | forward-only; guard G2 ở INTERVIEW→OFFER |
-| POST | `/api/applications/{applicationId}/reject` | Rec/DM | body cần `rejectReason` |
+| POST | `/api/applications/{applicationId}/reject` | Rec/DM | `rejectReason` **TÙY CHỌN** (ép nhập chỉ đẻ lý do rác) — FE cho chip chọn nhanh, bỏ trống vẫn reject được |
 
 ## 11. Lịch sử & ghi chú — (Rec/Itv/DM)
 | Method | Path | Role | Ghi chú |
@@ -126,8 +161,10 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | GET | `/api/me/interview-schedules` | Itv | lịch được phân công của tôi |
 | GET | `/api/interview-schedules/{scheduleId}/my-sheet` | Itv | phiếu chấm của tôi (blind trước submit) |
 | PUT | `/api/interview-schedules/{scheduleId}/my-sheet` | Itv | lưu nháp điểm |
-| POST | `/api/interview-schedules/{scheduleId}/my-sheet/submit` | Itv | nộp phiếu (khóa, thỏa guard G2) |
-| GET | `/api/interview-schedules/{scheduleId}/aggregate` | Rec/DM | tổng hợp điểm các interviewer |
+| POST | `/api/interview-schedules/{scheduleId}/my-sheet/submit` | Itv | nộp phiếu → thỏa guard G2 + **mở blind** cho người khác đọc. **BẮT BUỘC có `recommendation`** (`STRONG_HIRE`/`HIRE`/`CONSIDER`/`NO_HIRE`) kèm nhận xét. Nộp rồi VẪN sửa được — phiếu chỉ khóa cứng khi hồ sơ sang OFFER/HIRED/REJECTED (FE theo cờ `isLocked`) |
+| GET | `/api/interview-schedules/{scheduleId}/aggregate` | Rec/DM | tổng hợp điểm các interviewer của 1 buổi |
+| GET | `/api/applications/{applicationId}/interview-aggregate` | Rec/DM | **MỚI 09/08** — tổng hợp điểm gộp mọi buổi/vòng của 1 hồ sơ |
+| GET | `/api/applications/{applicationId}/decision-brief` | Rec/DM | **MỚI 09/08** — bản tóm cho người quyết: đề xuất của từng interviewer + note theo tiêu chí + ghi chú nội bộ, **KHÔNG có điểm số**; ý kiến trái chiều xếp trước. Màn "Quyết định tuyển dụng" dùng cái này, không dùng `aggregate` |
 
 ## 14. Thư mời nhận việc — `applications/{applicationId}/offer` (Rec/DM)
 | Method | Path | Role | Ghi chú |
@@ -151,6 +188,12 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | POST | `/api/email-templates` | Rec | |
 | PUT | `/api/email-templates/{templateId}` | Rec | |
 | DELETE | `/api/email-templates/{templateId}` | Rec | |
+| POST | `/api/email-assets` | Rec | **MỚI 09/08** — tải ảnh lên để chèn vào email (multipart, field `file`) → `{ url }`. Dùng cái này thay vì dán base64 vào nội dung |
+| GET | `/api/public/email-assets/{companyId}/{fileName}` | Anon | **MỚI 09/08** — ảnh trong email (hộp thư của ứng viên phải tải được nên không chặn đăng nhập) |
+
+> Thư mời nhận việc cũng là một email template (loại `OFFER_RESPONSE`): code dựng các khối dữ liệu
+> (`{{positionBlock}}`, `{{compensationBlock}}`, `{{termsBlock}}`, `{{signature}}`, `{{letterhead}}`),
+> template giữ phần lời văn + ảnh. Sửa câu chữ thư mời = sửa template này.
 
 ## 17. Dashboard — `dashboard` (Rec/DM/Adm)
 | Method | Path | Role | Ghi chú |
@@ -179,7 +222,8 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 ---
 
 ## Ghi chú cho FE
-- **Luồng chính Human Resource:** tạo Job (§4) → bóc tiêu chí + chốt (§5) → nhận CV (§7) → tự đọc/sàng lọc hồ sơ (§9) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → xem tổng hợp điểm (§13) → transition sang Quyết định → soạn + gửi thư mời nhận việc (§14, PDF qua email) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
+- **Luồng chính Human Resource:** [tùy chọn] duyệt Yêu cầu tuyển dụng của DM (§4b) → tạo Job (§4) → bóc tiêu chí + chốt (§5) → [nếu đã duyệt yêu cầu] gắn job về yêu cầu bằng `convert` (§4b) → nhận CV (§7) → tự đọc/sàng lọc hồ sơ (§9) → transition sang pha Phỏng vấn (§10) → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → transition sang Quyết định → soạn + gửi thư mời nhận việc (§14) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
+- **Luồng DM:** tạo Yêu cầu tuyển dụng (§4b) → tới bước Quyết định thì đọc `decision-brief` (§13) rồi chốt bằng transition/reject (§10).
 - **Chọn người trong form:** gán interviewer vào khung / chọn DM cho job → `GET /api/users/options?role=…` (§2) — KHÔNG dùng `GET /api/users` (Admin-only).
 - **Luồng Interviewer:** chỉ §13.
 - **Luồng Admin:** §2 (users) + §3 (company) + §17 (dashboard).

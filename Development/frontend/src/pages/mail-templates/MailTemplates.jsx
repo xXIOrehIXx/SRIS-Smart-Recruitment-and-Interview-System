@@ -67,20 +67,14 @@ const MailTemplates = () => {
 
   const [editForm] = Form.useForm();
 
-  const previewData = {
-    candidateName: "Nguyễn Văn A",
-    jobTitle: "Frontend Developer",
-    companyName: "SRIS",
-  };
-
-  // Danh sách 7 loại email template (khớp backend EmailTemplateType.cs).
+  // Danh sách các loại email template (khớp backend EmailTemplateType.cs).
   // Đặt ở đầu component để mọi computed bên dưới (missingTypes, columns, stats) đều
   // dùng được — nếu khai báo sau khi đã tham chiếu sẽ nổ TypeError.
   const templateCategories = [
     { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
-    // Thư mời nhận việc do hệ thống tự soạn từ form gửi thư mời -> KHÔNG tính là thiếu mẫu.
-    // Vẫn để trong danh sách vì công ty nào muốn tự viết lời thư thì tạo mẫu đè lên được.
-    { value: "OFFER_RESPONSE", label: "Thư mời nhận việc", color: "green", optional: true },
+    // Chưa tạo mẫu thì hệ thống vẫn tự soạn được lá thư từ form gửi thư mời — nhưng có mẫu
+    // thì công ty sửa được lời thư và ảnh đầu thư, nên vẫn nhắc như các loại khác.
+    { value: "OFFER_RESPONSE", label: "Thư mời nhận việc", color: "green" },
     { value: "STATUS", label: "Trạng thái hồ sơ", color: "cyan" },
     { value: "REJECTED", label: "Thông báo từ chối", color: "red" },
     {
@@ -284,28 +278,16 @@ const MailTemplates = () => {
 
   /**
    * Loại email nào chưa có mẫu riêng của công ty thì hệ thống gửi bằng nội dung mặc định.
-   * Liệt kê ra để người tuyển dụng biết mà bổ sung. Bỏ qua loại `optional` (thư mời nhận
-   * việc) — nội dung của nó lấy từ form gửi thư mời chứ không phải từ mẫu email.
+   * Liệt kê ra để người tuyển dụng biết mà bổ sung.
    */
   const missingTypes = templateCategories
-    .filter((cat) => !cat.optional)
     .filter((cat) => !templates.some((t) => t.type === cat.value))
     .map((cat) => cat);
   const hasMissing = missingTypes.length > 0;
 
-  const renderPreview = (body) => {
-    let preview = body || "";
-    Object.entries(previewData).forEach(([key, value]) => {
-      preview = preview.replace(new RegExp(`{{${key}}}`, "g"), value);
-    });
-    // BE hỗ trợ thêm các biến khác ({{link}}, {{expiresAt}}, {{startTime}}) — preview
-    // chỉ render biến có dữ liệu mẫu để Human Resource khỏi nhầm là biến hỏng.
-    preview = preview
-      .replace(/{{\s*link\s*}}/g, "https://cong-ty-cua-ban.vn/chon-lich")
-      .replace(/{{\s*expiresAt\s*}}/g, "25/12/2026 23:59 UTC")
-      .replace(/{{\s*startTime\s*}}/g, "10:00 25/12/2026 (UTC)");
-    return preview;
-  };
+  // Dữ liệu mẫu lấy chung từ EMAIL_VARIABLES (nơi khai báo các ô "Chèn thông tin") — thêm ô
+  // mới ở đó là preview biết ngay, khỏi phải nhớ cập nhật hai chỗ rồi để lộ {{ô}} thô ra màn hình.
+  const renderPreview = (body) => fillSampleValues(body || "");
 
   const getCategoryTag = (category) => {
     const cat = templateCategories.find((c) => c.value === category);
@@ -589,16 +571,18 @@ const MailTemplates = () => {
                   {selectedTemplate.subject}
                 </div>
               </div>
+              {/* Nói rõ đây là DỮ LIỆU MẪU: chỗ này thay {{tên ứng viên}} bằng "Nguyễn Văn An"
+                  cho dễ hình dung, không nói thế thì người dùng tưởng mẫu bị gán cứng tên đó. */}
+              <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 8 }}>
+                Xem thử với dữ liệu mẫu — tên, vị trí, lương ở đây là ví dụ. Lúc gửi thật, hệ
+                thống điền dữ liệu của chính ứng viên đó.
+              </Text>
+              {/* Render HTML chứ không in ra dạng chữ: mẫu là HTML, đổ thô ra thì người dùng
+                  thấy một đống thẻ <p><b> và tưởng nội dung thư bị hỏng. */}
               <div
-                style={{
-                  whiteSpace: "pre-wrap",
-                  lineHeight: 1.7,
-                  fontSize: 14,
-                  color: "#4a4a4a",
-                }}
-              >
-                {renderPreview(selectedTemplate.body)}
-              </div>
+                style={{ lineHeight: 1.7, fontSize: 14, color: "#4a4a4a" }}
+                dangerouslySetInnerHTML={{ __html: renderPreview(selectedTemplate.body) }}
+              />
             </div>
           </>
         )}

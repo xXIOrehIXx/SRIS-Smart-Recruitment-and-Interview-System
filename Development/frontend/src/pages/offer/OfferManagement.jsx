@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Card, Typography, Button, Table, Tag, Avatar, Space, Modal, Form,
-  Input, Select, DatePicker, InputNumber, message, Popconfirm, Drawer,
+  Card, Typography, Button, Table, Avatar, Space, Modal, Form,
+  Input, Select, DatePicker, InputNumber, message, Popconfirm,
   Descriptions, Divider, Tooltip, Spin
 } from 'antd';
 import {
   CheckCircleOutlined, CloseCircleOutlined,
   FileTextOutlined, EyeOutlined, SendOutlined, ReloadOutlined,
-  UserOutlined, MailOutlined, EditOutlined, StopOutlined, FilePdfOutlined
+  UserOutlined, MailOutlined
 } from '@ant-design/icons';
 import { offerAPI, applicationAPI, jobsAPI } from '../../services/api';
+import { getStatusTag, getAppStatusTag, formatSalary } from './offerDisplay';
 import dayjs from 'dayjs';
 import './css/OfferManagement.css';
 
@@ -20,18 +22,28 @@ const { TextArea } = Input;
  * Quản lý THƯ MỜI NHẬN VIỆC (docs 5.15).
  *
  * Luồng: hồ sơ ở trạng thái OFFER -> Human Resource soạn thư (form điền sẵn từ Job/Company) ->
- * gửi email kèm link mở PDF -> ứng viên trả lời NGOÀI hệ thống -> Human Resource bấm
- * "Đã nhận việc" / "Từ chối" để chốt HIRED/REJECTED.
+ * hệ thống gửi email mà THÂN THƯ chính là lá thư mời -> ứng viên trả lời NGOÀI hệ thống
+ * (Reply email) -> Human Resource bấm "Đã nhận việc" / "Từ chối" để chốt HIRED/REJECTED.
+ *
+ * Không có nút mở PDF hay khoe link cho ứng viên: thư nằm sẵn trong email họ nhận được,
+ * đưa thêm một bản PDF/một đường link ở đây chỉ khiến người dùng tưởng phải gửi tay.
  */
 const OfferManagement = () => {
+  const navigate = useNavigate();
+
+  // Tin tuyển dụng đang xem nằm trên URL (?jobId=), không giấu trong state: đi vào trang chi
+  // tiết một thư mời rồi bấm Back mà state nằm trong bộ nhớ thì component dựng lại từ đầu và
+  // nhảy về tin đầu danh sách — người dùng mất đúng chỗ họ đang đứng. Có trên URL thì Back,
+  // F5, hay gửi link cho đồng nghiệp đều về đúng tin đó.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const jobIdParam = Number(searchParams.get('jobId')) || null;
+
   const [loading, setLoading] = useState(false);
   const [offers, setOffers] = useState([]);
   const [applications, setApplications] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [selectedJobId, setSelectedJobId] = useState(jobIdParam);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
-  const [selectedOffer, setSelectedOffer] = useState(null);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [loadingDefaults, setLoadingDefaults] = useState(false);
@@ -53,14 +65,21 @@ const OfferManagement = () => {
     }
   }, [selectedJobId]);
 
+  /** Đổi tin đang xem: cập nhật cả state lẫn URL. replace để Back không phải bấm qua từng tin đã chọn. */
+  const selectJob = (jobId) => {
+    setSelectedJobId(jobId);
+    setSearchParams(jobId ? { jobId: String(jobId) } : {}, { replace: true });
+  };
+
   const fetchJobs = async () => {
     try {
       const response = await jobsAPI.getAll();
       const jobList = response.data || [];
       setJobs(jobList);
 
+      // Chỉ tự chọn tin đầu khi URL không chỉ định tin nào — có ?jobId= thì tôn trọng nó.
       if (!selectedJobId && jobList.length > 0) {
-        setSelectedJobId(jobList[0].jobId || jobList[0].id);
+        selectJob(jobList[0].jobId || jobList[0].id);
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -179,19 +198,14 @@ const OfferManagement = () => {
           ? Math.max(1, values.deadline.diff(dayjs(), 'day'))
           : undefined,
       };
-      const res = await offerAPI.create(applicationId, payload);
-      message.success('Đã gửi thư mời nhận việc!');
-      showOfferLinkModal(
-        selectedApplication.candidateName,
-        res.data?.magicToken,
-        res.data?.tokenExpiresAt,
-        applicationId,
-      );
+      await offerAPI.create(applicationId, payload);
+      message.success(`Đã gửi thư mời tới ${selectedApplication.candidateEmail || 'ứng viên'}.`);
       setCreateModalOpen(false);
       form.resetFields();
       setSelectedApplication(null);
-      fetchApplications(selectedJobId);
-      fetchOffers(selectedJobId);
+      // Gửi xong thì mở luôn TRANG chi tiết lá thư vừa gửi — người dùng cần đọc lại xem đã
+      // gửi đi cái gì, và các nút chốt kết quả cũng nằm ở đó.
+      navigate(`/offers/${applicationId}?jobId=${selectedJobId}`);
     } catch (error) {
       console.error('Error creating offer:', error);
       // BE trả ErrorObjectCommon (userMsg/UserMsg), không phải `message`.
@@ -205,49 +219,11 @@ const OfferManagement = () => {
     }
   };
 
-  // Hiện link magic (copy tay khi chưa cấu hình SMTP; email vẫn tự gửi nếu có SMTP)
-  const showOfferLinkModal = (name, rawToken, expiresAt, applicationId) => {
-    if (!rawToken) return;
-    const link = `${window.location.origin}/offer?token=${encodeURIComponent(rawToken)}`;
-    Modal.success({
-      title: `Link xem thư mời — ${name || 'ứng viên'}`,
-      width: 620,
-      content: (
-        <div>
-          <p>Email kèm link này đã tự gửi (nếu SMTP đã cấu hình). Bạn cũng có thể copy gửi tay:</p>
-          <Typography.Paragraph copyable={{ text: link }} style={{ wordBreak: 'break-all' }}>{link}</Typography.Paragraph>
-          {expiresAt && <Text type="secondary">Link hết hạn: {dayjs(expiresAt).format('DD/MM/YYYY HH:mm')}</Text>}
-          {applicationId && (
-            <div style={{ marginTop: 12 }}>
-              <Button icon={<FilePdfOutlined />} onClick={() => openLetterPdf(applicationId)}>
-                Xem thử bản PDF
-              </Button>
-            </div>
-          )}
-        </div>
-      ),
-    });
-  };
-
-  // Endpoint PDF cần JWT -> tải qua axios rồi mở blob, không mở thẳng URL.
-  const openLetterPdf = async (applicationId) => {
-    try {
-      const res = await offerAPI.getLetterBlob(applicationId);
-      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      window.open(url, '_blank', 'noopener');
-      // Thu hồi sau khi tab mới đã đọc xong blob.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch (error) {
-      message.error(error?.response?.data?.userMsg || 'Không mở được file PDF thư mời');
-    }
-  };
-
-  // "Gửi nhắc nhở" = phát lại magic link OFFER_RESPONSE (email tự gửi + link copy tay)
+  // "Gửi nhắc nhở" = gửi lại chính lá thư mời qua email cho ứng viên.
   const handleSendReminder = async (record) => {
     try {
-      const res = await applicationAPI.createMagicLink(record.applicationId, 'OFFER_RESPONSE');
-      message.success('Đã gửi lại thư mời cho ứng viên.');
-      showOfferLinkModal(record.candidateName, res.data?.rawToken, res.data?.expiresAt, record.applicationId);
+      await applicationAPI.createMagicLink(record.applicationId, 'OFFER_RESPONSE');
+      message.success(`Đã gửi lại thư mời tới ${record.candidateEmail || 'ứng viên'}.`);
     } catch (error) {
       message.error(error?.response?.data?.userMsg || 'Không thể gửi lại thư mời');
     }
@@ -260,23 +236,10 @@ const OfferManagement = () => {
       message.success(accepted
         ? 'Đã ghi nhận ứng viên nhận việc (hồ sơ chuyển sang Trúng tuyển).'
         : 'Đã ghi nhận ứng viên từ chối (hồ sơ chuyển sang Từ chối).');
-      setViewDrawerOpen(false);
       fetchApplications(selectedJobId);
       fetchOffers(selectedJobId);
     } catch (error) {
       message.error(error?.response?.data?.userMsg || 'Không thể ghi nhận kết quả');
-    }
-  };
-
-  const handleWithdraw = async (applicationId) => {
-    try {
-      await applicationAPI.reject(applicationId, 'Công ty thu hồi thư mời');
-      message.success('Đã thu hồi thư mời (hồ sơ chuyển sang Từ chối)');
-      fetchApplications(selectedJobId);
-      fetchOffers(selectedJobId);
-    } catch (error) {
-      console.error('Error withdrawing offer:', error);
-      message.error(error?.response?.data?.userMsg || 'Không thể thu hồi thư mời');
     }
   };
 
@@ -314,36 +277,6 @@ const OfferManagement = () => {
     } finally {
       setLoadingDefaults(false);
     }
-  };
-
-  const getStatusTag = (status) => {
-    const config = {
-      PENDING: { color: 'processing', label: 'Đã gửi thư', icon: <SendOutlined /> },
-      ACCEPTED: { color: 'success', label: 'Đã nhận việc', icon: <CheckCircleOutlined /> },
-      DECLINED: { color: 'error', label: 'Đã từ chối', icon: <CloseCircleOutlined /> },
-      DRAFT: { color: 'default', label: 'Nháp', icon: <EditOutlined /> },
-    };
-    const c = config[status] || { color: 'default', label: status, icon: null };
-    return <Tag color={c.color} icon={c.icon}>{c.label}</Tag>;
-  };
-
-  const getAppStatusTag = (status) => {
-    const normalizedStatus = (status || '').toUpperCase();
-    const labels = {
-      NEW: 'Hồ sơ mới', SCREENING: 'Sàng lọc', INTERVIEW: 'Phỏng vấn',
-      OFFER: 'Chờ gửi thư mời', HIRED: 'Trúng tuyển', REJECTED: 'Từ chối',
-    };
-    const colors = {
-      NEW: 'default', SCREENING: 'processing', INTERVIEW: 'processing',
-      OFFER: 'warning', HIRED: 'success', REJECTED: 'error',
-    };
-    return <Tag color={colors[normalizedStatus] || 'default'}>{labels[normalizedStatus] || status || 'N/A'}</Tag>;
-  };
-
-  const formatSalary = (record) => {
-    if (!record.salaryAmount) return 'Thỏa thuận';
-    const period = record.salaryPeriod === 'NAM' ? '/năm' : '/tháng';
-    return `${Number(record.salaryAmount).toLocaleString('vi-VN')} ${record.currency || 'VND'}${period}`;
   };
 
   const columns = [
@@ -432,27 +365,14 @@ const OfferManagement = () => {
       render: (_, record) => (
         <Space size={4}>
           {record.status && (
-            <>
-              <Tooltip title="Xem chi tiết">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EyeOutlined />}
-                  onClick={() => {
-                    setSelectedOffer(record);
-                    setViewDrawerOpen(true);
-                  }}
-                />
-              </Tooltip>
-              <Tooltip title="Mở bản PDF thư mời">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<FilePdfOutlined />}
-                  onClick={() => openLetterPdf(record.applicationId)}
-                />
-              </Tooltip>
-            </>
+            <Tooltip title="Mở trang chi tiết thư mời">
+              <Button
+                type="text"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/offers/${record.applicationId}?jobId=${selectedJobId}`)}
+              />
+            </Tooltip>
           )}
           {record.status === 'PENDING' && (
             <>
@@ -541,7 +461,7 @@ const OfferManagement = () => {
             <Select
               placeholder="Chọn công việc"
               value={selectedJobId}
-              onChange={(value) => setSelectedJobId(value)}
+              onChange={selectJob}
               style={{ width: 260 }}
               options={jobs.map((job) => ({
                 value: job.jobId || job.id,
@@ -603,7 +523,7 @@ const OfferManagement = () => {
             <div>
               <div style={{ fontWeight: 600, fontSize: 16 }}>Soạn thư mời nhận việc</div>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Gửi email kèm link mở bản PDF cho ứng viên
+                Ứng viên nhận nguyên lá thư ngay trong email
               </Text>
             </div>
           </div>
@@ -775,139 +695,6 @@ const OfferManagement = () => {
         </Spin>
       </Modal>
 
-      {/* Chi tiết thư mời đã gửi */}
-      <Drawer
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <FileTextOutlined style={{ color: '#5D8C3E' }} />
-            Chi tiết thư mời
-          </div>
-        }
-        open={viewDrawerOpen}
-        onClose={() => {
-          setViewDrawerOpen(false);
-          setSelectedOffer(null);
-        }}
-        width={520}
-        footer={
-          selectedOffer?.status === 'PENDING' && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-              <Popconfirm
-                title="Thu hồi thư mời này?"
-                description="Hồ sơ sẽ chuyển sang Từ chối."
-                onConfirm={() => {
-                  handleWithdraw(selectedOffer.applicationId);
-                  setViewDrawerOpen(false);
-                }}
-                okText="Thu hồi"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Button danger icon={<StopOutlined />}>Thu hồi</Button>
-              </Popconfirm>
-              <Space>
-                <Popconfirm
-                  title="Ứng viên từ chối?"
-                  onConfirm={() => handleRecordOutcome(selectedOffer, false)}
-                  okText="Xác nhận" cancelText="Hủy" okButtonProps={{ danger: true }}
-                >
-                  <Button icon={<CloseCircleOutlined />}>Từ chối</Button>
-                </Popconfirm>
-                <Popconfirm
-                  title="Ứng viên đã nhận việc?"
-                  onConfirm={() => handleRecordOutcome(selectedOffer, true)}
-                  okText="Xác nhận" cancelText="Hủy"
-                >
-                  <Button type="primary" icon={<CheckCircleOutlined />}
-                    style={{ background: '#5D8C3E', borderColor: '#5D8C3E' }}>
-                    Đã nhận việc
-                  </Button>
-                </Popconfirm>
-              </Space>
-            </div>
-          )
-        }
-      >
-        {selectedOffer && (
-          <div>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {getStatusTag(selectedOffer.status)}
-              <Button size="small" icon={<FilePdfOutlined />}
-                onClick={() => openLetterPdf(selectedOffer.applicationId)}>
-                Mở bản PDF
-              </Button>
-            </div>
-
-            <Descriptions column={1} size="small" style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="Ứng viên">
-                <Space>
-                  <Avatar size="small" style={{ backgroundColor: '#5D8C3E' }} icon={<UserOutlined />} />
-                  <Text strong>{selectedOffer.candidateName}</Text>
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">{selectedOffer.candidateEmail || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Vị trí">{selectedOffer.jobTitle || selectedOffer.position || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Phòng ban">{selectedOffer.department || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Báo cáo cho">{selectedOffer.reportingTo || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Hình thức">{selectedOffer.employmentType || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Địa điểm">{selectedOffer.workLocation || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Mức lương">
-                <Text strong style={{ color: '#5D8C3E' }}>{formatSalary(selectedOffer)}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Thưởng/Ưu đãi">{selectedOffer.bonus || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Phúc lợi">{selectedOffer.benefits || '—'}</Descriptions.Item>
-              <Descriptions.Item label="Ngày bắt đầu">
-                {selectedOffer.startDate ? dayjs(selectedOffer.startDate).format('DD/MM/YYYY') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Đã gửi lúc">
-                {selectedOffer.sentAt ? dayjs(selectedOffer.sentAt).format('DD/MM/YYYY HH:mm') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Hạn phản hồi">
-                {selectedOffer.expiresAt ? dayjs(selectedOffer.expiresAt).format('DD/MM/YYYY') : '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Người ký">
-                {selectedOffer.signerName
-                  ? `${selectedOffer.signerName}${selectedOffer.signerTitle ? ` — ${selectedOffer.signerTitle}` : ''}`
-                  : '—'}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {selectedOffer.note && (
-              <>
-                <Divider style={{ margin: '12px 0' }} />
-                <Title level={5} style={{ marginBottom: 8 }}>Lời nhắn kèm thư</Title>
-                <div style={{
-                  background: '#f5f5f4', padding: 12, borderRadius: 8,
-                  whiteSpace: 'pre-wrap', fontSize: 13
-                }}>
-                  {selectedOffer.note}
-                </div>
-              </>
-            )}
-
-            {selectedOffer.respondedAt && (
-              <>
-                <Divider style={{ margin: '16px 0' }} />
-                <Title level={5} style={{ marginBottom: 12 }}>Kết quả đã ghi nhận</Title>
-                <Space direction="vertical" size={6}>
-                  {getStatusTag(selectedOffer.status)}
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Ghi nhận lúc {dayjs(selectedOffer.respondedAt).format('DD/MM/YYYY HH:mm')}
-                  </Text>
-                  {selectedOffer.outcomeNote && (
-                    <div style={{
-                      background: '#f5f5f4', padding: 12, borderRadius: 8,
-                      fontSize: 13, whiteSpace: 'pre-wrap'
-                    }}>
-                      {selectedOffer.outcomeNote}
-                    </div>
-                  )}
-                </Space>
-              </>
-            )}
-          </div>
-        )}
-      </Drawer>
     </div>
   );
 };

@@ -56,7 +56,7 @@ public class CvIntakeService : BaseService<CvIntakeService>, ICvIntakeService
         {
             _logger.Warning(ex, "UploadCv: không đọc được PDF {FileName}", fileName);
             var cvIdFailed = await _cvRepo.InsertAsync(BuildCvDoc(companyId, candidateId, fileUrl, fileName,
-                mimeType, fileBytes.Length, extractedText: null, CvParseStatus.Failed), embedding: null);
+                mimeType, fileBytes.Length, extractedText: null, CvParseStatus.Failed));
             return new CvUploadResultDto
             {
                 Status = CvIntakeStatus.Failed,
@@ -72,8 +72,7 @@ public class CvIntakeService : BaseService<CvIntakeService>, ICvIntakeService
         {
             var cvId = await _cvRepo.InsertAsync(
                 BuildCvDoc(companyId, candidateId, fileUrl, fileName, mimeType, fileBytes.Length,
-                    extract.Text, CvParseStatus.NeedsManualEdit),
-                embedding: null);
+                    extract.Text, CvParseStatus.NeedsManualEdit));
 
             return new CvUploadResultDto
             {
@@ -155,7 +154,7 @@ public class CvIntakeService : BaseService<CvIntakeService>, ICvIntakeService
         }
 
         var cvDoc = BuildCvDoc(companyId, candidateId, fileUrl, fileName, mimeType, fileSize, cvText, CvParseStatus.Ok);
-        var cvId = await _cvRepo.InsertAsync(cvDoc, embedding: null);
+        var cvId = await _cvRepo.InsertAsync(cvDoc);
 
         var applicationId = await _applicationRepo.InsertAsync(companyId, new Domain.Entities.Application
         {

@@ -16,8 +16,6 @@ public class Job : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHasCompany
     public string Title { get; set; } = null!;
     [Column("jd_text")]
     public string? JdText { get; set; }
-    [Column("embedding")]
-    public float[]? Embedding { get; set; }
     [Column("department_manager_id")]
     public long? DepartmentManagerId { get; set; }
     [Column("department")]

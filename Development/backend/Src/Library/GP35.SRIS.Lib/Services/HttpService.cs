@@ -139,7 +139,11 @@ namespace GP35.SRIS.Lib.Services
       return response;
     }
 
-    public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, TimeSpan timeout, Dictionary<string, string> headers = null, object data = null)
+    public Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, TimeSpan timeout, Dictionary<string, string> headers = null, object data = null)
+      => SendAsync(method, url, timeout, CancellationToken.None, headers, data);
+
+    public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, TimeSpan timeout,
+      CancellationToken cancellationToken, Dictionary<string, string> headers = null, object data = null)
     {
       var requestMessage = new HttpRequestMessage();
       requestMessage.Method = method;
@@ -201,7 +205,7 @@ namespace GP35.SRIS.Lib.Services
       requestMessage.RequestUri = new Uri(requestUrl);
       var httpClient = GetHttpClient();
       httpClient.Timeout = timeout;
-      var response = await httpClient.SendAsync(requestMessage);
+      var response = await httpClient.SendAsync(requestMessage, cancellationToken);
       return response;
     }
 

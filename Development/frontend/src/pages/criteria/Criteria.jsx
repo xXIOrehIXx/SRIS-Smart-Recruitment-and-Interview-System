@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card, Typography, Button, Table, Tag, Modal, Form, Input, Select,
   Space, message, Popconfirm, Tooltip, Descriptions,
@@ -202,21 +202,100 @@ const Criteria = () => {
 
   const draftCount = jobCriteria.filter(c => c.status === 'DRAFT').length;
 
+  // Bóc tiêu chí chạy NỀN: bấm xong chỉ xếp hàng, worker gọi Local LLM (hàng chục giây trên CPU).
+  // Người dùng đi làm việc khác, màn này hỏi lại trạng thái tới khi xong.
+  const POLL_MS = 3000;
+  const pollTimerRef = useRef(null);
+  const pollingJobRef = useRef(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    pollingJobRef.current = null;
+  }, []);
+
+  // Kết thúc một lượt: báo đúng việc người dùng cần làm cho từng loại kết cục.
+  const finishExtract = useCallback((status, jobId) => {
+    stopPolling();
+    setExtracting(false);
+
+    if (status.status === 'DONE') {
+      message.success(`AI đã bóc ${status.criteriaCount ?? 0} tiêu chí (DRAFT) — rà lại rồi bấm Duyệt.`);
+      fetchJobCriteria(jobId);
+      return;
+    }
+
+    // JD không nêu yêu cầu nào KHÔNG phải AI hỏng — đây là việc người dùng sửa được.
+    if (status.errorCode === 'JD_NO_REQUIREMENTS') {
+      message.warning(status.errorMessage || 'Tin tuyển dụng chưa nêu yêu cầu nào với ứng viên.', 8);
+      return;
+    }
+    message.warning(
+      status.errorMessage || 'AI chưa bóc được — bạn có thể thêm tiêu chí thủ công hoặc áp template.',
+      6
+    );
+  }, [fetchJobCriteria, stopPolling]);
+
+  const pollExtractStatus = useCallback(async (jobId) => {
+    try {
+      const { data } = await criteriaAPI.extractStatus(jobId);
+
+      // Người dùng đã chuyển sang job khác giữa chừng -> kết quả này không còn liên quan.
+      if (pollingJobRef.current !== jobId) return;
+
+      if (data?.running) {
+        pollTimerRef.current = setTimeout(() => pollExtractStatus(jobId), POLL_MS);
+        return;
+      }
+      finishExtract(data || {}, jobId);
+    } catch (error) {
+      console.error('Error polling extract status:', error);
+      if (pollingJobRef.current !== jobId) return;
+      // Lỗi mạng lúc hỏi thăm KHÔNG có nghĩa lượt bóc hỏng — worker vẫn chạy. Cứ hỏi lại.
+      pollTimerRef.current = setTimeout(() => pollExtractStatus(jobId), POLL_MS);
+    }
+  }, [finishExtract]);
+
+  const startPolling = useCallback((jobId) => {
+    stopPolling();
+    pollingJobRef.current = jobId;
+    setExtracting(true);
+    pollTimerRef.current = setTimeout(() => pollExtractStatus(jobId), POLL_MS);
+  }, [pollExtractStatus, stopPolling]);
+
+  // Đổi job / rời trang: dừng hỏi thăm. Nếu job vừa chọn đang có lượt bóc chạy dở (người dùng
+  // F5 hoặc quay lại sau) thì bắt nhịp lại — trạng thái nằm ở server chứ không ở tab này.
+  useEffect(() => {
+    stopPolling();
+    setExtracting(false);
+    if (!selectedJob) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await criteriaAPI.extractStatus(selectedJob);
+        if (cancelled || !data?.running) return;
+        startPolling(selectedJob);
+      } catch {
+        // Chưa bóc lần nào / lỗi tạm — không có gì để bắt nhịp.
+      }
+    })();
+
+    return () => { cancelled = true; stopPolling(); };
+  }, [selectedJob, startPolling, stopPolling]);
+
   const handleExtract = async () => {
     setExtracting(true);
     try {
-      const response = await criteriaAPI.extractFromJd(selectedJob);
-      const drafts = response.data || [];
-      message.success(`AI đã bóc ${drafts.length} tiêu chí (DRAFT) — rà lại rồi bấm Duyệt.`);
-      fetchJobCriteria(selectedJob);
+      await criteriaAPI.extractFromJd(selectedJob);
+      message.info('Đã xếp hàng — AI đang bóc tiêu chí. Bạn có thể làm việc khác, xong sẽ có thông báo.', 5);
+      startPolling(selectedJob);
     } catch (error) {
-      console.error('Error extracting criteria:', error);
-      if (error?.response?.status === 502) {
-        message.warning('AI service chưa sẵn sàng — bạn có thể thêm tiêu chí thủ công hoặc áp template.', 6);
-      } else {
-        message.error(error?.response?.data?.userMsg || 'Không thể bóc tiêu chí từ JD.');
-      }
-    } finally {
+      // Lỗi ở bước XẾP HÀNG (job không tồn tại, JD trống) — biết ngay, không phải đợi AI.
+      console.error('Error requesting criteria extraction:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể bóc tiêu chí từ JD.');
       setExtracting(false);
     }
   };
@@ -759,7 +838,7 @@ const Criteria = () => {
             />
             {selectedJob && (
               <>
-                <Tooltip title="AI đọc JD của vị trí và đề xuất bộ tiêu chí (DRAFT — cần duyệt trước khi dùng)">
+                <Tooltip title="AI đọc JD của vị trí và đề xuất bộ tiêu chí (DRAFT — cần duyệt trước khi dùng). Chạy nền: bấm xong bạn có thể làm việc khác.">
                   <Button
                     type="primary"
                     icon={<ThunderboltOutlined />}
@@ -767,7 +846,7 @@ const Criteria = () => {
                     loading={extracting}
                     style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                   >
-                    AI bóc tiêu chí từ JD
+                    {extracting ? 'AI đang bóc tiêu chí...' : 'AI bóc tiêu chí từ JD'}
                   </Button>
                 </Tooltip>
                 <Button icon={<PlusOutlined />} onClick={() => setAddCriterionModalOpen(true)}>

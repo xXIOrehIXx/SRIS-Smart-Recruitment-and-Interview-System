@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -17,6 +18,7 @@ namespace GP35.SRIS.Application.Services.Business;
 public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>, IEvaluationCriteriaService
 {
     private readonly IEvaluationCriteriaRepo _criteriaRepo;
+    private readonly ICriteriaExtractionRepo _extractionRepo;
     private readonly IJobRepo _jobRepo;
     private readonly IApplicationRepo _applicationRepo;
     private readonly IApplicationStateService _stateService;
@@ -26,6 +28,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     public EvaluationCriteriaService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _criteriaRepo = serviceProvider.GetRequiredService<IEvaluationCriteriaRepo>();
+        _extractionRepo = serviceProvider.GetRequiredService<ICriteriaExtractionRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
         _applicationRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
@@ -83,72 +86,141 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         return Map(existing);
     }
 
-    public async Task<IReadOnlyList<CriteriaDto>> ExtractDraftAsync(long companyId, long jobId)
+    public async Task<CriteriaExtractionStatusDto> RequestExtractAsync(long companyId, long jobId, long userId)
     {
-        var jobInfo = await _jobRepo.GetEmbeddingInfoAsync(companyId, jobId)
+        // Kiểm những thứ biết được NGAY (job có tồn tại không, có gì để bóc không) ở đây, đồng bộ,
+        // để người dùng nhận lỗi tức thì thay vì xếp hàng rồi vài chục giây sau mới biết là vô ích.
+        var job = await _jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
-        if (string.IsNullOrWhiteSpace(jobInfo.JdText))
-            throw Bad("Job chưa có mô tả công việc (jd_text) để bóc tiêu chí.");
+        var requirements = await _jobRepo.GetRequirementsAsync(companyId, jobId);
 
-        IReadOnlyList<ExtractedCriterion> extracted;
+        if (string.IsNullOrWhiteSpace(BuildSourceText(job.JdText, requirements, job.SkillTags)))
+            throw Bad("Job chưa có mô tả công việc, yêu cầu ứng viên hay kỹ năng nào để bóc tiêu chí.");
+
+        var entry = await _extractionRepo.EnqueueAsync(companyId, jobId, userId);
+        _logger.Information("RequestExtract: job={JobId} đã vào hàng đợi (extraction={Id}).",
+            jobId, entry.ExtractionId);
+
+        return MapStatus(entry);
+    }
+
+    public async Task<CriteriaExtractionStatusDto> GetExtractStatusAsync(long companyId, long jobId)
+    {
+        var entry = await _extractionRepo.GetByJobAsync(companyId, jobId);
+        // Chưa bao giờ bóc job này -> NONE, không phải lỗi: FE chỉ cần biết "không có gì đang chạy".
+        return entry is null
+            ? new CriteriaExtractionStatusDto { JobId = jobId, Status = "NONE", Running = false }
+            : MapStatus(entry);
+    }
+
+    public async Task RunExtractionAsync(long companyId, long jobId, long extractionId, CancellationToken ct = default)
+    {
+        // Chạy trong worker: KHÔNG được ném ra ngoài. Mọi kết cục — kể cả hỏng — phải nằm lại
+        // trong dòng hàng đợi, vì đó là thứ duy nhất người dùng còn nhìn thấy được.
         try
         {
-            extracted = await _extractionClient.ExtractAsync(jobInfo.JdText);
+            var job = await _jobRepo.GetByIdAsync(companyId, jobId);
+            if (job is null)
+            {
+                // Job bị xoá trong lúc lượt bóc còn xếp hàng.
+                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed,
+                    null, ExtractionErrorCode.AiFailed, "Tin tuyển dụng không còn tồn tại.");
+                return;
+            }
+
+            var requirements = await _jobRepo.GetRequirementsAsync(companyId, jobId);
+
+            // AI phải đọc CẢ BA ô người dùng nhập, không riêng jd_text: "yêu cầu ứng viên" và
+            // "kỹ năng" mới là chỗ chứa thứ bóc được thành tiêu chí, còn mô tả công việc thường
+            // chỉ liệt kê đầu việc. Chỉ gửi jd_text = bỏ đúng phần dữ liệu giá trị nhất, rồi báo
+            // người dùng "chưa nêu yêu cầu nào" trong khi họ đã nhập yêu cầu đầy đủ.
+            var sourceText = BuildSourceText(job.JdText, requirements, job.SkillTags);
+
+            IReadOnlyList<ExtractedCriterion> extracted;
+            try
+            {
+                extracted = await _extractionClient.ExtractAsync(sourceText, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, "RunExtraction: AI bóc tiêu chí thất bại (job={JobId}).", jobId);
+                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, null,
+                    ExtractionErrorCode.AiFailed,
+                    "AI bóc tiêu chí thất bại — vui lòng nhập tiêu chí thủ công hoặc áp template.");
+                return;
+            }
+
+            // Tin tuyển dụng chỉ liệt kê đầu việc, không nêu yêu cầu nào với ứng viên -> AI trả rỗng.
+            // Đây KHÔNG phải AI hỏng: báo đúng việc người dùng cần làm, và dừng TRƯỚC khi xoá draft cũ
+            // để họ không mất bộ tiêu chí đang có chỉ vì bấm bóc lại. Thông báo phải chỉ đúng ô cần
+            // sửa — AI đã đọc cả ba mục nên không được nói trống không là "bổ sung phần yêu cầu".
+            if (extracted.Count == 0)
+            {
+                _logger.Information("RunExtraction: tin tuyển dụng không nêu yêu cầu nào (job={JobId}).", jobId);
+                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, 0,
+                    ExtractionErrorCode.NoRequirements,
+                    "Tin tuyển dụng mới chỉ liệt kê đầu việc, chưa nêu yêu cầu nào với ứng viên " +
+                    "(bằng cấp, số năm kinh nghiệm, kỹ năng, ngoại ngữ...). Bổ sung mục " +
+                    "\"Yêu cầu ứng viên\" hoặc \"Kỹ năng\" rồi bóc lại, hoặc tự nhập tiêu chí.");
+                return;
+            }
+
+            // Bóc lại = thay trọn bộ DRAFT cũ (tiêu chí đã APPROVED giữ nguyên).
+            await _criteriaRepo.DeleteDraftsAsync(companyId, jobId);
+
+            foreach (var c in extracted)
+            {
+                var entity = new EvaluationCriteria
+                {
+                    JobId = jobId,
+                    Name = c.Name,
+                    Weight = c.Weight,
+                    MaxScore = 10,
+                    Active = true,
+                    CriteriaType = c.Type,
+                    CvMatchable = c.CvMatchable,
+                    Keywords = c.Keywords.Count > 0 ? string.Join(";", c.Keywords) : null,
+                    Source = CriteriaSource.AiExtracted,
+                    Status = CriteriaStatus.Draft
+                };
+                entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
+            }
+
+            await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Done,
+                extracted.Count, null, null);
+            _logger.Information("RunExtraction: job={JobId} -> {N} tiêu chí DRAFT chờ duyệt.",
+                jobId, extracted.Count);
         }
         catch (Exception ex)
         {
-            // AI service/Ollama lỗi -> 502 để FE hiện fallback "nhập tiêu chí thủ công".
-            _logger.Warning(ex, "ExtractDraft: AI bóc tiêu chí thất bại (job={JobId}).", jobId);
-            throw new BaseException("AI bóc tiêu chí thất bại — vui lòng nhập tiêu chí thủ công.")
+            // Lỗi ngoài dự tính (DB trục trặc...) — vẫn phải đóng dòng, không để treo RUNNING.
+            _logger.Error(ex, "RunExtraction: lỗi không mong đợi (job={JobId}, extraction={Id}).",
+                jobId, extractionId);
+            try
             {
-                ErrorCode = "AI_EXTRACT_FAILED",
-                ErrorMessage = "AI bóc tiêu chí thất bại — vui lòng nhập tiêu chí thủ công.",
-                HttpStatus = (int)HttpStatusCode.BadGateway
-            };
-        }
-
-        // JD chỉ liệt kê đầu việc, không nêu yêu cầu nào với ứng viên -> AI trả rỗng. Đây KHÔNG
-        // phải AI hỏng: báo đúng việc người dùng cần làm, và ném TRƯỚC khi xoá draft cũ để họ
-        // không mất bộ tiêu chí đang có chỉ vì bấm bóc lại.
-        if (extracted.Count == 0)
-        {
-            _logger.Information("ExtractDraft: JD không nêu yêu cầu nào với ứng viên (job={JobId}).", jobId);
-            throw new BaseException("JD chưa nêu yêu cầu nào với ứng viên.")
+                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, null,
+                    ExtractionErrorCode.AiFailed,
+                    "Bóc tiêu chí thất bại — vui lòng thử lại hoặc nhập tiêu chí thủ công.");
+            }
+            catch (Exception closeEx)
             {
-                ErrorCode = "JD_NO_REQUIREMENTS",
-                ErrorMessage = "Mô tả công việc mới chỉ liệt kê đầu việc, chưa nêu yêu cầu nào với " +
-                               "ứng viên (bằng cấp, số năm kinh nghiệm, kỹ năng, ngoại ngữ...). " +
-                               "Bổ sung phần yêu cầu rồi bóc lại, hoặc tự nhập tiêu chí.",
-                HttpStatus = (int)HttpStatusCode.UnprocessableEntity
-            };
+                // Đóng cũng hỏng -> dòng còn RUNNING; worker sẽ thu hồi ở lần khởi động sau.
+                _logger.Error(closeEx, "RunExtraction: không đóng nổi dòng hàng đợi {Id}.", extractionId);
+            }
         }
-
-        // Bóc lại = thay trọn bộ DRAFT cũ (tiêu chí đã APPROVED giữ nguyên).
-        await _criteriaRepo.DeleteDraftsAsync(companyId, jobId);
-
-        var result = new List<CriteriaDto>();
-        foreach (var c in extracted)
-        {
-            var entity = new EvaluationCriteria
-            {
-                JobId = jobId,
-                Name = c.Name,
-                Weight = c.Weight,
-                MaxScore = 10,
-                Active = true,
-                CriteriaType = c.Type,
-                CvMatchable = c.CvMatchable,
-                Keywords = c.Keywords.Count > 0 ? string.Join(";", c.Keywords) : null,
-                Source = CriteriaSource.AiExtracted,
-                Status = CriteriaStatus.Draft
-            };
-            entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
-            result.Add(Map(entity));
-        }
-
-        _logger.Information("ExtractDraft: job={JobId} -> {N} tiêu chí DRAFT chờ duyệt.", jobId, result.Count);
-        return result;
     }
+
+    private static CriteriaExtractionStatusDto MapStatus(CriteriaExtraction e) => new()
+    {
+        JobId = e.JobId,
+        Status = e.Status,
+        Running = e.Status is ExtractionStatus.Pending or ExtractionStatus.Running,
+        CriteriaCount = e.CriteriaCount,
+        ErrorCode = e.ErrorCode,
+        ErrorMessage = e.ErrorMessage,
+        RequestedAt = e.RequestedAt,
+        FinishedAt = e.FinishedAt
+    };
 
     public async Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId)
     {
@@ -212,6 +284,37 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     }
 
     // ============================================================
+
+    /// <summary>
+    /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc. Giữ tiêu đề
+    /// từng mục để LLM thấy rõ ranh giới đầu việc / yêu cầu — prompt bóc tiêu chí dựa vào đúng
+    /// ranh giới đó. Mục trống thì bỏ hẳn, không để tiêu đề rỗng gây nhiễu.
+    /// </summary>
+    private static string BuildSourceText(
+        string? jdText, IReadOnlyList<JobRequirement> requirements, string? skillTags)
+    {
+        var sb = new StringBuilder();
+
+        if (!string.IsNullOrWhiteSpace(jdText))
+            sb.Append("[Mô tả công việc]\n").Append(jdText.Trim()).Append("\n\n");
+
+        var reqLines = requirements
+            .Select(r => r.Content?.Trim())
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .ToList();
+        if (reqLines.Count > 0)
+        {
+            sb.Append("[Yêu cầu ứng viên]\n");
+            foreach (var line in reqLines)
+                sb.Append("- ").Append(line).Append('\n');
+            sb.Append('\n');
+        }
+
+        if (!string.IsNullOrWhiteSpace(skillTags))
+            sb.Append("[Kỹ năng yêu cầu]\n").Append(skillTags.Trim()).Append('\n');
+
+        return sb.ToString().Trim();
+    }
 
     private static void Validate(string? name, decimal weight, decimal maxScore, string? criteriaType)
     {

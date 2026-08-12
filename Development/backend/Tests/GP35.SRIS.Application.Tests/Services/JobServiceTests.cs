@@ -89,7 +89,7 @@ public class JobServiceTests
 
         // Assert
         Assert.NotNull(result);
-        _jobRepo.Verify(r => r.UpdateExtendedAsync(1L, 10L, It.Is<Job>(j => j.Title == "Updated Title"), It.IsAny<bool>()), Times.Once);
+        _jobRepo.Verify(r => r.UpdateExtendedAsync(1L, 10L, It.Is<Job>(j => j.Title == "Updated Title")), Times.Once);
     }
 
     [Fact]
