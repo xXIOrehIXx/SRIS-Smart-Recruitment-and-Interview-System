@@ -127,7 +127,7 @@ const FIELD_RULES = {
   description: () => [
     { required: true, message: "Vui lòng nhập mô tả công việc" },
     { whitespace: true, message: "Mô tả không được chỉ chứa khoảng trắng" },
-    { min: 50, message: "Mô tả tối thiểu 50 ký tự (JD càng rõ yêu cầu thì AI bóc tiêu chí càng đúng)" },
+    { min: 50, message: "Mô tả tối thiểu 50 ký tự (tin càng rõ yêu cầu thì AI đề xuất tiêu chí càng đúng)" },
     { max: 2000, message: "Mô tả tối đa 2000 ký tự" },
   ],
   department: () => [
@@ -623,7 +623,7 @@ const CreateJob = () => {
                   bỏ trống mục yêu cầu là bấm "AI bóc tiêu chí" sẽ ra rỗng. */}
               <Form.Item
                 label="Yêu cầu ứng viên"
-                tooltip="Thứ ứng viên phải CÓ SẴN trước khi vào làm: bằng cấp, số năm kinh nghiệm, chứng chỉ, ngoại ngữ. Khác với mô tả công việc là thứ họ sẽ làm sau khi vào. AI dựa vào mục này để bóc ra phiếu chấm phỏng vấn."
+                tooltip="Thứ ứng viên phải CÓ SẴN trước khi vào làm: bằng cấp, số năm kinh nghiệm, chứng chỉ, ngoại ngữ. Khác với mô tả công việc là thứ họ sẽ làm sau khi vào. AI dựa vào mục này để đề xuất phiếu chấm phỏng vấn."
               >
                 <BulletListInput
                   items={requirements}
@@ -642,7 +642,7 @@ const CreateJob = () => {
                   cả hai đều là nội dung hiện trên tin đăng công khai. */}
               <Form.Item
                 label="Quyền lợi"
-                tooltip="Hiển thị trên tin tuyển dụng công khai để ứng viên cân nhắc. Không dùng để đánh giá — AI bóc tiêu chí bỏ qua mục này."
+                tooltip="Hiển thị trên tin tuyển dụng công khai để ứng viên cân nhắc. Không dùng để đánh giá — AI đề xuất tiêu chí bỏ qua mục này."
               >
                 <BulletListInput
                   items={benefits}

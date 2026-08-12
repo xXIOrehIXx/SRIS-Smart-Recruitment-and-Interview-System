@@ -58,11 +58,12 @@ public class CriteriaExtractionClient : ICriteriaExtractionClient
 
         // Danh sách RỖNG là kết quả HỢP LỆ, không phải lỗi: JD chỉ liệt kê đầu việc mà không nêu
         // yêu cầu nào với ứng viên. Caller phân biệt hai ca này để báo đúng việc người dùng cần làm.
+        // Kẹp lại dù Pydantic đã chặn: .NET và Python là hai tiến trình riêng (model đổi được
+        // qua biến môi trường, địa chỉ AI service nằm trong config) nên không tin mù đầu vào.
+        // Riêng Trim() thì KHÔNG thừa: tên "  " lọt min_length=2 của Pydantic vì đúng 2 ký tự,
+        // trim xong mới lộ là rỗng — một dòng trắng trong phiếu chấm là dòng không ai chấm được.
         return parsed.Criteria.Select(c => new ExtractedCriterion(
                 (c.Name ?? "").Trim(),
-                string.Equals(c.Type, "HARD", StringComparison.OrdinalIgnoreCase) ? "HARD" : "SOFT",
-                c.CvMatchable,
-                c.Keywords ?? new List<string>(),
                 Math.Clamp(c.Weight, 0.1m, 5m)))
             .Where(c => c.Name.Length >= 2)
             .ToList();
@@ -82,15 +83,6 @@ public class CriteriaExtractionClient : ICriteriaExtractionClient
     {
         [JsonProperty("name")]
         public string? Name { get; set; }
-
-        [JsonProperty("type")]
-        public string? Type { get; set; }
-
-        [JsonProperty("cv_matchable")]
-        public bool CvMatchable { get; set; } = true;
-
-        [JsonProperty("keywords")]
-        public List<string>? Keywords { get; set; }
 
         [JsonProperty("weight")]
         public decimal Weight { get; set; } = 1;

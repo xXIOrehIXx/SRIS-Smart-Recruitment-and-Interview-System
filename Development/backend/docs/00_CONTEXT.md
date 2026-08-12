@@ -235,7 +235,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 4. Bộ tiêu chí đã chốt là **phiếu chấm phỏng vấn** (5.7) — mọi interviewer chấm trên cùng một khung.
 
 **Thuộc tính mỗi tiêu chí:** tên, mô tả, trọng số, nguồn gốc (`source` MANUAL / AI_EXTRACTED), trạng thái (`DRAFT` / `APPROVED` + `approved_by/at`).
-> Các cột `criteria_type` (HARD/SOFT), `cv_matchable`, `keywords`, `embedding` còn trong DB (V013) nhưng chỉ là mô tả — KHÔNG còn code nào chấm CV theo chúng.
+> Các cột `criteria_type` (HARD/SOFT), `cv_matchable`, `keywords`, `embedding` đã bị xoá khỏi DB (`embedding` ở V036, ba cột còn lại ở V038) — chúng là mô hình dữ liệu của máy chấm CV, không còn tính năng nào đọc. Một tiêu chí giờ chỉ có `name` + `weight` + `max_score`: một dòng phiếu chấm, cho điểm 0..max_score.
 
 **Trạng thái code:**
 - Python: `POST /extract-criteria` (Ollama qwen2.5 — JSON schema + validate + retry 3; lỗi → 502 để .NET fallback nhập tay). Đầu vào gồm cả phần yêu cầu + kỹ năng của job, không chỉ mô tả.

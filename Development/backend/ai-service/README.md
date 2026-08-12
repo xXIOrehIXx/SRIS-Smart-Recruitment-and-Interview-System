@@ -32,24 +32,30 @@ Không tải model nào lúc khởi động — model nằm trong Ollama. Kiểm
 | Method | Path             | Mô tả                                            |
 |--------|------------------|--------------------------------------------------|
 | GET    | `/health`        | Kiểm tra service sống + tên model đang chạy.     |
-| POST   | `/extract-criteria` | Body `{ "jd_text": "..." }` -> `{ "criteria": [{ "name", "type": "HARD\|SOFT", "cv_matchable", "keywords", "weight" }] }`. Lỗi → HTTP 502. |
+| POST   | `/extract-criteria` | Body `{ "jd_text": "..." }` -> `{ "criteria": [{ "name", "weight" }] }`. Lỗi → HTTP 502. |
 
-Danh sách `criteria` **rỗng là kết quả hợp lệ** (JD chỉ liệt kê đầu việc, không nêu yêu cầu
-nào với ứng viên), không phải lỗi — .NET phân biệt hai ca này.
+Danh sách `criteria` **rỗng là kết quả hợp lệ** (văn bản chỉ liệt kê đầu việc, hoặc chỉ nêu
+những thứ đọc hồ sơ là biết), không phải lỗi — .NET phân biệt hai ca này.
+
+Mỗi tiêu chí chỉ có `name` + `weight`. Bản trước còn `type` (HARD/SOFT), `cv_matchable`,
+`keywords`; cả ba phục vụ tính năng máy chấm CV đã cắt khỏi scope 08/08/2026 nên xoá hẳn ở
+V038. Kèm theo đó, prompt chỉ bóc thứ **phải hỏi mới biết** — bằng cấp, chứng chỉ, bằng lái
+không lên phiếu chấm nữa vì người tuyển dụng đã đối chiếu ở bước sàng lọc hồ sơ.
 
 ## Cách đầu ra được giữ đúng cấu trúc
 
 1. **Ràng buộc lúc sinh:** schema Pydantic được đưa thẳng vào Ollama qua
    `format=CriteriaList.model_json_schema()` — model bị chặn ở tầng giải mã, không phải
    được "dặn" trả JSON trong prompt. `temperature=0` để cùng đầu vào cho cùng đầu ra.
-   `num_ctx=8192` đặt tường minh (env `SRIS_LLM_NUM_CTX`): mặc định 4096 của Ollama KHÔNG
-   đủ — prompt + schema đã ~2300 token, cộng JD và đầu ra là tràn, mà tràn thì Ollama cắt
-   bớt rồi chạy tiếp **không báo lỗi**. Kiểm bằng `curl .../health` xem `num_ctx` đã ăn chưa.
+   `num_ctx=8192` đặt tường minh (env `SRIS_LLM_NUM_CTX`): mặc định 4096 của Ollama không đủ
+   cho JD tiếng Việt dài — cửa sổ tính cả prompt lẫn đầu ra, mà tràn thì Ollama cắt bớt rồi
+   chạy tiếp **không báo lỗi**. Kiểm bằng `curl .../health` xem `num_ctx` đã ăn chưa.
 2. **Validate:** `CriteriaList.model_validate_json()` — sai cú pháp JSON, thiếu trường,
-   `type` ngoài HARD/SOFT, `weight` ngoài 0.1–5, quá 10 tiêu chí đều bị coi là hỏng.
+   `weight` ngoài 0.1–5, quá 10 tiêu chí đều bị coi là hỏng.
 3. **Retry:** tối đa `MAX_RETRY = 3` lượt. Hết lượt -> ném lỗi -> HTTP 502.
    Lỗi hạ tầng (Ollama chưa chạy) ném thẳng, không phí lượt retry.
-4. **.NET kẹp lại lần nữa:** clamp `weight`, ép `type` lạ về SOFT, bỏ tiêu chí tên < 2 ký tự.
+4. **.NET kẹp lại lần nữa:** clamp `weight`, bỏ tiêu chí tên < 2 ký tự sau khi trim (tên toàn
+   dấu cách lọt `min_length=2` của Pydantic vì đúng là 2 ký tự).
 
 ## Liên kết với .NET API
 

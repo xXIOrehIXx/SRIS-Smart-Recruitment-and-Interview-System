@@ -27,14 +27,11 @@ public class EvaluationCriteria : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
     [Column("active")]
     public bool Active { get; set; }
 
-    // ---- Chấm CV theo tiêu chí (docs 5.18 — migration V013) ----
+    // ---- Vòng đời tiêu chí: AI bóc DRAFT -> người duyệt chốt APPROVED (docs 5.18) ----
+    //
+    // V038 đã bỏ criteria_type / cv_matchable / keywords: cả ba là mô hình dữ liệu của tính
+    // năng máy chấm CV, cắt khỏi scope 08/08/2026. Đừng thêm lại khi chưa mở lại scope đó.
 
-    /// <summary>HARD (lọc rule/keyword) hay SOFT (so vector).</summary>
-    [Column("criteria_type")]
-    public string CriteriaType { get; set; } = "SOFT";
-    /// <summary>true = thấy được trong CV; false = chỉ đánh giá khi phỏng vấn (chấm CV bỏ qua).</summary>
-    [Column("cv_matchable")]
-    public bool CvMatchable { get; set; } = true;
     /// <summary>MANUAL (người gõ) hay AI_EXTRACTED (AI bóc từ JD).</summary>
     [Column("source")]
     public string Source { get; set; } = "MANUAL";
@@ -45,9 +42,6 @@ public class EvaluationCriteria : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
     public long? ApprovedBy { get; set; }
     [Column("approved_at")]
     public DateTime? ApprovedAt { get; set; }
-    /// <summary>Từ khóa nhận diện cho tiêu chí HARD, phân tách ';'. NULL -> dùng Name.</summary>
-    [Column("keywords")]
-    public string? Keywords { get; set; }
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
     [Column("updated_at")]
