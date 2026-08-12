@@ -24,7 +24,6 @@ import CandidateDetail from "./pages/human-resource/CandidateDetail";
 import IncomingInterview from "./pages/interviewer/IncomingInterview";
 import Grading from "./pages/interviewer/Grading";
 import InterviewerInterviewHistory from "./pages/interviewer/InterviewHistory";
-import InterviewerInterviewDetail from "./pages/interviewer/InterviewDetail";
 import InterviewScheduleRecruit from "./pages/human-resource/InterviewScheduleRecruit";
 import DeptInterviewSchedule from "./pages/dept-manager/InterviewSchedule";
 import DeptInterviewDetail from "./pages/dept-manager/InterviewDetail";
@@ -118,10 +117,6 @@ const App = () => {
         <Route
           path="/interviewer/history"
           element={<InterviewerInterviewHistory />}
-        />
-        <Route
-          path="/interviewer/interview/:id"
-          element={<InterviewerInterviewDetail />}
         />
         <Route path="/interviewer/grading/:id" element={<Grading />} />
       </Route>

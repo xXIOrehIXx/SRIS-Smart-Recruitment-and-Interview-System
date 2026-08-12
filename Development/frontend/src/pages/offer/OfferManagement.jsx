@@ -627,7 +627,7 @@ const OfferManagement = () => {
                 maxLength={1000} showCount />
             </Form.Item>
 
-            <Divider orientation="left" plain>Điều khoản &amp; chân thư</Divider>
+            <Divider />
 
             <Form.Item
               label="Điều khoản & điều kiện"

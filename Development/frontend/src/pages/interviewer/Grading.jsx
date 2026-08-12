@@ -15,6 +15,7 @@ import {
   Descriptions,
   Modal,
   Alert,
+  Radio,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -36,6 +37,14 @@ const { TextArea } = Input;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+// InterviewFeedback.recommendation (V031) — BE chỉ nhận đúng 4 mã này và BẮT BUỘC có khi nộp phiếu.
+const RECOMMENDATIONS = [
+  { key: 'STRONG_HIRE', label: 'Rất nên tuyển', color: '#52c41a' },
+  { key: 'HIRE', label: 'Nên tuyển', color: '#73d13d' },
+  { key: 'CONSIDER', label: 'Cần xem xét', color: '#faad14' },
+  { key: 'NO_HIRE', label: 'Không tuyển', color: '#f5222d' },
+];
+
 const Grading = () => {
   const navigate = useNavigate();
   const { id: scheduleId } = useParams();
@@ -46,7 +55,11 @@ const Grading = () => {
   const [scores, setScores] = useState({});
   const [criteria, setCriteria] = useState([]);
   const [feedback, setFeedback] = useState('');
+  const [recommendation, setRecommendation] = useState(null);
   const [interviewInfo, setInterviewInfo] = useState(null);
+  // Note theo từng tiêu chí: UI chưa có ô nhập, nhưng phải gửi lại nguyên vẹn -
+  // gửi null sẽ xoá note của chính mình đã lưu trước đó.
+  const [criteriaNotes, setCriteriaNotes] = useState({});
 
   // Modal states
   const [saveConfirmModal, setSaveConfirmModal] = useState(false);
@@ -93,13 +106,25 @@ const Grading = () => {
         });
         setScores(existingScores);
 
-        // Khôi phục nhận xét chung (được lưu trong note của tiêu chí đầu)
-        const firstNote = data.criteria[0]?.myNote;
-        if (firstNote?.startsWith('[Nhận xét chung]')) {
-          const match = firstNote.match(/^\[Nhận xét chung\] ([\s\S]*)$/);
-          if (match) setFeedback(match[1] || '');
-        }
+        // Note riêng từng tiêu chí — giữ lại để gửi ngược lên, TRỪ phiếu cũ nhét
+        // nhận xét chung vào note tiêu chí đầu (nay đã có cột summary riêng).
+        const existingNotes = {};
+        data.criteria.forEach((c) => {
+          if (c.myNote && !c.myNote.startsWith('[Nhận xét chung]')) {
+            existingNotes[c.criteriaId] = c.myNote;
+          }
+        });
+        setCriteriaNotes(existingNotes);
+
+        // Nhận xét chung: ưu tiên cột mySummary (V031); phiếu chấm dở từ trước V031
+        // vẫn còn nằm trong note của tiêu chí đầu -> đọc nốt cho khỏi mất.
+        const legacyNote = data.criteria[0]?.myNote;
+        const legacyMatch = legacyNote?.match(/^\[Nhận xét chung\] ([\s\S]*)$/);
+        setFeedback(data.mySummary || legacyMatch?.[1] || '');
       }
+
+      // Đề xuất của CHÍNH mình (blind review: không thấy của người khác).
+      setRecommendation(data.myRecommendation || null);
 
       // Giữ NGUYÊN cả sheet: header đọc interviewInfo.schedule.* và interviewInfo.candidate.*
       // (gán data.schedule vào đây làm mất một tầng -> panelSize/candidate luôn undefined).
@@ -150,21 +175,34 @@ const Grading = () => {
   };
 
   const handleSubmitScore = () => {
+    // Chặn sớm đúng 2 điều kiện BE bắt buộc khi nộp (InterviewScoringService.SubmitAsync):
+    // chấm đủ mọi tiêu chí + có đề xuất. Báo tại chỗ thay vì để BE trả 400.
+    const unscored = criteria.filter(
+      (c) => typeof c.id === 'number' && (scores[c.id] === undefined || scores[c.id] === null)
+    );
+    if (unscored.length > 0) {
+      message.warning(`Hãy chấm đủ điểm trước khi nộp. Còn thiếu: ${unscored.map((c) => c.name).join(', ')}.`);
+      return;
+    }
+    if (!recommendation) {
+      message.warning('Hãy chọn đề xuất (nên tuyển / cần xem xét / không tuyển) trước khi nộp phiếu.');
+      return;
+    }
     setSubmitConfirmModal(true);
   };
 
-  // Backend SaveScoreDraftDto = { items: [{criteriaId, score, note}] } — note theo TỪNG tiêu chí;
-  // nhận xét chung + đề xuất không có cột riêng nên ghi vào note của tiêu chí đầu.
+  // Backend SaveScoreDraftDto = { items: [{criteriaId, score, note}], recommendation, summary }.
+  // Đề xuất + nhận xét chung có cột riêng ở BE (V031) — người quyết tuyển đọc chính hai thứ này.
   const buildItemsPayload = () => ({
     items: criteria
       .filter((c) => typeof c.id === 'number') // bỏ tiêu chí fallback (id chuỗi, không có trên server)
-      .map((c, idx) => ({
+      .map((c) => ({
         criteriaId: c.id,
         score: scores[c.id] ?? null,
-        note: idx === 0 && feedback
-          ? `[Nhận xét chung] ${feedback}`
-          : null,
+        note: criteriaNotes[c.id] || null,
       })),
+    recommendation: recommendation || null, // null = nháp chưa chốt, BE vẫn cho lưu
+    summary: feedback?.trim() || null,
   });
 
   const confirmSaveDraft = async () => {
@@ -371,6 +409,36 @@ const Grading = () => {
               />
             </div>
 
+            <div className="feedback-section" style={{ marginTop: 20 }}>
+              <Title level={5} style={{ marginBottom: 4 }}>
+                Đề xuất <Text type="danger">*</Text>
+              </Title>
+              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+                Bắt buộc chọn trước khi nộp phiếu — đây là thứ người quyết tuyển đọc trước tiên.
+              </Text>
+              <Radio.Group
+                value={recommendation}
+                onChange={(e) => setRecommendation(e.target.value)}
+                disabled={isLocked}
+                optionType="button"
+                buttonStyle="solid"
+              >
+                {RECOMMENDATIONS.map((r) => (
+                  <Radio.Button
+                    key={r.key}
+                    value={r.key}
+                    style={
+                      recommendation === r.key
+                        ? { background: r.color, borderColor: r.color, color: '#fff' }
+                        : {}
+                    }
+                  >
+                    {r.label}
+                  </Radio.Button>
+                ))}
+              </Radio.Group>
+            </div>
+
             {!isLocked && (
               <div className="grading-actions">
                 <Button
@@ -441,8 +509,8 @@ const Grading = () => {
         okButtonProps={{ loading: submitting, style: { background: MATCHA_GREEN } }}
       >
         <Alert
-          message="Lưu ý quan trọng"
-          description="Sau khi submit, bạn sẽ không thể chỉnh sửa điểm. Vui lòng kiểm tra kỹ trước khi submit."
+          message="Lưu ý"
+          description="Sau khi submit, điểm của bạn hiện với cả panel (mở blind). Bạn vẫn sửa được cho tới khi hồ sơ có quyết định tuyển."
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
@@ -450,6 +518,13 @@ const Grading = () => {
         <p>Bạn có chắc chắn muốn submit điểm đánh giá này?</p>
         <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 8, marginTop: 16 }}>
           <p><strong>Tổng điểm:</strong> {calculateTotal()}/{calculateMaxScore()}</p>
+          <p style={{ marginBottom: 0 }}>
+            <strong>Đề xuất:</strong>{' '}
+            {(() => {
+              const r = RECOMMENDATIONS.find((x) => x.key === recommendation);
+              return r ? <Tag color={r.color}>{r.label}</Tag> : <Text type="danger">Chưa chọn</Text>;
+            })()}
+          </p>
         </div>
       </Modal>
     </div>
