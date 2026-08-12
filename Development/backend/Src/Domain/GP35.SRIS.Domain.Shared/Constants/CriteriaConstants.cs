@@ -1,18 +1,12 @@
 namespace GP35.SRIS.Domain.Shared.Constants;
 
-/// <summary>
-/// Phân loại tiêu chí (docs 5.18): HARD = yêu cầu cứng loại-trừ (chứng chỉ, số năm, địa điểm)
-/// -> lọc bằng RULE/keyword; SOFT = kỹ năng/năng lực -> so vector.
-/// </summary>
-public static class CriteriaType
-{
-    public const string Hard = "HARD";
-    public const string Soft = "SOFT";
-}
+// Từng có ở đây: CriteriaType (HARD/SOFT). Xoá ở V038 cùng cột criteria_type — nhãn đó phân
+// loại theo CÁCH MÁY CHẤM CV (dò keyword hay so vector), mà chấm CV đã cắt khỏi scope
+// 08/08/2026. Mọi tiêu chí giờ bình đẳng: một dòng phiếu chấm, cho điểm 0..MaxScore.
 
 /// <summary>
 /// Vòng đời tiêu chí (pattern DRAFT -> duyệt -> APPROVED). AI bóc ra DRAFT;
-/// người duyệt chốt. Chấm CV/phỏng vấn CHỈ dùng tiêu chí APPROVED.
+/// người duyệt chốt. Phiếu chấm phỏng vấn CHỈ dùng tiêu chí APPROVED.
 /// </summary>
 public static class CriteriaStatus
 {

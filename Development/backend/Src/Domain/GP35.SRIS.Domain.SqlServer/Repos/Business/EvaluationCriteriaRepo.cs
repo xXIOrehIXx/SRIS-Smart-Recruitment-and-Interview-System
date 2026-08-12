@@ -39,28 +39,16 @@ public class EvaluationCriteriaRepo : BaseRepo<long, EvaluationCriteria>, IEvalu
     }
 
     public async Task<int> UpdateAsync(long companyId, long criteriaId, string name, decimal weight,
-        decimal maxScore, bool active, string criteriaType, bool cvMatchable, string? keywords)
+        decimal maxScore, bool active)
     {
-        var rows = await _db.EvaluationCriterias
+        return await _db.EvaluationCriterias
             .Where(c => c.CriteriaId == criteriaId)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(c => c.Name, name)
                 .SetProperty(c => c.Weight, weight)
                 .SetProperty(c => c.MaxScore, maxScore)
                 .SetProperty(c => c.Active, active)
-                .SetProperty(c => c.CriteriaType, criteriaType)
-                .SetProperty(c => c.CvMatchable, cvMatchable)
-                .SetProperty(c => c.Keywords, keywords)
                 .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
-
-        // Nội dung đổi -> embedding cũ (nếu có) không còn khớp -> xóa để lần chấm sau embed lại.
-        if (rows > 0)
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "UPDATE EvaluationCriteria SET embedding = NULL WHERE criteria_id = {0} AND company_id = {1}",
-                criteriaId, companyId);
-        }
-        return rows;
     }
 
     public async Task<int> DeleteDraftsAsync(long companyId, long jobId)

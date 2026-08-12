@@ -8,7 +8,37 @@ Folder này giữ **bằng chứng cho phương pháp đánh giá AI** (khung Se
 (máy chấm + rubric người). `docs/00_CONTEXT.md:346` trích thẳng số từ đây khi trả lời
 câu hỏi *"Có phương pháp đánh giá AI không?"*, nên **xoá folder là câu đó mất chỗ dựa**.
 
-## Hai thí nghiệm
+## Ba thí nghiệm
+
+### 0. `exp_criteria_extract/` — AI đề xuất tiêu chí (**tính năng ĐANG CHẠY**)
+
+Đây là bộ **quan trọng nhất**, và cũng là bộ ra đời muộn nhất: hai thí nghiệm bên
+dưới đo kỹ hai tính năng đã bị CẮT khỏi phạm vi, còn thứ duy nhất còn chạy thật
+trong sản phẩm thì mãi chưa có số nào. Bộ này lấp đúng chỗ trống đó.
+
+Đo hai tầng:
+
+- **Tầng 1 — máy đo** (`run.py` + `metrics.py`): tỉ lệ tiêu chí là "giấy tờ" (thứ
+  đọc hồ sơ là biết, không đáng cho điểm phỏng vấn), tỉ lệ dòng gộp nhiều kỹ năng,
+  trùng lặp, vượt trần, độ ổn định khi chạy lại, thời gian chạy. Không cần người.
+- **Tầng 2 — người chấm** (`RUBRIC.md` + `score_rubric.py`): gán nhãn từng tiêu chí
+  theo 6 mã, cộng phần đếm tiêu chí AI **bỏ sót** → precision / recall / F1 kèm bảng
+  phân rã sai kiểu gì. **Đây mới là số để trích vào báo cáo.**
+
+Bộ test: 10 tin tuyển dụng nhiều ngành (kế toán, kinh doanh, kho vận, CNTT, hành
+chính, khách sạn, marketing, vận tải, sản xuất), trong đó 3 ca cố tình khó — tin
+chỉ có đầu việc (phải trả rỗng), tin toàn yêu cầu giấy tờ, tin 13 yêu cầu vượt trần 10.
+
+`--tag` cho phép chạy nhiều phiên bản prompt rồi so: `python run.py --tag truoc_v038`.
+
+```bash
+cd ai-experiments/exp_criteria_extract
+python run.py --repeat 3      # cần AI service ở 127.0.0.1:8000
+# điền nhãn vào out/baseline/labels.csv + missing.csv theo RUBRIC.md
+python score_rubric.py
+```
+
+## Hai thí nghiệm cũ (tính năng đã cắt)
 
 ### 1. `exp/` — sinh câu hỏi phỏng vấn bằng LLM (5 phiên bản prompt)
 
