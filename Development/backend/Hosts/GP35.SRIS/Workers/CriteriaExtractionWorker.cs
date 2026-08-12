@@ -111,10 +111,12 @@ public sealed class CriteriaExtractionWorker : BackgroundService
         // Bước 2: scope riêng đã set tenant -> RLS + Global Query Filter khớp đúng công ty.
         using (var scope = _scopeFactory.CreateScope())
         {
+            // Set tenant TRƯỚC khi resolve service: service kéo theo repo, repo kéo theo
+            // SrisDbContext. Đặt sau là để DbContext sinh ra khi tenant còn là 0.
             var ctx = scope.ServiceProvider.GetRequiredService<IContextData>();
-            var service = scope.ServiceProvider.GetRequiredService<IEvaluationCriteriaService>();
-
             ctx.CompanyId = claimed.CompanyId;
+
+            var service = scope.ServiceProvider.GetRequiredService<IEvaluationCriteriaService>();
 
             _logger.Information("CriteriaExtractionWorker: bắt đầu bóc job {JobId} (company={Co}).",
                 claimed.JobId, claimed.CompanyId);

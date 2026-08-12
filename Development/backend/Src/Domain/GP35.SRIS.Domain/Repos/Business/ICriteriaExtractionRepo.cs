@@ -25,8 +25,12 @@ public interface ICriteriaExtractionRepo : IBaseRepo<long, CriteriaExtraction>
     /// </summary>
     Task<ClaimedExtraction?> ClaimNextPendingAsync(CancellationToken ct = default);
 
-    /// <summary>Đóng một lượt: DONE (kèm số tiêu chí) hoặc FAILED (kèm mã + câu báo người dùng).</summary>
-    Task FinishAsync(long companyId, long extractionId, string status,
+    /// <summary>
+    /// Đóng một lượt: DONE (kèm số tiêu chí) hoặc FAILED (kèm mã + câu báo người dùng).
+    /// Trả SỐ DÒNG đã đổi — 0 nghĩa là không đóng được (sai tenant, dòng bị xoá) và dòng đó
+    /// còn treo RUNNING; caller phải kêu lên chứ không được coi như đã đóng.
+    /// </summary>
+    Task<int> FinishAsync(long companyId, long extractionId, string status,
         int? criteriaCount, string? errorCode, string? errorMessage);
 
     /// <summary>
