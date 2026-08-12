@@ -114,4 +114,30 @@ public class CandidateOfferServiceTests
         var ex = await Assert.ThrowsAsync<BaseException>(() => svc.GetLetterPdfAsync(RawToken));
         Assert.Equal("CONFLICT", ex.ErrorCode);
     }
+
+    [Fact]
+    public async Task GetOfferAsync_NoOfferYet_ThrowsConflict()
+    {
+        // UTCID02: Valid token but no offer yet
+        var svc = CreateService();
+        SetupValidToken();
+        _offerRepo.Setup(r => r.GetByApplicationAsync(CompanyId, AppId)).ReturnsAsync((OfferDetail)null!);
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.GetOfferAsync(RawToken));
+        Assert.Equal("CONFLICT", ex.ErrorCode);
+    }
+
+    [Fact]
+    public async Task GetOfferAsync_InvalidToken_ThrowsUnauthorized()
+    {
+        // UTCID03: Invalid or expired token
+        var svc = CreateService();
+        var invalidToken = "invalid-token";
+
+        _magicLink.Setup(m => m.ValidateAsync(invalidToken, "OFFER_RESPONSE"))
+            .ThrowsAsync(new BaseException("Token expired") { ErrorCode = "UNAUTHORIZED" });
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.GetOfferAsync(invalidToken));
+        Assert.Equal("UNAUTHORIZED", ex.ErrorCode);
+    }
 }

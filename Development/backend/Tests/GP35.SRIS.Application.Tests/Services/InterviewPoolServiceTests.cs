@@ -152,4 +152,59 @@ public class InterviewPoolServiceTests
         _notify.Verify(n => n.SendInterviewCancelledAsync(1L, 100L, It.IsAny<DateTime?>(), "No longer needed"), Times.Once);
         _activityLogRepo.Verify(r => r.InsertAsync(1L, It.Is<ActivityLog>(a => a.Action == "INTERVIEW_CANCELLED")), Times.Once);
     }
+
+    [Fact]
+    public async Task InviteAsync_Success_InvitesCandidateAndGeneratesMagicLink()
+    {
+        // UTCID01 / Sheet: InviteAsync
+        var svc = CreateService();
+        var companyId = 1L;
+        var userId = 1L;
+        var poolId = 10L;
+        var appId = 100L;
+
+        var pool = new InterviewSlotPool { PoolId = poolId, JobId = 5L, Status = "Open", RoundNumber = 1 };
+        _schedulingRepo.Setup(r => r.GetPoolByIdAsync(companyId, poolId)).ReturnsAsync(pool);
+        _appRepo.Setup(r => r.GetByIdAsync(companyId, appId)).ReturnsAsync(new GP35.SRIS.Domain.Entities.Application { ApplicationId = appId, JobId = 5L });
+        _schedulingRepo.Setup(r => r.HasActiveInviteInPoolAsync(companyId, poolId, appId)).ReturnsAsync(false);
+        _schedulingRepo.Setup(r => r.HasConfirmedScheduleForRoundAsync(companyId, appId, 1)).ReturnsAsync(false);
+
+        _schedulingRepo.Setup(r => r.InsertInviteScheduleAsync(companyId, It.IsAny<InterviewSchedule>())).ReturnsAsync(200L);
+        _magicLink.Setup(m => m.IssueAsync(companyId, appId, "SCHEDULE", null))
+            .ReturnsAsync(new MagicLinkIssued(1L, "issued-token-xyz", "SCHEDULE", DateTime.UtcNow.AddDays(7)));
+
+        var dto = new InvitePoolDto { ApplicationIds = new List<long> { appId } };
+        var result = await svc.InviteAsync(companyId, userId, poolId, dto);
+
+        Assert.NotNull(result);
+        Assert.Single(result.Invited);
+        Assert.Equal(appId, result.Invited[0].ApplicationId);
+        Assert.Equal("issued-token-xyz", result.Invited[0].MagicToken);
+        _magicLink.Verify(m => m.IssueAsync(companyId, appId, "SCHEDULE", null), Times.Once);
+    }
+
+    [Fact]
+    public async Task InviteAsync_CandidateAlreadyInvited_SkipsInvitation()
+    {
+        // UTCID02 / Sheet: InviteAsync
+        var svc = CreateService();
+        var companyId = 1L;
+        var userId = 1L;
+        var poolId = 10L;
+        var appId = 100L;
+
+        var pool = new InterviewSlotPool { PoolId = poolId, JobId = 5L, Status = "Open", RoundNumber = 1 };
+        _schedulingRepo.Setup(r => r.GetPoolByIdAsync(companyId, poolId)).ReturnsAsync(pool);
+        _appRepo.Setup(r => r.GetByIdAsync(companyId, appId)).ReturnsAsync(new GP35.SRIS.Domain.Entities.Application { ApplicationId = appId, JobId = 5L });
+        _schedulingRepo.Setup(r => r.HasActiveInviteInPoolAsync(companyId, poolId, appId)).ReturnsAsync(true);
+
+        var dto = new InvitePoolDto { ApplicationIds = new List<long> { appId } };
+        var result = await svc.InviteAsync(companyId, userId, poolId, dto);
+
+        Assert.NotNull(result);
+        Assert.Empty(result.Invited);
+        Assert.Single(result.Skipped);
+        Assert.Equal(appId, result.Skipped[0].ApplicationId);
+        Assert.Contains("Đã mời", result.Skipped[0].Reason);
+    }
 }
