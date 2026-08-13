@@ -9,8 +9,12 @@ public class JobUpdateDto
     public string? JdText { get; set; }
     /// <summary>DM quyết tuyển (5.14). Null = Human Resource quyết.</summary>
     public long? DepartmentManagerId { get; set; }
-    /// <summary>Open | Closed.</summary>
-    public string Status { get; set; } = "Open";
+    /// <summary>
+    /// Draft | Open | Closed. Để trống = GIỮ NGUYÊN trạng thái hiện tại.
+    /// (Trước đây mặc định "Open" nên client không gửi Status là vô tình mở lại tin đã đóng.)
+    /// </summary>
+    [RegularExpression("^(Draft|Open|Closed)$", ErrorMessage = "Status phải là Draft, Open hoặc Closed.")]
+    public string? Status { get; set; }
 
     public string? Department { get; set; }
     public string? Location { get; set; }

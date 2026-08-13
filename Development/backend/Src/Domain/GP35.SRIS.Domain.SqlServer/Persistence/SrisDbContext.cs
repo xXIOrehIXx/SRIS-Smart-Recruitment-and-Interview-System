@@ -96,7 +96,8 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("Job");
             e.HasKey(x => x.JobId);
-            e.Ignore(x => x.Quantity);
+            // quantity: cột được trả lại ở V039 (V032 xoá nhầm — form tin tuyển dụng vẫn nhập,
+            // repo vẫn ghi, nên mọi lệnh sửa tin đều vỡ). Không Ignore nữa.
             e.Ignore(x => x.CvScoreThreshold);
             e.Ignore(x => x.ClosedAt);
             e.Property(x => x.SalaryMin).HasColumnType("decimal(18,2)");
