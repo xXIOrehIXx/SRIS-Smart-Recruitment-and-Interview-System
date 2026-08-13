@@ -77,6 +77,31 @@ Kèm theo là bảng phân rã lỗi (`BIA` / `DAUVIEC` / `GIAYTO` / `GOP` / `TR
 phần này quan trọng ngang ba con số kia, vì nó nói **sai kiểu gì**, tức là sửa
 prompt ở đâu. Precision 0.8 do gộp dòng khác hẳn precision 0.8 do bịa.
 
+## Ngưỡng đánh giá — bao nhiêu thì gọi là đạt
+
+Con số trần trụi không nói lên gì nếu không có chỗ để so. Ba mức dưới đây
+**không do nhóm tự đặt** — lấy nguyên khung ngưỡng của một nhóm capstone khác
+(`AI_TESTING_REFERENCE.md`, phần công thức chỉ số). Mượn ngưỡng từ bên ngoài là
+có chủ đích: ngưỡng tự đặt sau khi đã biết kết quả thì luôn có thể bị hỏi
+"sao vừa khéo bằng đúng điểm của nhóm?".
+
+| Chỉ số | Tốt | Chấp nhận được | Cần cải thiện |
+|---|---|---|---|
+| Precision | ≥ 0.85 | 0.70 – 0.84 | < 0.70 |
+| Recall | ≥ 0.85 | 0.70 – 0.84 | < 0.70 |
+| F1 | ≥ 0.85 | 0.70 – 0.84 | < 0.70 |
+
+**Nhưng hai chỉ số này KHÔNG đắt ngang nhau trong bài toán này** — chỗ này là
+lập luận riêng của SRIS, phải nói khi trình bày:
+
+- Tiêu chí AI bóc ra là bản **`DRAFT` bắt buộc có người duyệt mới thành phiếu chấm**.
+  Một dòng thừa thì người duyệt nhìn thấy và xoá — mất mấy giây.
+- Một dòng **bỏ sót** thì người duyệt **không nhìn thấy gì cả**. Không có ô nào
+  sáng đèn báo "tin của bạn còn một yêu cầu chưa thành tiêu chí".
+
+Nên với hệ thống có người gác cổng ở giữa, **recall thấp nguy hiểm hơn precision
+thấp**. Khi phải chọn giữa hai phiên bản prompt, ưu tiên phiên bản recall cao hơn.
+
 ## Hạn chế phải nói rõ khi trích số
 
 Viết thẳng vào báo cáo, đừng để người khác phát hiện hộ:

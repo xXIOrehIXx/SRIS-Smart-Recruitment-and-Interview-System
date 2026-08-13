@@ -1,0 +1,11 @@
+id,so_bo_sot,ghi_chu
+J01_ke_toan,0,Cả 6 yêu cầu đều có mặt (dòng tính cách được tách thành 3)
+J02_kinh_doanh,0,Đủ 5 yêu cầu
+J03_kho_van,1,"Mất 'Sức khỏe tốt, có thể làm việc theo ca'. dataset.expect cho phép bỏ, nhưng bảng ranh giới trong RUBRIC.md chốt 'sức khỏe tốt' = DUNG nếu tin có nêu — theo luật chấm thì tính là bỏ sót"
+J04_dotnet,0,Đủ 6 yêu cầu; dòng 3 kỹ năng được tách đúng thành 3
+J05_hanh_chinh,0,Đủ 6 yêu cầu
+J06_le_tan,0,Đủ 5 yêu cầu
+J07_marketing,0,"Đủ 5 yêu cầu, và không dòng đầu việc nào trong mô tả bị biến thành tiêu chí"
+J08_tai_xe,3,"AI trả RỖNG. Ba yêu cầu chấm được bị mất sạch: thuộc đường nội thành Hà Nội · kinh nghiệm giao hàng, biết xử lý khi khách từ chối nhận · trung thực với tiền COD. Bỏ 3 dòng giấy tờ/nhân khẩu là đúng, bỏ cả tin là sai"
+J09_chi_dau_viec,0,CA ĐỐI CHỨNG ĐẠT — tin không nêu yêu cầu nào và AI trả rỗng đúng thiết kế
+J10_qua_nhieu,1,"Mất 'Tiếng Anh giao tiếp được với khách hàng nước ngoài' trong khi mô tả công việc có 'làm việc với khách hàng'. Bỏ PMP / fintech / bằng ĐH là đúng luật ưu tiên. Nguyên nhân đáng ghi: AI tự tách 'giao tiếp và thuyết trình' thành 2 dòng, tốn mất một suất trong trần 10 — luật TÁCH và trần 10 đá nhau"
