@@ -15,8 +15,6 @@ namespace GP35.SRIS.Application.Services.Business;
 /// </summary>
 public class RecruitmentRequestService : BaseService<RecruitmentRequestService>, IRecruitmentRequestService
 {
-    private static readonly string[] ValidPriorities = { "LOW", "MEDIUM", "HIGH" };
-
     private readonly IRecruitmentRequestRepo _requestRepo;
     private readonly IJobRepo _jobRepo;
     private readonly ILogger _logger;
@@ -40,7 +38,6 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
             EmploymentType = Clean(dto.EmploymentType),
             ExperienceLevel = Clean(dto.ExperienceLevel),
             ExperienceYearsMin = dto.ExperienceYearsMin,
-            Priority = NormalizePriority(dto.Priority),
             Description = Clean(dto.Description),
             Requirements = Clean(dto.Requirements),
             Benefits = Clean(dto.Benefits),
@@ -84,7 +81,6 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         request.EmploymentType = Clean(dto.EmploymentType);
         request.ExperienceLevel = Clean(dto.ExperienceLevel);
         request.ExperienceYearsMin = dto.ExperienceYearsMin;
-        request.Priority = NormalizePriority(dto.Priority);
         request.Description = Clean(dto.Description);
         request.Requirements = Clean(dto.Requirements);
         request.Benefits = Clean(dto.Benefits);
@@ -183,12 +179,6 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
             throw Bad($"Ngày cần tuyển ({start:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
     }
 
-    private static string NormalizePriority(string? priority)
-    {
-        var p = (priority ?? "MEDIUM").Trim().ToUpperInvariant();
-        return ValidPriorities.Contains(p) ? p : "MEDIUM";
-    }
-
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     private static RecruitmentRequestDto Map(RecruitmentRequest r, string? createdByName, string? reviewedByName) => new()
@@ -200,7 +190,6 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         EmploymentType = r.EmploymentType,
         ExperienceLevel = r.ExperienceLevel,
         ExperienceYearsMin = r.ExperienceYearsMin,
-        Priority = r.Priority,
         Description = r.Description,
         Requirements = r.Requirements,
         Benefits = r.Benefits,

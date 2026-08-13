@@ -30,9 +30,6 @@ public class RecruitmentRequest : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
     /// <summary>Số năm kinh nghiệm TỐI THIỂU (V024). 0 = nhận người chưa kinh nghiệm; null = không yêu cầu.</summary>
     [Column("experience_years_min")]
     public int? ExperienceYearsMin { get; set; }
-    /// <summary>LOW | MEDIUM | HIGH.</summary>
-    [Column("priority")]
-    public string Priority { get; set; } = "MEDIUM";
     [Column("description")]
     public string? Description { get; set; }
     [Column("requirements")]
