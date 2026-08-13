@@ -15,7 +15,6 @@ import {
   message,
   Steps,
   Alert,
-  Radio,
   Slider,
   Tag,
   Spin,
@@ -55,7 +54,6 @@ const CreateRecruitmentRequest = () => {
   const [loading, setLoading] = useState(false);
   const [loadingRequest, setLoadingRequest] = useState(isEdit);
   const [currentStep, setCurrentStep] = useState(0);
-  const [submitType, setSubmitType] = useState('draft');
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
 
@@ -211,6 +209,10 @@ const CreateRecruitmentRequest = () => {
     // 0 năm ("nhận người chưa kinh nghiệm") là giá trị HỢP LỆ -> không kiểm bằng falsy.
     return values.description && values.requirements && values.experienceYearsMin != null;
   };
+
+  // Ô Kỹ năng nằm ngoài form store (state `skills`) nên `required` trên Form.Item chỉ vẽ
+  // dấu * chứ không chặn gì — phải tự kiểm ở đây, khớp với ô Kỹ năng bắt buộc bên form Tin tuyển dụng.
+  const validateSkills = () => skills.length > 0;
 
   return (
     <div className="create-request-page">
@@ -419,7 +421,7 @@ const CreateRecruitmentRequest = () => {
                     </div>
                     {skills.length === 0 && (
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        Chưa có kỹ năng nào được thêm
+                        Chưa có kỹ năng nào được thêm — cần ít nhất 1
                       </Text>
                     )}
                   </Form.Item>
@@ -515,35 +517,12 @@ const CreateRecruitmentRequest = () => {
                 </Col>
               </Row>
 
-              <Divider />
-
-              <Form.Item label="Ghi chú cho Human Resource (tùy chọn)" name="notes">
-                <TextArea rows={3} placeholder="Các lưu ý đặc biệt, yêu cầu riêng cho recruiter..." />
-              </Form.Item>
-
-              {/* Sửa thì chỉ có 1 hành động (lưu lại) — không có khái niệm nháp/gửi nữa. */}
-              {!isEdit && (
-                <Form.Item label="Hành động">
-                  <Radio.Group
-                    value={submitType}
-                    onChange={(e) => setSubmitType(e.target.value)}
-                    size="large"
-                  >
-                    <Radio.Button value="draft" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
-                      <Space>
-                        <SaveOutlined />
-                        Lưu nháp
-                      </Space>
-                    </Radio.Button>
-                    <Radio.Button value="submit" style={{ height: 48, lineHeight: '46px', paddingInline: 24 }}>
-                      <Space>
-                        <SendOutlined />
-                        Gửi yêu cầu
-                      </Space>
-                    </Radio.Button>
-                  </Radio.Group>
-                </Form.Item>
-              )}
+              {/* Đã bỏ khỏi đây:
+                  - Ô "Ghi chú cho Human Resource": không có chỗ chứa (RecruitmentRequestInputDto
+                    không có trường notes) nên gõ xong là mất trắng, không ai đọc được.
+                  - Lựa chọn "Lưu nháp / Gửi yêu cầu": yêu cầu tuyển dụng không có trạng thái
+                    nháp (PENDING | APPROVED | REJECTED | CONVERTED | CANCELLED), hai nút cùng
+                    tạo một thứ y hệt — chọn gì cũng gửi thẳng cho bộ phận nhân sự. */}
             </div>
           )}
 
@@ -575,6 +554,10 @@ const CreateRecruitmentRequest = () => {
                       message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
                       return;
                     }
+                    if (currentStep === 1 && !validateSkills()) {
+                      message.error('Vui lòng thêm ít nhất một kỹ năng yêu cầu');
+                      return;
+                    }
                     setCurrentStep(currentStep + 1);
                   }}
                   style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
@@ -587,13 +570,10 @@ const CreateRecruitmentRequest = () => {
                   htmlType="submit"
                   loading={loading}
                   size="large"
-                  icon={isEdit || submitType === 'draft' ? <SaveOutlined /> : <SendOutlined />}
-                  style={{
-                    background: isEdit || submitType === 'submit' ? MATCHA_GREEN : undefined,
-                    borderColor: isEdit || submitType === 'submit' ? MATCHA_GREEN : undefined,
-                  }}
+                  icon={isEdit ? <SaveOutlined /> : <SendOutlined />}
+                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                 >
-                  {isEdit ? 'Lưu thay đổi' : submitType === 'draft' ? 'Lưu nháp' : 'Gửi yêu cầu'}
+                  {isEdit ? 'Lưu thay đổi' : 'Gửi yêu cầu'}
                 </Button>
               )}
             </Space>
