@@ -469,8 +469,10 @@ const Dashboard = () => {
                     )},
                     { title: 'Số lượng', dataIndex: 'quantity', width: 100, render: (val) => <Tag color="blue">{val} vị trí</Tag> },
                     { title: 'Ngày gửi', dataIndex: 'createdAt', width: 110, render: (v) => v ? dayjs(v).format('DD/MM/YYYY') : '-' },
-                    { title: 'Thao tác', key: 'actions', width: 90, render: () => (
-                      <Button type="link" size="small" onClick={() => navigate('/dept/requests')}>Xem</Button>
+                    { title: 'Thao tác', key: 'actions', width: 90, render: (_, record) => (
+                      // Mang theo id: trước đây chỉ mở danh sách, người dùng phải tự dò lại
+                      // đúng yêu cầu vừa bấm.
+                      <Button type="link" size="small" onClick={() => navigate(`/dept/requests?requestId=${record.requestId}`)}>Xem</Button>
                     )},
                   ]}
                   dataSource={requests.filter((r) => r.status === 'PENDING')}
@@ -583,7 +585,9 @@ const Dashboard = () => {
               <Card className="dashboard-card" bordered={false}>
                 <div className="card-header">
                   <Title level={5}>Pending Grading</Title>
-                  <Button type="link" onClick={() => navigate('/interviewer/grading')}>View All</Button>
+                  {/* /interviewer/grading (không có :id) KHÔNG phải route — trước đây bấm là
+                      rơi vào catch-all rồi bị đẩy về chính dashboard này. */}
+                  <Button type="link" onClick={() => navigate('/interviewer/history')}>View All</Button>
                 </div>
                 <List
                   itemLayout="horizontal"

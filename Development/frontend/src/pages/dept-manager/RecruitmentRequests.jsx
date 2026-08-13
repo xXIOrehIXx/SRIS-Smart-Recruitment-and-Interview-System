@@ -29,7 +29,7 @@ import {
   PlusOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { recruitmentRequestAPI } from '../../services/api';
 import {
@@ -47,6 +47,9 @@ const MATCHA_GREEN = '#5D8C3E';
 
 const DeptRecruitmentRequests = () => {
   const navigate = useNavigate();
+  // ?requestId= — vào thẳng yêu cầu vừa bấm ở Dashboard, khỏi phải dò lại trong bảng.
+  const [searchParams] = useSearchParams();
+  const requestIdFromUrl = Number(searchParams.get('requestId')) || null;
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [detailModal, setDetailModal] = useState(false);
@@ -102,6 +105,17 @@ const DeptRecruitmentRequests = () => {
     fetchRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Mở sẵn modal chi tiết khi có ?requestId — chờ danh sách tải xong mới có dữ liệu để hiện.
+  // Id không nằm trong danh sách (đã xoá / khác phòng ban) thì im lặng bỏ qua, vẫn thấy bảng.
+  useEffect(() => {
+    if (!requestIdFromUrl || requests.length === 0) return;
+    const found = requests.find((r) => r.id === requestIdFromUrl);
+    if (found) {
+      setSelectedRequest(found);
+      setDetailModal(true);
+    }
+  }, [requestIdFromUrl, requests]);
 
   // Human Resource duyệt / từ chối (lý do từ chối tùy chọn)
   const handleReview = async (record, approve) => {
