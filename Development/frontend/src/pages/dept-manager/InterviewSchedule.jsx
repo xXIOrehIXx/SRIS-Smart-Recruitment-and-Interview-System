@@ -190,9 +190,13 @@ const DeptInterviewSchedule = () => {
           style={{ marginBottom: 16 }}
           title={
             <Space>
-              <Text strong>Vòng {pool.roundNumber}</Text>
-              <Tag color={pool.status === 'OPEN' ? 'success' : pool.status === 'CANCELLED' ? 'error' : 'default'}>
-                {pool.status === 'OPEN' ? 'Đang mở' : pool.status === 'CANCELLED' ? 'Đã hủy' : pool.status}
+              {/* Tên vòng (V041) nói buổi đó để làm gì; số chỉ nói thứ tự. 'CLOSED' là chữ
+                  trong DB — pool đóng chỉ sinh ra từ nhánh chốt lịch tay của nhân sự. */}
+              <Text strong>Vòng {pool.roundNumber}{pool.name ? ` · ${pool.name}` : ''}</Text>
+              <Tag color={pool.status === 'OPEN' ? 'success' : pool.status === 'CANCELLED' ? 'error' : 'blue'}>
+                {pool.status === 'OPEN' ? 'Đang mở'
+                  : pool.status === 'CANCELLED' ? 'Đã hủy'
+                  : pool.status === 'CLOSED' ? 'Chốt lịch tay' : pool.status}
               </Tag>
             </Space>
           }

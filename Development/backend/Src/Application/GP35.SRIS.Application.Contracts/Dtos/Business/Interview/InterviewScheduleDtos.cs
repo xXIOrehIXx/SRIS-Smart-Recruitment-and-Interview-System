@@ -18,11 +18,20 @@ public class SlotInputDto
 
 /// <summary>
 /// Human Resource mở 1 POOL khung dùng chung cho 1 job + vòng (docs 15). Nhiều ứng viên được mời sẽ
-/// cùng chọn từ bộ khung này. roundNumber null = vòng 1.
+/// cùng chọn từ bộ khung này.
 /// </summary>
 public class CreatePoolDto
 {
+    /// <summary>
+    /// Vòng thứ mấy của vị trí. Null = vòng KẾ TIẾP (mặc định, FE luôn để hệ thống tự đánh).
+    /// Truyền số của một vòng ĐÃ CÓ = mở thêm đợt khung cho vòng đó (ứng viên vào sau vẫn được
+    /// phỏng vấn đúng vòng 1 dù người khác đã sang vòng 3). Nhảy cóc quá vòng kế tiếp bị chặn.
+    /// </summary>
     public int? RoundNumber { get; set; }
+
+    /// <summary>Tên vòng ("Phỏng vấn chuyên môn") — tùy chọn, tối đa 120 ký tự (V041).</summary>
+    public string? Name { get; set; }
+
     public List<SlotInputDto> Slots { get; set; } = new();
 }
 
@@ -47,7 +56,15 @@ public class ManualConfirmDto
     /// <summary>Panel interviewer (1..5 người) — mở rộng A.</summary>
     public List<long> InterviewerIds { get; set; } = new();
     public DateTime StartTime { get; set; }
+
+    /// <summary>
+    /// Buổi thứ mấy của CHÍNH ứng viên này. Null = tự đánh vòng kế tiếp của hồ sơ (FE luôn bỏ
+    /// trống). Nhảy cóc quá vòng kế tiếp bị chặn.
+    /// </summary>
     public int? RoundNumber { get; set; }
+
+    /// <summary>Tên vòng — tùy chọn; bỏ trống thì ghi "Chốt lịch tay" cho card tự giải thích.</summary>
+    public string? Name { get; set; }
 }
 
 /// <summary>1 khung giờ (góc nhìn nội bộ — có panel interviewer + ứng viên đã đặt).</summary>
@@ -81,6 +98,8 @@ public class PoolDto
     public long PoolId { get; set; }
     public long JobId { get; set; }
     public int RoundNumber { get; set; }
+    /// <summary>Tên vòng do Human Resource đặt; null = UI hiện "Vòng N".</summary>
+    public string? Name { get; set; }
     public string Status { get; set; } = null!;
     public List<SlotDto> Slots { get; set; } = new();
     public List<InvitedCandidateDto> InvitedCandidates { get; set; } = new();

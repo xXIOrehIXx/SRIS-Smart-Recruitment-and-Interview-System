@@ -46,6 +46,7 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
             ScheduleId = s.ScheduleId,
             ApplicationId = s.ApplicationId,
             RoundNumber = s.RoundNumber,
+            RoundName = s.RoundName,
             Status = s.Status,
             MySheetStatus = string.IsNullOrWhiteSpace(s.MySheetStatus) ? "NOT_STARTED" : s.MySheetStatus,
             StartTime = s.StartTime,
@@ -401,11 +402,18 @@ public class InterviewScoringService : BaseService<InterviewScoringService>, IIn
         // Lấy startTime từ slot đã chốt (cùng nguồn với list schedules).
         var slotStart = await _schedulingRepo.GetConfirmedSlotStartAsync(companyId, scheduleId);
 
+        // Tên vòng nằm ở pool (V041) — interviewer mở phiếu ra phải biết đang chấm buổi gì
+        // ("Phỏng vấn chuyên môn"), không chỉ "Vòng 2".
+        var roundName = schedule.PoolId is long poolId
+            ? (await _schedulingRepo.GetPoolByIdAsync(companyId, poolId))?.Name
+            : null;
+
         coreDto.Schedule = new ScoringScheduleInfoDto
         {
             ScheduleId = schedule.ScheduleId,
             ApplicationId = schedule.ApplicationId,
             RoundNumber = schedule.RoundNumber,
+            RoundName = roundName,
             Status = schedule.Status,
             StartTime = slotStart,
             JobTitle = job?.Title ?? string.Empty,
