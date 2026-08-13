@@ -81,8 +81,8 @@ const AdminLayout = () => {
   const bottomMenuItems = [
     {
       key: "/settings",
-      icon: <SettingOutlined />,
-      label: "Cài đặt",
+      icon: <UserOutlined />,
+      label: "Hồ sơ cá nhân",
     },
   ];
 
@@ -92,16 +92,14 @@ const AdminLayout = () => {
     }
   };
 
+  // /settings LÀ trang hồ sơ cá nhân (tên, SĐT, ảnh, đổi mật khẩu) — không có trang cài đặt
+  // hệ thống nào khác. Trước đây menu có cả "Cài đặt" trỏ vào đó còn "Hồ sơ cá nhân" chỉ hiện
+  // toast rỗng: hai mục, một đích, mục đúng tên thì không chạy.
   const userMenuItems = [
     {
       key: "profile",
       icon: <UserOutlined />,
       label: "Hồ sơ cá nhân",
-    },
-    {
-      key: "settings",
-      icon: <TeamOutlined />,
-      label: "Cài đặt",
     },
     {
       type: "divider",
@@ -120,8 +118,6 @@ const AdminLayout = () => {
       message.success("Đã đăng xuất");
       navigate("/login");
     } else if (key === "profile") {
-      message.info("Hồ sơ cá nhân");
-    } else if (key === "settings") {
       navigate("/settings");
     }
   };

@@ -195,13 +195,6 @@ const Login = () => {
             Sign in
           </Button>
         </Form>
-
-        <div className="dark-footer">
-          <p className="dark-footer-text">No company account yet?</p>
-          <Link to="/register" className="dark-link-btn">
-            Book a demo
-          </Link>
-        </div>
       </div>
     </div>
   );
