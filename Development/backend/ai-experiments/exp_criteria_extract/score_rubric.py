@@ -116,14 +116,24 @@ def main() -> int:
         tong = sum(d.values())
         dung = d.get(NHAN_DUNG, 0)
         sot = bo_sot.get(tin, 0)
+
+        # Tin AI trả rỗng mà cũng KHÔNG bỏ sót gì (ca đối chứng J09: tin không nêu
+        # yêu cầu nào, trả rỗng là đúng) thì không có gì để tính tỉ lệ — mẫu số bằng 0.
+        # In 0.000 ở đây là vu oan: bảng sẽ có một dòng toàn số 0 cho đúng ca chạy chuẩn.
+        khong_ap_dung = tong == 0 and sot == 0
         p = dung / tong if tong else 0.0
         rc = dung / (dung + sot) if (dung + sot) else 1.0
         f1 = 2 * p * rc / (p + rc) if (p + rc) else 0.0
-        print(f"{tin:<22}{tong:>8}{dung:>6}{sot:>5}{p:>8.3f}{rc:>8.3f}{f1:>7.3f}")
+        if khong_ap_dung:
+            print(f"{tin:<22}{tong:>8}{dung:>6}{sot:>5}{'—':>8}{'—':>8}{'ĐẠT':>7}")
+        else:
+            print(f"{tin:<22}{tong:>8}{dung:>6}{sot:>5}{p:>8.3f}{rc:>8.3f}{f1:>7.3f}")
         ket.append({
             "id": tin, "de_xuat": tong, "dung": dung, "bo_sot": sot,
             **{k.lower(): d.get(k, 0) for k in NHAN_LOI},
-            "precision": round(p, 4), "recall": round(rc, 4), "f1": round(f1, 4),
+            "precision": "" if khong_ap_dung else round(p, 4),
+            "recall": "" if khong_ap_dung else round(rc, 4),
+            "f1": "" if khong_ap_dung else round(f1, 4),
         })
 
     T = sum(r["de_xuat"] for r in ket)
