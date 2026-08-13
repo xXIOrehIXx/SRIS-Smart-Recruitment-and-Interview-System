@@ -165,6 +165,8 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
 
           <Descriptions.Item label="Vòng">
             <Tag color="cyan">Vòng {schedule.roundNumber || 1}</Tag>
+            {/* Tên vòng (V041) — thứ thật sự nói cho người phỏng vấn biết buổi này để làm gì. */}
+            {schedule.roundName && <Text style={{ marginLeft: 4 }}>{schedule.roundName}</Text>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Trạng thái lịch">

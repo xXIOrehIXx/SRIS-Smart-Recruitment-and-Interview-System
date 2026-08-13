@@ -6,6 +6,10 @@ public class MyScheduleDto
     public long ScheduleId { get; set; }
     public long ApplicationId { get; set; }
     public int RoundNumber { get; set; }
+
+    /// <summary>Tên vòng ("Phỏng vấn chuyên môn") — null khi Human Resource không đặt tên (V041).</summary>
+    public string? RoundName { get; set; }
+
     public string Status { get; set; } = null!;
 
     /// <summary>
@@ -64,6 +68,10 @@ public class ScoringScheduleInfoDto
     public long ScheduleId { get; set; }
     public long ApplicationId { get; set; }
     public int RoundNumber { get; set; }
+
+    /// <summary>Tên vòng ("Phỏng vấn chuyên môn") — null khi không đặt tên (V041).</summary>
+    public string? RoundName { get; set; }
+
     public string Status { get; set; } = null!;
     public DateTime StartTime { get; set; }
 

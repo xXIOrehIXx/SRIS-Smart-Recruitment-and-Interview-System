@@ -152,4 +152,140 @@ public class InterviewPoolServiceTests
         _notify.Verify(n => n.SendInterviewCancelledAsync(1L, 100L, It.IsAny<DateTime?>(), "No longer needed"), Times.Once);
         _activityLogRepo.Verify(r => r.InsertAsync(1L, It.Is<ActivityLog>(a => a.Action == "INTERVIEW_CANCELLED")), Times.Once);
     }
+
+    // ===== Số vòng: dãy liên tục do hệ thống đánh, không ai gõ tay =====
+
+    /// <summary>1 khung hợp lệ ở tương lai — dùng chung cho các test mở pool.</summary>
+    private static List<SlotInputDto> ValidSlots() => new()
+    {
+        new SlotInputDto { InterviewerIds = new List<long> { 7 }, StartTime = DateTime.Now.AddDays(3) }
+    };
+
+    private void SetupPoolsOfJob(params InterviewSlotPool[] pools) =>
+        SetupPoolsOfJob(pools.Select(p => new PoolWithSlots(p, new List<InterviewSlot>())).ToArray());
+
+    private void SetupPoolsOfJob(params PoolWithSlots[] pools)
+    {
+        _schedulingRepo
+            .Setup(r => r.GetPoolsByJobAsync(1L, 5L))
+            .ReturnsAsync(pools.ToList());
+
+        // CreatePoolAsync đọc lại pool vừa tạo để dựng DTO trả về — stub đường đọc đó, nếu không
+        // test chết ở khâu dựng DTO thay vì kiểm tra được luật số vòng.
+        _schedulingRepo
+            .Setup(r => r.GetSlotsByPoolAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<bool>()))
+            .ReturnsAsync(new List<InterviewSlot>());
+        _schedulingRepo
+            .Setup(r => r.GetSchedulesByPoolAsync(It.IsAny<long>(), It.IsAny<long>()))
+            .ReturnsAsync(new List<InterviewSchedule>());
+        _userRepo
+            .Setup(r => r.GetNamesByIdsAsync(It.IsAny<long>(), It.IsAny<IReadOnlyList<long>>()))
+            .ReturnsAsync(new List<User>());
+    }
+
+    [Fact]
+    public async Task CreatePoolAsync_Should_Default_To_Next_Round()
+    {
+        var svc = CreateService();
+        SetupPoolsOfJob(new InterviewSlotPool { PoolId = 1, JobId = 5, RoundNumber = 2, Status = "CLOSED" });
+
+        InterviewSlotPool? inserted = null;
+        _schedulingRepo
+            .Setup(r => r.InsertPoolWithSlotsAsync(1L, It.IsAny<InterviewSlotPool>(), It.IsAny<IEnumerable<InterviewSlot>>()))
+            .Callback<long, InterviewSlotPool, IEnumerable<InterviewSlot>>((_, p, _) => inserted = p)
+            .ReturnsAsync(99L);
+
+        await svc.CreatePoolAsync(1L, 1L, 5L, new CreatePoolDto { Slots = ValidSlots() });
+
+        Assert.Equal(3, inserted!.RoundNumber);
+    }
+
+    [Fact]
+    public async Task CreatePoolAsync_Should_Reject_Round_That_Skips_Ahead()
+    {
+        var svc = CreateService();
+        SetupPoolsOfJob(new InterviewSlotPool { PoolId = 1, JobId = 5, RoundNumber = 1, Status = "CLOSED" });
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() =>
+            svc.CreatePoolAsync(1L, 1L, 5L, new CreatePoolDto { RoundNumber = 5, Slots = ValidSlots() }));
+
+        Assert.Contains("tăng dần", ex.ErrorMessage);
+        _schedulingRepo.Verify(
+            r => r.InsertPoolWithSlotsAsync(It.IsAny<long>(), It.IsAny<InterviewSlotPool>(), It.IsAny<IEnumerable<InterviewSlot>>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task CreatePoolAsync_Should_Allow_Reopening_An_Existing_Round_And_Keep_Its_Name()
+    {
+        // Ứng viên nộp muộn vẫn phải phỏng vấn vòng 1 dù người khác đã sang vòng 2 — và phải
+        // thấy đúng tên vòng 1 cũ, không phải một vòng 1 vô danh.
+        var svc = CreateService();
+        SetupPoolsOfJob(
+            new InterviewSlotPool { PoolId = 2, JobId = 5, RoundNumber = 2, Status = "OPEN", Name = "Gặp giám đốc" },
+            new InterviewSlotPool { PoolId = 1, JobId = 5, RoundNumber = 1, Status = "CLOSED", Name = "Sơ loại" });
+
+        InterviewSlotPool? inserted = null;
+        _schedulingRepo
+            .Setup(r => r.InsertPoolWithSlotsAsync(1L, It.IsAny<InterviewSlotPool>(), It.IsAny<IEnumerable<InterviewSlot>>()))
+            .Callback<long, InterviewSlotPool, IEnumerable<InterviewSlot>>((_, p, _) => inserted = p)
+            .ReturnsAsync(99L);
+
+        await svc.CreatePoolAsync(1L, 1L, 5L, new CreatePoolDto { RoundNumber = 1, Slots = ValidSlots() });
+
+        Assert.Equal(1, inserted!.RoundNumber);
+        Assert.Equal("Sơ loại", inserted.Name);
+    }
+
+    [Fact]
+    public async Task CreatePoolAsync_Should_Reject_Slot_Earlier_Than_Previous_Round()
+    {
+        // Vòng 1 có khung muộn nhất ngày 21 -> vòng 2 mở khung ngày 19 là để ngỏ khả năng ứng
+        // viên phỏng vấn vòng 2 trước khi vòng 1 của họ diễn ra.
+        var svc = CreateService();
+        var round1 = new InterviewSlotPool { PoolId = 1, JobId = 5, RoundNumber = 1, Status = "OPEN" };
+        SetupPoolsOfJob(new PoolWithSlots(round1, new List<InterviewSlot>
+        {
+            new() { SlotId = 11, PoolId = 1, StartTime = DateTime.Now.AddDays(8), Status = "OPEN" }
+        }));
+
+        var dto = new CreatePoolDto
+        {
+            Slots = new List<SlotInputDto>
+            {
+                new() { InterviewerIds = new List<long> { 7 }, StartTime = DateTime.Now.AddDays(6) }
+            }
+        };
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.CreatePoolAsync(1L, 1L, 5L, dto));
+
+        Assert.Contains("phải diễn ra sau vòng 1", ex.ErrorMessage);
+        _schedulingRepo.Verify(
+            r => r.InsertPoolWithSlotsAsync(It.IsAny<long>(), It.IsAny<InterviewSlotPool>(), It.IsAny<IEnumerable<InterviewSlot>>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ManualConfirmAsync_Should_Reject_Round_That_Skips_Ahead()
+    {
+        var svc = CreateService();
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 100L))
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application { ApplicationId = 100, JobId = 5 });
+        // Ứng viên chưa phỏng vấn buổi nào -> buổi đầu tiên phải là vòng 1.
+        _schedulingRepo.Setup(r => r.GetNextRoundNumberAsync(1L, 100L)).ReturnsAsync(1);
+
+        var dto = new ManualConfirmDto
+        {
+            InterviewerIds = new List<long> { 7 },
+            StartTime = DateTime.Now.AddDays(3),
+            RoundNumber = 4
+        };
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.ManualConfirmAsync(1L, 1L, 100L, dto));
+
+        Assert.Contains("vòng 1", ex.ErrorMessage);
+        _stateService.Verify(
+            s => s.AdvanceToAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>()),
+            Times.Never);
+    }
 }

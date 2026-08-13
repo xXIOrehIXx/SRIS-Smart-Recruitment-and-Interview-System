@@ -24,6 +24,9 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     /// <summary>Số interviewer tối đa trong 1 panel khung.</summary>
     private const int MaxPanelSize = 5;
 
+    /// <summary>Độ dài tối đa tên vòng — khớp cột NVARCHAR(120) ở V041.</summary>
+    private const int MaxRoundNameLength = 120;
+
     private readonly IApplicationRepo _appRepo;
     private readonly ISchedulingRepo _schedulingRepo;
     private readonly IEvaluationCriteriaRepo _criteriaRepo;
@@ -54,30 +57,87 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
 
         ValidateSlots(dto.Slots);
 
-        var roundNumber = dto.RoundNumber ?? 1;
+        var poolsWithSlots = await _schedulingRepo.GetPoolsByJobAsync(companyId, jobId);
+        var poolsOfJob = poolsWithSlots.Select(p => p.Pool).ToList();
+
+        // Các vòng của một VỊ TRÍ là một dãy liên tục 1,2,3... (đúng mô hình "interview plan"
+        // của các ATS thật): số vòng do hệ thống đánh, người dùng chỉ đặt TÊN. Vòng đã hủy
+        // không tính — hủy rồi mở lại đúng vòng đó là chuyện bình thường.
+        var maxRound = poolsOfJob
+            .Where(p => !string.Equals(p.Status, InterviewPoolStatus.Cancelled, StringComparison.OrdinalIgnoreCase))
+            .Select(p => p.RoundNumber)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        // Bỏ trống = vòng KẾ TIẾP. Truyền số của vòng ĐÃ CÓ = mở thêm đợt khung cho vòng đó —
+        // đây là đường dành cho ứng viên nộp muộn: họ vẫn phải qua vòng 1 dù người khác đã
+        // sang vòng 3. Chỉ chặn nhảy cóc quá vòng kế tiếp (dãy vòng thủng lỗ 1 rồi 5).
+        var roundNumber = dto.RoundNumber ?? maxRound + 1;
         if (roundNumber < 1)
             throw Bad("Vòng phỏng vấn phải từ 1 trở lên.");
+        if (roundNumber > maxRound + 1)
+            throw Bad(maxRound == 0
+                ? $"Vị trí này chưa có vòng phỏng vấn nào — vòng đầu tiên phải là vòng 1, không phải vòng {roundNumber}."
+                : $"Vị trí này mới có tới vòng {maxRound}. Vòng phải tăng dần — mở vòng {maxRound + 1} trước, " +
+                  $"không nhảy thẳng sang vòng {roundNumber}.");
 
         // Một job chỉ được có 1 pool ĐANG MỞ cho mỗi vòng: mở hai pool cùng "vòng 1" thì
         // ứng viên nhận hai lời mời cho cùng một vòng và recruiter không biết khung nào là thật.
         // Chỉ chặn khi pool cũ còn OPEN — pool đã đóng/hủy thì mở lại cùng vòng là hợp lệ
         // (đúng với thông báo "Pool không còn mở — hãy tạo pool mới" ở luồng mời).
-        var existingOpen = (await _schedulingRepo.GetPoolsByJobAsync(companyId, jobId))
-            .Select(p => p.Pool)
+        var existingOpen = poolsOfJob
             .FirstOrDefault(p =>
                 p.RoundNumber == roundNumber &&
                 string.Equals(p.Status, InterviewPoolStatus.Open, StringComparison.OrdinalIgnoreCase));
 
         if (existingOpen is not null)
             throw Conflict(
-                $"Vòng {roundNumber} của tin tuyển dụng này đã có pool khung đang mở " +
-                $"(pool #{existingOpen.PoolId}). Hãy thêm khung vào pool đó, đóng nó, " +
-                $"hoặc tạo vòng khác.");
+                $"Vòng {roundNumber} của tin tuyển dụng này đã có đợt khung đang mở " +
+                $"(pool #{existingOpen.PoolId}). Hãy mời ứng viên vào đợt đó, hủy nó, " +
+                $"hoặc mở vòng {maxRound + 1}.");
+
+        // Vòng sau phải diễn ra SAU vòng trước. Mốc so sánh là khung MUỘN NHẤT của vòng liền
+        // trước, vì bất kỳ ứng viên nào cũng có thể đã đặt đúng khung muộn nhất đó — mở vòng 2
+        // sớm hơn mốc ấy là bày ra khả năng phỏng vấn vòng 2 trước khi vòng 1 diễn ra.
+        // Chỉ áp khi mở vòng MỚI; mở lại vòng cũ cho ứng viên nộp muộn không bị chặn (vòng 1
+        // của họ đương nhiên nằm sau các vòng đang chạy của người khác).
+        if (roundNumber > 1)
+        {
+            var prevLatest = poolsWithSlots
+                .Where(pw => pw.Pool.RoundNumber == roundNumber - 1
+                    && !string.Equals(pw.Pool.Status, InterviewPoolStatus.Cancelled, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(pw => pw.Slots)
+                .Where(s => !string.Equals(s.Status, InterviewSlotStatus.Locked, StringComparison.OrdinalIgnoreCase))
+                .Select(s => (DateTime?)s.StartTime)
+                .Max();
+
+            if (prevLatest is DateTime prev)
+            {
+                var tooEarly = dto.Slots
+                    .Where(s => s.StartTime <= prev)
+                    .OrderBy(s => s.StartTime)
+                    .FirstOrDefault();
+
+                if (tooEarly is not null)
+                    throw Bad(
+                        $"Vòng {roundNumber} phải diễn ra sau vòng {roundNumber - 1}. Khung muộn nhất của " +
+                        $"vòng {roundNumber - 1} là {prev:HH:mm dd/MM/yyyy}, nhưng khung " +
+                        $"{tooEarly.StartTime:HH:mm dd/MM/yyyy} lại sớm hơn mốc đó.");
+            }
+        }
+
+        // Tên vòng: kế thừa tên đã đặt cho CHÍNH vòng đó lần trước khi mở lại (ứng viên nộp
+        // muộn phải thấy đúng "Vòng 1 · Phỏng vấn sơ bộ", không phải một vòng 1 vô danh).
+        var name = Normalize(dto.Name)
+                   ?? poolsOfJob.Where(p => p.RoundNumber == roundNumber)
+                                .Select(p => p.Name)
+                                .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
 
         var pool = new InterviewSlotPool
         {
             JobId = jobId,
             RoundNumber = roundNumber,
+            Name = name,
             Status = InterviewPoolStatus.Open,
             CreatedBy = userId > 0 ? userId : null
         };
@@ -242,9 +302,22 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             throw Bad("Panel có interviewer bị trùng.");
         // Giờ chốt tay cũng là local naive từ FE -> so với giờ local server (xem ValidateSlots).
         if (dto.StartTime <= DateTime.Now)
-            throw Bad("Thời điểm phỏng vấn phải ở tương lai.");
+            throw Bad($"Thời điểm {dto.StartTime:HH:mm dd/MM/yyyy} đã ở quá khứ " +
+                      $"(bây giờ là {DateTime.Now:HH:mm dd/MM/yyyy}). Hãy chọn thời điểm sau hiện tại.");
 
-        var round = dto.RoundNumber ?? await _schedulingRepo.GetNextRoundNumberAsync(companyId, applicationId);
+        // Vòng của chốt tay đếm theo CHÍNH ứng viên (max vòng đã có + 1), không theo vị trí:
+        // người vào sau chốt tay buổi đầu tiên vẫn là vòng 1 của họ. Bỏ trống = tự ++ (FE luôn
+        // bỏ trống); truyền tay thì vẫn không được nhảy cóc.
+        var nextRound = await _schedulingRepo.GetNextRoundNumberAsync(companyId, applicationId);
+        var round = dto.RoundNumber ?? nextRound;
+        if (round < 1)
+            throw Bad("Vòng phỏng vấn phải từ 1 trở lên.");
+        if (round > nextRound)
+            throw Bad(nextRound == 1
+                ? $"Ứng viên này chưa có buổi phỏng vấn nào — buổi đầu tiên là vòng 1, không phải vòng {round}."
+                : $"Ứng viên này mới phỏng vấn tới vòng {nextRound - 1}. Vòng phải tăng dần — " +
+                  $"buổi tiếp theo là vòng {nextRound}, không nhảy thẳng sang vòng {round}.");
+
         var panel = dto.InterviewerIds.Distinct().ToList();
 
         // Chống trùng như nhánh ứng viên tự chốt (không có schedule cũ để loại trừ -> 0).
@@ -267,6 +340,7 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
 
         var scheduleId = await _schedulingRepo.ManualConfirmAsync(
             companyId, app.JobId, applicationId, panel, dto.StartTime, round,
+            Normalize(dto.Name) ?? "Chốt lịch tay",
             userId > 0 ? userId : null);
 
         await _activityLogRepo.InsertAsync(companyId, new ActivityLog
@@ -345,6 +419,7 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             PoolId = pool.PoolId,
             JobId = pool.JobId,
             RoundNumber = pool.RoundNumber,
+            Name = pool.Name,
             Status = pool.Status,
             Slots = slots.Select(x => new SlotDto
             {
@@ -386,9 +461,24 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
                 throw Bad("Panel có interviewer không hợp lệ (id <= 0).");
             if (s.InterviewerIds.Distinct().Count() != s.InterviewerIds.Count)
                 throw Bad("Panel có interviewer bị trùng trong cùng 1 khung.");
+            // Nói rõ khung NÀO và bây giờ là mấy giờ. Câu "Khung giờ phải ở tương lai" trống trơn
+            // khiến người dùng đi tìm nguyên nhân ở chỗ khác (vòng cũ đã hủy, pool trùng...)
+            // trong khi lý do chỉ là cái đồng hồ — hay gặp nhất là chọn ngày hôm nay mà để
+            // nguyên 00:00 mặc định của ô chọn giờ.
             if (s.StartTime <= now)
-                throw Bad("Khung giờ phải ở tương lai.");
+                throw Bad($"Khung {s.StartTime:HH:mm dd/MM/yyyy} đã ở quá khứ " +
+                          $"(bây giờ là {now:HH:mm dd/MM/yyyy}). Hãy chọn thời điểm sau hiện tại.");
         }
+    }
+
+    /// <summary>Cắt khoảng trắng tên vòng + chặn quá dài. Chuỗi rỗng -> null (= không đặt tên).</summary>
+    private static string? Normalize(string? name)
+    {
+        var trimmed = name?.Trim();
+        if (string.IsNullOrEmpty(trimmed)) return null;
+        if (trimmed.Length > MaxRoundNameLength)
+            throw Bad($"Tên vòng tối đa {MaxRoundNameLength} ký tự.");
+        return trimmed;
     }
 
     private static BaseException Bad(string msg) => new(msg)

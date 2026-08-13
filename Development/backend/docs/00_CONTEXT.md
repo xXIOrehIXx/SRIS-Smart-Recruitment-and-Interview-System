@@ -180,6 +180,13 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Guard G2 giữ mức "≥1 phiếu chấm" — KHÔNG siết "chấm hết mọi vòng".
 - Vì sao KHÔNG INTERVIEW_1/_2/_3: phình state, hard-code số vòng, phá forward-only.
 - Với công ty nhỏ: mặc định 1 vòng là đủ (khớp As-Is 4.2); multi-round là năng lực sẵn khi cần. Bằng chứng thực tế: VPBank Young Talents 2026 (Section 10).
+- **Đánh số vòng (chốt 13/08/2026 — V041).** Theo mô hình "interview plan" của các ATS thật (Greenhouse, Lever, Ashby, Workable): mỗi vị trí có một DÃY vòng liên tục `1,2,3...`; **SỐ do hệ thống đánh, người dùng chỉ đặt TÊN** (`InterviewSlotPool.name` — "Sơ loại qua điện thoại", "Phỏng vấn chuyên môn"). Không nơi nào cho gõ số vòng: trước đó HR chọn tự do 1–5 nên mở được "Vòng 5" khi vị trí mới có vòng 1.
+  - Mở pool = **vòng kế tiếp** (mặc định) hoặc **mở lại một vòng ĐÃ CÓ** — đường dành cho ứng viên nộp muộn: họ vẫn phải qua vòng 1 dù người khác đã sang vòng 3. Mở lại thì kế thừa tên cũ của vòng đó.
+  - BE chặn nhảy cóc (`roundNumber > maxRound + 1` → 400). Vòng đã hủy không tính vào `maxRound`.
+  - Chốt lịch tay đếm theo **chính ứng viên** (`max vòng của hồ sơ + 1`), vì người vào sau chốt tay buổi đầu tiên vẫn là vòng 1 của họ.
+  - **Vòng sau phải diễn ra SAU vòng trước:** mọi khung của vòng N phải muộn hơn khung MUỘN NHẤT của vòng N−1 (mốc là khung muộn nhất vì ứng viên nào cũng có thể đã đặt đúng khung đó). Không có ràng buộc này thì mở được vòng 2 ngày 19 trong khi vòng 1 ngày 21. Chỉ áp khi mở vòng MỚI — mở lại vòng cũ cho ứng viên nộp muộn không bị chặn.
+  - Lịch đã HỦY / pool đã HỦY không tính ở mọi phép đếm trên (buổi không diễn ra thì không chiếm số vòng). Pool CLOSED của chốt tay thì VẪN tính — đó là buổi có thật.
+  - Tên vòng là TÙY CHỌN; bỏ trống thì mọi màn hình hiện "Vòng N" như cũ.
 
 ### 5.13 Actionable Email + Magic Link
 - Magic link: URL chứa chuỗi ngẫu nhiên dài. DB lưu **hash** token (SHA-256) kèm purpose, hồ sơ, TTL, đã dùng chưa. Rate limit, đếm truy cập, ràng buộc purpose.
@@ -419,7 +426,7 @@ Purpose `SCHEDULE`, riêng từng ứng viên nhưng trỏ về CÙNG pool. Toke
 ### 15.4 Trạng thái code (M9)
 - **ĐÃ CÓ:** mở pool (`POST /api/jobs/{jobId}/interview-pools`) · mời danh sách (`POST /api/interview-pools/{poolId}/invitations`) · xem pool + cờ · hủy pool · chốt lịch tay · trang ứng viên chọn/chốt/báo bận (`/api/candidate/schedule`) · chống trùng giờ · email + .ics khi CONFIRMED (best-effort) · guard "kéo trước mới mời được".
 - **Chưa/một phần:** reschedule = mở pool vòng mới (chưa có nút gộp) · real-time ẩn slot · ô ghi chú gợi ý giờ.
-- **Bảng (đều có `company_id`):** `InterviewSlotPool` (OPEN/CLOSED/CANCELLED — 1 pool = job + round) · `InterviewSlot` (OPEN/BOOKED/LOCKED — thuộc pool, có `booked_application_id`) · `InterviewSchedule` (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
+- **Bảng (đều có `company_id`):** `InterviewSlotPool` (OPEN/CLOSED/CANCELLED — 1 pool = job + round, kèm `name` = tên vòng, V041) · `InterviewSlot` (OPEN/BOOKED/LOCKED — thuộc pool, có `booked_application_id`) · `InterviewSchedule` (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
 
 ---
 

@@ -83,7 +83,11 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// <summary>Số lần hồ sơ báo bận (schedule NO_SLOT_FITS) — để suy cờ vàng/đỏ (15).</summary>
     Task<int> CountNoSlotFitsAsync(long companyId, long applicationId);
 
-    /// <summary>Số vòng kế tiếp cho hồ sơ (max round hiện có + 1; 1 nếu chưa có) — dùng khi chốt tay.</summary>
+    /// <summary>
+    /// Số vòng kế tiếp cho hồ sơ (max round hiện có + 1; 1 nếu chưa có) — dùng khi chốt tay.
+    /// Lịch đã HỦY không tính (buổi không diễn ra thì không chiếm số vòng), khớp với cách
+    /// CreatePoolAsync bỏ qua pool CANCELLED.
+    /// </summary>
     Task<int> GetNextRoundNumberAsync(long companyId, long applicationId);
 
     // ---------- Chốt khung ----------
@@ -123,7 +127,7 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// </summary>
     Task<long> ManualConfirmAsync(
         long companyId, long jobId, long applicationId, IReadOnlyList<long> interviewerIds,
-        DateTime startTime, int roundNumber, long? createdBy);
+        DateTime startTime, int roundNumber, string? roundName, long? createdBy);
 
     // ---------- Chấm điểm (5.7) ----------
 
@@ -144,4 +148,4 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 public record InterviewerScheduleRow(
     long ScheduleId, long ApplicationId, int RoundNumber, string Status,
     DateTime StartTime, string CandidateName, string CandidateEmail, string JobTitle,
-    string MySheetStatus, string ApplicationState);
+    string MySheetStatus, string ApplicationState, string? RoundName);

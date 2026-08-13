@@ -16,6 +16,12 @@ public class CandidateScheduleDto
     public long ScheduleId { get; set; }
     public int RoundNumber { get; set; }
 
+    /// <summary>
+    /// Tên vòng Human Resource đặt ("Phỏng vấn chuyên môn") — null nếu không đặt. Ứng viên đọc
+    /// cái này để biết buổi tới là buổi gì mà chuẩn bị; con số vòng không nói lên điều đó.
+    /// </summary>
+    public string? RoundName { get; set; }
+
     /// <summary>PENDING | CONFIRMED | NO_SLOT_FITS | CANCELLED</summary>
     public string Status { get; set; } = null!;
 
