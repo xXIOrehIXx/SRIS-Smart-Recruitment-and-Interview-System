@@ -61,11 +61,13 @@ const HiringDecision = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   // Chi tiết để DM quyết: KẾT LUẬN của người phỏng vấn (nên tuyển hay không + vì sao)
-  // kèm note theo tiêu chí và ghi chú nội bộ. KHÔNG có điểm số — người quyết đọc nhận
-  // xét rồi chốt, chứ không phải tự dịch một con số trung bình ra ý người chấm.
+  // kèm note theo tiêu chí và ghi chú nội bộ; điểm trung bình đi kèm ở dạng % để đối chiếu,
+  // nhưng đứng SAU kết luận — người quyết đọc nhận xét rồi chốt, không tự dịch một con số ra ý người chấm.
   const [detailLoading, setDetailLoading] = useState(false);
   const [brief, setBrief] = useState(null);
   const [appDetail, setAppDetail] = useState(null);
+  // Điểm theo từng vòng: [{ scheduleId, panelWeightedPercent, interviewerTotals: [...] }]
+  const [aggregates, setAggregates] = useState([]);
   const [cvLoading, setCvLoading] = useState(false);
   
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -176,14 +178,19 @@ const HiringDecision = () => {
     setDetailModalOpen(true);
     setBrief(null);
     setAppDetail(null);
+    setAggregates([]);
     setDetailLoading(true);
     try {
-      const [briefRes, appRes] = await Promise.all([
+      // decision-brief KHÔNG kèm điểm; điểm nằm ở interview-aggregate (trung bình có trọng số
+      // của cả hội đồng + của từng người chấm). Điểm hỏng thì vẫn phải quyết được -> catch riêng.
+      const [briefRes, appRes, aggRes] = await Promise.all([
         interviewAPI.getDecisionBrief(record.id),
         applicationAPI.getById(record.id),
+        interviewAPI.getApplicationAggregate(record.id).catch(() => ({ data: [] })),
       ]);
       setBrief(briefRes.data || null);
       setAppDetail(appRes.data || null);
+      setAggregates(aggRes.data || []);
     } catch (error) {
       console.error(error);
       message.error(apiMessage(error, 'Không tải được chi tiết ứng viên'));
@@ -477,8 +484,9 @@ const HiringDecision = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            {/* Căn cứ để DM chốt: người phỏng vấn kết luận gì và VÌ SAO (docs 5.14).
-                Cố tình không bày điểm — điểm là công cụ của người chấm, không phải của người quyết. */}
+            {/* Căn cứ để DM chốt: người phỏng vấn kết luận gì và VÌ SAO (docs 5.14) — kết luận
+                đứng trước, điểm chỉ là phần bổ trợ. Điểm hiện gọn: % trung bình có trọng số của
+                cả hội đồng + của từng người chấm; bảng điểm từng tiêu chí ở link bên cạnh. */}
             <Title level={5} style={{ marginTop: 24 }}>Kết luận của hội đồng phỏng vấn</Title>
 
             {detailLoading ? (
@@ -505,12 +513,35 @@ const HiringDecision = () => {
                   )}
                 </Space>
 
-                {brief.rounds.map((round) => (
+                {brief.rounds.map((round) => {
+                  const agg = aggregates.find((a) => a.scheduleId === round.scheduleId);
+                  return (
                   <div key={round.scheduleId} style={{ marginBottom: 16 }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      Vòng {round.roundNumber}
-                      {round.scheduledAt ? ` · ${dayjs(round.scheduledAt).format('DD/MM/YYYY HH:mm')}` : ''}
-                    </Text>
+                    <Space size={8} wrap>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Vòng {round.roundNumber}
+                        {round.scheduledAt ? ` · ${dayjs(round.scheduledAt).format('DD/MM/YYYY HH:mm')}` : ''}
+                      </Text>
+                      {/* Điểm trung bình CẢ hội đồng, quy về % có trọng số — cùng công thức với
+                          phiếu chấm và trang tổng hợp, nên ba nơi luôn ra một con số. */}
+                      {agg && agg.submittedInterviewers > 0 && (
+                        <Tag color={MATCHA_GREEN} style={{ fontSize: 12 }}>
+                          Điểm hội đồng: {Math.round(agg.panelWeightedPercent)}%
+                          {agg.submittedInterviewers > 1 ? ` (TB ${agg.submittedInterviewers} người chấm)` : ''}
+                        </Tag>
+                      )}
+                      {/* Điểm không bày ở đây (xem chú thích trên), nhưng phải có đường ĐẾN nó:
+                          bảng điểm từng tiêu chí + độ lệch chuẩn nằm ở trang chi tiết buổi
+                          phỏng vấn, trước giờ chỉ vào được bằng cách đi vòng qua menu Lịch. */}
+                      <Button
+                        type="link"
+                        size="small"
+                        style={{ padding: 0, fontSize: 12 }}
+                        onClick={() => navigate(`/dept/interview/${round.scheduleId}`)}
+                      >
+                        Xem bảng điểm chi tiết
+                      </Button>
+                    </Space>
 
                     {round.verdicts.length === 0 ? (
                       <div style={{ marginTop: 6 }}>
@@ -526,6 +557,16 @@ const HiringDecision = () => {
                             <Space wrap>
                               <Text strong>{v.interviewerName || `#${v.interviewerId}`}</Text>
                               {recommendationTag(v.recommendation)}
+                              {(() => {
+                                const total = agg?.interviewerTotals?.find(
+                                  (t) => t.interviewerId === v.interviewerId
+                                );
+                                return total ? (
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {Math.round(total.weightedPercent)}%
+                                  </Text>
+                                ) : null;
+                              })()}
                             </Space>
                           }
                         >
@@ -549,7 +590,8 @@ const HiringDecision = () => {
                       ))
                     )}
                   </div>
-                ))}
+                  );
+                })}
 
                 {brief.internalNotes.length > 0 && (
                   <>
