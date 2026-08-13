@@ -32,11 +32,13 @@ const { Title, Text } = Typography;
 const MATCHA_GREEN = '#5D8C3E';
 
 // ====== Helpers =================================================
+// Cùng bộ nhãn với phiếu chấm (Grading.jsx): đây là ĐỀ XUẤT của người phỏng vấn, không phải
+// kết quả tuyển — "trúng tuyển" là chuyện của người quyết ở bước OFFER.
 const RECOMMENDATIONS = [
-  { key: 'STRONG_HIRE', label: 'Trúng tuyển mạnh', color: '#52c41a' },
-  { key: 'HIRE', label: 'Trúng tuyển', color: '#73d13d' },
-  { key: 'CONSIDER', label: 'Cân nhắc', color: '#faad14' },
-  { key: 'NO_HIRE', label: 'Không trúng tuyển', color: '#f5222d' },
+  { key: 'STRONG_HIRE', label: 'Rất nên tuyển', color: '#52c41a' },
+  { key: 'HIRE', label: 'Nên tuyển', color: '#73d13d' },
+  { key: 'CONSIDER', label: 'Cần xem xét', color: '#faad14' },
+  { key: 'NO_HIRE', label: 'Không nên tuyển', color: '#f5222d' },
 ];
 
 // Status hiển thị cho lịch (PENDING|CONFIRMED|CANCELLED...).

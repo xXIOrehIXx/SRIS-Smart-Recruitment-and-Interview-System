@@ -42,7 +42,7 @@ const RECOMMENDATIONS = [
   { key: 'STRONG_HIRE', label: 'Rất nên tuyển', color: '#52c41a' },
   { key: 'HIRE', label: 'Nên tuyển', color: '#73d13d' },
   { key: 'CONSIDER', label: 'Cần xem xét', color: '#faad14' },
-  { key: 'NO_HIRE', label: 'Không tuyển', color: '#f5222d' },
+  { key: 'NO_HIRE', label: 'Không nên tuyển', color: '#f5222d' },
 ];
 
 const Grading = () => {
@@ -57,8 +57,8 @@ const Grading = () => {
   const [feedback, setFeedback] = useState('');
   const [recommendation, setRecommendation] = useState(null);
   const [interviewInfo, setInterviewInfo] = useState(null);
-  // Note theo từng tiêu chí: UI chưa có ô nhập, nhưng phải gửi lại nguyên vẹn -
-  // gửi null sẽ xoá note của chính mình đã lưu trước đó.
+  // Note theo từng tiêu chí (ô nhập nằm ngay dưới thanh điểm của tiêu chí đó).
+  // Luôn gửi lại nguyên vẹn khi lưu — gửi null sẽ xoá note của chính mình đã lưu trước đó.
   const [criteriaNotes, setCriteriaNotes] = useState({});
 
   // Modal states
@@ -137,8 +137,16 @@ const Grading = () => {
     }
   };
 
+  // Ô nhập tay là <input type="number">: thuộc tính min/max của HTML chỉ chặn lúc submit form
+  // chứ không cấm gõ, nên 50/10 vẫn vào được state rồi BE trả 400 khi lưu. Kẹp tại đây —
+  // một cửa duy nhất cho cả ô nhập lẫn slider.
   const handleScoreChange = (id, value) => {
-    setScores({ ...scores, [id]: value });
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      setScores({ ...scores, [id]: value });
+      return;
+    }
+    const max = criteria.find((c) => c.id === id)?.maxScore ?? 10;
+    setScores({ ...scores, [id]: Math.min(Math.max(value, 0), max) });
   };
 
   const calculateTotal = () => {
@@ -185,7 +193,7 @@ const Grading = () => {
       return;
     }
     if (!recommendation) {
-      message.warning('Hãy chọn đề xuất (nên tuyển / cần xem xét / không tuyển) trước khi nộp phiếu.');
+      message.warning('Hãy chọn đề xuất (nên tuyển / cần xem xét / không nên tuyển) trước khi nộp phiếu.');
       return;
     }
     setSubmitConfirmModal(true);
@@ -362,13 +370,10 @@ const Grading = () => {
               {criteria.map((item) => (
                 <div key={item.id} className="criteria-item">
                   <div className="criteria-header">
+                    {/* Tiêu chí chỉ còn name + weight + maxScore: cột mô tả đã xoá ở V032,
+                        phiếu chấm (ScoringSheetCriterionDto) không trả description. */}
                     <div>
                       <span className="criteria-name">{item.name}</span>
-                      {item.description && (
-                        <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                          {item.description}
-                        </Text>
-                      )}
                     </div>
                     <div className="criteria-score-input">
                       <Input
@@ -392,6 +397,20 @@ const Grading = () => {
                     className="score-slider"
                     disabled={isLocked}
                   />
+                  {/* Ghi chú riêng cho tiêu chí này — cột note đã có từ đầu ở BE và hiện
+                      nguyên văn trong bản tóm tắt của trưởng bộ phận, nhưng phiếu chấm lại
+                      không có ô nào để gõ. Không bắt buộc: bỏ trống thì chỉ còn nhận xét chung. */}
+                  <TextArea
+                    rows={1}
+                    autoSize={{ minRows: 1, maxRows: 3 }}
+                    placeholder="Dẫn chứng cho điểm này (tùy chọn)"
+                    value={criteriaNotes[item.id] || ''}
+                    onChange={(e) =>
+                      setCriteriaNotes({ ...criteriaNotes, [item.id]: e.target.value })
+                    }
+                    disabled={isLocked}
+                    style={{ marginTop: 8 }}
+                  />
                 </div>
               ))}
             </div>
@@ -414,7 +433,7 @@ const Grading = () => {
                 Đề xuất <Text type="danger">*</Text>
               </Title>
               <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-                Bắt buộc chọn trước khi nộp phiếu — đây là thứ người quyết tuyển đọc trước tiên.
+                Bắt buộc chọn trước khi nộp phiếu — đây là thứ trưởng bộ phận đọc trước tiên.
               </Text>
               <Radio.Group
                 value={recommendation}
