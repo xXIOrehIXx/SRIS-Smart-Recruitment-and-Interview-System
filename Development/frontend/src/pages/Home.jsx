@@ -11,19 +11,16 @@ import {
   Card,
   Avatar,
   Tag,
-  Statistic,
   Progress,
 } from "antd";
 import {
   UserOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
-  ArrowUpOutlined,
   RobotOutlined,
   ThunderboltOutlined,
   SolutionOutlined,
   FormOutlined,
-  RightOutlined,
   StarFilled,
   AimOutlined,
   CheckOutlined,
@@ -36,14 +33,7 @@ const { Title, Paragraph, Text } = Typography;
 
 const Home = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, getDashboardRoute } = useAuth();
-
-  const stats = [
-    { title: "Total Jobs", value: 24, suffix: "+", trend: "+12%" },
-    { title: "Active Candidates", value: 156, suffix: "", trend: "+8%" },
-    { title: "Interviews Scheduled", value: 45, suffix: "", trend: "+15%" },
-    { title: "Offers Sent", value: 12, suffix: "", trend: "+5%" },
-  ];
+  const { isAuthenticated, user, logout } = useAuth();
 
   const workflowSteps = [
     {
@@ -55,8 +45,8 @@ const Home = () => {
     {
       step: "02",
       icon: <RobotOutlined />,
-      title: "Lọc CV tự động",
-      desc: "Hệ thống AI quét và đề xuất những ứng viên phù hợp nhất dựa trên kỹ năng.",
+      title: "Tạo tiêu chí chấm điểm",
+      desc: "AI tự động phân tích yêu cầu công việc và tạo tiêu chí chấm điểm từ nó.",
     },
     {
       step: "03",
@@ -112,12 +102,11 @@ const Home = () => {
             <Space size="middle">
               <Text strong>{user?.fullName || user?.email}</Text>
               <Button
-                type="primary"
-                shape="round"
-                className="dashboard-btn demo-btn"
-                onClick={() => navigate(getDashboardRoute())}
+                type="text"
+                className="login-btn"
+                onClick={logout}
               >
-                Go to Dashboard
+                Log out
               </Button>
             </Space>
           ) : (
@@ -128,14 +117,6 @@ const Home = () => {
                 onClick={() => navigate("/login")}
               >
                 Log in
-              </Button>
-              <Button
-                type="primary"
-                shape="round"
-                className="demo-btn"
-                onClick={() => navigate("/login")}
-              >
-                Khám phá ngay
               </Button>
             </Space>
           )}
@@ -164,36 +145,6 @@ const Home = () => {
               Hệ thống quản lý tuyển dụng và phỏng vấn thông minh. Thu hút, quản
               lý và tuyển dụng những ứng viên tốt nhất một cách dễ dàng.
             </Paragraph>
-            <Space size="middle" className="hero-buttons">
-              <Button
-                size="large"
-                className="secondary-btn"
-                onClick={() => {
-                  document
-                    .getElementById("workflow")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-              >
-                Xem quy trình <RightOutlined />
-              </Button>
-            </Space>
-
-            <div className="hero-stats">
-              <div className="stat-item">
-                <span className="stat-value">500+</span>
-                <span className="stat-label">Companies</span>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <span className="stat-value">10K+</span>
-                <span className="stat-label">Candidates</span>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <span className="stat-value">98%</span>
-                <span className="stat-label">Satisfaction</span>
-              </div>
-            </div>
           </Col>
 
           {/* Cột phải: Mockup bảng ứng viên (Kanban Pipeline) */}
@@ -307,30 +258,6 @@ const Home = () => {
           </Col>
         </Row>
       </Content>
-
-      {/* STATS SECTION */}
-      <section className="stats-section">
-        <Row gutter={[32, 24]} justify="center">
-          {stats.map((stat, index) => (
-            <Col xs={12} sm={12} md={6} key={index}>
-              <Card className="stat-card" bordered={false}>
-                <Statistic
-                  title={stat.title}
-                  value={stat.value}
-                  suffix={stat.suffix}
-                  valueStyle={{ color: "#5D8C3E", fontWeight: 700 }}
-                />
-                <div className="stat-trend">
-                  <ArrowUpOutlined
-                    style={{ color: "#52c41a", marginRight: 4 }}
-                  />
-                  <span>{stat.trend} this month</span>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </section>
 
       {/* FEATURES SECTION */}
       <section className="features-section" id="features">
@@ -496,13 +423,13 @@ const Home = () => {
                   <ThunderboltOutlined /> AI CRITERIA EXTRACTION
                 </div>
                 <Title level={2} className="ai-title">
-                  Tự động bóc tách tiêu chí & Chấm điểm chuẩn hóa
+                  Tự động chấm điểm ứng viên theo tiêu chí có sẵn
                 </Title>
                 <Paragraph className="ai-description">
-                  AI tự động phân tích Mô tả công việc (JD) để lập ra bảng tiêu
-                  chí đánh giá đa chiều với từng trọng số tương ứng. Giúp loại
-                  bỏ định kiến cá nhân và đưa ra điểm số ứng viên minh bạch
-                  nhất.
+                  Chỉ cần tải bài đăng tuyển dụng (JD) lên, AI sẽ tự động đọc và
+                  tạo ra một "thước đo" chi tiết. Điều này giúp mọi ứng viên được
+                  đánh giá công bằng, chính xác và không bị phụ thuộc vào cảm
+                  tính cá nhân của người chấm.
                 </Paragraph>
                 <div className="ai-feature-list">
                   <div className="ai-feature-item">
@@ -510,10 +437,11 @@ const Home = () => {
                       <CheckOutlined />
                     </div>
                     <div>
-                      <strong>Phân rã JD thành Ma trận tiêu chí (Scorecard)</strong>
+                      <strong>Tự động rút ra các yêu cầu quan trọng</strong>
                       <p>
-                        Tự động trích xuất các yêu cầu Kỹ năng cứng, Kỹ năng
-                        mềm và Kinh nghiệm tối thiểu.
+                        AI sẽ tự tìm và gom nhóm các yêu cầu trong bài tuyển dụng
+                        thành: Kỹ năng chuyên môn, Kỹ năng mềm và Số năm kinh
+                        nghiệm cần thiết.
                       </p>
                     </div>
                   </div>
@@ -522,10 +450,11 @@ const Home = () => {
                       <CheckOutlined />
                     </div>
                     <div>
-                      <strong>Gán trọng số & Chấm điểm tự động</strong>
+                      <strong>Tính điểm tự động trước khi phỏng vấn</strong>
                       <p>
-                        Tính toán điểm số ứng viên dựa trên thang điểm chuẩn hóa
-                        trước khi vào vòng phỏng vấn.
+                        Mỗi yêu cầu sẽ có mức độ quan trọng riêng. AI sẽ dựa vào đó
+                        để tự động tính ra điểm số phù hợp của từng ứng viên, giúp
+                        bạn biết ngay ai là người tiềm năng nhất để mời phỏng vấn.
                       </p>
                     </div>
                   </div>

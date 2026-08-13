@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, message, Alert } from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import './css/Auth.css';
 
@@ -112,6 +113,12 @@ const Login = () => {
   return (
     <div className="auth-page login-page dark-auth">
       <div className="auth-card dark-card">
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/')}
+          className="back-btn"
+        />
         <h2 className="dark-title">Sign in</h2>
 
         <Form

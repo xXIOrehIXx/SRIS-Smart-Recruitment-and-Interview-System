@@ -525,3 +525,28 @@
     transform: translateY(0);
   }
 }
+
+/* Back Button */
+.back-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #f3f4f6;
+  color: #5d8c3e;
+}
+
+.back-btn .anticon {
+  font-size: 16px;
+}
