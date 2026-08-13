@@ -180,6 +180,7 @@ const OfferManagement = () => {
         startDate: values.startDate?.format('YYYY-MM-DD'),
         employmentType: values.employmentType,
         workLocation: values.workLocation,
+        candidateAddress: values.candidateAddress,
 
         salaryAmount: values.salaryAmount,
         currency: values.currency,
@@ -589,6 +590,13 @@ const OfferManagement = () => {
                 <Input placeholder="VD: Văn phòng Hà Nội / Làm việc từ xa" maxLength={300} />
               </Form.Item>
             </div>
+
+            {/* BE (MakeOfferDto.CandidateAddress) in dòng này ở ĐẦU thư mời nhưng form chưa
+                có ô nào để gõ -> thư luôn thiếu địa chỉ người nhận. CV không lưu địa chỉ nên
+                phải nhập tay; bỏ trống thì bản PDF bỏ hẳn dòng đó. */}
+            <Form.Item label="Địa chỉ ứng viên (in ở đầu thư — tùy chọn)" name="candidateAddress">
+              <Input placeholder="VD: Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội" maxLength={300} />
+            </Form.Item>
 
             <Divider orientation="left" plain>Lương &amp; phúc lợi</Divider>
 

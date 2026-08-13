@@ -123,13 +123,17 @@ const DeptInterviewSchedule = () => {
       },
     },
     {
-      title: 'Cờ nhắc',
+      title: (
+        <Tooltip title="Số lần ứng viên báo không có khung giờ nào phù hợp — nhiều lần thì bộ phận nhân sự nên gọi điện hẹn tay">
+          <span>Ứng viên báo bận</span>
+        </Tooltip>
+      ),
       dataIndex: 'flag',
       key: 'flag',
       render: (flag, record) => {
         if (flag === 'RED') return <Badge color="red" text={<Text type="danger">Bận {record.noSlotFitsCount} lần</Text>} />;
         if (flag === 'YELLOW') return <Badge color="gold" text={`Bận ${record.noSlotFitsCount} lần`} />;
-        return <Text type="secondary">—</Text>;
+        return <Text type="secondary">Chưa lần nào</Text>;
       },
     },
     {

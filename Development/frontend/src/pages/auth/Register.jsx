@@ -42,8 +42,9 @@ const Register = () => {
       navigate(redirectPath, { replace: true });
     } catch (err) {
       console.error("Register error:", err);
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
+      // `userMsg` là khoá lỗi nghiệp vụ của BE (email đăng ký trùng -> 409 báo ở đây).
+      if (err.response?.data?.userMsg || err.response?.data?.message) {
+        setError(err.response.data.userMsg || err.response.data.message);
       } else if (err.response?.data?.errors) {
         const errors = err.response.data.errors;
         const errorMessages = Object.values(errors).flat().join("\n");

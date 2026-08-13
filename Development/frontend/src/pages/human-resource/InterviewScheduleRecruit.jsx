@@ -8,6 +8,7 @@ import {
   UserAddOutlined, PhoneOutlined, MinusCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useSearchParams } from 'react-router-dom';
 import { interviewAPI, jobsAPI, applicationAPI, usersAPI } from '../../services/api';
 import '../Dashboard.css';
 
@@ -20,6 +21,11 @@ const { Title, Text } = Typography;
  * Ứng viên báo bận nhiều lần (cờ vàng/đỏ) → Human Resource gọi điện rồi "Chốt lịch tay".
  */
 const InterviewScheduleRecruit = () => {
+  // ?jobId= — mở thẳng đúng vị trí mà người dùng vừa đứng (trang ứng viên, trang tin tuyển
+  // dụng). Không có tham số thì rơi về vị trí đầu danh sách như cũ.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const jobIdFromUrl = Number(searchParams.get('jobId')) || null;
+
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [pools, setPools] = useState([]);
@@ -46,7 +52,11 @@ const InterviewScheduleRecruit = () => {
       const response = await jobsAPI.getAll();
       const jobList = response.data || [];
       setJobs(jobList);
-      if (jobList.length > 0) setSelectedJobId(jobList[0].jobId);
+      if (jobList.length === 0) return;
+      // Job trong URL phải CÓ trong danh sách mới chọn — id rác (job đã đóng/khác công ty)
+      // thì bảng trống trơn mà không rõ vì sao, thà rơi về vị trí đầu.
+      const wanted = jobList.find((j) => j.jobId === jobIdFromUrl);
+      setSelectedJobId(wanted ? wanted.jobId : jobList[0].jobId);
     } catch (error) {
       console.error('Error fetching jobs:', error);
       message.error('Không thể tải danh sách vị trí');
@@ -295,25 +305,31 @@ const InterviewScheduleRecruit = () => {
       },
     },
     {
-      title: 'Cờ nhắc',
+      // "Cờ nhắc" là chữ của người viết code, người dùng không đoán ra. Cột này chỉ trả lời
+      // đúng một câu: ứng viên này có cần gọi điện chốt lịch tay hay không.
+      title: (
+        <Tooltip title="Ứng viên bấm 'không có khung giờ nào phù hợp' nhiều lần thì nên gọi điện hẹn tay thay vì gửi thêm link">
+          <span>Cần gọi điện?</span>
+        </Tooltip>
+      ),
       dataIndex: 'flag',
       key: 'flag',
       render: (flag, record) => {
         if (flag === 'RED') {
           return (
-            <Tooltip title={`Báo bận ${record.noSlotFitsCount} lần — gọi điện chốt tay ngay`}>
-              <Badge color="red" text={<Text type="danger">Gọi điện gấp</Text>} />
+            <Tooltip title={`Ứng viên báo bận ${record.noSlotFitsCount} lần — gọi điện chốt lịch tay ngay`}>
+              <Badge color="red" text={<Text type="danger">Gọi ngay</Text>} />
             </Tooltip>
           );
         }
         if (flag === 'YELLOW') {
           return (
-            <Tooltip title={`Báo bận ${record.noSlotFitsCount} lần — cân nhắc gọi điện`}>
-              <Badge color="gold" text="Nên gọi điện" />
+            <Tooltip title={`Ứng viên báo bận ${record.noSlotFitsCount} lần — cân nhắc gọi điện`}>
+              <Badge color="gold" text="Nên gọi" />
             </Tooltip>
           );
         }
-        return <Text type="secondary">—</Text>;
+        return <Text type="secondary">Không cần</Text>;
       },
     },
   ];
@@ -331,7 +347,11 @@ const InterviewScheduleRecruit = () => {
           <Select
             placeholder="Chọn vị trí"
             value={selectedJobId}
-            onChange={setSelectedJobId}
+            onChange={(jobId) => {
+              setSelectedJobId(jobId);
+              // Ghi vào URL để F5 / chia sẻ link vẫn đúng vị trí đang xem.
+              setSearchParams({ jobId: String(jobId) }, { replace: true });
+            }}
             style={{ width: 260 }}
             showSearch
             optionFilterProp="label"

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Row, Col, Card, Typography, Avatar, Tag, Button, Tabs, Timeline,
-  Space, Divider, Spin, message, Tooltip, Alert,
+  Space, Divider, Spin, message, Tooltip, Alert, Table,
   Modal, Input
 } from 'antd';
 import {
@@ -15,13 +15,30 @@ import {
   CloseCircleOutlined,
   LinkOutlined
 } from '@ant-design/icons';
-import { applicationAPI, cvAPI } from '../../services/api';
+import { applicationAPI, cvAPI, interviewAPI } from '../../services/api';
 import ApplicationStateTag, { stateLabel } from '../../components/ApplicationStateTag';
+import ConsensusTag from '../../components/ConsensusTag';
+import { actionLabel, formatActivityDetail } from '../../services/activityLog';
 import './css/CandidateDetail.css';
 
 const { Title, Text } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
+
+// Đề xuất của người phỏng vấn (InterviewFeedback.recommendation) — cùng bộ chữ với
+// phiếu chấm và màn Quyết định tuyển dụng.
+const RECOMMENDATION_LABELS = {
+  STRONG_HIRE: 'Rất nên tuyển',
+  HIRE: 'Nên tuyển',
+  CONSIDER: 'Cần xem xét',
+  NO_HIRE: 'Không nên tuyển',
+};
+const RECOMMENDATION_COLORS = {
+  STRONG_HIRE: 'success',
+  HIRE: 'success',
+  CONSIDER: 'warning',
+  NO_HIRE: 'error',
+};
 
 // Nhãn + màu trạng thái dùng chung toàn app: components/ApplicationStateTag.jsx
 
@@ -40,20 +57,30 @@ const CandidateDetail = () => {
   const [history, setHistory] = useState([]);
   const [notes, setNotes] = useState([]);
   const [sendingLink, setSendingLink] = useState(false);
+  // Kết quả phỏng vấn: điểm (interview-aggregate) + kết luận/nhận xét (decision-brief).
+  // Blind review do BE giữ: chỉ phiếu ĐÃ NỘP mới có trong hai nguồn này.
+  const [aggregates, setAggregates] = useState([]);
+  const [brief, setBrief] = useState(null);
 
   const fetchApplicationDetails = useCallback(async () => {
     try {
       setLoading(true);
-      const [appRes, historyRes, notesRes] = await Promise.allSettled([
+      const [appRes, historyRes, notesRes, aggRes, briefRes] = await Promise.allSettled([
         applicationAPI.getById(applicationId),
         applicationAPI.getHistory(applicationId),
         applicationAPI.getNotes(applicationId),
+        interviewAPI.getApplicationAggregate(applicationId),
+        interviewAPI.getDecisionBrief(applicationId),
       ]);
 
       if (appRes.status === 'fulfilled') setApplication(appRes.value.data);
       else message.error('Không thể tải thông tin ứng viên');
       setHistory(historyRes.status === 'fulfilled' ? historyRes.value.data || [] : []);
       setNotes(notesRes.status === 'fulfilled' ? notesRes.value.data || [] : []);
+      // Hồ sơ chưa phỏng vấn thì hai API này trả rỗng/lỗi — tab Phỏng vấn tự hiện dòng trống,
+      // không chặn phần còn lại của trang.
+      setAggregates(aggRes.status === 'fulfilled' ? aggRes.value.data || [] : []);
+      setBrief(briefRes.status === 'fulfilled' ? briefRes.value.data || null : null);
     } finally {
       setLoading(false);
     }
@@ -145,6 +172,104 @@ const CandidateDetail = () => {
       ),
     },
     {
+      key: 'interview',
+      label: 'Phỏng Vấn',
+      children: (
+        <Card className="interviews-card" bordered={false}>
+          {aggregates.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 20 }}>
+              <Text type="secondary">
+                Chưa có phiếu chấm nào được nộp — điểm chỉ hiện sau khi người phỏng vấn nộp phiếu (blind review).
+              </Text>
+            </div>
+          ) : (
+            aggregates.map((agg) => {
+              const round = brief?.rounds?.find((r) => r.scheduleId === agg.scheduleId);
+              return (
+                <div key={agg.scheduleId} style={{ marginBottom: 24 }}>
+                  <Space size={8} wrap style={{ marginBottom: 10 }}>
+                    <Text strong>Vòng {agg.roundNumber ?? 1}</Text>
+                    {agg.scheduledAt && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        <CalendarOutlined /> {formatDateTime(agg.scheduledAt)}
+                      </Text>
+                    )}
+                    {/* % có trọng số, cùng công thức với phiếu chấm và màn quyết định của
+                        trưởng bộ phận -> ba nơi luôn ra một con số. */}
+                    <Tag color={MATCHA_GREEN}>
+                      Điểm hội đồng: {Math.round(agg.panelWeightedPercent)}%
+                      {agg.submittedInterviewers > 1 ? ` (TB ${agg.submittedInterviewers} người chấm)` : ''}
+                    </Tag>
+                  </Space>
+
+                  <Table
+                    size="small"
+                    pagination={false}
+                    rowKey="criteriaId"
+                    dataSource={agg.criteria || []}
+                    columns={[
+                      { title: 'Tiêu chí', dataIndex: 'name', key: 'name' },
+                      {
+                        title: 'Điểm TB',
+                        key: 'average',
+                        width: 110,
+                        render: (_, r) => <Text strong>{r.average}/{r.maxScore}</Text>,
+                      },
+                      {
+                        title: (
+                          <Tooltip title="Tiêu chí quan trọng hơn thì trọng số cao hơn và tính nặng hơn khi ra điểm tổng">
+                            <span>Trọng số</span>
+                          </Tooltip>
+                        ),
+                        dataIndex: 'weight',
+                        key: 'weight',
+                        width: 90,
+                      },
+                      {
+                        // Hội đồng lệch nhau nhiều ở tiêu chí nào thì đánh dấu tiêu chí đó (5.7).
+                        title: 'Đồng thuận',
+                        key: 'consensus',
+                        width: 130,
+                        render: (_, r) => (
+                          <ConsensusTag
+                            stdDev={r.stdDev}
+                            needsDiscussion={r.needsDiscussion}
+                            scoreCount={(r.scores || []).filter((s) => s.score !== null && s.score !== undefined).length}
+                          />
+                        ),
+                      },
+                    ]}
+                  />
+
+                  {(agg.interviewerTotals || []).map((t) => {
+                    const verdict = round?.verdicts?.find((v) => v.interviewerId === t.interviewerId);
+                    return (
+                      <div key={t.interviewerId} style={{ marginTop: 10 }}>
+                        <Space size={8} wrap>
+                          <Text strong>{t.interviewerName || `#${t.interviewerId}`}</Text>
+                          <Tag>{Math.round(t.weightedPercent)}%</Tag>
+                          {verdict?.recommendation && (
+                            <Tag color={RECOMMENDATION_COLORS[verdict.recommendation] || 'default'}>
+                              {RECOMMENDATION_LABELS[verdict.recommendation] || verdict.recommendation}
+                            </Tag>
+                          )}
+                        </Space>
+                        {verdict?.summary && (
+                          <div>
+                            <Text style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{verdict.summary}</Text>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })
+          )}
+        </Card>
+      ),
+    },
+    {
       key: 'history',
       label: 'Lịch Sử',
       children: (
@@ -156,12 +281,12 @@ const CandidateDetail = () => {
                 children: (
                   <div className="timeline-item">
                     <div className="timeline-header">
-                      <Text strong>{log.action}</Text>
+                      <Text strong>{actionLabel(log.action)}</Text>
                       {log.fromState && log.toState && (
                         <Tag>{stateLabel(log.fromState)} → {stateLabel(log.toState)}</Tag>
                       )}
                     </div>
-                    {log.detail && <Text style={{ fontSize: 13 }}>{log.detail}</Text>}
+                    {log.detail && <Text style={{ fontSize: 13 }}>{formatActivityDetail(log.detail)}</Text>}
                     <div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         <CalendarOutlined /> {formatDateTime(log.createdAt)}
@@ -292,7 +417,15 @@ const CandidateDetail = () => {
                 icon={<CalendarOutlined />}
                 type="primary"
                 className="schedule-btn"
-                onClick={() => navigate('/interviews/schedule')}
+                // Mang theo job của chính hồ sơ này — không có nó thì trang lịch mở ở vị trí
+                // ĐẦU DANH SÁCH, người dùng phải tự đi tìm lại đúng job vừa đứng.
+                onClick={() =>
+                  navigate(
+                    application?.jobId
+                      ? `/interviews/schedule?jobId=${application.jobId}`
+                      : '/interviews/schedule'
+                  )
+                }
               >
                 Lên Lịch Phỏng Vấn
               </Button>
