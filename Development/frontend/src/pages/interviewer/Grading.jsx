@@ -305,6 +305,12 @@ const Grading = () => {
             <Tag color="cyan" style={{ fontSize: 13, padding: '2px 10px', marginTop: 2 }}>
               Vòng {interviewInfo?.schedule?.roundNumber || candidateData.round || interviewInfo?.schedule?.RoundNumber || '1'}
             </Tag>
+            {/* Tên vòng (V041): người chấm cần biết đang chấm buổi gì, không chỉ buổi thứ mấy. */}
+            {interviewInfo?.schedule?.roundName && (
+              <Text style={{ display: 'block', fontSize: 12, marginTop: 2 }}>
+                {interviewInfo.schedule.roundName}
+              </Text>
+            )}
           </Col>
           <Col xs={12} md={5}>
             <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Thời gian</Text>

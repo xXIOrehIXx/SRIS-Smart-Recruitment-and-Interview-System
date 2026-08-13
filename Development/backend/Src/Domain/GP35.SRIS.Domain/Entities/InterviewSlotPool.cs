@@ -18,8 +18,21 @@ public class InterviewSlotPool : BaseEntity<long>, IHasCreateInfo, IHasModifyInf
     public long CompanyId { get; set; }
     [Column("job_id")]
     public long JobId { get; set; }
+    /// <summary>
+    /// Vòng thứ mấy của VỊ TRÍ này (1, 2, 3...). Hệ thống tự đánh tăng dần — người dùng không gõ,
+    /// nên không bao giờ có dãy thủng lỗ kiểu 1 rồi 5.
+    /// </summary>
     [Column("round_number")]
     public int RoundNumber { get; set; }
+
+    /// <summary>
+    /// Tên vòng do Human Resource đặt ("Phỏng vấn chuyên môn", "Gặp giám đốc") — V041. Null =
+    /// không đặt tên, UI hiện "Vòng N". Đây là thứ nói cho interviewer/ứng viên biết buổi này
+    /// để làm gì; con số chỉ nói thứ tự.
+    /// </summary>
+    [Column("name")]
+    public string? Name { get; set; }
+
     [Column("status")]
     public string Status { get; set; } = null!;
     [Column("created_by")]

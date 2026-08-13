@@ -255,9 +255,13 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
 
     public async Task<int> GetNextRoundNumberAsync(long companyId, long applicationId)
     {
+        // Lịch ĐÃ HỦY không tính: buổi đó không diễn ra, nên nó không "chiếm" số vòng. Đếm cả
+        // lịch hủy thì hủy vòng 1 xong chốt tay lại ra vòng 2 — trong khi mở pool cho cùng vị
+        // trí đó lại ra vòng 1 (CreatePoolAsync bỏ pool CANCELLED), hai đường lệch nhau.
         var max = await _db.InterviewSchedules
             .AsNoTracking()
-            .Where(s => s.ApplicationId == applicationId)
+            .Where(s => s.ApplicationId == applicationId
+                && s.Status != InterviewScheduleStatus.Cancelled)
             .Select(s => (int?)s.RoundNumber)
             .MaxAsync();
         return (max ?? 0) + 1;
@@ -355,7 +359,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
 
     public async Task<long> ManualConfirmAsync(
         long companyId, long jobId, long applicationId, IReadOnlyList<long> interviewerIds,
-        DateTime startTime, int roundNumber, long? createdBy)
+        DateTime startTime, int roundNumber, string? roundName, long? createdBy)
     {
         await using var tx = await _db.Database.BeginTransactionAsync();
 
@@ -365,6 +369,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             CompanyId = companyId,
             JobId = jobId,
             RoundNumber = roundNumber,
+            Name = roundName,
             Status = InterviewPoolStatus.Closed,
             CreatedBy = createdBy
         };
@@ -478,6 +483,9 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
             // Panel: interviewer nằm trong bảng nối InterviewSlotInterviewer (1 khung 1..N người)
             join si in _db.InterviewSlotInterviewers.AsNoTracking() on sl.SlotId equals si.SlotId
+            // Pool: để lấy TÊN vòng (V041) — "Vòng 2 · Phỏng vấn chuyên môn" nói cho interviewer
+            // biết buổi này để làm gì, con số chỉ nói thứ tự.
+            join p in _db.InterviewSlotPools.AsNoTracking() on sl.PoolId equals p.PoolId
             join a in _db.Applications.AsNoTracking() on s.ApplicationId equals a.ApplicationId
             join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
             join j in _db.Jobs.AsNoTracking() on a.JobId equals j.JobId
@@ -490,7 +498,8 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
                 sl.StartTime, c.FullName, c.Email, j.Title,
                 my.Status ?? "NOT_STARTED",
                 // Trạng thái hồ sơ -> FE biết buổi nào còn sửa phiếu được (OFFER trở đi là khóa).
-                a.CurrentState);
+                a.CurrentState,
+                p.Name);
         return await query.ToListAsync();
     }
 }

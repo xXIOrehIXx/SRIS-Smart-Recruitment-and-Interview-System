@@ -69,6 +69,7 @@ const InterviewerInterviewHistory = () => {
         startTime: item.startTime,
         level: item.roundNumber || 1,
         roundNumber: item.roundNumber || 1,
+        roundName: item.roundName || null,
         status: item.status,
         mySheetStatus: item.mySheetStatus || 'NOT_STARTED',
         // Hồ sơ đã OFFER/HIRED/REJECTED -> phiếu khóa, chỉ xem.
@@ -193,8 +194,16 @@ const InterviewerInterviewHistory = () => {
       title: 'Vòng',
       dataIndex: 'level',
       key: 'level',
-      width: 90,
-      render: (level) => <Tag color="cyan">Vòng {level}</Tag>,
+      width: 140,
+      // Tên vòng (V041) — "Vòng 2" không nói buổi đó phỏng vấn cái gì.
+      render: (level, record) => (
+        <div>
+          <Tag color="cyan">Vòng {level}</Tag>
+          {record.roundName && (
+            <div><Text type="secondary" style={{ fontSize: 12 }}>{record.roundName}</Text></div>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Trạng thái lịch',
