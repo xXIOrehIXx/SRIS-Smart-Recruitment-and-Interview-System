@@ -9,8 +9,8 @@
  mỗi bậc chỉ thêm một lớp, rồi so số. V4 là prompt production thật.
 
  Đo hai tầng, đúng khung Section 16:
-   Tầng 1 (script này)      — máy tự tính, không cần người: xem metrics.py.
-   Tầng 2 (score_rubric.py) — người đọc từng tiêu chí và gán nhãn theo RUBRIC.md,
+   Tầng 1 (script này)      — máy tự tính, không cần người: xem may_cham.py.
+   Tầng 2 (3_nguoi_cham_tinh_diem.py) — người đọc từng tiêu chí và gán nhãn theo LUAT_NGUOI_CHAM.md,
                               ra precision / recall / F1. Đây mới là số để trích.
 
  Gọi thẳng Ollama (không qua AI service) vì thí nghiệm cần đổi prompt và bật/tắt
@@ -20,8 +20,8 @@
 
  Chạy (dùng Python của venv ai-service để có sẵn ollama + pydantic):
    cd ai-experiments/exp_criteria_extract
-   ../../ai-service/.venv/Scripts/python run.py --version v4 --repeat 2
-   ../../ai-service/.venv/Scripts/python run.py --all --repeat 2
+   ../../ai-service/.venv/Scripts/python 1_chay_model_va_may_cham.py --version v4 --repeat 2
+   ../../ai-service/.venv/Scripts/python 1_chay_model_va_may_cham.py --all --repeat 2
 ============================================================================
 """
 
@@ -42,7 +42,7 @@ from pathlib import Path
 
 import ollama
 
-from metrics import do_mot_tin, do_on_dinh
+from may_cham import do_mot_tin, do_on_dinh
 from prompts import MODEL, NUM_CTX, THANG_DO, VERSIONS
 
 HERE = Path(__file__).parent
@@ -168,15 +168,15 @@ def tong_hop(ver: str, raw: list, repeat: int, out: Path) -> dict:
             "loi": len(r["loi"]),
         })
 
-    with (out / "auto_metrics.csv").open("w", newline="", encoding="utf-8-sig") as f:
+    with (out / "may_cham.csv").open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
 
     # Phiếu chấm tay cho tầng 2 — mỗi tiêu chí một dòng, cột nhan để TRỐNG cho người điền.
     # Chỉ ghi khi chưa có, để --recompute không xoá mất nhãn đã chấm.
-    if not (out / "labels.csv").exists():
-        with (out / "labels.csv").open("w", newline="", encoding="utf-8-sig") as f:
+    if not (out / "nguoi_cham_tung_dong.csv").exists():
+        with (out / "nguoi_cham_tung_dong.csv").open("w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
             w.writerow(["id", "tieu_chi", "nhan", "ghi_chu"])
             for r in raw:
@@ -185,8 +185,8 @@ def tong_hop(ver: str, raw: list, repeat: int, out: Path) -> dict:
 
     # Tiêu chí AI BỎ SÓT thì không có dòng nào để gán nhãn -> phải đếm riêng, nếu
     # không thì recall vĩnh viễn bằng 1 và bộ số đo trông đẹp một cách vô nghĩa.
-    if not (out / "missing.csv").exists():
-        with (out / "missing.csv").open("w", newline="", encoding="utf-8-sig") as f:
+    if not (out / "nguoi_cham_bo_sot.csv").exists():
+        with (out / "nguoi_cham_bo_sot.csv").open("w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
             w.writerow(["id", "so_bo_sot", "ghi_chu"])
             for r in raw:
@@ -299,13 +299,15 @@ def main() -> int:
         tong_ket = [chay_mot_version(v, jobs, args.repeat) for v in cac_ver]
 
     if len(tong_ket) > 1:
-        (HERE / "out" / "so_sanh_version.csv").write_text(
-            "\n".join(
-                [",".join(tong_ket[0].keys())]
-                + [",".join(str(v) for v in t.values()) for t in tong_ket]
-            ),
-            encoding="utf-8-sig",
-        )
+        # Phải dùng csv.writer chứ không nối chuỗi bằng dấu phẩy: cột mo_ta có dấu
+        # phẩy bên trong ("... đầu việc, bỏ giấy tờ, tách ..."), nối tay là dòng đó
+        # tách thành thừa cột -> mọi số phía sau lệch sang phải khi đọc lại.
+        with (HERE / "out" / "may_cham_4_ban.csv").open(
+            "w", newline="", encoding="utf-8-sig"
+        ) as f:
+            w = csv.DictWriter(f, fieldnames=list(tong_ket[0].keys()))
+            w.writeheader()
+            w.writerows(tong_ket)
         print(f"\n{'=' * 78}\n BẢNG SO {len(tong_ket)} PHIÊN BẢN — tầng máy\n{'=' * 78}")
         print(f"{'ver':<5}{'tiêu chí':>10}{'JSON ok':>10}{'giấy tờ':>10}"
               f"{'ngưỡng':>9}{'gộp':>8}{'ổn định':>10}{'giây/tin':>10}")
@@ -314,13 +316,13 @@ def main() -> int:
                   f"{t['json_ok_rate'] * 100:>9.1f}%{t['giay_to_rate'] * 100:>9.1f}%"
                   f"{t['nguong_rate'] * 100:>8.1f}%{t['gop_rate'] * 100:>7.1f}%"
                   f"{t['on_dinh']:>10.3f}{t['giay_tb']:>10.1f}")
-        print(f"\nĐã ghi: {HERE / 'out' / 'so_sanh_version.csv'}")
+        print(f"\nĐã ghi: {HERE / 'out' / 'may_cham_4_ban.csv'}")
 
     print("\nTIẾP THEO — tầng 2 (đây mới là số precision/recall/F1 để trích vào báo cáo):")
     for v in cac_ver:
-        print(f"  out/{v}/labels.csv   → điền cột 'nhan' theo RUBRIC.md")
-        print(f"  out/{v}/missing.csv  → đếm yêu cầu trong tin mà AI BỎ SÓT")
-    print(f"  rồi chạy: python score_rubric.py --tag <ver>")
+        print(f"  out/{v}/nguoi_cham_tung_dong.csv   → điền cột 'nhan' theo LUAT_NGUOI_CHAM.md")
+        print(f"  out/{v}/nguoi_cham_bo_sot.csv  → đếm yêu cầu trong tin mà AI BỎ SÓT")
+    print(f"  rồi chạy: python 3_nguoi_cham_tinh_diem.py --tag <ver>")
     return 0
 
 

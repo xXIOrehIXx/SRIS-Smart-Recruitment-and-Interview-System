@@ -3,7 +3,7 @@
  TẦNG 1 — CÁC PHÉP ĐO MÁY TỰ TÍNH ĐƯỢC (không cần người gán nhãn)
 
  Mấy chỉ số ở đây KHÔNG nói được tiêu chí có "đúng" hay không — chuyện đó phải
- người đọc mới biết (tầng 2, xem RUBRIC.md). Chúng chỉ bắt được những lỗi có
+ người đọc mới biết (tầng 2, xem LUAT_NGUOI_CHAM.md). Chúng chỉ bắt được những lỗi có
  hình dạng cố định, mà bắt được thì rẻ và chạy lại được bao nhiêu lần cũng được:
 
    - giay_to_rate  : tỉ lệ tiêu chí là thứ ĐỌC HỒ SƠ LÀ BIẾT (bằng cấp, chứng

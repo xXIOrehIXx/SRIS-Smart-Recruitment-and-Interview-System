@@ -1,13 +1,13 @@
 # Rubric chấm tay — AI đề xuất tiêu chí
 
-Tầng 1 (`metrics.py`) chỉ bắt được lỗi có hình dạng cố định. Còn câu hỏi thật —
+Tầng 1 (`may_cham.py`) chỉ bắt được lỗi có hình dạng cố định. Còn câu hỏi thật —
 *"tiêu chí này có dùng được không?"* — thì phải người đọc mới trả lời được.
 File này là luật chấm, để hai người chấm cùng một bộ thì ra cùng một kết quả,
 và để chính bạn chấm lại sau một tháng vẫn ra như cũ.
 
 ## Chấm thế nào
 
-Mở `out/<tag>/labels.csv`, mỗi dòng là một tiêu chí AI đề xuất. Điền cột `nhan`
+Mở `out/<tag>/nguoi_cham_tung_dong.csv`, mỗi dòng là một tiêu chí AI đề xuất. Điền cột `nhan`
 bằng **đúng một** trong 6 mã dưới đây. Cột `ghi_chu` để trống cũng được, nhưng
 **ca nào phân vân thì bắt buộc ghi lý do** — đó là chỗ người đọc báo cáo sẽ hỏi.
 
@@ -53,10 +53,10 @@ Thiếu điều kiện nào thì gán nhãn lỗi tương ứng, đừng gán `D
 
 ## Đếm phần AI BỎ SÓT
 
-`labels.csv` chỉ có những dòng AI ĐÃ đề xuất. Thứ nó bỏ quên thì không có dòng nào
+`nguoi_cham_tung_dong.csv` chỉ có những dòng AI ĐÃ đề xuất. Thứ nó bỏ quên thì không có dòng nào
 để chấm — mà bỏ sót mới là lỗi nguy hiểm hơn, vì người dùng không nhìn thấy được.
 
-Mở `out/<tag>/missing.csv`, với mỗi tin: đọc lại 3 mục trong `dataset.json`, đếm
+Mở `out/<tag>/nguoi_cham_bo_sot.csv`, với mỗi tin: đọc lại 3 mục trong `dataset.json`, đếm
 xem **có bao nhiêu yêu cầu đáng lẽ phải thành tiêu chí mà AI không nêu ra**.
 Chỉ đếm thứ tự nó cũng phải đạt cả ba điều kiện `DUNG` — đừng tính "Tốt nghiệp
 Đại học" là bỏ sót, vì bỏ nó mới là đúng.

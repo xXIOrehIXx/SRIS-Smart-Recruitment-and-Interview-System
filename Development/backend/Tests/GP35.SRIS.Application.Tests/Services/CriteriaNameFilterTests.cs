@@ -1,4 +1,4 @@
-using GP35.SRIS.Lib.Services.Ai;
+﻿using GP35.SRIS.Lib.Services.Ai;
 using Xunit;
 
 namespace GP35.SRIS.Application.Tests.Services;
@@ -7,7 +7,7 @@ namespace GP35.SRIS.Application.Tests.Services;
 /// Bộ lọc tiêu chí sau khi AI bóc xong.
 ///
 /// Ca thử không bịa ra: phần lớn lấy thẳng từ đầu ra thật của model ghi trong
-/// <c>ai-experiments/exp_criteria_extract/out/KET_QUA.md</c> §5.2 (5 dòng giấy tờ lọt lưới ở
+/// <c>ai-experiments/exp_criteria_extract/out/KET_QUA.md</c> §6.2 (5 dòng giấy tờ lọt lưới ở
 /// prompt production V4) và từ tiêu chí AI đề xuất cho job 46 (chuyên viên nhân sự C&amp;B).
 /// Đây là lý do bộ lọc tồn tại, nên phải có test bám đúng vào chúng.
 /// </summary>
@@ -17,7 +17,7 @@ public class CriteriaNameFilterTests
     //  Lớp 1 — giấy tờ: bỏ hẳn
     // ---------------------------------------------------------------
 
-    /// <summary>Đúng 5 dòng V4 để lọt (KET_QUA.md §5.2) + ca job 46.</summary>
+    /// <summary>Đúng 5 dòng V4 để lọt (KET_QUA.md §6.2) + ca job 46.</summary>
     [Theory]
     [InlineData("Tốt nghiệp Cao đẳng trở lên chuyên ngành Kế toán - Kiểm toán")]
     [InlineData("Tốt nghiệp THPT trở lên")]
@@ -35,7 +35,7 @@ public class CriteriaNameFilterTests
 
     /// <summary>
     /// Model bỏ được "Tốt nghiệp Đại học" trần trụi nhưng giữ lại khi có đuôi chuyên ngành
-    /// (§5.2). Regex không phân biệt hai ca đó — đúng như mong muốn.
+    /// (§6.2). Regex không phân biệt hai ca đó — đúng như mong muốn.
     /// </summary>
     [Theory]
     [InlineData("Tốt nghiệp Đại học")]
