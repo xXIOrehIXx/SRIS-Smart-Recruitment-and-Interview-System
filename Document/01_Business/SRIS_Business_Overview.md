@@ -447,9 +447,8 @@ Hạn chế về cỡ mẫu được nêu thẳng khi trình bày, kèm cách b�
 | Nhà cung cấp AI | OpenAI (API trả phí) | **Local AI** (Ollama) | Chi phí bằng 0, dữ liệu không rời hạ tầng, phù hợp Luật Bảo vệ dữ liệu cá nhân |
 | Thời hạn | 15/07/2026 | 31/08/2026 | Bổ sung thời gian cho tái định vị và đo lường chất lượng AI |
 
-Phần phương pháp đánh giá AI xây dựng trong giai đoạn làm Quiz **được tái sử dụng** cho việc đo
-chất lượng bóc tiêu chí — khung "bộ test cố định, mỗi lần đổi một yếu tố, đo hai tầng
-(máy chấm + rubric người)" giữ nguyên, chỉ đổi đối tượng đo.
+Chất lượng AI đề xuất tiêu chí được đo theo khung "bộ test cố định, mỗi lần đổi một yếu tố, đo
+hai tầng (máy chấm + rubric người)" — số liệu ở `Development/backend/ai-experiments/`.
 
 # 10\. Tổng kết
 
