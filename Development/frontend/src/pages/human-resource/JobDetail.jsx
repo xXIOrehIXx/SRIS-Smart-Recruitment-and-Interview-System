@@ -356,9 +356,7 @@ const JobDetail = () => {
               >
                 Lên Lịch Phỏng Vấn
               </Button>
-              <Button icon={<MailOutlined />} block>
-                Gửi Email
-              </Button>
+
               <Button 
                 icon={<EditOutlined />} 
                 block

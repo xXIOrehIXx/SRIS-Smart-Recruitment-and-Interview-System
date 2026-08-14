@@ -54,6 +54,7 @@ const CreateRecruitmentRequest = () => {
   const [loading, setLoading] = useState(false);
   const [loadingRequest, setLoadingRequest] = useState(isEdit);
   const [currentStep, setCurrentStep] = useState(0);
+  const lastStepChange = React.useRef(Date.now());
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
 
@@ -139,9 +140,23 @@ const CreateRecruitmentRequest = () => {
   };
 
   const handleSubmit = async () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
+    if (currentStep === 0) {
+      setCurrentStep(1);
+      lastStepChange.current = Date.now();
       return;
+    }
+    if (currentStep === 1) {
+      if (!validateSkills()) {
+        message.error('Vui lòng thêm ít nhất một kỹ năng yêu cầu');
+        return;
+      }
+      setCurrentStep(2);
+      lastStepChange.current = Date.now();
+      return;
+    }
+
+    if (Date.now() - lastStepChange.current < 500) {
+      return; // Prevent double-click submission right after step change
     }
 
     setLoading(true);
@@ -189,26 +204,6 @@ const CreateRecruitmentRequest = () => {
     { title: 'Yêu cầu chi tiết', icon: <TeamOutlined /> },
     { title: 'Điều kiện & Lưu', icon: <SaveOutlined /> },
   ];
-
-  const validateStep0 = () => {
-    const values = form.getFieldsValue([
-      'title',
-      'department',
-      'positions',
-      'employmentType',
-    ]);
-    return values.title && values.department && values.positions && values.employmentType;
-  };
-
-  const validateStep1 = () => {
-    const values = form.getFieldsValue([
-      'description',
-      'requirements',
-      'experienceYearsMin',
-    ]);
-    // 0 năm ("nhận người chưa kinh nghiệm") là giá trị HỢP LỆ -> không kiểm bằng falsy.
-    return values.description && values.requirements && values.experienceYearsMin != null;
-  };
 
   // Ô Kỹ năng nằm ngoài form store (state `skills`) nên `required` trên Form.Item chỉ vẽ
   // dấu * chứ không chặn gì — phải tự kiểm ở đây, khớp với ô Kỹ năng bắt buộc bên form Tin tuyển dụng.
@@ -543,23 +538,8 @@ const CreateRecruitmentRequest = () => {
               {currentStep < 2 ? (
                 <Button
                   type="primary"
-                  htmlType="button"
+                  htmlType="submit"
                   size="large"
-                  onClick={() => {
-                    if (currentStep === 0 && !validateStep0()) {
-                      message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
-                      return;
-                    }
-                    if (currentStep === 1 && !validateStep1()) {
-                      message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
-                      return;
-                    }
-                    if (currentStep === 1 && !validateSkills()) {
-                      message.error('Vui lòng thêm ít nhất một kỹ năng yêu cầu');
-                      return;
-                    }
-                    setCurrentStep(currentStep + 1);
-                  }}
                   style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
                 >
                   Tiếp tục
