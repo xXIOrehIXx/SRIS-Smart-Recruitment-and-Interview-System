@@ -1,4 +1,4 @@
-**ĐỒ ÁN TỐT NGHIỆP**
+﻿**ĐỒ ÁN TỐT NGHIỆP**
 
 ──────────────────
 
@@ -25,8 +25,8 @@ _cho Doanh nghiệp (Smart Recruitment and Interview System)_
 | **Phiên bản** | **Ngày** | **Nội dung thay đổi** |
 | --- | --- | --- |
 | v1.0 | 19/05/2026 | Bản đầu — đối tượng doanh nghiệp IT ≥ 100 nhân sự, có module Quiz, dùng OpenAI |
-| v2.0 | 04/08/2026 | **Cập nhật theo tái định vị hậu hội đồng:** thu hẹp đối tượng còn ≤ 200 nhân sự (mọi ngành), **loại module Quiz**, chuyển sang **chấm CV theo từng tiêu chí**, nâng Talent Pool thành tính năng đinh, chuyển từ OpenAI sang **Local AI**, gia hạn tới 31/08/2026, bổ sung kế hoạch chi tiết + WBS |
-| v2.1 | 08/08/2026 | **Cắt phạm vi sau khi đo:** bỏ **chấm CV bằng AI** và **Talent Pool** (thí nghiệm cho thấy chấm bằng ngưỡng vector không dùng được — xem 5.2). AI còn đúng một việc: **bóc tiêu chí từ JD**. Các mục nhắc tới chấm CV / Talent Pool ở phần kế hoạch & mốc bên dưới là **ghi nhận lịch sử**, không phải tính năng hiện có. |
+| v2.0 | 04/08/2026 | **Cập nhật theo tái định vị hậu hội đồng:** thu hẹp đối tượng còn ≤ 200 nhân sự (mọi ngành), **loại module Quiz**, dựng **trục tiêu chí đánh giá**, chuyển từ OpenAI sang **Local AI**, gia hạn tới 31/08/2026, bổ sung kế hoạch chi tiết + WBS |
+| v2.1 | 08/08/2026 | **Chốt vai trò của AI:** AI làm đúng một việc — **đề xuất bộ tiêu chí đánh giá từ tin tuyển dụng**, người duyệt chốt. Hệ thống không chấm điểm, không xếp hạng ứng viên. |
 
 # Mục lục
 
@@ -71,8 +71,8 @@ Sản phẩm dùng AI cho **đúng một việc**, chạy trên **hạ tầng c�
   đánh giá dạng **bản nháp**; người phụ trách chỉnh sửa và chốt. AI đề xuất, con người quyết định.
   Bộ tiêu chí đã chốt trở thành **phiếu chấm phỏng vấn**.
 
-Hệ thống **không** chấm điểm hay xếp hạng ứng viên — đây là quyết định có căn cứ đo lường,
-trình bày ở mục 5.2.
+Hệ thống **không** chấm điểm hay xếp hạng ứng viên: sàng lọc hồ sơ là việc của con người, phần
+máy làm là chuẩn bị bộ tiêu chí để việc đó có căn cứ và nhất quán.
 
 Bên cạnh đó, sản phẩm giải quyết các đặc thù thực tế của thị trường Việt Nam: **ứng viên không
 cần tạo tài khoản** (mọi tương tác qua magic link gửi email), **đặt lịch phỏng vấn theo pool
@@ -183,7 +183,7 @@ Hệ thống bao gồm 9 module nghiệp vụ chính:
 | ------ | ------------------------- | ------------------------------------------------------------------- |
 | **M1** | **Job & Yêu cầu tuyển dụng** | Trưởng bộ phận tạo yêu cầu tuyển dụng (tùy chọn) → Recruiter tạo tin tuyển dụng; Career Site công khai theo thương hiệu; form nộp CV one-page |
 | **M2** | **Candidate Pipeline**    | Kanban hiển thị 4 pha, State Machine 6 trạng thái ở tầng nội bộ, Activity Log, ghi chú nội bộ |
-| **M3** | **AI Tiêu chí & Chấm CV & Talent Pool** | AI bóc tiêu chí (nháp → duyệt → chốt), chấm CV **theo từng tiêu chí** kèm câu bằng chứng, **Talent Pool truy hồi ngược kho CV cũ** |
+| **M3** | **AI đề xuất tiêu chí đánh giá** | LLM cục bộ đọc tin tuyển dụng → bộ tiêu chí **nháp** → người duyệt chỉnh & chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn dùng chung |
 | **M4** | **Email Automation**      | Email tự động theo State Machine, mẫu email động, mỗi công ty cấu hình SMTP riêng |
 | **M5** | **Collaborative Scoring** | Chấm phỏng vấn theo cùng bộ tiêu chí, radar tổng hợp, **Blind Review tự bật khi có > 1 người chấm** |
 | **M6** | **Dashboard & Analytics** | Phễu tuyển dụng, time-to-hire, tỉ lệ chấp nhận offer, phân tích lý do loại và nguồn ứng viên |
@@ -233,27 +233,13 @@ AI **không được quyết** tiêu chí. Đầu ra của AI luôn ở trạng 
 Với doanh nghiệp chưa biết bắt đầu từ đâu, hệ thống cung cấp **thư viện tiêu chí mẫu** theo nhóm
 vị trí để chọn nhanh rồi tùy chỉnh.
 
-## 5.2 Vì sao hệ thống KHÔNG để máy chấm CV
-
-Đây là một quyết định phạm vi có chủ đích, không phải phần còn thiếu.
-
-Nhóm đã dựng thử hướng chấm CV bằng vector và **đo lại trước khi tin**: trên bộ 72 cặp
-(tiêu chí, đoạn CV) có nhãn người gán, phân bố similarity của cặp đạt và cặp không đạt
-**chồng lên nhau gần như hoàn toàn** — ngưỡng tốt nhất chỉ đạt accuracy 0,611 so với đoán
-ngẫu nhiên 0,500. Không con số ngưỡng nào cứu được, vì embedding đo *cùng chủ đề hay không*
-chứ không đo *có chứng minh được hay không*.
-
-Kết luận đưa vào thiết kế: **máy không phán ai đạt ai trượt.** Sàng lọc hồ sơ trở lại là việc
-của con người; phần máy làm là chuẩn bị bộ tiêu chí để việc đó có căn cứ và nhất quán.
-Chi tiết số liệu: `ai-experiments/exp_criteria_threshold/out/KET_QUA.md`.
-
-## 5.3 Nhận và lưu hồ sơ
+## 5.2 Nhận và lưu hồ sơ
 
 Ứng viên nộp CV qua trang tuyển dụng công khai; hệ thống bóc text từ PDF, lưu file gốc và tạo
 hồ sơ ứng tuyển. CV scan ảnh không có lớp text được chuyển sang luồng nhập tay thay vì lưu
 một bản rỗng. Không có bước chấm điểm nào ở đây.
 
-## 5.4 Đặt lịch phỏng vấn theo pool khung giờ dùng chung
+## 5.3 Đặt lịch phỏng vấn theo pool khung giờ dùng chung
 
 Giải quyết trực tiếp cảnh "hẹn tới hẹn lui" qua email giữa người tuyển dụng và ứng viên.
 
@@ -270,7 +256,7 @@ Giải quyết trực tiếp cảnh "hẹn tới hẹn lui" qua email giữa ng�
 **Bảo mật:** mỗi liên kết chứa token có thời hạn, chỉ lưu **giá trị băm** trong cơ sở dữ liệu và
 bị vô hiệu hóa sau khi ứng viên chốt — tránh chuyển tiếp email hoặc dùng lại.
 
-## 5.5 Collaborative Scoring với Blind Review
+## 5.4 Collaborative Scoring với Blind Review
 
 Cho phép nhiều người phỏng vấn chấm độc lập theo cùng bộ tiêu chí, tránh thiên kiến neo
 (anchoring bias).
@@ -291,7 +277,7 @@ Cho phép nhiều người phỏng vấn chấm độc lập theo cùng bộ ti�
 Cảnh báo bất đồng không dùng AI — chỉ dùng độ lệch chuẩn (thống kê cơ bản). Không phải mọi tính
 năng "thông minh" đều cần đến AI.
 
-## 5.6 Kiến trúc đa thuê bao (Multi-tenant)
+## 5.5 Kiến trúc đa thuê bao (Multi-tenant)
 
 Hệ thống phục vụ nhiều công ty trên cùng một hạ tầng, dữ liệu giữa các công ty được cách ly tuyệt đối.
 
@@ -333,10 +319,10 @@ trạng thái.
 
 ## Phase 2 - Hệ thống xử lý tự động
 
-- Hệ thống bóc text từ CV, chia đoạn và sinh vector biểu diễn.
-- Chấm CV **theo từng tiêu chí đã chốt** → khớp/thiếu + câu bằng chứng + điểm có trọng số.
-- Việc chấm chạy **bất đồng bộ ở tiến trình nền**: ứng viên nhận phản hồi ngay, kết quả chấm
-  hiện sau; hồ sơ chưa chấm được quét lại tự động khi hệ thống khởi động.
+- Hệ thống bóc text từ CV và lưu tệp gốc để đối chiếu; PDF scan không bóc được text thì báo rõ.
+- Với tin tuyển dụng, AI **đề xuất bộ tiêu chí đánh giá** dạng nháp để người phụ trách chỉnh và chốt.
+- Việc gọi AI chạy **bất đồng bộ ở tiến trình nền**: người dùng bấm xong không bị treo màn hình,
+  giao diện hỏi trạng thái tới khi có kết quả; AI hỏng thì báo lỗi rõ và vẫn nhập tay được.
 - Hồ sơ xuất hiện trên bảng Kanban ở pha "Hồ sơ mới".
 
 ## Phase 3 - Sàng lọc
@@ -377,9 +363,9 @@ Hệ thống đặt mục tiêu đạt 5 chỉ số cụ thể, đo lường đ�
 
 **📊 Ý nghĩa các KPI**
 
-Time-to-Hire và thời gian tác vụ thủ công đo trực tiếp hiệu quả của tự động hóa email, chấm CV
-và đặt lịch. Hai chỉ số về đánh giá lưu vết và tái sử dụng CV đo đúng phần giá trị mà một file
-Excel không thể thay thế — đây là lập luận trung tâm khi bảo vệ.
+Time-to-Hire và thời gian tác vụ thủ công đo trực tiếp hiệu quả của tự động hóa email, dựng bộ
+tiêu chí và đặt lịch. Chỉ số về đánh giá có lưu vết đo đúng phần giá trị mà một file Excel không
+thể thay thế — đây là lập luận trung tâm khi bảo vệ.
 
 Số liệu hiện trạng được đối chiếu bằng **phỏng vấn sâu 3–5 doanh nghiệp** thuộc đúng phân khúc
 mục tiêu (bộ 23 câu hỏi / 6 phần) kết hợp khảo sát trực tuyến — xem Mục 9.3.
@@ -390,8 +376,8 @@ mục tiêu (bộ 23 câu hỏi / 6 phần) kết hợp khảo sát trực tuy�
 | -------------------------------------- | ---------- | ------------------------------------------------------------------- |
 | **Kháng cự thay đổi (quen dùng Excel)** | **Cao**   | Giữ giao diện tối giản, mặc định dùng được với một tài khoản duy nhất; tính năng nâng cao là tùy chọn |
 | **Bóc text CV sai với PDF phức tạp**   | **Trung**  | Cho phép sửa tay thông tin sau khi bóc; giữ tệp CV gốc để đối chiếu |
-| **Similarity không đủ để kết luận đạt/không đạt** | **Cao** | **Đã đo và xác nhận rủi ro này**: bổ sung bước mô hình ngôn ngữ kiểm chứng sau khi vector truy hồi đoạn CV; giao diện gọi đúng tên là "độ liên quan", không trình bày như một phán quyết |
-| **Hạ tầng chạy AI cục bộ (RAM/CPU)**   | **Trung**  | Tách dịch vụ AI thành tiến trình riêng; embedding chạy thường trực, mô hình ngôn ngữ chạy theo lô; đánh giá phương án thuê máy chủ khi triển khai thật |
+| **AI đề xuất tiêu chí sai hoặc bỏ sót** | **Cao** | Đầu ra luôn là **bản nháp bắt buộc có người duyệt** — người phụ trách thêm/sửa/xóa trước khi chốt; chất lượng đã đo trên bộ 10 tin đa ngành (F1 0,876) và hạn chế được công bố kèm số |
+| **Hạ tầng chạy AI cục bộ (RAM/CPU)**   | **Trung**  | Tách dịch vụ AI thành tiến trình riêng; mô hình chỉ nạp khi có yêu cầu và giữ nóng giữa các lượt; đánh giá phương án thuê máy chủ khi triển khai thật |
 | **Rò rỉ dữ liệu xuyên công ty**        | **Cao**    | Phòng thủ nhiều lớp: Row-Level Security ở tầng dữ liệu + Global Query Filter ở tầng ứng dụng + kiểm thử cô lập dữ liệu |
 | **Mẫu phỏng vấn doanh nghiệp nhỏ (3-5 công ty)** | **Trung** | Nêu rõ hạn chế cỡ mẫu khi trình bày; kết hợp ba lớp minh chứng: desk research có nguồn + khảo sát + phỏng vấn sâu |
 | **Bất đồng giữa người chấm phỏng vấn** | **Thấp**   | Tự động cảnh báo tiêu chí có độ lệch chuẩn lớn để nhóm ngồi lại bàn |
@@ -408,8 +394,8 @@ mục tiêu (bộ 23 câu hỏi / 6 phần) kết hợp khảo sát trực tuy�
 | --- | --- | --- | --- |
 | **GĐ1 — Khởi động & Phân tích** | T4/2026 (S1) | SRS, ERD, Use Case, wireframe; khung dự án build được | 110 giờ (8,9%) |
 | **GĐ2 — Nền tảng hệ thống** | T4-T5/2026 (S2-S3) | Đăng nhập & phân quyền chạy thật, dữ liệu cô lập theo công ty, luồng đăng tin → nộp CV → lên Kanban | 218 giờ (17,7%) |
-| **GĐ3 — Tính năng cốt lõi** | T5-T6/2026 (S4-S6) | State Machine, chấm CV tự động, email tự động, chấm phỏng vấn + radar, dashboard, offer | 294 giờ (23,9%) |
-| **GĐ4 — Tái định vị hậu hội đồng** | T7-T8/2026 (S7-S9) | Gỡ Quiz; trục tiêu chí (bóc → duyệt → chấm CV có bằng chứng); Yêu cầu tuyển dụng; Talent Pool; pool khung giờ | 284 giờ (23,1%) |
+| **GĐ3 — Tính năng cốt lõi** | T5-T6/2026 (S4-S6) | State Machine, nhận & lưu hồ sơ, email tự động, chấm phỏng vấn + radar, dashboard, offer | 294 giờ (23,9%) |
+| **GĐ4 — Tái định vị hậu hội đồng** | T7-T8/2026 (S7-S9) | Gỡ Quiz; trục tiêu chí (AI đề xuất → duyệt → phiếu chấm phỏng vấn); Yêu cầu tuyển dụng; pool khung giờ | 284 giờ (23,1%) |
 | **GĐ5 — Hoàn thiện, Đo lường & Bảo vệ** | T8/2026 (S9-S10) | Minh chứng sơ cấp, đo chất lượng AI, kiểm thử, triển khai, tài liệu, bảo vệ 2 | 324 giờ (26,3%) |
 
 **Cột mốc chính:**
@@ -420,18 +406,18 @@ mục tiêu (bộ 23 câu hỏi / 6 phần) kết hợp khảo sát trực tuy�
 | M1 — Nền tảng chạy được | 12/05/2026 | Luồng đăng tin → nộp CV chạy end-to-end |
 | M2 — Bản demo đầy đủ | 23/06/2026 | 9 module chạy thông với dữ liệu demo |
 | M3 — **Bảo vệ 1** | 10/07/2026 | Trình bày trước hội đồng, nhận phản hồi |
-| M4 — Hoàn tất tái định vị | 09/08/2026 | Trục tiêu chí + Talent Pool + đặt lịch chạy thật |
+| M4 — Hoàn tất tái định vị | 09/08/2026 | Trục tiêu chí + đặt lịch phỏng vấn chạy thật |
 | M5 — **Bảo vệ 2** | 31/08/2026 | Sản phẩm hoàn thiện, tài liệu và số liệu đo đầy đủ |
 
 ## 9.2 Phân công nhóm 5 người
 
 | **Mã** | **Thành viên** | **Vai trò** | **Phạm vi phụ trách chính** | **Khối lượng** |
 | --- | --- | --- | --- | --- |
-| **BE1** | **Vũ Gia Khánh** | BA/PM kiêm Backend Lead | Kiến trúc hệ thống · Xác thực & phân quyền · State Machine · Magic link · AI service (embedding + bóc tiêu chí) · Đối chiếu theo tiêu chí · Phương pháp đánh giá AI · Tài liệu & bảo vệ | 252 giờ (20,5%) |
-| **BE2** | **San** | Backend — Nền tảng dữ liệu & Hạ tầng | Thiết kế CSDL & migration · Multi-tenant/RLS · Lưu trữ tệp (MinIO) · Xử lý PDF & vector · Chấm CV bất đồng bộ · Talent Pool · Pool khung giờ · Kiểm thử & triển khai | 256 giờ (20,8%) |
+| **BE1** | **Vũ Gia Khánh** | BA/PM kiêm Backend Lead | Kiến trúc hệ thống · Xác thực & phân quyền · State Machine · Magic link · AI service (bóc tiêu chí từ JD) · Phương pháp đánh giá AI · Tài liệu & bảo vệ | 252 giờ (20,5%) |
+| **BE2** | **San** | Backend — Nền tảng dữ liệu & Hạ tầng | Thiết kế CSDL & migration · Multi-tenant/RLS · Lưu trữ tệp (MinIO) · Xử lý PDF · Hàng đợi & worker nền cho lượt bóc tiêu chí · Pool khung giờ · Kiểm thử & triển khai | 256 giờ (20,8%) |
 | **BE3** | **Huy Minh** | Backend — Nghiệp vụ & Tích hợp | Job & Yêu cầu tuyển dụng · Quản lý người dùng & phòng ban · Email automation · Tổng hợp điểm phỏng vấn · Dashboard & Analytics · Dữ liệu demo · Sơ đồ thiết kế | 246 giờ (20,0%) |
-| **FE1** | **Tùng Anh** | Frontend — Candidate Portal & Phỏng vấn | Career Site & form nộp CV · Các trang magic link (chọn lịch, tra trạng thái, trả lời offer) · Phiếu chấm phỏng vấn & màn interviewer · Màn kết quả chấm CV · Kiểm thử FE | 236 giờ (19,2%) |
-| **FE2** | **Hùng Anh** | Frontend — Employer Portal & Trực quan hóa | Hệ thống giao diện chung & layout · Kanban 4 pha · Quản lý tin tuyển dụng · Duyệt bộ tiêu chí · Yêu cầu tuyển dụng · Talent Pool · Dashboard biểu đồ · Brand theming | 240 giờ (19,5%) |
+| **FE1** | **Tùng Anh** | Frontend — Candidate Portal & Phỏng vấn | Career Site & form nộp CV · Các trang magic link (chọn lịch, tra trạng thái, trả lời offer) · Phiếu chấm phỏng vấn & màn interviewer · Màn gọi AI bóc tiêu chí · Kiểm thử FE | 236 giờ (19,2%) |
+| **FE2** | **Hùng Anh** | Frontend — Employer Portal & Trực quan hóa | Hệ thống giao diện chung & layout · Kanban 4 pha · Quản lý tin tuyển dụng · Duyệt bộ tiêu chí · Yêu cầu tuyển dụng · Danh sách hồ sơ · Dashboard biểu đồ · Brand theming | 240 giờ (19,5%) |
 
 **Nguyên tắc phân công:** mỗi gói công việc có đúng một người chịu trách nhiệm chính; công việc
 liên tầng được tách thành gói Frontend và gói Backend riêng. Chênh lệch khối lượng giữa người
@@ -457,13 +443,12 @@ Hạn chế về cỡ mẫu được nêu thẳng khi trình bày, kèm cách b�
 | --- | --- | --- | --- |
 | Đối tượng | Doanh nghiệp IT ≥ 100 nhân sự | Doanh nghiệp ≤ 200 nhân sự + công ty gia đình, mọi ngành | Phản hồi hội đồng: đối tượng quá rộng, thiếu minh chứng |
 | Module Quiz | Trong phạm vi (sinh đề AI + chống gian lận 3 lớp) | **Loại hoàn toàn** | Không phải nỗi đau cốt lõi của doanh nghiệp nhỏ, làm loãng trọng tâm |
-| Chấm CV | Một điểm 0-100 cho cả bộ hồ sơ | Chấm **theo từng tiêu chí** có câu bằng chứng | Điểm số không giải thích được thì người dùng không tin |
+| Vai trò của AI | Máy chấm điểm hồ sơ (một điểm 0-100 cho cả bộ hồ sơ) | **AI đề xuất bộ tiêu chí đánh giá**, người duyệt chốt | Điểm số máy chấm không giải thích được thì người dùng không tin; bộ tiêu chí thì kiểm được từng dòng và dùng lại được khi phỏng vấn |
 | Nhà cung cấp AI | OpenAI (API trả phí) | **Local AI** (Ollama) | Chi phí bằng 0, dữ liệu không rời hạ tầng, phù hợp Luật Bảo vệ dữ liệu cá nhân |
-| Talent Pool | Tính năng phụ | **Tính năng đinh** | Giá trị tăng dần theo thời gian sử dụng — lý do doanh nghiệp gắn bó |
 | Thời hạn | 15/07/2026 | 31/08/2026 | Bổ sung thời gian cho tái định vị và đo lường chất lượng AI |
 
 Phần phương pháp đánh giá AI xây dựng trong giai đoạn làm Quiz **được tái sử dụng** cho việc đo
-chất lượng bóc tiêu chí và chấm CV — khung "bộ test cố định, mỗi lần đổi một yếu tố, đo hai tầng
+chất lượng bóc tiêu chí — khung "bộ test cố định, mỗi lần đổi một yếu tố, đo hai tầng
 (máy chấm + rubric người)" giữ nguyên, chỉ đổi đối tượng đo.
 
 # 10\. Tổng kết
@@ -476,10 +461,11 @@ Ba điểm nhóm muốn nhấn mạnh:
 
 1. **Sản phẩm có đối tượng rõ ràng.** Không làm ATS cho mọi doanh nghiệp, mà làm cho nhóm chưa
    có phòng nhân sự — nhóm bị các nền tảng lớn bỏ qua vì không đủ lợi nhuận.
-2. **AI có lý do nghiệp vụ, không phải gắn cho có.** AI đề xuất tiêu chí và tìm bằng chứng trong
-   CV; con người chốt tiêu chí và ra quyết định tuyển. Ranh giới trách nhiệm rõ ràng.
-3. **Nhóm đo trước khi tin.** Thí nghiệm đo ngưỡng similarity đã **bác bỏ** chính cách làm ban
-   đầu của nhóm, và kết quả đó được ghi nhận công khai cùng hướng khắc phục — thay vì giấu đi.
+2. **AI có lý do nghiệp vụ, không phải gắn cho có.** AI đề xuất tiêu chí đánh giá dưới dạng bản
+   nháp; con người chốt tiêu chí và ra quyết định tuyển. Ranh giới trách nhiệm rõ ràng.
+3. **Chất lượng AI được đo, không nói suông.** Bộ 10 tin tuyển dụng đa ngành, ba phiên bản prompt,
+   chấm hai tầng: **F1 0.876**, không tiêu chí nào AI tự bịa. Hạn chế của phép đo cũng ghi rõ
+   cùng số liệu — thay vì chỉ trưng con số đẹp.
 
 Sản phẩm có kiến trúc phân tầng rõ ràng, dữ liệu cô lập theo từng doanh nghiệp ở tầng cơ sở dữ
 liệu, và toàn bộ AI chạy cục bộ — đủ nền tảng để phát triển tiếp thành một sản phẩm thương mại

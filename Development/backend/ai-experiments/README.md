@@ -5,21 +5,17 @@ tham chiếu tới — xoá đi thì hệ thống vẫn build và chạy bình t
 
 Folder này giữ **bằng chứng cho phương pháp đánh giá AI** (khung Section 16 trong
 `docs/00_CONTEXT.md`): bộ test cố định, mỗi lần chỉ đổi một yếu tố, đo hai tầng
-(máy chấm + rubric người). `docs/00_CONTEXT.md` trích thẳng số từ đây khi trả lời
-câu hỏi *"Có phương pháp đánh giá AI không?"*, nên **xoá folder là câu đó mất chỗ dựa**.
+(máy chấm + rubric người).
 
-Hai thí nghiệm, và chúng trả lời hai câu khác nhau:
-
-| | Câu hỏi | Kết luận |
-|---|---|---|
-| `exp_criteria_extract/` | Tính năng **đang chạy** làm tốt đến đâu? | Precision 0.841 · Recall 0.914 · F1 0.876 |
-| `exp_criteria_threshold/` | Có nên làm máy chấm CV không? | **Không** — và tính năng đã bị cắt vì số này |
+Chỉ có **một** thí nghiệm: bộ đo tính năng AI đề xuất tiêu chí — thứ duy nhất AI còn
+làm trong sản phẩm.
 
 ---
 
-## 1. `exp_criteria_extract/` — AI đề xuất tiêu chí (**tính năng ĐANG CHẠY**)
+## `exp_criteria_extract/` — AI đề xuất tiêu chí (**tính năng ĐANG CHẠY**)
 
-Bộ **quan trọng nhất**: nó đo đúng thứ duy nhất còn chạy thật trong sản phẩm.
+Đo đúng thứ duy nhất còn chạy thật trong sản phẩm: bóc tiêu chí từ JD để làm phiếu
+chấm phỏng vấn.
 
 Đo hai tầng:
 
@@ -53,36 +49,14 @@ python score_rubric.py --tag <tag>
 
 ---
 
-## 2. `exp_criteria_threshold/` — chọn ngưỡng khớp tiêu chí SOFT
-
-Chính là **Việc B4b** trong `docs/00_CONTEXT.md`. Trả lời câu: `CriteriaMatchThreshold`
-nên để bao nhiêu?
-
-Kết quả ngắn gọn: **không ngưỡng nào dùng được.** Cosine similarity giữa câu tiêu chí và
-đoạn CV không tách được cặp đúng khỏi cặp sai (hai phân bố chồng lên nhau). Đối chứng bằng
-Local LLM thì đạt accuracy 0.972.
-
-Đây là thí nghiệm **bác bỏ chính tính năng nó đo** — máy chấm CV đã bị cắt khỏi phạm vi
-(08/08/2026) dựa trên số này.
-
-- Kết quả đầy đủ + hạn chế: `exp_criteria_threshold/out/KET_QUA.md`
-
-```bash
-cd ai-experiments/exp_criteria_threshold
-python run.py             # cần AI service ở 127.0.0.1:8000
-python run_llm_judge.py   # cần Ollama + qwen2.5
-```
-
----
-
 ## Ghi chú
 
 `AI_TESTING_REFERENCE.md` là tài liệu **tham khảo cách trình bày** bóc từ slide của một
 nhóm capstone khác — không phải thiết kế của SRIS. Khung ngưỡng Tốt / Chấp nhận được /
 Cần cải thiện trong `exp_criteria_extract/RUBRIC.md` lấy từ đó.
 
-> **Đã xoá (13/08/2026):** thí nghiệm sinh câu hỏi phỏng vấn bằng LLM (`exp/`, 5 phiên bản
-> prompt) cùng bộ `files/`. Tính năng quiz bị loại khỏi phạm vi từ 07/2026; thí nghiệm đó
-> từng được giữ làm bằng chứng "nhóm biết đánh giá AI có kỷ luật", nhưng
-> `exp_criteria_extract` giờ đã chứng minh đúng điều đó trên tính năng **thật sự đang chạy**
-> nên nó thành thừa. Cần lại thì lấy từ git history.
+### Đã xoá
+
+Hai bộ thí nghiệm cũ (sinh câu hỏi quiz — xoá 13/08/2026; ngưỡng khớp vector cho máy chấm
+CV — xoá 14/08/2026) đo những tính năng **không còn trong phạm vi**. Cần lại thì lấy từ
+git history (`2b9acfd` và `190825e`).

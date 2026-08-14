@@ -1,10 +1,10 @@
-# SRIS Backend — API Endpoint Map (cho Frontend)
+﻿# SRIS Backend — API Endpoint Map (cho Frontend)
 
 > ⚠️ **QUY TẮC CHO BACKEND:** thêm / sửa / xóa bất kỳ endpoint nào thì PHẢI cập nhật file này
 > ngay trong cùng commit (thêm dòng vào đúng section, đánh dấu **MỚI dd/mm** hoặc **ĐỔI dd/mm**,
 > sửa dòng "Cập nhật:" bên dưới). Đây là nguồn duy nhất FE dựa vào — file lệch code là FE gọi sai API.
 
-> Cập nhật: 2026-08-09. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
+> Cập nhật: 2026-08-14. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
 > Tất cả path đã có tiền tố `/api`. **KHÔNG** thêm `/api` lần hai ở FE (bug cũ trong `api.js`).
 >
 > **Auth:** gửi `Authorization: Bearer <accessToken>`. Token hết hạn → gọi `POST /api/Account/refresh-token`.
@@ -75,7 +75,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | POST | `/api/Jobs` | Rec | tạo job (JD) |
 | GET | `/api/Jobs` | Rec/Adm | danh sách job |
 | GET | `/api/Jobs/{jobId}` | Rec/Adm | chi tiết job |
-| PUT | `/api/Jobs/{jobId}` | Rec | sửa job (đổi JD → xóa embedding, cần bóc lại tiêu chí) |
+| PUT | `/api/Jobs/{jobId}` | Rec | sửa job (đổi JD → nên bóc lại tiêu chí) |
 | DELETE | `/api/Jobs/{jobId}` | Rec | đóng job (soft, status=Closed) |
 
 ## 4b. Yêu cầu tuyển dụng — `recruitment-requests` — **MỚI 09/08**
@@ -100,7 +100,8 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | GET | `/api/jobs/{jobId}/criteria` | Rec | list tiêu chí của job |
 | PUT | `/api/evaluation-criteria/{criteriaId}` | Rec | sửa 1 tiêu chí |
 | DELETE | `/api/evaluation-criteria/{criteriaId}` | Rec | xóa (soft, active=0) |
-| POST | `/api/jobs/{jobId}/criteria/extract` | Rec | AI bóc tiêu chí từ JD → DRAFT |
+| POST | `/api/jobs/{jobId}/criteria/extract` | Rec | **xếp hàng** lượt AI bóc tiêu chí → trả `202` ngay, không đợi AI |
+| GET | `/api/jobs/{jobId}/criteria/extract-status` | Rec | hỏi trạng thái lượt bóc; poll tới khi `running=false`, rồi `DONE` → nạp lại tiêu chí / `FAILED` → hiện `errorMessage` |
 | POST | `/api/jobs/{jobId}/criteria/approve` | Rec | chốt DRAFT → APPROVED; bộ tiêu chí này là phiếu chấm phỏng vấn |
 
 ## 6. Bộ mẫu tiêu chí — `criteria-templates` (Rec)
@@ -121,28 +122,26 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | POST | `/api/cvs/upload` | Rec | upload CV (PDF) — multipart; tạo Application ở NEW |
 | GET | `/api/cvs/{cvId}/file-url` | Rec/DM | presigned URL xem file CV |
 
-## 8. ~~Talent Pool~~ — ĐÃ LOẠI 08/08/2026
-
-## 9. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
+## 8. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | GET | `/api/jobs/{jobId}/applications` | Rec/DM | board 4 pha (Hồ sơ mới/Sàng lọc/Phỏng vấn/Quyết định) |
 | GET | `/api/applications/{applicationId}` | Rec/DM | chi tiết 1 hồ sơ |
 
-## 10. Chuyển trạng thái — `ApplicationState` (Rec/DM)
+## 9. Chuyển trạng thái — `ApplicationState` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/transition` | Rec/DM | forward-only; guard G2 ở INTERVIEW→OFFER |
 | POST | `/api/applications/{applicationId}/reject` | Rec/DM | `rejectReason` **TÙY CHỌN** (ép nhập chỉ đẻ lý do rác) — FE cho chip chọn nhanh, bỏ trống vẫn reject được |
 
-## 11. Lịch sử & ghi chú — (Rec/Itv/DM)
+## 10. Lịch sử & ghi chú — (Rec/Itv/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | GET | `/api/applications/{applicationId}/history` | Rec/Itv/DM | nhật ký hoạt động |
 | POST | `/api/applications/{applicationId}/notes` | Rec/Itv/DM | thêm ghi chú nội bộ |
 | GET | `/api/applications/{applicationId}/notes` | Rec/Itv/DM | list ghi chú |
 
-## 12. Đặt lịch phỏng vấn — POOL khung dùng chung (Rec)
+## 11. Đặt lịch phỏng vấn — POOL khung dùng chung (Rec)
 > **ĐỔI MÔ HÌNH 07/2026:** không còn tạo lịch 1-1 per-ứng-viên. Human Resource mở 1 POOL khung cho job+vòng,
 > mời DANH SÁCH ứng viên (mỗi người 1 magic link SCHEDULE), ai chốt trước lấy khung trước.
 > Điều kiện mời: card đã ở pha Phỏng vấn (KÉO trước, MỜI sau).
@@ -155,7 +154,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | POST | `/api/interview-pools/{poolId}/cancel` | Rec | hủy pool — body `{ reason? }`; khóa khung, hủy invite chờ, email báo người đã chốt |
 | POST | `/api/applications/{applicationId}/manual-interview` | Rec | chốt lịch TAY (nhánh gọi điện) — body `{ interviewerId, startTime, roundNumber? }` → trả `{ scheduleId }` |
 
-## 13. Chấm phỏng vấn — `InterviewScoring`
+## 12. Chấm phỏng vấn — `InterviewScoring`
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | GET | `/api/me/interview-schedules` | Itv | lịch được phân công của tôi |
@@ -166,7 +165,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | GET | `/api/applications/{applicationId}/interview-aggregate` | Rec/DM | **MỚI 09/08** — tổng hợp điểm gộp mọi buổi/vòng của 1 hồ sơ |
 | GET | `/api/applications/{applicationId}/decision-brief` | Rec/DM | **MỚI 09/08** — bản tóm cho người quyết: đề xuất của từng interviewer + note theo tiêu chí + ghi chú nội bộ, **KHÔNG có điểm số**; ý kiến trái chiều xếp trước. Màn "Quyết định tuyển dụng" dùng cái này, không dùng `aggregate` |
 
-## 14. Thư mời nhận việc — `applications/{applicationId}/offer` (Rec/DM)
+## 13. Thư mời nhận việc — `applications/{applicationId}/offer` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | GET | `/api/applications/{applicationId}/offer/defaults` | Rec/DM | giá trị điền sẵn form soạn thư (từ Job + Company) |
@@ -175,12 +174,12 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | GET | `/api/applications/{applicationId}/offer/letter` | Rec/DM | file PDF thư mời đã gửi (`application/pdf`) |
 | POST | `/api/applications/{applicationId}/offer/outcome` | Rec/DM | ghi nhận ứng viên trả lời: `{accepted, note}` → HIRED / REJECTED |
 
-## 15. Magic link (Human Resource phát) — `applications/{applicationId}/magic-links`
+## 14. Magic link (Human Resource phát) — `applications/{applicationId}/magic-links`
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/magic-links` | Rec | phát link cho candidate (SCHEDULE/STATUS/OFFER_RESPONSE) |
 
-## 16. Mẫu email — `email-templates` (Rec)
+## 15. Mẫu email — `email-templates` (Rec)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | GET | `/api/email-templates` | Rec | |
@@ -195,13 +194,13 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 > (`{{positionBlock}}`, `{{compensationBlock}}`, `{{termsBlock}}`, `{{signature}}`, `{{letterhead}}`),
 > template giữ phần lời văn + ảnh. Sửa câu chữ thư mời = sửa template này.
 
-## 17. Dashboard — `dashboard` (Rec/DM/Adm)
+## 16. Dashboard — `dashboard` (Rec/DM/Adm)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | GET | `/api/dashboard/overview` | Rec/DM/Adm | funnel, time-to-hire, offer acceptance, reject/source breakdown. `?jobId=` lọc theo 1 job |
 | GET | `/api/dashboard/kanban` | Rec/DM/Adm | Kanban board pipeline. `?jobId=` lọc theo 1 job |
 
-## 18. Candidate (magic link, không đăng nhập) — `Anon`
+## 17. Candidate (magic link, không đăng nhập) — `Anon`
 | Method | Path | Purpose | Ghi chú |
 |---|---|---|---|
 | GET | `/api/candidate/schedule?token=…` | SCHEDULE | xem slot phỏng vấn |
@@ -211,7 +210,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | GET | `/api/candidate/offer?token=…` | OFFER_RESPONSE | tóm tắt thư mời nhận việc |
 | GET | `/api/candidate/offer/letter?token=…` | OFFER_RESPONSE | file PDF thư mời (`application/pdf`) — link trong email trỏ về trang này |
 
-## 19. Career Site công khai — `public/{slug}` (Anon)
+## 18. Career Site công khai — `public/{slug}` (Anon)
 | Method | Path | Ghi chú |
 |---|---|---|
 | GET | `/api/public/{slug}/brand` | thương hiệu công ty |

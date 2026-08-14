@@ -48,6 +48,19 @@ GIAY_TO_PATTERNS = [
 # thứ ("MISA/Fast", "Cao đẳng/Đại học") chứ không phải hai kỹ năng khác nhau.
 GOP_PATTERN = re.compile(r",|\bva\b")
 
+# Dòng mang NGƯỠNG ĐỐI CHIẾU: "tối thiểu 2 năm kinh nghiệm", "từ 1 năm trở lên",
+# "khách sạn 3 sao trở lên". Cùng bản chất với giấy tờ — cầm CV lên là đối chiếu
+# được, cho điểm 0-10 thì vô nghĩa (ứng viên 5 năm cho 10 điểm, 1 năm cho 3 điểm?
+# con số đó đã nằm sẵn trên hồ sơ, ngồi trong buổi phỏng vấn đọc lại là phí giờ).
+#
+# Tách riêng khỏi GIAY_TO_PATTERNS vì hướng xử lý KHÁC: giấy tờ thì BỎ hẳn, còn
+# ngưỡng kinh nghiệm thì nên VIẾT LẠI thành chiều sâu năng lực — thứ nằm sau con
+# số ấy vẫn đáng hỏi.
+NGUONG_PATTERNS = [
+    r"\btoi thieu\b", r"\bit nhat\b", r"\btro len\b",
+    r"\btu \d", r"\b\d+\s*nam\b", r"\bkinh nghiem \d",
+]
+
 
 def _khong_dau(s: str) -> str:
     """Bỏ dấu tiếng Việt + hạ chữ thường, để dò từ khóa không phụ thuộc cách gõ dấu."""
@@ -65,6 +78,12 @@ def la_giay_to(name: str) -> bool:
 def la_gop(name: str) -> bool:
     """Tiêu chí này có nhồi nhiều kỹ năng vào một dòng không?"""
     return bool(GOP_PATTERN.search(_khong_dau(name)))
+
+
+def la_nguong(name: str) -> bool:
+    """Tiêu chí này có viết dưới dạng ngưỡng đối chiếu (số năm, "trở lên") không?"""
+    plain = _khong_dau(name)
+    return any(re.search(p, plain) for p in NGUONG_PATTERNS)
 
 
 def _tokens(name: str) -> set:
@@ -111,14 +130,18 @@ def do_mot_tin(names: list) -> dict:
     n = len(names)
     giay_to = [x for x in names if la_giay_to(x)]
     gop = [x for x in names if la_gop(x)]
+    nguong = [x for x in names if la_nguong(x)]
     return {
         "so_tieu_chi": n,
         "so_giay_to": len(giay_to),
         "giay_to_rate": round(len(giay_to) / n, 4) if n else 0.0,
         "so_gop": len(gop),
         "gop_rate": round(len(gop) / n, 4) if n else 0.0,
+        "so_nguong": len(nguong),
+        "nguong_rate": round(len(nguong) / n, 4) if n else 0.0,
         "trung_lap": dem_trung_lap(names),
         "qua_tran": max(0, n - 10),
         "_giay_to_names": giay_to,
         "_gop_names": gop,
+        "_nguong_names": nguong,
     }
