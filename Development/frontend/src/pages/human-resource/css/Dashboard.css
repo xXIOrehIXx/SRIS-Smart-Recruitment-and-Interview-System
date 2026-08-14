@@ -246,15 +246,63 @@
   font-size: 13px;
 }
 
-/* Nhắc rằng khối này đang thu hẹp theo bộ lọc vị trí, không phải số toàn công ty. */
-.side-scope {
-  margin-left: auto;
-  padding: 1px 8px;
-  border-radius: 10px;
-  background-color: rgba(93, 140, 62, 0.12);
-  color: #5d8c3e;
-  font-size: 11px;
-  font-weight: 400;
+/* --- Từ chối gần đây --- */
+.rejection-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rejection-item {
+  padding: 8px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.rejection-item + .rejection-item {
+  border-top: 1px solid #f5f5f4;
+}
+
+.rejection-item:hover {
+  background-color: rgba(245, 34, 45, 0.06);
+}
+
+.rejection-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rejection-head .ant-typography {
+  font-size: 13px;
+  min-width: 0;
+}
+
+.rejection-time {
+  flex: none;
+  font-size: 11px !important;
+  white-space: nowrap;
+}
+
+.rejection-job {
+  display: block;
+  font-size: 11px !important;
+  margin-bottom: 2px;
+}
+
+.rejection-reason {
+  display: block;
+  font-size: 12px;
+  color: #cf1322;
+}
+
+/* Lý do là trường tùy chọn — dòng "Không ghi lý do" phải trông khác lý do thật, nếu không
+   người đọc tưởng ai đó đã gõ đúng câu ấy vào ô lý do. */
+.rejection-reason.is-empty {
+  color: #bfbfbf;
+  font-style: italic;
 }
 
 /* --- Hoạt động gần đây --- */

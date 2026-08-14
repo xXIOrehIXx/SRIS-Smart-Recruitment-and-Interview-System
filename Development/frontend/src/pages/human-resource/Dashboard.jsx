@@ -379,14 +379,11 @@ const HumanResourceDashboard = () => {
   ];
 
   /**
-   * showPercent=false dành cho lý do từ chối: reject_reason là text tự do và không bắt buộc,
-   * nên mỗi hồ sơ gần như tự thành một nhóm riêng — "33,3%" ở đó chỉ là 1/N viết cách khác,
-   * không phải một tỉ lệ có ý nghĩa. Thanh vẽ theo tỉ lệ so với dòng NHIỀU NHẤT thay vì so
-   * với tổng, để vẫn thấy lý do nào lặp lại nhiều mà không hứa hẹn một con số phần trăm.
-   * Nguồn ứng viên thì ngược lại: Candidate.source do code đặt ("Career Site"), danh mục
-   * đóng nên phần trăm ở đó nói lên điều thật.
+   * Chỉ dùng cho nguồn ứng viên. Phần trăm ở đây có nghĩa vì Candidate.source do code đặt
+   * ("Career Site") — danh mục đóng, các nhãn cộng lại thành một tổng thật.
+   * Đừng tái dùng cho lý do từ chối: text tự do gom nhóm ra gần đúng mỗi hồ sơ một nhóm.
    */
-  const renderBreakdown = (items, emptyText, { showPercent = true } = {}) => {
+  const renderBreakdown = (items, emptyText) => {
     if (!items || items.length === 0) {
       return (
         <Text type="secondary" className="side-empty">
@@ -394,27 +391,24 @@ const HumanResourceDashboard = () => {
         </Text>
       );
     }
-    const maxCount = Math.max(...items.map((i) => Number(i.count) || 0), 1);
-    return items.map((item) => {
-      const width = showPercent
-        ? Math.min(100, Number(item.percentage) || 0)
-        : ((Number(item.count) || 0) / maxCount) * 100;
-      return (
-        <div className="breakdown-row" key={item.label}>
-          <div className="breakdown-head">
-            <Text className="breakdown-label" ellipsis={{ tooltip: item.label }}>
-              {item.label}
-            </Text>
-            <Text type="secondary" className="breakdown-count">
-              {showPercent ? `${item.count} · ${item.percentage}%` : `${item.count} hồ sơ`}
-            </Text>
-          </div>
-          <div className="breakdown-track">
-            <div className="breakdown-fill" style={{ width: `${width}%` }} />
-          </div>
+    return items.map((item) => (
+      <div className="breakdown-row" key={item.label}>
+        <div className="breakdown-head">
+          <Text className="breakdown-label" ellipsis={{ tooltip: item.label }}>
+            {item.label}
+          </Text>
+          <Text type="secondary" className="breakdown-count">
+            {item.count} · {item.percentage}%
+          </Text>
         </div>
-      );
-    });
+        <div className="breakdown-track">
+          <div
+            className="breakdown-fill"
+            style={{ width: `${Math.min(100, Number(item.percentage) || 0)}%` }}
+          />
+        </div>
+      </div>
+    ));
   };
 
   if (loading && !dashboardData) {
@@ -660,13 +654,52 @@ const HumanResourceDashboard = () => {
 
           <Card className="dashboard-card side-card" bordered={false}>
             <Title level={5} className="side-title">
-              <CloseOutlined /> Lý do từ chối
-              {selectedJob && <span className="side-scope">vị trí đang lọc</span>}
+              <CloseOutlined /> Từ chối gần đây
             </Title>
-            {renderBreakdown(
-              dashboardData?.rejectReasons,
-              "Chưa có hồ sơ nào bị từ chối",
-              { showPercent: false },
+            {/* Danh sách chứ không phải phân rã theo lý do: reject_reason là text tự do và
+                tùy chọn, gom nhóm ra gần đúng mỗi hồ sơ một nhóm nên "tỉ lệ" chỉ là 1/N viết
+                cách khác. Và một lý do trần trụi ("ok em") không nói lên gì nếu không biết nó
+                thuộc ứng viên nào, vị trí nào — nên hiện đủ cả ba. */}
+            {dashboardData?.recentRejections?.length ? (
+              <ul className="rejection-list">
+                {dashboardData.recentRejections.map((r) => (
+                  <li
+                    key={r.applicationId}
+                    className="rejection-item"
+                    onClick={() =>
+                      navigate(`/human-resource/candidates/${r.applicationId}`)
+                    }
+                  >
+                    <div className="rejection-head">
+                      <Text strong ellipsis={{ tooltip: r.candidateName }}>
+                        {r.candidateName}
+                      </Text>
+                      <Text type="secondary" className="rejection-time">
+                        {formatRelativeTime(r.rejectedAt)}
+                      </Text>
+                    </div>
+                    <Text
+                      type="secondary"
+                      className="rejection-job"
+                      ellipsis={{ tooltip: r.jobTitle }}
+                    >
+                      <FileTextOutlined /> {r.jobTitle}
+                    </Text>
+                    {/* Lý do tùy chọn — không ghi thì nói thẳng là không ghi, đừng bỏ trống
+                        khiến dòng trông như lỗi hiển thị. */}
+                    <Text
+                      className={`rejection-reason${r.rejectReason ? "" : " is-empty"}`}
+                      ellipsis={{ tooltip: r.rejectReason || undefined }}
+                    >
+                      {r.rejectReason || "Không ghi lý do"}
+                    </Text>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Text type="secondary" className="side-empty">
+                Chưa có hồ sơ nào bị từ chối
+              </Text>
             )}
           </Card>
 

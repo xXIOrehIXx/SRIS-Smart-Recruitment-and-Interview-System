@@ -52,6 +52,19 @@ public class DepartmentProgressDto
     public int Total { get; set; }
 }
 
+/// <summary>
+/// 1 hồ sơ bị từ chối gần đây. <c>RejectReason</c> null = người từ chối không ghi lý do
+/// (trường này tùy chọn) — client hiện "Không ghi lý do", đừng bỏ dòng đó đi.
+/// </summary>
+public class RecentRejectionDto
+{
+    public long ApplicationId { get; set; }
+    public string CandidateName { get; set; } = null!;
+    public string JobTitle { get; set; } = null!;
+    public string? RejectReason { get; set; }
+    public DateTime? RejectedAt { get; set; }
+}
+
 /// <summary>1 dòng hoạt động gần đây (từ ActivityLog).</summary>
 public class RecentActivityDto
 {
@@ -69,8 +82,15 @@ public class DashboardOverviewDto
     public long? JobId { get; set; }
     public DashboardSummaryDto Summary { get; set; } = new();
     public List<FunnelStageDto> Funnel { get; set; } = new();
+    /// <summary>
+    /// Phân rã lý do loại. Gom nhóm trên text tự do nên số nhóm gần bằng số hồ sơ —
+    /// đừng vẽ thành biểu đồ tỉ lệ; hiện danh sách thì dùng <see cref="RecentRejections"/>.
+    /// </summary>
     public List<BreakdownItemDto> RejectReasons { get; set; } = new();
     public List<BreakdownItemDto> Sources { get; set; } = new();
+
+    /// <summary>Hồ sơ bị từ chối gần nhất, kèm lý do + vị trí (khối "Từ chối gần đây").</summary>
+    public List<RecentRejectionDto> RecentRejections { get; set; } = new();
 
     /// <summary>Hồ sơ mới nộp gần nhất (bảng "Ứng viên ứng tuyển gần đây").</summary>
     public List<RecentApplicationDto> RecentApplications { get; set; } = new();
