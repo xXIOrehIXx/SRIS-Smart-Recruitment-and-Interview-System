@@ -116,8 +116,12 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             var job = await _jobRepo.GetByIdAsync(companyId, jobId);
             if (job is null)
             {
-                // Job bị xoá trong lúc lượt bóc còn xếp hàng.
-                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed,
+                // Job bị xoá trong lúc lượt bóc còn xếp hàng. Phải LOG: nhánh này từng im lặng
+                // hoàn toàn, nên khi nó bị đi vào oan (tenant chưa set -> query lọc company_id=0)
+                // thì log không có một dòng nào giữa "bắt đầu bóc" và hết chuyện.
+                _logger.Warning("RunExtraction: không đọc được job {JobId} của company {Co} — " +
+                    "đánh dấu lượt bóc {Id} là FAILED.", jobId, companyId, extractionId);
+                await CloseAsync(companyId, extractionId, jobId, ExtractionStatus.Failed,
                     null, ExtractionErrorCode.AiFailed, "Tin tuyển dụng không còn tồn tại.");
                 return;
             }
@@ -138,7 +142,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             catch (Exception ex)
             {
                 _logger.Warning(ex, "RunExtraction: AI bóc tiêu chí thất bại (job={JobId}).", jobId);
-                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, null,
+                await CloseAsync(companyId, extractionId, jobId, ExtractionStatus.Failed, null,
                     ExtractionErrorCode.AiFailed,
                     "AI chưa đề xuất được tiêu chí — vui lòng thử lại, nhập thủ công hoặc áp template.");
                 return;
@@ -151,7 +155,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             if (extracted.Count == 0)
             {
                 _logger.Information("RunExtraction: tin tuyển dụng không nêu yêu cầu nào (job={JobId}).", jobId);
-                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, 0,
+                await CloseAsync(companyId, extractionId, jobId, ExtractionStatus.Failed, 0,
                     ExtractionErrorCode.NoRequirements,
                     "Tin tuyển dụng chưa nêu yêu cầu nào cần đánh giá khi phỏng vấn — mới chỉ có " +
                     "đầu việc, hoặc chỉ có những thứ đọc hồ sơ là biết (bằng cấp, chứng chỉ). " +
@@ -177,7 +181,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                 entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
             }
 
-            await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Done,
+            await CloseAsync(companyId, extractionId, jobId, ExtractionStatus.Done,
                 extracted.Count, null, null);
             _logger.Information("RunExtraction: job={JobId} -> {N} tiêu chí DRAFT chờ duyệt.",
                 jobId, extracted.Count);
@@ -189,7 +193,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                 jobId, extractionId);
             try
             {
-                await _extractionRepo.FinishAsync(companyId, extractionId, ExtractionStatus.Failed, null,
+                await CloseAsync(companyId, extractionId, jobId, ExtractionStatus.Failed, null,
                     ExtractionErrorCode.AiFailed,
                     "Đề xuất tiêu chí thất bại — vui lòng thử lại hoặc nhập tiêu chí thủ công.");
             }
@@ -199,6 +203,23 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                 _logger.Error(closeEx, "RunExtraction: không đóng nổi dòng hàng đợi {Id}.", extractionId);
             }
         }
+    }
+
+    /// <summary>
+    /// Đóng dòng hàng đợi và KIỂM chuyện đó có xảy ra thật không. UPDATE khớp 0 dòng không ném
+    /// lỗi, nên nếu không đếm thì "đã đóng" và "tưởng đã đóng" trông y hệt nhau — mà ca thứ hai
+    /// để lại một lượt bóc treo RUNNING vĩnh viễn: FE hỏi trạng thái mãi vẫn thấy đang chạy.
+    /// </summary>
+    private async Task CloseAsync(long companyId, long extractionId, long jobId, string status,
+        int? criteriaCount, string? errorCode, string? errorMessage)
+    {
+        var rows = await _extractionRepo.FinishAsync(companyId, extractionId, status,
+            criteriaCount, errorCode, errorMessage);
+
+        if (rows == 0)
+            _logger.Error("RunExtraction: đóng lượt bóc {Id} (job={JobId}, company={Co}) sang {Status} " +
+                "nhưng UPDATE không khớp dòng nào — lượt bóc đang treo RUNNING.",
+                extractionId, jobId, companyId, status);
     }
 
     private static CriteriaExtractionStatusDto MapStatus(CriteriaExtraction e) => new()

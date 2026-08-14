@@ -45,7 +45,8 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
         var recentApps = await _repo.GetRecentApplicationsAsync(companyId, jobId, 8, scope);
         var recentDecisions = await _repo.GetRecentDecisionsAsync(companyId, jobId, 5, scope);
         var departmentProgress = await _repo.GetDepartmentProgressAsync(companyId, scope);
-        var recentActivities = await _repo.GetRecentActivitiesAsync(companyId, 8, scope);
+        var recentActivities = await _repo.GetRecentActivitiesAsync(companyId, jobId, 8, scope);
+        var recentRejections = await _repo.GetRecentRejectionsAsync(companyId, jobId, 6, scope);
 
         var byState = funnelRaw.ToDictionary(x => x.State, x => x.Count, StringComparer.OrdinalIgnoreCase);
         int CountOf(string state) => byState.TryGetValue(state, out var c) ? c : 0;
@@ -91,6 +92,17 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
             Funnel = funnel,
             RejectReasons = ToBreakdown(rejectRaw, "Không rõ"),
             Sources = ToBreakdown(sourceRaw, "Không rõ"),
+            RecentRejections = recentRejections
+                .Select(r => new RecentRejectionDto
+                {
+                    ApplicationId = r.ApplicationId,
+                    CandidateName = r.CandidateName,
+                    JobTitle = r.JobTitle,
+                    RejectReason = r.RejectReason,
+                    RejectedAt = r.RejectedAt,
+                    RejectedFromState = r.RejectedFromState
+                })
+                .ToList(),
             RecentApplications = recentApps.Select(ToRecent).ToList(),
             RecentDecisions = recentDecisions.Select(ToRecent).ToList(),
             DepartmentProgress = departmentProgress

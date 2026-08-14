@@ -5,17 +5,19 @@ SRIS — Seed dữ liệu DEMO qua API thật (đi qua RLS + hàng đợi chấm
 
 Tạo trong company của tài khoản admin đăng nhập:
   - 4 user: recruiter / 2 interviewer / DM  (mật khẩu chung: demo123456)
-  - 3 job JD đầy đủ + bộ tiêu chí APPROVED (HARD/SOFT + keywords)
+  - 3 job JD đầy đủ + bộ tiêu chí APPROVED (chỉ name + weight + maxScore)
   - 1 Yêu cầu tuyển dụng của DM -> Recruiter duyệt -> convert vào job
-  - 6 ứng viên nộp CV PDF qua career site (nội dung khớp/lệch JD khác nhau)
+  - 6 ứng viên nộp CV PDF qua career site
   - Pipeline đủ trạng thái: NEW / SCREENING / INTERVIEW / OFFER / HIRED / REJECTED
   - 1 pool phỏng vấn (panel 2 interviewer) + ứng viên đã chốt lịch qua magic link
-  - 2 phiếu chấm ĐÃ NỘP (mở blind -> panel aggregate có dữ liệu) -> qua guard G2
-  - 1 offer PENDING (kèm link phản hồi) + 1 offer đã ACCEPT (-> HIRED)
+  - Phiếu chấm ĐÃ NỘP kèm đề xuất + nhận xét (mở blind, qua guard G2, có dữ liệu
+    cho màn "Quyết định tuyển dụng" của DM)
+  - 1 offer đang chờ trả lời + 1 offer đã ghi nhận NHẬN VIỆC (-> HIRED)
 
 Chạy:  python tools/seed_demo.py [email] [password]
        (mặc định claude-test@example.com / newpass123)
-Yêu cầu: backend :5082 + MinIO :9000 + AI service :8000 (điểm AI; thiếu vẫn seed được).
+Yêu cầu: backend :5082 + MinIO :9000. KHÔNG cần AI service: tiêu chí seed gõ tay
+(APPROVED ngay), không gọi /extract-criteria.
 Chạy lại nhiều lần vô hại — mỗi lần tạo thêm 1 lứa dữ liệu mới.
 ============================================================
 """
@@ -165,31 +167,33 @@ for key, title, jd in [
     print(f"   + Job {d['jobId']}: {title}")
 
 # ---------- 3) Tieu chi (manual -> APPROVED ngay, khong phu thuoc LLM) ----------
+# Mot tieu chi CHI CON name + weight + maxScore: criteriaType (HARD/SOFT), cvMatchable,
+# keywords la mo hinh du lieu cua may cham CV — tinh nang da cat khoi scope 08/08/2026,
+# cot da xoa hẳn o V038.
 CRITERIA = {
     "java": [
-        ("2 năm kinh nghiệm Java", "HARD", "java", 3),
-        ("Kinh nghiệm Spring Boot", "HARD", "spring boot;spring", 3),
-        ("Thành thạo SQL Server", "HARD", "sql server;sql", 2),
-        ("Biết Docker / CI-CD", "SOFT", None, 1),
-        ("Kỹ năng giao tiếp, làm việc nhóm", "SOFT", None, 1),
+        ("2 năm kinh nghiệm Java", 3),
+        ("Kinh nghiệm Spring Boot", 3),
+        ("Thành thạo SQL Server", 2),
+        ("Biết Docker / CI-CD", 1),
+        ("Kỹ năng giao tiếp, làm việc nhóm", 1),
     ],
     "ketoan": [
-        ("3 năm kinh nghiệm kế toán", "HARD", "ke toan;kế toán", 3),
-        ("Thành thạo MISA", "HARD", "misa", 3),
-        ("Thành thạo Excel", "HARD", "excel", 2),
-        ("Chứng chỉ kế toán trưởng", "SOFT", None, 1),
+        ("3 năm kinh nghiệm kế toán", 3),
+        ("Thành thạo MISA", 3),
+        ("Thành thạo Excel", 2),
+        ("Chứng chỉ kế toán trưởng", 1),
     ],
     "sale": [
-        ("Kinh nghiệm bán hàng", "HARD", "ban hang;kinh doanh;sale", 3),
-        ("Chăm sóc khách hàng", "HARD", "cham soc khach hang;cskh", 2),
-        ("Tiếng Anh giao tiếp", "SOFT", None, 1),
+        ("Kinh nghiệm bán hàng", 3),
+        ("Chăm sóc khách hàng", 2),
+        ("Tiếng Anh giao tiếp", 1),
     ],
 }
 for key, items in CRITERIA.items():
-    for name, ctype, kw, w in items:
-        s, d = call("POST", f"/jobs/{jobs[key]}/criteria", token=recruiter, body={
-            "name": name, "weight": w, "maxScore": 10, "criteriaType": ctype,
-            "cvMatchable": True, "keywords": kw})
+    for name, w in items:
+        s, d = call("POST", f"/jobs/{jobs[key]}/criteria", token=recruiter,
+                    body={"name": name, "weight": w, "maxScore": 10})
         must(s, d, f"tieu chi {name}")
 print("   + Tieu chi APPROVED cho 3 job")
 
@@ -197,7 +201,7 @@ print("   + Tieu chi APPROVED cho 3 job")
 s, req = call("POST", "/recruitment-requests", token=dm, body={
     "title": f"Cần tuyển gấp Java Developer [{RUN}]", "department": "Phòng Kỹ thuật",
     "quantity": 2, "employmentType": "FULL_TIME", "experienceLevel": "Middle",
-    "priority": "HIGH", "description": "Team backend thiếu người sau khi mở rộng dự án.",
+    "description": "Team backend thiếu người sau khi mở rộng dự án.",
     "requirements": "2 năm Java, Spring Boot\nƯu tiên biết Docker", "salaryMin": 18000000, "salaryMax": 30000000})
 must(s, req, "tao yeu cau tuyen dung")
 rid = req["requestId"]
@@ -206,7 +210,7 @@ must(*call("POST", f"/recruitment-requests/{rid}/convert", token=recruiter, body
 # them 1 yeu cau dang PENDING de demo man duyet
 must(*call("POST", "/recruitment-requests", token=dm, body={
     "title": f"Tuyển Nhân viên kinh doanh khu vực miền Bắc [{RUN}]", "department": "Phòng Kinh doanh",
-    "quantity": 3, "priority": "MEDIUM", "description": "Mở rộng thị trường Hà Nội."}), "yeu cau PENDING")
+    "quantity": 3, "description": "Mở rộng thị trường Hà Nội."}), "yeu cau PENDING")
 print("   + Yeu cau tuyen dung: 1 CONVERTED + 1 PENDING")
 
 # ---------- 5) Ung vien nop CV qua career site ----------
@@ -244,19 +248,9 @@ for jobkey, name, lines in CVS:
     apps[name] = {"id": app_id, "job": jobkey}
     print(f"   + {name} -> nop CV job {jobkey} (app {app_id})")
 
-# ---------- 6) Doi cham diem nen ----------
-print(">> Doi AI cham diem nen (toi da 90s) ...")
-deadline = time.time() + 90
-while time.time() < deadline:
-    s, rows = call("GET", f"/cv-scoring/jobs/{jobs['java']}/ranking", token=recruiter)
-    if s == 200 and rows and all(r.get("score") is not None for r in rows):
-        print("   + Diem AI da co cho job Java")
-        break
-    time.sleep(5)
-else:
-    print("   ! Chua du diem AI (AI service cham/tat) — seed van tiep tuc")
-
-# ---------- 7) Pipeline: keo trang thai ----------
+# ---------- 6) Pipeline: keo trang thai ----------
+# (Truoc day cho AI cham diem CV o day. Sang loc CV bang AI + Talent Pool da bi cat khoi
+#  scope 08/08/2026: khong con endpoint /cv-scoring, nhan ho so chi con parse + luu file.)
 def transition(app, to):
     must(*call("POST", f"/applications/{apps[app]['id']}/transition", token=recruiter, body={"toState": to}),
          f"{app} -> {to}")
@@ -274,7 +268,7 @@ transition("Lê Thị Hồng", "SCREENING"); transition("Lê Thị Hồng", "INT
 transition("Hoàng Mai Phương", "SCREENING")
 print("   + Pipeline: NEW/SCREENING/INTERVIEW/REJECTED da co du")
 
-# ---------- 8) Pool phong van (panel 2 interviewer) + ung vien chot lich ----------
+# ---------- 7) Pool phong van (panel 2 interviewer) + ung vien chot lich ----------
 iv_ids = [users["Interviewer"]["id"], users["Interviewer2"]["id"]]
 _offs = random.randint(0, 40)  # phút lệch theo run — tránh trùng giờ giữa các lần seed
 future = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00Z", time.gmtime(time.time() + 3 * 86400))
@@ -304,44 +298,53 @@ if slot_id is None:
     raise SystemExit("LOI: khong chot duoc slot nao")
 print(f"   + An da chot lich phong van (slot {slot_id}, panel 2 interviewer)")
 
-# ---------- 9) 2 interviewer cham + nop phieu (mo blind, du guard G2) ----------
-def submit_sheet(token_iv, schedule_id, base_score):
+# ---------- 8) 2 interviewer cham + nop phieu (mo blind, du guard G2) ----------
+# Nop phieu BAT BUOC co `recommendation` (V031) va phai cham DU moi tieu chi — thieu mot
+# trong hai la BE tra 400. `summary` la thu trưởng bộ phận doc dau tien o man Quyet dinh.
+def submit_sheet(token_iv, schedule_id, base_score, recommendation, summary):
     s, sheet = call("GET", f"/interview-schedules/{schedule_id}/my-sheet", token=token_iv)
     must(s, sheet, "lay phieu cham")
-    items = [{"criteriaId": c["criteriaId"], "score": min(10, base_score + i % 3),
-              "note": "Trả lời tốt" if i == 0 else None}
+    items = [{"criteriaId": c["criteriaId"],
+              "score": min(c.get("maxScore") or 10, base_score + i % 3),
+              "note": "Trả lời tốt, có dẫn chứng dự án cũ" if i == 0 else None}
              for i, c in enumerate(sheet["criteria"])]
-    must(*call("PUT", f"/interview-schedules/{schedule_id}/my-sheet", token=token_iv, body={"items": items}), "luu nhap")
+    must(*call("PUT", f"/interview-schedules/{schedule_id}/my-sheet", token=token_iv,
+               body={"items": items, "recommendation": recommendation, "summary": summary}), "luu nhap")
     must(*call("POST", f"/interview-schedules/{schedule_id}/my-sheet/submit", token=token_iv), "nop phieu")
 
-submit_sheet(iv1, sched_id, 8)
-submit_sheet(iv2, sched_id, 7)
+submit_sheet(iv1, sched_id, 8, "HIRE",
+             "Nền tảng Java/Spring Boot chắc, trả lời được câu hỏi tình huống. Nên tuyển.")
+submit_sheet(iv2, sched_id, 7, "CONSIDER",
+             "Kỹ thuật ổn nhưng phần thiết kế hệ thống còn chung chung — cần cân nhắc mức lương.")
 print("   + 2 phieu cham DA NOP -> panel aggregate co du lieu, guard G2 dat")
 
-# ---------- 10) Offer: An PENDING · Hong ACCEPT -> HIRED ----------
+# ---------- 9) Offer: An PENDING · Hong ACCEPT -> HIRED ----------
 # POST /offer KHONG tu transition: OfferService bat hồ sơ phải ĐANG ở OFFER rồi mới cho tạo
 # thư (nguoi quyet tuyen la DM/Recruiter, khac nguoi soan thu). Nen phai keo INTERVIEW->OFFER
-# truoc — buoc nay qua guard G2 (>=1 phieu cham SUBMITTED, vua nop o buoc 9).
+# truoc — buoc nay qua guard G2 (>=1 phieu cham SUBMITTED, vua nop o buoc 8).
 # Job seed khong gan department_manager_id -> Recruiter duoc quyet (duong mac dinh cong ty nho).
 transition("Nguyễn Văn An", "OFFER")
 s, offer = call("POST", f"/applications/{apps['Nguyễn Văn An']['id']}/offer", token=recruiter,
                 body={"salaryAmount": 25000000, "note": "Offer Java Developer — chờ phản hồi", "expiresInDays": 7})
 must(s, offer, "offer An")
-print("   + Offer cho An: PENDING (link phan hoi trong UI)")
+print("   + Offer cho An: dang cho tra loi (thu moi xem duoc trong UI)")
 
 # Hong: chot lich tay -> cham -> OFFER -> ACCEPT -> HIRED
 s, manual = call("POST", f"/applications/{apps['Lê Thị Hồng']['id']}/manual-interview", token=recruiter,
                  body={"interviewerIds": [iv_ids[0]], "startTime": future3})
 must(s, manual, "chot lich tay Hong")
-submit_sheet(iv1, manual["scheduleId"], 9)
+submit_sheet(iv1, manual["scheduleId"], 9, "STRONG_HIRE",
+             "Kinh nghiệm MISA/Excel đúng yêu cầu, cẩn thận và trả lời rành mạch. Đề nghị tuyển.")
 transition("Lê Thị Hồng", "OFFER")
 s, offer2 = call("POST", f"/applications/{apps['Lê Thị Hồng']['id']}/offer", token=recruiter,
                  body={"salaryAmount": 16000000, "note": "Offer Kế toán tổng hợp", "expiresInDays": 7})
 must(s, offer2, "offer Hong")
-tok2 = offer2.get("magicToken")
-must(*call("POST", f"/candidate/offer/respond?token={urllib.request.quote(tok2)}", body={"accept": True}),
-     "Hong accept offer")
-print("   + Hong ACCEPT offer -> HIRED")
+# Ứng viên trả lời NGOÀI hệ thống (5.15): trang thư mời chỉ để ĐỌC, không có nút đồng ý/từ
+# chối. Human Resource ghi nhận lại kết quả -> HIRED (accepted=false thì REJECTED).
+must(*call("POST", f"/applications/{apps['Lê Thị Hồng']['id']}/offer/outcome", token=recruiter,
+           body={"accepted": True, "note": "Ứng viên xác nhận nhận việc qua điện thoại"}),
+     "ghi nhan Hong nhan viec")
+print("   + Hong nhan viec (Human Resource ghi nhan) -> HIRED")
 
 print(f"""
 ============================================================
@@ -356,6 +359,5 @@ Xem ngay:
   - Dashboard: co HIRED(Hong) + funnel + ly do loai + offer acceptance
   - Lich phong van job Java: pool panel 2 nguoi, 1 slot DA DAT
   - Interviewer 1/2 dang nhap -> lich su cham; DM -> tong hop panel
-  - Bao cao > Cham diem CV: bang xep hang diem AI
   - Yeu cau tuyen dung: 1 da convert + 1 cho duyet
 ============================================================""")

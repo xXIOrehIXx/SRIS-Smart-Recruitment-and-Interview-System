@@ -7,7 +7,6 @@ import {
   Input,
   Select,
   Space,
-  Dropdown,
   Modal,
   Typography,
   Avatar,
@@ -19,7 +18,6 @@ import {
   PlusOutlined,
   SearchOutlined,
   FilterOutlined,
-  MoreOutlined,
   EditOutlined,
   StopOutlined,
   ReloadOutlined,
@@ -34,6 +32,10 @@ import { jobsAPI } from "../../services/api";
 import "./css/JobManagement.css";
 
 const { Title, Text } = Typography;
+
+// Bề rộng cố định cho nút đổi trạng thái ở cột Thao Tác — đủ chứa nhãn dài nhất ("Đóng tin").
+// Để ngoài component: object literal tạo lại mỗi lần render là prop mới với mọi hàng của bảng.
+const ACTION_TOGGLE_STYLE = { minWidth: 94 };
 
 const JobManagement = () => {
   const navigate = useNavigate();
@@ -121,65 +123,25 @@ const JobManagement = () => {
     }
   };
 
-  // Menu đổi trạng thái — BE hỗ trợ "Open"/"Closed" (đã bỏ "Paused"/"Draft" trong menu
-  // vì BE regex không chấp nhận). Toggle từ Open <-> Closed.
-  const statusMenuItem = (record) => {
-    const isOpen = (record.status || "").toLowerCase() === "open";
-    return isOpen
-      ? {
-          key: "close",
-          icon: <StopOutlined />,
-          label: "Đóng tin",
-          danger: true,
-          onClick: () => {
-            Modal.confirm({
-              title: `Đóng tin "${record.title}"?`,
-              icon: <ExclamationCircleOutlined />,
-              content: (
-                <div>
-                  <p>Tin sẽ chuyển sang trạng thái <b>Đã đóng</b> và không còn hiện trên trang tuyển dụng công khai.</p>
-                  <p style={{ marginBottom: 0 }}>
-                    Hồ sơ ứng viên <b>vẫn được giữ</b> để không mất dữ liệu. Có thể <b>Mở lại</b> sau.
-                  </p>
-                </div>
-              ),
-              okText: "Đóng tin",
-              okButtonProps: { danger: true },
-              cancelText: "Hủy",
-              onOk: () => handleCloseJob(record),
-            });
-          },
-        }
-      : {
-          key: "reopen",
-          icon: <PlayCircleOutlined />,
-          label: "Mở lại",
-          onClick: () => handleReopenJob(record),
-        };
-  };
-
-  const getMenuItems = (record) => {
-    const jobId = record.jobId || record.id;
-    return [
-      {
-        key: "view",
-        icon: <EyeOutlined />,
-        label: "Xem Chi Tiết",
-        onClick: () => navigate(`/human-resource/jobs/${jobId}`),
-      },
-      {
-        key: "edit",
-        icon: <EditOutlined />,
-        label: "Chỉnh Sửa",
-        onClick: () => navigate(`/human-resource/jobs/create?edit=${jobId}`),
-      },
-      // "Xem Ứng Viên" bỏ ở đây: màn chi tiết tin đã có danh sách ứng viên kèm trạng thái,
-      // hai lối vào cùng một thứ chỉ làm menu dài thêm.
-      {
-        type: "divider",
-      },
-      statusMenuItem(record),
-    ];
+  // Đóng tin là thao tác một chiều (mở lại được, nhưng tin biến mất khỏi career site ngay)
+  // -> vẫn hỏi lại dù nút đã nằm sẵn trên hàng.
+  const confirmCloseJob = (record) => {
+    Modal.confirm({
+      title: `Đóng tin "${record.title}"?`,
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Tin sẽ chuyển sang trạng thái <b>Đã đóng</b> và không còn hiện trên trang tuyển dụng công khai.</p>
+          <p style={{ marginBottom: 0 }}>
+            Hồ sơ ứng viên <b>vẫn được giữ</b> để không mất dữ liệu. Có thể <b>Mở lại</b> sau.
+          </p>
+        </div>
+      ),
+      okText: "Đóng tin",
+      okButtonProps: { danger: true },
+      cancelText: "Hủy",
+      onOk: () => handleCloseJob(record),
+    });
   };
 
   const columns = [
@@ -267,9 +229,10 @@ const JobManagement = () => {
     {
       title: "Trạng Thái",
       key: "status",
+      // BE chỉ có Draft | Open | Closed (JobCreateDto regex). "Tạm dừng" từng nằm ở đây
+      // nhưng không trạng thái nào bên dưới sinh ra nó -> lọc xong luôn rỗng.
       filters: [
         { text: "Đang mở", value: "Open" },
-        { text: "Tạm dừng", value: "Paused" },
         { text: "Đã đóng", value: "Closed" },
         { text: "Bản nháp", value: "Draft" },
       ],
@@ -297,14 +260,59 @@ const JobManagement = () => {
       },
     },
     {
-      title: "",
+      // Ba việc thường làm nhất bày thẳng ra hàng — trước đây nấp sau nút "..." nên phải
+      // bấm hai lần mới thấy có những gì.
+      title: "Thao Tác",
       key: "actions",
-      width: 50,
-      render: (_, record) => (
-        <Dropdown menu={{ items: getMenuItems(record) }} trigger={["click"]}>
-          <Button type="text" icon={<MoreOutlined />} className="action-btn" />
-        </Dropdown>
-      ),
+      // 260 vừa đủ cho "Xem + Sửa + Mở lại" nhưng thiếu ~10px cho "Đóng tin" (nhãn dài hơn),
+      // nên Space wrap đẩy nút thứ ba xuống dòng và hàng cao gấp đôi. Nới ra cho cả hai nhãn.
+      width: 300,
+      render: (_, record) => {
+        const jobId = record.jobId || record.id;
+        const isOpen = (record.status || "").toLowerCase() === "open";
+        return (
+          <Space size={4} wrap>
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => navigate(`/human-resource/jobs/${jobId}`)}
+            >
+              Xem
+            </Button>
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/human-resource/jobs/create?edit=${jobId}`)}
+            >
+              Sửa
+            </Button>
+            {/* Hai nhãn dài ngắn khác nhau nhưng cùng MỘT chỗ đứng: khoá bề rộng theo nhãn dài
+                hơn ("Đóng tin"). Không khoá thì bấm đổi trạng thái xong cả hàng co giãn theo,
+                và cột nào vừa khít ở trạng thái này lại tràn ở trạng thái kia. */}
+            {isOpen ? (
+              <Button
+                size="small"
+                danger
+                icon={<StopOutlined />}
+                style={ACTION_TOGGLE_STYLE}
+                onClick={() => confirmCloseJob(record)}
+              >
+                Đóng tin
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                type="primary"
+                icon={<PlayCircleOutlined />}
+                style={ACTION_TOGGLE_STYLE}
+                onClick={() => handleReopenJob(record)}
+              >
+                Mở lại
+              </Button>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

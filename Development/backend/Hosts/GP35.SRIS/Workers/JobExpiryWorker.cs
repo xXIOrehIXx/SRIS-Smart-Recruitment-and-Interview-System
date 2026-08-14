@@ -98,11 +98,13 @@ public sealed class JobExpiryWorker : BackgroundService
     private async Task CloseOneAsync(ExpiredJobRef item, CancellationToken ct)
     {
         using var scope = _scopeFactory.CreateScope();
+        // Đặt tenant TRƯỚC KHI RESOLVE repo (không chỉ trước khi gọi): resolve repo là tạo luôn
+        // SrisDbContext, và Global Query Filter đọc tenant từ IContextData — dựng nó lúc tenant
+        // còn 0 thì mọi query lọc company_id = 0, GetById trả null và job không bao giờ đóng.
         var ctx = scope.ServiceProvider.GetRequiredService<IContextData>();
-        var jobRepo = scope.ServiceProvider.GetRequiredService<IJobRepo>();
-
-        // Đặt tenant TRƯỚC khi gọi repo để RLS + Global Query Filter khớp.
         ctx.CompanyId = item.CompanyId;
+
+        var jobRepo = scope.ServiceProvider.GetRequiredService<IJobRepo>();
 
         var job = await jobRepo.GetByIdAsync(item.CompanyId, item.JobId);
         if (job is null) return;

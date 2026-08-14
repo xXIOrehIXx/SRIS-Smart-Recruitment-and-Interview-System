@@ -1,0 +1,360 @@
+[
+  {
+    "id": "J01_ke_toan",
+    "title": "Kế toán tổng hợp",
+    "industry": "Kế toán",
+    "expect": "Bỏ 'Tốt nghiệp Cao đẳng' (đọc bằng là biết). Giữ 5 dòng còn lại.",
+    "source_text": "[Mô tả công việc]\nTheo dõi và hạch toán các nghiệp vụ kinh tế phát sinh hàng ngày. Lập báo cáo tài chính tháng, quý, năm. Đối chiếu công nợ với khách hàng và nhà cung cấp. Lập tờ khai thuế GTGT, thuế TNCN và nộp đúng hạn. Phối hợp với kiểm toán độc lập vào cuối năm tài chính. Lưu trữ chứng từ theo quy định.\n\n[Yêu cầu ứng viên]\n- Tốt nghiệp Cao đẳng trở lên chuyên ngành Kế toán - Kiểm toán\n- Có tối thiểu 2 năm kinh nghiệm ở vị trí kế toán tổng hợp\n- Nắm vững chế độ kế toán và luật thuế hiện hành\n- Sử dụng thành thạo phần mềm kế toán MISA hoặc Fast\n- Thành thạo Excel (hàm SUMIF, VLOOKUP, PivotTable)\n- Cẩn thận, trung thực, chịu được áp lực mùa quyết toán\n\n[Kỹ năng yêu cầu]\nMISA, Fast, Excel, báo cáo tài chính, thuế GTGT",
+    "cac_luot": [
+      [
+        "Tốt nghiệp Cao đẳng trở lên chuyên ngành Kế toán - Kiểm toán",
+        "Có tối thiểu 2 năm kinh nghiệm ở vị trí kế toán tổng hợp",
+        "Nắm vững chế độ kế toán và luật thuế hiện hành",
+        "Sử dụng thành thạo phần mềm kế toán MISA hoặc Fast",
+        "Thành thạo Excel (hàm SUMIF, VLOOKUP, PivotTable)",
+        "Cẩn thận, trung thực, chịu được áp lực mùa quyết toán",
+        "Kỹ năng báo cáo tài chính",
+        "Kỹ năng thuế GTGT"
+      ],
+      [
+        "Tốt nghiệp Cao đẳng trở lên chuyên ngành Kế toán - Kiểm toán",
+        "Có tối thiểu 2 năm kinh nghiệm ở vị trí kế toán tổng hợp",
+        "Nắm vững chế độ kế toán và luật thuế hiện hành",
+        "Sử dụng thành thạo phần mềm kế toán MISA hoặc Fast",
+        "Thành thạo Excel (hàm SUMIF, VLOOKUP, PivotTable)",
+        "Cẩn thận, trung thực, chịu được áp lực mùa quyết toán",
+        "Kỹ năng báo cáo tài chính",
+        "Kỹ năng thuế GTGT"
+      ]
+    ],
+    "giay": [
+      2.86,
+      2.83
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J02_kinh_doanh",
+    "title": "Nhân viên kinh doanh B2B",
+    "industry": "Kinh doanh",
+    "expect": "Toàn bộ mô tả công việc là đầu việc -> bỏ hết. Giữ 5 yêu cầu, không dòng nào là giấy tờ.",
+    "source_text": "[Mô tả công việc]\nTìm kiếm và phát triển khách hàng doanh nghiệp trong khu vực được phân công. Giới thiệu sản phẩm, báo giá và đàm phán hợp đồng. Chăm sóc khách hàng cũ, xử lý khiếu nại. Báo cáo doanh số hàng tuần cho quản lý trực tiếp. Cập nhật thông tin khách hàng lên hệ thống CRM. Tham gia hội chợ, sự kiện của công ty.\n\n[Yêu cầu ứng viên]\n- Có ít nhất 1 năm kinh nghiệm bán hàng B2B\n- Kỹ năng đàm phán và thuyết phục tốt\n- Kỹ năng giao tiếp, xây dựng quan hệ khách hàng\n- Chủ động tìm kiếm khách hàng mới, chịu được áp lực doanh số\n- Ưu tiên ứng viên có sẵn tệp khách hàng ngành xây dựng\n\n[Kỹ năng yêu cầu]\nbán hàng B2B, đàm phán, CRM, chăm sóc khách hàng",
+    "cac_luot": [
+      [
+        "Kinh nghiệm bán hàng B2B",
+        "Kỹ năng đàm phán và thuyết phục",
+        "Kỹ năng giao tiếp, xây dựng quan hệ khách hàng",
+        "Chủ động tìm kiếm khách hàng mới",
+        "Có thể chịu được áp lực doanh số",
+        "Sẵn tệp khách hàng ngành xây dựng",
+        "Kỹ năng sử dụng CRM"
+      ],
+      [
+        "Kinh nghiệm bán hàng B2B",
+        "Kỹ năng đàm phán và thuyết phục",
+        "Kỹ năng giao tiếp, xây dựng quan hệ khách hàng",
+        "Chủ động tìm kiếm khách hàng mới",
+        "Có thể chịu được áp lực doanh số",
+        "Sẵn tệp khách hàng ngành xây dựng",
+        "Kỹ năng sử dụng CRM"
+      ]
+    ],
+    "giay": [
+      2.17,
+      2.18
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J03_kho_van",
+    "title": "Nhân viên kho",
+    "industry": "Kho vận",
+    "expect": "Bỏ 'Tốt nghiệp THPT'. 'Sức khỏe tốt' là ca ranh giới — chấp nhận cả giữ lẫn bỏ, ghi chú lại.",
+    "source_text": "[Mô tả công việc]\nNhận hàng, kiểm đếm và sắp xếp hàng hóa trong kho theo sơ đồ. Xuất hàng theo phiếu, đảm bảo đúng số lượng và chủng loại. Kiểm kê định kỳ, đối chiếu số liệu thực tế với sổ sách. Giữ gìn vệ sinh và an toàn khu vực kho. Báo cáo hàng hỏng, hàng cận hạn cho quản lý kho.\n\n[Yêu cầu ứng viên]\n- Tốt nghiệp THPT trở lên\n- Sức khỏe tốt, có thể làm việc theo ca\n- Biết sử dụng máy tính văn phòng cơ bản (Word, Excel)\n- Cẩn thận, trung thực trong kiểm đếm hàng hóa\n- Ưu tiên có kinh nghiệm vận hành xe nâng\n\n[Kỹ năng yêu cầu]\nquản lý kho, kiểm kê, xe nâng, Excel",
+    "cac_luot": [
+      [
+        "Tốt nghiệp THPT trở lên",
+        "Sức khỏe tốt, có thể làm việc theo ca",
+        "Biết sử dụng máy tính văn phòng cơ bản (Word, Excel)",
+        "Cẩn thận, trung thực trong kiểm đếm hàng hóa",
+        "Ưu tiên có kinh nghiệm vận hành xe nâng",
+        "Quản lý kho",
+        "Kiểm kê",
+        "Xe nâng",
+        "Excel"
+      ],
+      [
+        "Tốt nghiệp THPT trở lên",
+        "Sức khỏe tốt, có thể làm việc theo ca",
+        "Biết sử dụng máy tính văn phòng cơ bản (Word, Excel)",
+        "Cẩn thận, trung thực trong kiểm đếm hàng hóa",
+        "Ưu tiên có kinh nghiệm vận hành xe nâng",
+        "Quản lý kho",
+        "Kiểm kê",
+        "Xe nâng",
+        "Excel"
+      ]
+    ],
+    "giay": [
+      2.54,
+      2.54
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J04_dotnet",
+    "title": "Lập trình viên .NET",
+    "industry": "CNTT",
+    "expect": "Dòng 2 gộp 3 kỹ năng -> phải TÁCH thành 3 tiêu chí riêng. Không dòng nào là giấy tờ.",
+    "source_text": "[Mô tả công việc]\nPhát triển và bảo trì các module của hệ thống quản lý nội bộ. Tham gia phân tích yêu cầu cùng BA. Viết unit test cho phần mình phụ trách. Fix bug theo ticket từ bộ phận vận hành. Tham gia code review với team.\n\n[Yêu cầu ứng viên]\n- Có 2 năm kinh nghiệm trở lên với C# và ASP.NET Core\n- Kinh nghiệm với Entity Framework, REST API, kiến trúc microservices\n- Thành thạo SQL Server, viết được stored procedure\n- Sử dụng được Git trong quy trình làm việc nhóm\n- Tiếng Anh đọc hiểu tài liệu kỹ thuật\n- Có tư duy phân tích, giải quyết vấn đề độc lập\n\n[Kỹ năng yêu cầu]\nC#, ASP.NET Core, Entity Framework, SQL Server, Git",
+    "cac_luot": [
+      [
+        "Kinh nghiệm với C# và ASP.NET Core",
+        "Kinh nghiệm với Entity Framework",
+        "Kinh nghiệm với REST API",
+        "Kinh nghiệm với kiến trúc microservices",
+        "Thành thạo SQL Server và viết stored procedure",
+        "Sử dụng được Git trong quy trình làm việc nhóm",
+        "Tiếng Anh đọc hiểu tài liệu kỹ thuật",
+        "Tư duy phân tích, giải quyết vấn đề độc lập"
+      ],
+      [
+        "Kinh nghiệm với C# và ASP.NET Core",
+        "Kinh nghiệm với Entity Framework",
+        "Kinh nghiệm với REST API",
+        "Kinh nghiệm với kiến trúc microservices",
+        "Thành thạo SQL Server và viết stored procedure",
+        "Sử dụng được Git trong quy trình làm việc nhóm",
+        "Tiếng Anh đọc hiểu tài liệu kỹ thuật",
+        "Tư duy phân tích, giải quyết vấn đề độc lập"
+      ]
+    ],
+    "giay": [
+      2.5,
+      2.55
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J05_hanh_chinh",
+    "title": "Nhân viên hành chính nhân sự",
+    "industry": "Hành chính - Nhân sự",
+    "expect": "Bỏ 'Tốt nghiệp Đại học'. Giữ 5 dòng còn lại.",
+    "source_text": "[Mô tả công việc]\nQuản lý hồ sơ nhân sự, hợp đồng lao động và sổ bảo hiểm. Chấm công, tính lương hàng tháng. Đăng tin tuyển dụng và sàng lọc hồ sơ ứng viên. Tổ chức sự kiện nội bộ, sinh nhật nhân viên. Mua sắm và cấp phát văn phòng phẩm.\n\n[Yêu cầu ứng viên]\n- Tốt nghiệp Đại học các ngành Quản trị nhân lực, Luật hoặc tương đương\n- Có 1 năm kinh nghiệm ở vị trí hành chính nhân sự\n- Nắm được quy định về BHXH, hợp đồng lao động\n- Thành thạo Word, Excel, biết dùng phần mềm chấm công\n- Kỹ năng giao tiếp và sắp xếp công việc tốt\n- Cẩn thận, bảo mật thông tin\n\n[Kỹ năng yêu cầu]\nBHXH, hợp đồng lao động, tính lương, Excel",
+    "cac_luot": [
+      [
+        "Tốt nghiệp Đại học các ngành Quản trị nhân lực, Luật hoặc tương đương",
+        "Có 1 năm kinh nghiệm ở vị trí hành chính nhân sự",
+        "Nắm được quy định về BHXH, hợp đồng lao động",
+        "Thành thạo Word, Excel, biết dùng phần mềm chấm công",
+        "Kỹ năng giao tiếp và sắp xếp công việc tốt",
+        "Cẩn thận, bảo mật thông tin",
+        "Kỹ năng quản lý hồ sơ nhân sự",
+        "Kỹ năng đăng tin tuyển dụng và sàng lọc hồ sơ ứng viên",
+        "Kỹ năng tổ chức sự kiện nội bộ, sinh nhật nhân viên",
+        "Kỹ năng mua sắm và cấp phát văn phòng phẩm"
+      ],
+      [
+        "Tốt nghiệp Đại học các ngành Quản trị nhân lực, Luật hoặc tương đương",
+        "Có 1 năm kinh nghiệm ở vị trí hành chính nhân sự",
+        "Nắm được quy định về BHXH, hợp đồng lao động",
+        "Thành thạo Word, Excel, biết dùng phần mềm chấm công",
+        "Kỹ năng giao tiếp và sắp xếp công việc tốt",
+        "Cẩn thận, bảo mật thông tin",
+        "Kỹ năng quản lý hồ sơ nhân sự",
+        "Kỹ năng đăng tin tuyển dụng và sàng lọc hồ sơ ứng viên",
+        "Kỹ năng tổ chức sự kiện nội bộ, sinh nhật nhân viên",
+        "Kỹ năng mua sắm và cấp phát văn phòng phẩm"
+      ]
+    ],
+    "giay": [
+      3.49,
+      3.42
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J06_le_tan",
+    "title": "Lễ tân khách sạn",
+    "industry": "Khách sạn",
+    "expect": "'Ngoại hình, chiều cao' là thứ nhìn hồ sơ/gặp mặt là biết, không chấm điểm phỏng vấn -> nên bỏ. Ca ranh giới đáng theo dõi.",
+    "source_text": "[Mô tả công việc]\nĐón tiếp khách, làm thủ tục nhận và trả phòng. Xử lý đặt phòng qua điện thoại, email và các kênh OTA. Giải đáp thắc mắc, hỗ trợ khách trong thời gian lưu trú. Bàn giao ca đầy đủ. Phối hợp với bộ phận buồng phòng và nhà hàng.\n\n[Yêu cầu ứng viên]\n- Ngoại hình ưa nhìn, chiều cao từ 1m60 trở lên\n- Tiếng Anh giao tiếp tốt, ưu tiên biết thêm tiếng Trung hoặc Hàn\n- Kỹ năng giao tiếp, xử lý tình huống với khách khó tính\n- Có thể làm việc theo ca, kể cả cuối tuần và lễ tết\n- Ưu tiên có kinh nghiệm lễ tân khách sạn 3 sao trở lên\n\n[Kỹ năng yêu cầu]\nlễ tân, tiếng Anh, tiếng Trung, xử lý tình huống, OTA",
+    "cac_luot": [
+      [
+        "Ngoại hình",
+        "Tiếng Anh giao tiếp",
+        "Biết thêm tiếng Trung hoặc Hàn",
+        "Kỹ năng giao tiếp",
+        "Kỹ năng xử lý tình huống",
+        "Có thể làm việc theo ca",
+        "Có kinh nghiệm lễ tân khách sạn 3 sao trở lên",
+        "Biết sử dụng OTA"
+      ],
+      [
+        "Ngoại hình",
+        "Tiếng Anh giao tiếp",
+        "Biết thêm tiếng Trung hoặc Hàn",
+        "Kỹ năng giao tiếp",
+        "Kỹ năng xử lý tình huống",
+        "Có thể làm việc theo ca",
+        "Có kinh nghiệm lễ tân khách sạn 3 sao trở lên",
+        "Biết sử dụng OTA"
+      ]
+    ],
+    "giay": [
+      2.32,
+      2.32
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J07_marketing",
+    "title": "Nhân viên Marketing",
+    "industry": "Marketing",
+    "expect": "Không dòng nào là giấy tờ. Giữ đủ 5, không được biến đầu việc trong mô tả thành tiêu chí.",
+    "source_text": "[Mô tả công việc]\nLên kế hoạch và triển khai nội dung trên fanpage, website công ty. Chạy quảng cáo Facebook, Google theo ngân sách được duyệt. Đo lường hiệu quả chiến dịch và báo cáo hàng tháng. Phối hợp với bộ phận thiết kế để sản xuất hình ảnh, video. Theo dõi hoạt động của đối thủ.\n\n[Yêu cầu ứng viên]\n- Có kinh nghiệm chạy quảng cáo Facebook Ads và Google Ads\n- Viết được nội dung bán hàng bằng tiếng Việt mạch lạc\n- Biết dùng Canva hoặc Photoshop ở mức cơ bản\n- Đọc hiểu số liệu, biết dùng Google Analytics\n- Sáng tạo, chủ động đề xuất ý tưởng\n\n[Kỹ năng yêu cầu]\nFacebook Ads, Google Ads, content, Canva, Google Analytics",
+    "cac_luot": [
+      [
+        "Kinh nghiệm chạy quảng cáo Facebook Ads và Google Ads",
+        "Năng lực viết nội dung bán hàng bằng tiếng Việt mạch lạc",
+        "Kiến thức cơ bản về sử dụng Canva hoặc Photoshop",
+        "Kỹ năng đọc hiểu số liệu và sử dụng Google Analytics",
+        "Sáng tạo, chủ động đề xuất ý tưởng"
+      ],
+      [
+        "Kinh nghiệm chạy quảng cáo Facebook Ads và Google Ads",
+        "Năng lực viết nội dung bán hàng bằng tiếng Việt mạch lạc",
+        "Kiến thức cơ bản về sử dụng Canva hoặc Photoshop",
+        "Kỹ năng đọc hiểu số liệu và sử dụng Google Analytics",
+        "Sáng tạo, chủ động đề xuất ý tưởng"
+      ]
+    ],
+    "giay": [
+      1.83,
+      1.8
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J08_tai_xe",
+    "title": "Tài xế giao hàng",
+    "industry": "Vận tải",
+    "expect": "CA KHÓ NHẤT: 4/6 dòng là giấy tờ hoặc nhân khẩu (bằng lái, tuổi, nơi ở). Chỉ nên còn 2-3 tiêu chí. Đây là ca đo trực tiếp bộ lọc mới.",
+    "source_text": "[Mô tả công việc]\nGiao hàng theo tuyến được phân công trong nội thành. Kiểm tra hàng hóa trước khi rời kho. Thu tiền COD và nộp về công ty cuối ngày. Bảo quản xe, báo cáo sự cố kịp thời. Hỗ trợ bốc xếp hàng khi cần.\n\n[Yêu cầu ứng viên]\n- Có bằng lái xe hạng B2 còn hiệu lực\n- Nam, độ tuổi từ 22 đến 40\n- Thường trú hoặc tạm trú tại Hà Nội\n- Thuộc đường nội thành Hà Nội\n- Có kinh nghiệm giao hàng, biết xử lý khi khách từ chối nhận\n- Trung thực, có trách nhiệm với tiền COD\n\n[Kỹ năng yêu cầu]\nlái xe B2, giao hàng, COD, thuộc đường Hà Nội",
+    "cac_luot": [
+      [
+        "Có bằng lái xe hạng B2 còn hiệu lực",
+        "Giới tính nam",
+        "Tuổi từ 22 đến 40",
+        "Thuộc đường nội thành Hà Nội",
+        "Có kinh nghiệm giao hàng",
+        "Biết xử lý khi khách từ chối nhận hàng",
+        "Trung thực, có trách nhiệm với tiền COD"
+      ],
+      [
+        "Có bằng lái xe hạng B2 còn hiệu lực",
+        "Giới tính nam",
+        "Tuổi từ 22 đến 40",
+        "Thuộc đường nội thành Hà Nội",
+        "Có kinh nghiệm giao hàng",
+        "Biết xử lý khi khách từ chối nhận hàng",
+        "Trung thực, có trách nhiệm với tiền COD"
+      ]
+    ],
+    "giay": [
+      2.18,
+      2.14
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J09_chi_dau_viec",
+    "title": "Công nhân sản xuất (tin thiếu yêu cầu)",
+    "industry": "Sản xuất",
+    "expect": "CA ĐỐI CHỨNG: tin chỉ có đầu việc, không nêu yêu cầu nào -> AI PHẢI trả về danh sách RỖNG. Trả ra tiêu chí nào cũng là sai.",
+    "source_text": "[Mô tả công việc]\nVận hành máy theo hướng dẫn của tổ trưởng. Kiểm tra sản phẩm đầu ra, loại bỏ hàng lỗi. Vệ sinh máy móc cuối ca. Ghi chép sản lượng vào biểu mẫu. Tuân thủ nội quy an toàn lao động của nhà máy. Tham gia họp đầu ca.",
+    "cac_luot": [
+      [
+        "Theo dõi hướng dẫn từ tổ trưởng",
+        "Kiểm tra chất lượng sản phẩm",
+        "Loại bỏ hàng lỗi",
+        "Vệ sinh máy móc sau ca làm việc",
+        "Ghi chép chính xác sản lượng vào biểu mẫu",
+        "Tuân thủ nội quy an toàn lao động của nhà máy",
+        "Tham gia họp đầu ca"
+      ],
+      [
+        "Theo dõi hướng dẫn từ tổ trưởng",
+        "Kiểm tra chất lượng sản phẩm",
+        "Loại bỏ hàng lỗi",
+        "Vệ sinh máy móc sau ca làm việc",
+        "Ghi chép chính xác sản lượng vào biểu mẫu",
+        "Tuân thủ nội quy an toàn lao động của nhà máy",
+        "Tham gia họp đầu ca"
+      ]
+    ],
+    "giay": [
+      2.07,
+      2.08
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  },
+  {
+    "id": "J10_qua_nhieu",
+    "title": "Trưởng nhóm phát triển phần mềm (tin quá dài)",
+    "industry": "CNTT",
+    "expect": "CA QUÁ TRẦN: 13 yêu cầu, trần là 10. Phải BỎ 'Tốt nghiệp Đại học' + 'chứng chỉ PMP' (giấy tờ) và bỏ mục 'là một lợi thế' trước, KHÔNG được cắt bừa 10 dòng đầu.",
+    "source_text": "[Mô tả công việc]\nDẫn dắt nhóm 5-7 lập trình viên. Phân công công việc và theo dõi tiến độ sprint. Review thiết kế và code của thành viên. Làm việc với khách hàng để làm rõ yêu cầu. Báo cáo tiến độ cho giám đốc kỹ thuật hàng tuần.\n\n[Yêu cầu ứng viên]\n- Tối thiểu 5 năm kinh nghiệm phát triển phần mềm\n- Ít nhất 2 năm ở vai trò dẫn dắt nhóm\n- Thành thạo Java hoặc C#\n- Kinh nghiệm thiết kế kiến trúc hệ thống phân tán\n- Nắm vững cơ sở dữ liệu quan hệ và tối ưu truy vấn\n- Kinh nghiệm với Docker, Kubernetes\n- Hiểu quy trình Agile/Scrum\n- Kỹ năng giao tiếp và thuyết trình tốt\n- Kỹ năng huấn luyện, kèm cặp thành viên mới\n- Tiếng Anh giao tiếp được với khách hàng nước ngoài\n- Có chứng chỉ PMP hoặc Scrum Master là một lợi thế\n- Ưu tiên từng làm trong lĩnh vực fintech\n- Tốt nghiệp Đại học chuyên ngành CNTT\n\n[Kỹ năng yêu cầu]\nJava, C#, kiến trúc phân tán, Docker, Kubernetes, Agile, tiếng Anh",
+    "cac_luot": [
+      [
+        "Kinh nghiệm phát triển phần mềm",
+        "Kinh nghiệm dẫn dắt nhóm",
+        "Thành thạo Java hoặc C#",
+        "Kinh nghiệm thiết kế kiến trúc hệ thống phân tán",
+        "Nắm vững cơ sở dữ liệu quan hệ và tối ưu truy vấn",
+        "Kinh nghiệm với Docker, Kubernetes",
+        "Hiểu quy trình Agile/Scrum",
+        "Kỹ năng giao tiếp và thuyết trình tốt",
+        "Kỹ năng huấn luyện, kèm cặp thành viên mới",
+        "Tiếng Anh giao tiếp được với khách hàng nước ngoài"
+      ],
+      [
+        "Kinh nghiệm phát triển phần mềm",
+        "Kinh nghiệm dẫn dắt nhóm",
+        "Thành thạo Java hoặc C#",
+        "Kinh nghiệm thiết kế kiến trúc hệ thống phân tán",
+        "Nắm vững cơ sở dữ liệu quan hệ và tối ưu truy vấn",
+        "Kinh nghiệm với Docker, Kubernetes",
+        "Hiểu quy trình Agile/Scrum",
+        "Kỹ năng giao tiếp và thuyết trình tốt",
+        "Kỹ năng huấn luyện, kèm cặp thành viên mới",
+        "Tiếng Anh giao tiếp được với khách hàng nước ngoài"
+      ]
+    ],
+    "giay": [
+      3.04,
+      3.05
+    ],
+    "json_ok": 2,
+    "so_luot": 2,
+    "loi": []
+  }
+]

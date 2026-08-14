@@ -123,13 +123,17 @@ const DeptInterviewSchedule = () => {
       },
     },
     {
-      title: 'Cờ nhắc',
+      title: (
+        <Tooltip title="Số lần ứng viên báo không có khung giờ nào phù hợp — nhiều lần thì bộ phận nhân sự nên gọi điện hẹn tay">
+          <span>Ứng viên báo bận</span>
+        </Tooltip>
+      ),
       dataIndex: 'flag',
       key: 'flag',
       render: (flag, record) => {
         if (flag === 'RED') return <Badge color="red" text={<Text type="danger">Bận {record.noSlotFitsCount} lần</Text>} />;
         if (flag === 'YELLOW') return <Badge color="gold" text={`Bận ${record.noSlotFitsCount} lần`} />;
-        return <Text type="secondary">—</Text>;
+        return <Text type="secondary">Chưa lần nào</Text>;
       },
     },
     {
@@ -186,9 +190,13 @@ const DeptInterviewSchedule = () => {
           style={{ marginBottom: 16 }}
           title={
             <Space>
-              <Text strong>Vòng {pool.roundNumber}</Text>
-              <Tag color={pool.status === 'OPEN' ? 'success' : pool.status === 'CANCELLED' ? 'error' : 'default'}>
-                {pool.status === 'OPEN' ? 'Đang mở' : pool.status === 'CANCELLED' ? 'Đã hủy' : pool.status}
+              {/* Tên vòng (V041) nói buổi đó để làm gì; số chỉ nói thứ tự. 'CLOSED' là chữ
+                  trong DB — pool đóng chỉ sinh ra từ nhánh chốt lịch tay của nhân sự. */}
+              <Text strong>Vòng {pool.roundNumber}{pool.name ? ` · ${pool.name}` : ''}</Text>
+              <Tag color={pool.status === 'OPEN' ? 'success' : pool.status === 'CANCELLED' ? 'error' : 'blue'}>
+                {pool.status === 'OPEN' ? 'Đang mở'
+                  : pool.status === 'CANCELLED' ? 'Đã hủy'
+                  : pool.status === 'CLOSED' ? 'Chốt lịch tay' : pool.status}
               </Tag>
             </Space>
           }

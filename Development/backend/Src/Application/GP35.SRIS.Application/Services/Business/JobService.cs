@@ -86,11 +86,15 @@ public class JobService : BaseService<JobService>, IJobService
     {
         if (string.IsNullOrWhiteSpace(dto.Title))
             throw Bad("Tiêu đề Job không được để trống.");
-        var status = string.IsNullOrWhiteSpace(dto.Status) ? "Open" : dto.Status.Trim();
 
         var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
         var existing = await jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
+
+        // Cùng luật với Skills/Quantity: client không gửi Status thì GIỮ NGUYÊN trạng thái cũ.
+        // Trước đây mặc định "Open" -> sửa nội dung một tin ĐÃ ĐÓNG là vô tình mở lại tin đó
+        // và đẩy nó lên career site, không ai bấm gì cả.
+        var status = string.IsNullOrWhiteSpace(dto.Status) ? existing.Status : dto.Status.Trim();
 
         // Chỉ kiểm hạn nộp khi người dùng ĐỔI nó: tin cũ đã quá hạn vẫn phải sửa được
         // (đóng tin, đổi mô tả...) mà không bị chặn vì cái hạn có sẵn.

@@ -1,4 +1,4 @@
-**ĐỒ ÁN TỐT NGHIỆP**
+﻿**ĐỒ ÁN TỐT NGHIỆP**
 
 ──────────────────
 
@@ -58,8 +58,8 @@ Cột minh chứng cho phép đối chiếu ngược từ kế hoạch sang sả
 
 | **Mã** | **Thành viên** | **Vai trò** | **Phạm vi phụ trách chính** |
 | --- | --- | --- | --- |
-| **BE1** | Vũ Gia Khánh | BA/PM kiêm Backend Lead | Kiến trúc hệ thống, Auth & phân quyền, State Machine, AI service (embedding + bóc tiêu chí), phương pháp đánh giá AI, tài liệu |
-| **BE2** | San | Backend — Nền tảng dữ liệu & Hạ tầng | Thiết kế CSDL, migration, Multi-tenant/RLS, lưu trữ tệp (MinIO), xử lý PDF & vector, đặt lịch phỏng vấn, triển khai |
+| **BE1** | Vũ Gia Khánh | BA/PM kiêm Backend Lead | Kiến trúc hệ thống, Auth & phân quyền, State Machine, AI service (bóc tiêu chí từ JD), phương pháp đánh giá AI, tài liệu |
+| **BE2** | San | Backend — Nền tảng dữ liệu & Hạ tầng | Thiết kế CSDL, migration, Multi-tenant/RLS, lưu trữ tệp (MinIO), xử lý PDF, đặt lịch phỏng vấn, triển khai |
 | **BE3** | Huy Minh | Backend — Nghiệp vụ & Tích hợp | Job/Yêu cầu tuyển dụng, quản lý người dùng & phòng ban, Email automation, Dashboard & Analytics, dữ liệu demo |
 | **FE1** | Tùng Anh | Frontend — Candidate Portal & Phỏng vấn | Career Site, form nộp CV, các trang magic link (chọn lịch, trạng thái, trả lời offer), phiếu chấm phỏng vấn |
 | **FE2** | Hùng Anh | Frontend — Employer Portal & Trực quan hóa | Kanban, quản lý tin tuyển dụng, duyệt tiêu chí, Dashboard biểu đồ, brand theming, hệ thống giao diện chung |
@@ -84,17 +84,16 @@ SRIS — Đồ án tốt nghiệp
 │   └── 2.5 Khung giao diện & Pipeline cơ bản (M2)
 ├── 3. Tính năng cốt lõi
 │   ├── 3.1 State Machine & Pipeline đầy đủ (M2)
-│   ├── 3.2 AI Service & Chấm điểm CV (M3)
+│   ├── 3.2 AI Service & Nhận hồ sơ (M3)
 │   ├── 3.3 Email Automation (M4)
 │   ├── 3.4 Collaborative Scoring (M5)
 │   ├── 3.5 Dashboard & Analytics (M6)
 │   └── 3.6 Offer & Magic link ứng viên
 ├── 4. Tái định vị hậu hội đồng
 │   ├── 4.1 Xử lý phản hồi hội đồng & thu hẹp phạm vi
-│   ├── 4.2 Trục tiêu chí: bóc — duyệt — chấm CV theo tiêu chí
+│   ├── 4.2 Trục tiêu chí: bóc — duyệt — chấm phỏng vấn
 │   ├── 4.3 Yêu cầu tuyển dụng & Phòng ban
-│   ├── 4.4 Talent Pool (tính năng đinh)
-│   └── 4.5 Đặt lịch phỏng vấn theo pool khung giờ (M9)
+│   └── 4.4 Đặt lịch phỏng vấn theo pool khung giờ (M9)
 └── 5. Hoàn thiện, Đo lường & Bảo vệ
     ├── 5.1 Minh chứng sơ cấp (phỏng vấn doanh nghiệp)
     ├── 5.2 Đánh giá AI & hiệu chỉnh theo kết quả đo
@@ -153,11 +152,11 @@ SRIS — Đồ án tốt nghiệp
 | 3.1.1 | State Machine 6 trạng thái / 8 chuyển tiếp + guard + unit test | BE1 | 14 | S4 | ✅ | `ApplicationStateMachineTests.cs`, `V004` |
 | 3.1.2 | Activity Log + Internal Note | BE3 | 10 | S4 | ✅ | `ActivityLogService.cs`, `InternalNoteService.cs` |
 | 3.1.3 | Hiển thị 4 pha + thẻ trạng thái + hộp thoại chuyển pha/loại hồ sơ | FE2 | 12 | S4 | ✅ | `ApplicationStateTag.jsx` |
-| 3.2.1 | Dựng AI service (FastAPI): `/health`, `/embed` với `bge-m3` | BE1 | 12 | S4 | ✅ | `ai-service/main.py` |
-| 3.2.2 | Bóc text từ CV PDF + chuẩn hóa tiếng Việt | BE2 | 12 | S4 | ✅ | `CvScoringService.cs` |
-| 3.2.3 | Cột `VECTOR(1024)` + đọc/ghi vector qua raw SQL | BE2 | 10 | S5 | ✅ | `V011__embedding_dim_1024.sql` |
-| 3.2.4 | Chấm CV bất đồng bộ: worker nền + quét lại hồ sơ chưa chấm khi khởi động | BE2 | 14 | S5 | ✅ | `Workers/CvScoringWorker.cs` |
-| 3.2.5 | Màn xếp hạng CV theo job + xem điểm | FE2 | 12 | S5 | ✅ | `analytics/CVScoring.jsx` |
+| 3.2.1 | Dựng AI service (FastAPI) tách tiến trình riêng + tích hợp Ollama, `/health` | BE1 | 12 | S4 | ✅ | `ai-service/main.py` |
+| 3.2.2 | Bóc text từ CV PDF + chuẩn hóa tiếng Việt | BE2 | 12 | S4 | ✅ | `CvIntakeService.cs` |
+| 3.2.3 | Bảng `CvDocument` + gắn CV vào hồ sơ; từ chối PDF scan không bóc được text, báo lỗi rõ | BE2 | 10 | S5 | ✅ | `CvDocument`, `CvIntakeService.cs` |
+| 3.2.4 | Lượt bóc tiêu chí chạy nền: hàng đợi + worker + tự đóng DONE/FAILED | BE2 | 14 | S5 | ✅ | `Workers/CriteriaExtractionWorker.cs` |
+| 3.2.5 | Màn danh sách hồ sơ theo tin tuyển dụng + xem CV gốc | FE2 | 12 | S5 | ✅ | `src/pages/applications/*` |
 | 3.3.1 | Email service + SMTP riêng theo công ty + template động | BE3 | 14 | S5 | ✅ | `V017__company_smtp.sql`, `EmailTemplateService.cs` |
 | 3.3.2 | Kích hoạt email theo State Machine (mời lịch, xác nhận, kết quả, offer) | BE3 | 10 | S5 | ✅ | `NotificationService.cs` |
 | 3.3.3 | Màn quản lý mẫu email | FE1 | 12 | S5 | ✅ | `mail-templates/MailTemplates.jsx` |
@@ -178,8 +177,9 @@ SRIS — Đồ án tốt nghiệp
 ## 4.4 Giai đoạn 4 — Tái định vị hậu hội đồng (Sprint 7–9)
 
 > Sau Bảo vệ 1 (10/07/2026), nhóm nhận 4 phản hồi từ hội đồng, quy về 3 vấn đề gốc và
-> chốt tái định vị: thu hẹp đối tượng, bỏ module Quiz, chuyển sang chấm CV **theo tiêu chí**,
-> nâng Talent Pool thành tính năng đinh.
+> chốt tái định vị: thu hẹp đối tượng, bỏ module Quiz, dựng **trục tiêu chí** làm điểm
+> "smart" của hệ thống — AI bóc tiêu chí từ tin tuyển dụng, người duyệt chốt, cả hội đồng
+> phỏng vấn chấm trên cùng bộ tiêu chí đó.
 
 | **Mã** | **Công việc** | **PT** | **Giờ** | **Sprint** | **TT** | **Minh chứng** |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -187,25 +187,23 @@ SRIS — Đồ án tốt nghiệp
 | 4.1.2 | Tổng hợp phản hồi hội đồng → 3 vấn đề gốc → chốt tái định vị + cập nhật context | BE1 | 12 | S8 | ✅ | `docs/00_CONTEXT.md` §12 |
 | 4.1.3 | Gỡ toàn bộ module Quiz khỏi mã nguồn + drop 6 bảng, siết CHECK còn 6 trạng thái/3 mục đích | BE2 | 12 | S8 | ✅ | `V012__drop_quiz.sql` |
 | 4.1.4 | Gỡ giao diện Quiz và các luồng liên quan phía FE | FE1 | 8 | S8 | ✅ | Lịch sử Git (07/2026) |
-| 4.2.1 | Thiết kế lại schema tiêu chí: EvaluationCriteria mở rộng, CvChunk, ApplicationCriterionMatch | BE2 | 12 | S8 | ✅ | `V013__criteria_scoring.sql` |
+| 4.2.1 | Thiết kế schema tiêu chí: `EvaluationCriteria` + bảng `CriteriaExtraction` theo dõi lượt bóc | BE2 | 12 | S8 | ✅ | `V013`, `V037__criteria_extraction.sql` |
 | 4.2.2 | Endpoint `/extract-criteria` (Ollama + qwen2.5): JSON schema, kiểm tra hợp lệ, thử lại | BE1 | 14 | S8 | ✅ | `ai-service/criteria_extract.py` |
 | 4.2.3 | Luồng DRAFT → người duyệt chốt → APPROVED + API quản lý tiêu chí | BE3 | 12 | S8 | ✅ | `EvaluationCriteriaService.cs` |
-| 4.2.4 | Chia chunk CV + embedding hai tầng (toàn văn & theo đoạn) | BE2 | 12 | S8 | ✅ | `CvChunkerTests.cs` |
-| 4.2.5 | Đối chiếu theo từng tiêu chí: HARD bằng rule, SOFT bằng vector, trích câu bằng chứng, điểm trọng số | BE1 | 16 | S9 | ✅ | `CriteriaScoringService.cs`, `CriteriaHardMatchTests.cs` |
+| 4.2.4 | Thiết kế prompt bóc tiêu chí: luật tách kỹ năng, loại đầu việc, bỏ yêu cầu giấy tờ, trần 10 dòng | BE2 | 12 | S8 | ✅ | `ai-service/criteria_extract.py` |
+| 4.2.5 | Rút gọn mô hình tiêu chí còn `name` + `weight` + `max_score` theo kết quả đo | BE1 | 16 | S9 | ✅ | `V038__slim_criteria.sql` |
 | 4.2.6 | Thư viện tiêu chí mẫu theo nhóm vị trí | BE3 | 10 | S9 | ✅ | `V010__criteria_template.sql` |
 | 4.2.7 | Màn duyệt & chỉnh bộ tiêu chí | FE2 | 14 | S8 | ✅ | `criteria/Criteria.jsx` |
-| 4.2.8 | Màn kết quả chấm CV theo tiêu chí: khớp/thiếu + câu bằng chứng | FE1 | 14 | S9 | ✅ | `analytics/CVScoring.jsx` |
+| 4.2.8 | Màn gọi AI bóc tiêu chí: hỏi trạng thái lượt chạy nền, hiện tiến trình, báo lỗi khi AI hỏng | FE1 | 14 | S9 | ✅ | `criteria/Criteria.jsx` |
 | 4.3.1 | Yêu cầu tuyển dụng: DM tạo → Recruiter duyệt → chuyển thành tin tuyển dụng | BE3 | 14 | S9 | ✅ | `V019__recruitment_request.sql` |
 | 4.3.2 | Phòng ban + gán DM cho job + API danh sách chọn người | BE3 | 10 | S9 | ✅ | `V022`, `V023`, `UserOptionsController.cs` |
 | 4.3.3 | Màn Yêu cầu tuyển dụng (DM) + màn duyệt (Recruiter) | FE2 | 14 | S9 | ✅ | `src/pages/dept-manager/*` |
 | 4.3.4 | Màn quyết định tuyển dụng của DM | FE1 | 12 | S9 | ✅ | `dept-manager/HiringDecision.jsx` |
-| 4.4.1 | Talent Pool: truy hồi ngược kho CV cũ theo job mới, lọc theo thời gian, cô lập tenant | BE2 | 12 | S9 | ✅ | `TalentPoolService.cs` |
-| 4.4.2 | Màn Talent Pool | FE2 | 10 | S9 | ✅ | `talent-pool/TalentPool.jsx` |
-| 4.5.1 | Pool khung giờ dùng chung + panel interviewer cho từng khung | BE2 | 16 | S9 | ✅ | `V018`, `V019__interview_slot_panel.sql` |
-| 4.5.2 | Mời hàng loạt + cơ chế ai chốt trước lấy trước + cờ vàng/đỏ khi hết khung + chốt lịch tay | BE3 | 14 | S9 | ✅ | `InterviewPoolService.cs` |
-| 4.5.3 | Sinh tệp lịch `.ics` + email xác nhận | BE3 | 8 | S9 | ✅ | `CandidateScheduleService.cs` |
-| 4.5.4 | Màn mở pool khung giờ + mời ứng viên (Recruiter) | FE2 | 14 | S9 | ✅ | `recruiter/InterviewScheduleRecruit.jsx` |
-| 4.5.5 | Trang ứng viên tự chọn khung giờ (magic link SCHEDULE) | FE1 | 14 | S9 | ✅ | `candidate/Schedule.jsx` |
+| 4.4.1 | Pool khung giờ dùng chung + panel interviewer cho từng khung | BE2 | 16 | S9 | ✅ | `V018`, `V019__interview_slot_panel.sql` |
+| 4.4.2 | Mời hàng loạt + cơ chế ai chốt trước lấy trước + cờ vàng/đỏ khi hết khung + chốt lịch tay | BE3 | 14 | S9 | ✅ | `InterviewPoolService.cs` |
+| 4.4.3 | Sinh tệp lịch `.ics` + email xác nhận | BE3 | 8 | S9 | ✅ | `CandidateScheduleService.cs` |
+| 4.4.4 | Màn mở pool khung giờ + mời ứng viên (Recruiter) | FE2 | 14 | S9 | ✅ | `recruiter/InterviewScheduleRecruit.jsx` |
+| 4.4.5 | Trang ứng viên tự chọn khung giờ (magic link SCHEDULE) | FE1 | 14 | S9 | ✅ | `candidate/Schedule.jsx` |
 
 ## 4.5 Giai đoạn 5 — Hoàn thiện, Đo lường & Bảo vệ (Sprint 9–10)
 
@@ -214,10 +212,12 @@ SRIS — Đồ án tốt nghiệp
 | 5.1.1 | Phỏng vấn sâu doanh nghiệp ≤200 người — mỗi thành viên 1 công ty | BE1·BE2·BE3·FE1·FE2 | 30 | S9 | 🔄 | Bộ 23 câu / 6 phần + phiếu ghi |
 | 5.1.2 | Tổng hợp phiếu ghi → bảng kết quả + điền KPI hiện trạng | BE1 | 8 | S10 | 🔄 | `docs/00_CONTEXT.md` §4.3 |
 | 5.2.1 | Khung đánh giá AI: bộ test cố định, versioning prompt, đo hai tầng | BE1 | 10 | S9 | ✅ | `ai-experiments/README.md` |
-| 5.2.2 | Thí nghiệm đo ngưỡng similarity: dataset, quét ngưỡng, đối chứng LLM | BE1 | 14 | S9 | ✅ | `exp_criteria_threshold/out/KET_QUA.md` |
-| 5.2.3 | Bổ sung bước LLM kiểm chứng sau khi vector truy hồi đoạn CV | BE2 | 14 | S10 | ⬜ | Việc B4c |
-| 5.2.4 | Đo cỡ chunk + chất lượng bóc tiêu chí trên CV thật (2 người gán nhãn) | BE3 | 12 | S10 | ⬜ | Việc B4d |
-| 5.3.1 | Kiểm thử đơn vị backend: state machine, magic link, auth, chunker, đối chiếu HARD | BE2 | 12 | S10 | ✅ | `Tests/GP35.SRIS.Application.Tests/` |
+| 5.2.2 | Bộ test 10 JD đa ngành + chạy 3 phiên bản prompt, đo tầng máy | BE1 | 14 | S9 | ✅ | `exp_criteria_extract/out/KET_QUA.md` |
+| 5.2.3 | Rubric 6 mã + gán nhãn tay 63 tiêu chí → precision/recall/F1 | BE2 | 14 | S10 | ✅ | `exp_criteria_extract/RUBRIC.md` |
+| 5.2.4 | Lọc tiêu chí "giấy tờ" bằng luật trong .NET (đề xuất từ kết quả đo) | BE3 | 12 | S10 | ⬜ | `CriteriaExtractionClient` |
+| 5.2.5 | Soạn bộ 10 tin tuyển dụng đa ngành + 3 ca đối chứng khó (rỗng, toàn giấy tờ, vượt trần) | BE2 | 12 | S9 | ✅ | `exp_criteria_extract/dataset.json` |
+| 5.2.6 | Cập nhật màn tiêu chí theo kết quả đo: bỏ nhãn HARD/SOFT và ô từ khóa khỏi giao diện | FE2 | 10 | S10 | ✅ | `criteria/Criteria.jsx` |
+| 5.3.1 | Kiểm thử đơn vị backend: state machine, magic link, auth, bóc & duyệt tiêu chí | BE2 | 12 | S10 | ✅ | `Tests/GP35.SRIS.Application.Tests/` |
 | 5.3.2 | Kiểm thử frontend (Vitest) cho luồng ứng viên & tạo job | FE1 | 10 | S10 | 🔄 | `*.test.jsx` |
 | 5.3.3 | Kiểm thử cô lập dữ liệu đa thuê bao (RLS) | BE2 | 10 | S10 | ⬜ | Backlog kỹ thuật |
 | 5.3.4 | Rà soát đồng bộ giao diện: trạng thái tải, rỗng, lỗi trên toàn portal | FE2 | 10 | S10 | 🔄 | Toàn bộ `src/pages` |
@@ -284,18 +284,17 @@ chấp nhận được của một nhóm 5 người.
 | 2.4 | Job & Career Site (M1) | 62 | 5,0% |
 | 2.5 | Khung giao diện & Pipeline cơ bản (M2) | 48 | 3,9% |
 | 3.1 | State Machine & Pipeline đầy đủ (M2) | 36 | 2,9% |
-| 3.2 | AI Service & Chấm điểm CV (M3) | 60 | 4,9% |
+| 3.2 | AI Service & Nhận hồ sơ (M3) | 60 | 4,9% |
 | 3.3 | Email Automation (M4) | 36 | 2,9% |
 | 3.4 | Collaborative Scoring (M5) | 54 | 4,4% |
 | 3.5 | Dashboard & Analytics (M6) | 30 | 2,4% |
 | 3.6 | Offer & Magic link ứng viên | 58 | 4,7% |
 | 4.1 | Xử lý phản hồi hội đồng & thu hẹp phạm vi | 42 | 3,4% |
-| 4.2 | **Trục tiêu chí: bóc — duyệt — chấm CV theo tiêu chí (M3)** | **104** | **8,5%** |
+| 4.2 | **Trục tiêu chí: bóc — duyệt — chấm phỏng vấn (M3)** | **104** | **8,5%** |
 | 4.3 | Yêu cầu tuyển dụng & Phòng ban (M1) | 50 | 4,1% |
-| 4.4 | Talent Pool (M3) | 22 | 1,8% |
-| 4.5 | Đặt lịch phỏng vấn theo pool khung giờ (M9) | 66 | 5,4% |
+| 4.4 | Đặt lịch phỏng vấn theo pool khung giờ (M9) | 66 | 5,4% |
 | 5.1 | Minh chứng sơ cấp (phỏng vấn doanh nghiệp) | 38 | 3,1% |
-| 5.2 | Đánh giá AI & hiệu chỉnh theo kết quả đo | 50 | 4,1% |
+| 5.2 | **Đánh giá AI & hiệu chỉnh theo kết quả đo** | **72** | **5,9%** |
 | 5.3 | Kiểm thử & Chất lượng | 144 | 11,7% |
 | 5.4 | Triển khai & Vận hành | 18 | 1,5% |
 | 5.5 | Tài liệu & Bảo vệ | 74 | 6,0% |
@@ -321,11 +320,11 @@ gantt
     CSDL, Auth, Multi-tenant          :done, p2, 2026-04-15, 28d
 
     section GĐ3 Tính năng cốt lõi
-    Pipeline, AI CV, Email, Scoring   :done, p3, 2026-05-13, 42d
+    Pipeline, AI service, Email, Scoring :done, p3, 2026-05-13, 42d
 
     section GĐ4 Tái định vị
     Ổn định & Bảo vệ 1                :done, p4a, 2026-06-24, 17d
-    Trục tiêu chí, Talent Pool, Lịch PV :done, p4b, 2026-07-13, 28d
+    Trục tiêu chí, Lịch phỏng vấn     :done, p4b, 2026-07-13, 28d
 
     section GĐ5 Hoàn thiện
     Đo lường, kiểm thử, tài liệu      :active, p5, 2026-08-10, 22d
@@ -342,12 +341,12 @@ gantt
 | S1 | 01/04 – 14/04 | SRS, ERD, Use Case, wireframe; solution build được |
 | S2 | 15/04 – 28/04 | Đăng nhập/phân quyền chạy thật; dữ liệu cô lập theo công ty |
 | S3 | 29/04 – 12/05 | Đăng tin → ứng viên nộp CV → hồ sơ lên Kanban |
-| S4 | 13/05 – 26/05 | Chuyển pha đúng State Machine; AI service trả vector |
-| S5 | 27/05 – 09/06 | Chấm CV tự động chạy nền; email tự động gửi đi |
+| S4 | 13/05 – 26/05 | Chuyển pha đúng State Machine; AI service chạy được |
+| S5 | 27/05 – 09/06 | Nhận & lưu hồ sơ, bóc text PDF; email tự động gửi đi |
 | S6 | 10/06 – 23/06 | Chấm phỏng vấn + radar; dashboard; offer + magic link |
 | S7 | 24/06 – 10/07 | **Bảo vệ 1 (10/07)** — demo end-to-end |
 | S8 | 13/07 – 26/07 | Gỡ Quiz; bóc tiêu chí bằng LLM cục bộ; duyệt tiêu chí |
-| S9 | 27/07 – 09/08 | Chấm CV theo tiêu chí có bằng chứng; Talent Pool; pool khung giờ |
+| S9 | 27/07 – 09/08 | Bộ tiêu chí đã duyệt thành phiếu chấm phỏng vấn; pool khung giờ |
 | S10 | 10/08 – 31/08 | Đo lường AI, kiểm thử, tài liệu, triển khai; **Bảo vệ 2 (31/08)** |
 
 ## 6.3 Cột mốc chính
@@ -358,7 +357,7 @@ gantt
 | M1 — Nền tảng chạy được | 12/05/2026 | Luồng đăng tin → nộp CV chạy end-to-end |
 | M2 — Bản demo đầy đủ | 23/06/2026 | 9 module chạy thông, có dữ liệu demo |
 | M3 — **Bảo vệ 1** | 10/07/2026 | Trình bày trước hội đồng, nhận phản hồi |
-| M4 — Hoàn tất tái định vị | 09/08/2026 | Trục tiêu chí + Talent Pool + đặt lịch chạy thật |
+| M4 — Hoàn tất tái định vị | 09/08/2026 | Trục tiêu chí + đặt lịch phỏng vấn chạy thật |
 | M5 — **Bảo vệ 2** | 31/08/2026 | Sản phẩm hoàn thiện, tài liệu và số liệu đo đầy đủ |
 
 # 7\. Ma trận trách nhiệm (RACI)
@@ -408,14 +407,11 @@ Một gói công việc chỉ được đánh dấu ✅ khi thỏa **toàn bộ*
 | --- | --- | --- | --- |
 | Đối tượng | Doanh nghiệp IT ≥ 100 nhân sự | Doanh nghiệp ≤ 200 nhân sự + công ty gia đình, mọi ngành nghề | Phản hồi hội đồng: đối tượng quá rộng, thiếu minh chứng |
 | Module Quiz | Trong phạm vi (sinh đề bằng AI + chống gian lận 3 lớp) | **Loại hoàn toàn** | Không phải nỗi đau cốt lõi của doanh nghiệp nhỏ; làm loãng trọng tâm |
-| Chấm CV | Ném cả JD ↔ CV lấy một điểm 0–100 | Chấm **theo từng tiêu chí** có câu bằng chứng | Điểm số không giải thích được thì người dùng không tin |
-| Nhà cung cấp AI | OpenAI (API trả phí) | **Local AI** (Ollama: bge-m3 + qwen2.5) | Chi phí bằng 0, dữ liệu ứng viên không rời hạ tầng, phù hợp Luật BVDLCN |
-| Talent Pool | Tính năng phụ | **Tính năng đinh** | Tận dụng dữ liệu tích lũy — giá trị tăng dần theo thời gian sử dụng |
+| Vai trò của AI | Máy chấm điểm hồ sơ ứng viên | **AI đề xuất bộ tiêu chí đánh giá**, người duyệt chốt | Điểm số máy chấm không giải thích được thì người dùng không tin; tiêu chí thì kiểm được từng dòng |
+| Nhà cung cấp AI | OpenAI (API trả phí) | **Local AI** (Ollama + qwen2.5) | Chi phí bằng 0, dữ liệu ứng viên không rời hạ tầng, phù hợp Luật BVDLCN |
 | Thời hạn | 15/07/2026 | 31/08/2026 | Bổ sung thời gian cho tái định vị và đo lường AI |
 
 **Tác động lên WBS:** toàn bộ công việc thuộc module Quiz (ước tính 86 giờ đã thực hiện) được ghi
-nhận là **chi phí chìm do thay đổi phạm vi**, không tính vào bảng ở Mục 5. Phần phương pháp
-đánh giá AI xây dựng trong giai đoạn đó được **tái sử dụng** cho việc đo chất lượng bóc tiêu chí
-và chấm CV (Mục 5.2) — xem `ai-experiments/README.md`.
+nhận là **chi phí chìm do thay đổi phạm vi**, không tính vào bảng ở Mục 5.
 
 ─────── Hết tài liệu ───────

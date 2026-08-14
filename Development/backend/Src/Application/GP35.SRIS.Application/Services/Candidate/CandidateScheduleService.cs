@@ -44,6 +44,9 @@ public class CandidateScheduleService : BaseService<CandidateScheduleService>, I
         {
             ScheduleId = schedule.ScheduleId,
             RoundNumber = schedule.RoundNumber,
+            RoundName = schedule.PoolId is long pid
+                ? (await _schedulingRepo.GetPoolByIdAsync(v.CompanyId, pid))?.Name
+                : null,
             Status = schedule.Status
         };
 

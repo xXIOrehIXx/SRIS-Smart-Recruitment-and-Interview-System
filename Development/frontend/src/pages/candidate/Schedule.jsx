@@ -297,6 +297,8 @@ const Schedule = () => {
   const slots = scheduleData?.slots || [];
   const confirmedSlot = scheduleData?.confirmedSlot;
   const roundNumber = scheduleData?.roundNumber;
+  // Tên vòng (V041) là thứ ứng viên cần để chuẩn bị ("Phỏng vấn chuyên môn"); "Vòng 2" thì không.
+  const roundName = scheduleData?.roundName;
 
   return (
     <Layout className="schedule-layout">
@@ -335,7 +337,7 @@ const Schedule = () => {
           {/* Thông tin vòng */}
           {roundNumber !== undefined && (
             <Alert
-              message={`Vòng phỏng vấn số ${roundNumber}`}
+              message={roundName ? `Vòng ${roundNumber}: ${roundName}` : `Vòng phỏng vấn số ${roundNumber}`}
               type="info"
               showIcon
               className="sch-info-alert"
@@ -462,7 +464,9 @@ const Schedule = () => {
                   </Space>
                 }
               >
-                <Descriptions.Item label="Vòng">{roundNumber ?? '—'}</Descriptions.Item>
+                <Descriptions.Item label="Vòng">
+                  {roundNumber ?? '—'}{roundName ? ` — ${roundName}` : ''}
+                </Descriptions.Item>
                 <Descriptions.Item label="Ngày giờ">
                   <Text strong style={{ color: MATCHA_GREEN }}>
                     {confirmedSlot.startTime

@@ -32,11 +32,13 @@ const { Title, Text } = Typography;
 const MATCHA_GREEN = '#5D8C3E';
 
 // ====== Helpers =================================================
+// Cùng bộ nhãn với phiếu chấm (Grading.jsx): đây là ĐỀ XUẤT của người phỏng vấn, không phải
+// kết quả tuyển — "trúng tuyển" là chuyện của người quyết ở bước OFFER.
 const RECOMMENDATIONS = [
-  { key: 'STRONG_HIRE', label: 'Trúng tuyển mạnh', color: '#52c41a' },
-  { key: 'HIRE', label: 'Trúng tuyển', color: '#73d13d' },
-  { key: 'CONSIDER', label: 'Cân nhắc', color: '#faad14' },
-  { key: 'NO_HIRE', label: 'Không trúng tuyển', color: '#f5222d' },
+  { key: 'STRONG_HIRE', label: 'Rất nên tuyển', color: '#52c41a' },
+  { key: 'HIRE', label: 'Nên tuyển', color: '#73d13d' },
+  { key: 'CONSIDER', label: 'Cần xem xét', color: '#faad14' },
+  { key: 'NO_HIRE', label: 'Không nên tuyển', color: '#f5222d' },
 ];
 
 // Status hiển thị cho lịch (PENDING|CONFIRMED|CANCELLED...).
@@ -73,6 +75,7 @@ const IncomingInterview = () => {
         startTime: item.startTime,
         level: item.roundNumber || 1,
         roundNumber: item.roundNumber || 1,
+        roundName: item.roundName || null,
         status: item.status,
         mySheetStatus: item.mySheetStatus || 'NOT_STARTED',
         // Hồ sơ đã OFFER/HIRED/REJECTED -> phiếu khóa, chỉ xem.
@@ -188,7 +191,15 @@ const IncomingInterview = () => {
       title: 'Vòng',
       dataIndex: 'level',
       key: 'level',
-      render: (level) => <Tag color="cyan">Vòng {level}</Tag>,
+      // Tên vòng (V041) cho interviewer biết buổi này để làm gì — "Vòng 2" không nói được điều đó.
+      render: (level, record) => (
+        <div>
+          <Tag color="cyan">Vòng {level}</Tag>
+          {record.roundName && (
+            <div><Text type="secondary" style={{ fontSize: 12 }}>{record.roundName}</Text></div>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Trạng thái lịch',

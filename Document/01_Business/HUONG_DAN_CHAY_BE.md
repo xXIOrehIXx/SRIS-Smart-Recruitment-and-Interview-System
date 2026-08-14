@@ -4,16 +4,16 @@ Backend gọi AI qua HTTP, nên **không chỉ chạy C# là xong**. Bật dịc
 
 ## Bật theo thứ tự
 
-### 1. AI service (embedding + bóc tiêu chí) — cần cho chấm CV theo tiêu chí
+### 1. AI service (bóc tiêu chí từ JD) — cần cho nút "AI đề xuất tiêu chí"
 ```powershell
 cd "D:\final_project\SRIS-Smart-Recruitment-and-Interview-System\Development\backend\ai-service"
 .\run_ai.ps1
 ```
-Lần đầu tải model BAAI/bge-m3 (~2.2GB), đợi đến khi thấy `Model san sang. So chieu vector = 1024`. Để nguyên cửa sổ.
+Lần đầu tự tạo venv + cài thư viện (fastapi, uvicorn, ollama, pydantic — rất nhẹ, model nằm bên Ollama). Đợi tới khi uvicorn báo lắng nghe ở `:8000`, kiểm nhanh bằng `GET /health`. Để nguyên cửa sổ.
 
 Cờ hay dùng: `-Force` (port 8000 bận → kill cái cũ) · `-Setup` (chỉ cài) · `-Reinstall` (dựng lại venv) · `-Port 8001`.
 
-### 2. MinIO (lưu file CV gốc) — cần cho upload/chấm CV
+### 2. MinIO (lưu file CV gốc) — cần cho upload CV
 ```powershell
 cd "D:\final_project\SRIS-Smart-Recruitment-and-Interview-System\Development\backend\tools"
 .\run_minio.ps1
@@ -23,11 +23,14 @@ Lần đầu tải `minio.exe` (~100MB). Console: http://127.0.0.1:9001 (minioad
 ### 3. Ollama — **cần khi test bóc tiêu chí bằng AI**
 Cài Ollama rồi tải model 1 lần:
 ```powershell
-ollama pull bge-m3      # embedding (chấm CV, Talent Pool)
-ollama pull qwen2.5     # LLM bóc tiêu chí từ JD
+ollama pull qwen2.5     # LLM bóc tiêu chí từ JD (~4.7GB)
 ```
 Ollama tự chạy nền ở port 11434. Thiếu nó → API bóc tiêu chí trả lỗi 502 rõ ràng
 (không crash) → vẫn nhập tiêu chí tay được.
+
+> Lượt bóc **đầu tiên** phải nạp model vào bộ nhớ nên chậm hơn hẳn các lượt sau.
+> Trước khi demo, bắn thử một lượt cho model nóng; `ollama ps` cho biết model còn nằm trong
+> bộ nhớ hay đã bị đẩy ra.
 
 ### 4. Chạy API
 Mở `GP35.SRIS.sln` trong Visual Studio → **F5**. Swagger tự mở.
@@ -98,15 +101,14 @@ thì đặt `"Port": 465, "UseStartTls": false`. Để test không gửi ra ngo�
 > Muốn đổi sang gửi qua NotificationCenter (HTTP) thay vì SMTP: đổi 1 dòng DI trong
 > `ServiceCollectionExtensions.cs` (`SmtpEmailService` → `EmailService`).
 
-## Test nhanh trục tiêu chí + chấm CV (cần AI service + Ollama)
+## Test nhanh trục tiêu chí (cần AI service + Ollama)
 Trên Swagger, sau khi Authorize:
 1. Tạo job có JD đầy đủ: `POST /api/jobs`.
-2. Bóc tiêu chí từ JD: `POST /api/jobs/{jobId}/criteria/extract` → danh sách tiêu chí **DRAFT**.
-3. Sửa/thêm/bớt tiêu chí rồi chốt: `POST /api/jobs/{jobId}/criteria/approve` → **APPROVED**.
-4. Nộp CV qua career site công khai (hoặc `POST /api/public/{slug}/jobs/{jobId}/apply`).
-5. Điểm chấm chạy ở worker nền → xem kết quả theo từng tiêu chí (khớp/thiếu + câu bằng chứng):
-   `GET /api/applications/{applicationId}/cv-score`.
-6. Talent Pool (quét ngược kho CV cũ): `GET /api/jobs/{jobId}/talent-pool`.
+2. Xếp hàng bóc tiêu chí: `POST /api/jobs/{jobId}/criteria/extract` → trả **202** ngay, chưa có kết quả.
+3. Hỏi trạng thái tới khi `running=false`: `GET /api/jobs/{jobId}/criteria/extract-status`.
+   Xong thì có danh sách tiêu chí **DRAFT** (lỗi AI → `FAILED`, nhập tay được).
+4. Sửa/thêm/bớt tiêu chí rồi chốt: `POST /api/jobs/{jobId}/criteria/approve` → **APPROVED**.
+5. Bộ tiêu chí đã chốt chính là phiếu chấm phỏng vấn ở bước chấm.
 
 > Đường dẫn chính xác của từng endpoint xem `Development/backend/docs/API_ENDPOINTS.md`
 > — file đó là nguồn tham chiếu duy nhất, được cập nhật cùng commit khi backend đổi API.
@@ -118,7 +120,7 @@ phiếu chấm đã nộp và offer:
 cd "D:\final_project\SRIS-Smart-Recruitment-and-Interview-System\Development\backend"
 python tools/seed_demo.py <admin-email> <password>
 ```
-Cần backend :5082 + MinIO :9000 (+ AI service :8000 nếu muốn có điểm chấm CV).
+Cần backend :5082 + MinIO :9000 (+ AI service :8000 nếu muốn seed cả bộ tiêu chí do AI bóc).
 
 ## Tóm tắt cổng
 | Dịch vụ | URL |

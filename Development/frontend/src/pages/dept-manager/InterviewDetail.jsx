@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card, Typography, Button, Tag, Space, Table, Statistic, Row, Col,
+  Card, Typography, Button, Space, Table, Statistic, Row, Col,
   Empty, Spin, Tooltip, Progress, message
 } from 'antd';
 import { ArrowLeftOutlined, ReloadOutlined, WarningOutlined, TeamOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { interviewAPI } from '../../services/api';
+import ConsensusTag from '../../components/ConsensusTag';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -49,16 +50,8 @@ const DeptInterviewDetail = () => {
       title: 'Tiêu chí',
       dataIndex: 'name',
       key: 'name',
-      render: (name, record) => (
-        <Space size={6}>
-          <Text strong>{name}</Text>
-          {record.needsDiscussion && (
-            <Tooltip title="Panel bất đồng (độ lệch chuẩn cao) — nên trao đổi trước khi quyết">
-              <Tag icon={<WarningOutlined />} color="orange">Cần bàn</Tag>
-            </Tooltip>
-          )}
-        </Space>
-      ),
+      // Cờ "lệch nhiều" nằm ở cột Đồng thuận — không lặp lại ở đây nữa.
+      render: (name) => <Text strong>{name}</Text>,
     },
     {
       title: 'Điểm trung bình',
@@ -79,15 +72,27 @@ const DeptInterviewDetail = () => {
       sorter: (a, b) => a.average - b.average,
     },
     {
-      title: 'Độ lệch chuẩn',
-      dataIndex: 'stdDev',
-      key: 'stdDev',
+      title: 'Đồng thuận',
+      key: 'consensus',
       width: 130,
-      render: (sd, record) => (
-        <Text type={record.needsDiscussion ? 'danger' : 'secondary'}>{sd}</Text>
+      render: (_, record) => (
+        <ConsensusTag
+          stdDev={record.stdDev}
+          needsDiscussion={record.needsDiscussion}
+          scoreCount={(record.scores || []).filter((s) => s.score !== null && s.score !== undefined).length}
+        />
       ),
     },
-    { title: 'Trọng số', dataIndex: 'weight', key: 'weight', width: 90 },
+    {
+      title: (
+        <Tooltip title="Tiêu chí quan trọng hơn thì trọng số cao hơn và tính nặng hơn khi ra điểm tổng">
+          <span>Trọng số</span>
+        </Tooltip>
+      ),
+      dataIndex: 'weight',
+      key: 'weight',
+      width: 90,
+    },
     {
       title: 'Điểm & note từng interviewer',
       dataIndex: 'scores',
@@ -115,7 +120,11 @@ const DeptInterviewDetail = () => {
     },
     {
       // % có trọng số (điểm đạt / điểm tối đa có trọng số) — không phải điểm thô.
-      title: 'Điểm tổng có trọng số',
+      title: (
+        <Tooltip title="Điểm của cả phiếu quy về thang 100. Tiêu chí trọng số cao ảnh hưởng nhiều hơn, nên đây không phải trung bình cộng của các điểm ở trên.">
+          <span>Điểm tổng (thang 100)</span>
+        </Tooltip>
+      ),
       dataIndex: 'weightedPercent',
       key: 'weightedPercent',
       render: (p) => <Text strong style={{ color: MATCHA_GREEN }}>{p}%</Text>,
@@ -171,7 +180,7 @@ const DeptInterviewDetail = () => {
             <Col xs={12} sm={8}>
               <Card className="stat-card" bordered={false}>
                 <Statistic
-                  title="Điểm panel (trung bình có trọng số)"
+                  title="Điểm trung bình hội đồng (thang 100)"
                   value={aggregate.panelWeightedPercent}
                   suffix="%"
                   valueStyle={{ color: MATCHA_GREEN }}
@@ -181,7 +190,7 @@ const DeptInterviewDetail = () => {
             <Col xs={12} sm={8}>
               <Card className="stat-card" bordered={false}>
                 <Statistic
-                  title="Tiêu chí cần bàn"
+                  title="Tiêu chí hội đồng chấm lệch nhau"
                   value={needsDiscussionCount}
                   valueStyle={{ color: needsDiscussionCount > 0 ? '#faad14' : '#52c41a' }}
                   prefix={<WarningOutlined />}
@@ -190,7 +199,17 @@ const DeptInterviewDetail = () => {
             </Col>
           </Row>
 
-          <Card className="main-card" bordered={false} title="Điểm theo từng tiêu chí" style={{ marginBottom: 16 }}>
+          <Card
+            className="main-card"
+            bordered={false}
+            title="Điểm theo từng tiêu chí"
+            extra={
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Cột "Đồng thuận" cho biết những người chấm có cùng ý hay không
+              </Text>
+            }
+            style={{ marginBottom: 16 }}
+          >
             <Table
               columns={criteriaColumns}
               dataSource={criteria}

@@ -51,11 +51,14 @@ const CreateAccount = () => {
       navigate("/admin/sub-accounts");
     } catch (error) {
       console.error("Create account error:", error);
-      if (error.response?.data?.message) {
-        message.error(error.response.data.message);
-      } else {
-        message.error("Không thể tạo tài khoản");
-      }
+      // BE trả lỗi nghiệp vụ ở khoá `userMsg` (ErrorObjectCommon) — đọc `message` là luôn
+      // undefined nên mọi lỗi đều rơi vào câu "email đã tồn tại", kể cả khi lý do là khác.
+      // Trùng email: BE 409 "Email '...' đã được sử dụng cho một tài khoản khác."
+      const msg =
+        error.response?.data?.userMsg ||
+        error.response?.data?.message ||
+        "Không thể tạo tài khoản. Vui lòng thử lại.";
+      message.error(msg);
     } finally {
       setLoading(false);
     }

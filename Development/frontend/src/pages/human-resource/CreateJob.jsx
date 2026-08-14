@@ -473,7 +473,9 @@ const CreateJob = () => {
       // không nằm trong payload nên gõ gì cũng mất trắng mà không báo lỗi. BE nhận mảng
       // (JobCreateDto.Skills) rồi tự nối thành chuỗi lưu vào skill_tags.
       skills: toSkillList(values.skillTags),
-      isPublished: false,
+      // KHÔNG có `isPublished` ở đây nữa: BE không hề có trường đó (JobCreateDto/JobUpdateDto),
+      // nên nút "Lưu nháp" trước đây vẫn tạo tin trạng thái Open và tin lên career site ngay.
+      // Trạng thái do từng luồng đặt: Lưu nháp -> Draft (chỉ khi tạo mới), Đăng tin -> Open.
     };
   };
 
@@ -488,15 +490,19 @@ const CreateJob = () => {
       const data = getFormData(values);
 
       if (isEditMode && editingJobId) {
+        // Sửa tin đã có: KHÔNG gửi status -> BE giữ nguyên trạng thái đang có. Bấm "Lưu nháp"
+        // trên một tin đang đăng chỉ để lưu thay đổi, không âm thầm gỡ tin khỏi career site.
         await jobsAPI.update(editingJobId, data);
         message.success("Cập nhật tin tuyển dụng thành công — bạn có thể tiếp tục chỉnh sửa.");
         // QUAN TRỌNG: KHÔNG navigate sau khi update — user còn đang trong luồng edit. Trước
         // đây navigate("/human-resource/jobs") làm user mất context, muốn sửa tiếp phải vào lại.
         // Tạo mới (không phải edit) thì navigate tới JobDetail vừa tạo cho user xem lại.
       } else {
-        const res = await jobsAPI.create(data);
+        // Tin mới lưu nháp -> Draft: chưa hiện trên trang tuyển dụng công khai
+        // (career site chỉ lấy tin Open).
+        const res = await jobsAPI.create({ ...data, status: "Draft" });
         await linkToRequest(res.data?.jobId);
-        message.success("Lưu nháp thành công");
+        message.success("Lưu nháp thành công — tin CHƯA hiển thị trên trang tuyển dụng.");
         navigate("/human-resource/jobs");
       }
     } catch (error) {
@@ -530,8 +536,8 @@ const CreateJob = () => {
       await form.validateFields();
       setLoading(true);
       const values = form.getFieldsValue();
-      const data = getFormData(values);
-      data.isPublished = true;
+      // Đăng tin = đưa trạng thái về Open (career site chỉ hiện tin Open).
+      const data = { ...getFormData(values), status: "Open" };
 
       if (isEditMode && editingJobId) {
         await jobsAPI.update(editingJobId, data);
@@ -687,7 +693,7 @@ const CreateJob = () => {
                       allowClear
                       showSearch
                       optionFilterProp="label"
-                      placeholder="Chọn người quyết tuyển"
+                      placeholder="Chọn trưởng bộ phận"
                       options={dmOptions.map((u) => ({
                         value: u.userId,
                         label: `${u.fullName || u.email}${u.role === "Admin" ? " (Admin)" : ""}`,

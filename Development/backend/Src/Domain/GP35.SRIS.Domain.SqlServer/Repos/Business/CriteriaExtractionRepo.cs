@@ -95,11 +95,11 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
         }
     }
 
-    public async Task FinishAsync(long companyId, long extractionId, string status,
+    public async Task<int> FinishAsync(long companyId, long extractionId, string status,
         int? criteriaCount, string? errorCode, string? errorMessage)
     {
         // Gọi trong scope đã set tenant -> Global Query Filter + RLS khớp, không cần tắt policy.
-        await _db.CriteriaExtractions
+        return await _db.CriteriaExtractions
             .Where(e => e.ExtractionId == extractionId)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(e => e.Status, status)

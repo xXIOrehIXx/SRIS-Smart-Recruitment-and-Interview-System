@@ -18,13 +18,27 @@ namespace GP35.SRIS.Domain.SqlServer.Persistence;
 /// </summary>
 public class SrisDbContext : DbContext
 {
-    private readonly long _companyId;
+    private readonly IContextData? _contextData;
 
     public SrisDbContext(DbContextOptions<SrisDbContext> options, IContextData? contextData = null)
         : base(options)
     {
-        _companyId = contextData?.CompanyId ?? 0;
+        _contextData = contextData;
     }
+
+    /// <summary>
+    /// Tenant hiện tại, ĐỌC SỐNG mỗi lần EF dựng tham số cho Global Query Filter — không chốt
+    /// một lần trong constructor.
+    ///
+    /// Vì sao quan trọng: worker (bóc tiêu chí, đóng job quá hạn) chạy ngoài request nên phải tự
+    /// set <see cref="IContextData.CompanyId"/>, và thứ tự resolve DI quyết định ai chạy trước.
+    /// Chốt giá trị trong constructor là chốt luôn 0 nếu DbContext được tạo (qua repo) trước dòng
+    /// gán tenant — mọi query khi đó lọc <c>company_id = 0</c>, không thấy dòng nào, nhưng RLS lại
+    /// PASS (interceptor set SESSION_CONTEXT sống, đúng công ty). Kết quả là im lặng: đọc ra null,
+    /// ExecuteUpdate khớp 0 dòng, không lỗi nào được ném — đúng cái đã làm lượt bóc treo RUNNING
+    /// vĩnh viễn và job quá hạn không bao giờ đóng. Đọc sống thì thứ tự resolve hết quan trọng.
+    /// </summary>
+    private long _companyId => _contextData?.CompanyId ?? 0;
 
     public DbSet<Candidate> Candidates => Set<Candidate>();
     public DbSet<Job> Jobs => Set<Job>();
@@ -82,7 +96,8 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("Job");
             e.HasKey(x => x.JobId);
-            e.Ignore(x => x.Quantity);
+            // quantity: cột được trả lại ở V039 (V032 xoá nhầm — form tin tuyển dụng vẫn nhập,
+            // repo vẫn ghi, nên mọi lệnh sửa tin đều vỡ). Không Ignore nữa.
             e.Ignore(x => x.CvScoreThreshold);
             e.Ignore(x => x.ClosedAt);
             e.Property(x => x.SalaryMin).HasColumnType("decimal(18,2)");

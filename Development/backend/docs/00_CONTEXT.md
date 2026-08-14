@@ -11,10 +11,10 @@ Kim chỉ nam (single source of truth) cho mọi chat trong Project SRIS. Chat m
 
 - Đã bảo vệ hội đồng lần 1 (07/2026), nhận 4 feedback → 3 vấn đề gốc (Section 12). Đang giai đoạn sửa theo feedback.
 - **Định vị đã chốt:** "Quy trình tuyển dụng tối giản đúng chuẩn cho công ty chưa có phòng HR" — target công ty ≤200 nhân sự + công ty gia đình. Nguyên tắc: **đơn giản là mặc định, phức tạp là tùy chọn**.
-- **AI làm ĐÚNG MỘT việc: bóc tiêu chí từ JD** → người duyệt chốt → cả hội đồng phỏng vấn chấm trên cùng bộ tiêu chí đó. Hệ thống **KHÔNG chấm điểm, KHÔNG xếp hạng ứng viên**. Lý do bỏ chấm CV: thực nghiệm §16.
-- AI chạy Local (Ollama + embedding tự host), không OpenAI/Gemini.
+- **AI làm ĐÚNG MỘT việc: bóc tiêu chí từ JD** → người duyệt chốt → cả hội đồng phỏng vấn chấm trên cùng bộ tiêu chí đó. Hệ thống **KHÔNG chấm điểm, KHÔNG xếp hạng ứng viên**.
+- AI chạy Local (Ollama), không OpenAI/Gemini.
 - Đã code end-to-end: Auth/RBAC, multi-tenant RLS, Career Site, pipeline 4 pha, Yêu cầu tuyển dụng, bóc tiêu chí + duyệt, phiếu chấm phỏng vấn + verdict, đặt lịch pool, thư mời nhận việc, email automation, dashboard.
-- Việc còn lại: minh chứng sơ cấp (B2), vẽ lại ERD (B3), thực nghiệm đánh giá AI bóc tiêu chí (§16), tài liệu + slide (B5).
+- Việc còn lại: minh chứng sơ cấp (B2), vẽ lại ERD (B3), tài liệu + slide (B5).
 
 ---
 
@@ -60,12 +60,12 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 - **"Wow" phụ:** phiếu chấm ẩn cho tới khi nộp (chống hùa theo) · đặt lịch self-service kiểu Calendly thu nhỏ · trang trạng thái cho ứng viên.
 
 ### OUT-OF-SCOPE
-- **Máy chấm điểm / xếp hạng ứng viên (mọi hình thức)** — cả điểm tổng JD↔CV lẫn chấm theo từng tiêu chí. Đã đo và bác bỏ (§16). Sàng lọc hồ sơ là việc của người tuyển dụng; hệ thống lo nhận hồ sơ, lưu trữ, pipeline, phiếu chấm.
+- **Máy chấm điểm / xếp hạng ứng viên (mọi hình thức)** — cả điểm tổng JD↔CV lẫn chấm theo từng tiêu chí. Sàng lọc hồ sơ là việc của người tuyển dụng; hệ thống lo nhận hồ sơ, lưu trữ, pipeline, phiếu chấm.
 - **Talent Pool / gợi ý CV cũ** — phụ thuộc chính cơ chế chấm đã bỏ.
 - **Bài test online** — công ty ≤200 người hầu như không tổ chức test (4.2 bước 5); cần kiểm tra năng lực thì làm offline, ghi vào Internal Notes.
 - Khác: dynamic subdomain · Super Admin portal · đồng bộ 2 chiều Google/Outlook Calendar (đặt lịch nội bộ CÓ làm; .ics in-scope) · tự dò lịch rảnh interviewer · coding challenge · Core HR · chatbot real-time · chat tự do HR↔AI · LDAP/SSO · mobile native · webcam proctoring · OCR cho PDF scan · **AI tham gia quyết định tuyển** (đã cân nhắc và loại — AI là decision support, người quyết).
 
-> **Hạ tầng vector đã XOÁ HẲN (V036):** không còn bảng `CvChunk`, không còn cột `embedding` ở Job/CvDocument/EvaluationCriteria, không còn `IEmbeddingClient` / endpoint `/embed`. Giữ code chết chỉ đẻ ra câu hỏi "cái này dùng làm gì" mà không có câu trả lời (bài học V034). Cần mở lại thì đọc §16 trước.
+> **Hạ tầng vector đã XOÁ HẲN (V036):** không còn bảng `CvChunk`, không còn cột `embedding` ở Job/CvDocument/EvaluationCriteria, không còn `IEmbeddingClient` / endpoint `/embed`. Giữ code chết chỉ đẻ ra câu hỏi "cái này dùng làm gì" mà không có câu trả lời (bài học V034).
 
 ---
 
@@ -135,7 +135,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Lượt bóc **chạy nền** (V037): API xếp hàng vào bảng `CriteriaExtraction` rồi trả `202`; `CriteriaExtractionWorker` gọi AI; FE hỏi `GET /api/jobs/{id}/criteria/extract-status` tới khi `running=false`. Local LLM trên CPU mất hàng chục giây — gọi đồng bộ là axios (30s) cắt ngang giữa chừng.
 
 ### 5.4 Python vs .NET
-- **Python (FastAPI):** sinh embedding + bóc tiêu chí. Stateless, KHÔNG đụng DB, KHÔNG biết tenant.
+- **Python (FastAPI):** bóc tiêu chí từ JD — endpoint DUY NHẤT. Stateless, KHÔNG đụng DB, KHÔNG biết tenant.
 - **.NET + EF Core:** orchestration, business logic, truy cập DB. Mọi request qua .NET; .NET gọi Python qua HTTP nội bộ.
 - Chỉ tách Python KHI bắt buộc (thư viện AI). .NET tự làm được (vd extract PDF) thì để .NET.
 - Hệ quả: mọi tác vụ AI là gen đơn, stateless (1 request → 1 kết quả). KHÔNG chat tự do HR↔AI.
@@ -180,6 +180,13 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Guard G2 giữ mức "≥1 phiếu chấm" — KHÔNG siết "chấm hết mọi vòng".
 - Vì sao KHÔNG INTERVIEW_1/_2/_3: phình state, hard-code số vòng, phá forward-only.
 - Với công ty nhỏ: mặc định 1 vòng là đủ (khớp As-Is 4.2); multi-round là năng lực sẵn khi cần. Bằng chứng thực tế: VPBank Young Talents 2026 (Section 10).
+- **Đánh số vòng (chốt 13/08/2026 — V041).** Theo mô hình "interview plan" của các ATS thật (Greenhouse, Lever, Ashby, Workable): mỗi vị trí có một DÃY vòng liên tục `1,2,3...`; **SỐ do hệ thống đánh, người dùng chỉ đặt TÊN** (`InterviewSlotPool.name` — "Sơ loại qua điện thoại", "Phỏng vấn chuyên môn"). Không nơi nào cho gõ số vòng: trước đó HR chọn tự do 1–5 nên mở được "Vòng 5" khi vị trí mới có vòng 1.
+  - Mở pool = **vòng kế tiếp** (mặc định) hoặc **mở lại một vòng ĐÃ CÓ** — đường dành cho ứng viên nộp muộn: họ vẫn phải qua vòng 1 dù người khác đã sang vòng 3. Mở lại thì kế thừa tên cũ của vòng đó.
+  - BE chặn nhảy cóc (`roundNumber > maxRound + 1` → 400). Vòng đã hủy không tính vào `maxRound`.
+  - Chốt lịch tay đếm theo **chính ứng viên** (`max vòng của hồ sơ + 1`), vì người vào sau chốt tay buổi đầu tiên vẫn là vòng 1 của họ.
+  - **Vòng sau phải diễn ra SAU vòng trước:** mọi khung của vòng N phải muộn hơn khung MUỘN NHẤT của vòng N−1 (mốc là khung muộn nhất vì ứng viên nào cũng có thể đã đặt đúng khung đó). Không có ràng buộc này thì mở được vòng 2 ngày 19 trong khi vòng 1 ngày 21. Chỉ áp khi mở vòng MỚI — mở lại vòng cũ cho ứng viên nộp muộn không bị chặn.
+  - Lịch đã HỦY / pool đã HỦY không tính ở mọi phép đếm trên (buổi không diễn ra thì không chiếm số vòng). Pool CLOSED của chốt tay thì VẪN tính — đó là buổi có thật.
+  - Tên vòng là TÙY CHỌN; bỏ trống thì mọi màn hình hiện "Vòng N" như cũ.
 
 ### 5.13 Actionable Email + Magic Link
 - Magic link: URL chứa chuỗi ngẫu nhiên dài. DB lưu **hash** token (SHA-256) kèm purpose, hồ sơ, TTL, đã dùng chưa. Rate limit, đếm truy cập, ràng buộc purpose.
@@ -243,7 +250,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - API: `POST /api/jobs/{id}/criteria/extract` · `POST .../criteria/approve` · CRUD tiêu chí per-job.
 - **Thư viện tiêu chí mẫu cấp công ty:** `/api/criteria-templates` — HR dựng khuôn sẵn rồi clone vào job (giúp công ty nhỏ không biết bắt đầu từ đâu).
 
-**Câu chốt bảo vệ:** "Tiêu chí không do AI nghĩ ra — nó nằm trong yêu cầu tuyển dụng do người có chuyên môn viết. AI chỉ bóc thành danh sách cho người duyệt, và cả hội đồng phỏng vấn chấm trên đúng bộ tiêu chí đó. Chúng tôi đã chủ động BỎ việc để máy chấm điểm CV sau khi tự đo thấy nó không đáng tin (§16). AI đỡ việc tay; con người đặt chuẩn và ra quyết định."
+**Câu chốt bảo vệ:** "Tiêu chí không do AI nghĩ ra — nó nằm trong yêu cầu tuyển dụng do người có chuyên môn viết. AI chỉ bóc thành danh sách cho người duyệt, và cả hội đồng phỏng vấn chấm trên đúng bộ tiêu chí đó. AI đỡ việc tay; con người đặt chuẩn và ra quyết định."
 
 ---
 
@@ -276,7 +283,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 ## 8. TIẾN ĐỘ
 
 - **Xong:** Auth/RBAC, multi-tenant, CRUD Job & Application, Career Site, Kanban + state machine, email automation, dashboard, bóc tiêu chí + duyệt, phiếu chấm + đề xuất tuyển, đặt lịch pool, Yêu cầu tuyển dụng, thư mời nhận việc.
-- **Đang/còn:** minh chứng sơ cấp (B2) · ERD mới (B3) · thực nghiệm đánh giá AI bóc tiêu chí (§16) · tài liệu + slide bảo vệ 2 (B5). Chi tiết ở **CÁC VIỆC**.
+- **Đang/còn:** minh chứng sơ cấp (B2) · ERD mới (B3) · tài liệu + slide bảo vệ 2 (B5). Chi tiết ở **CÁC VIỆC**.
 
 ---
 
@@ -297,13 +304,13 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 **HỘI ĐỒNG CHÚ TRỌNG NGHIỆP VỤ** — hỏi kỹ nghiệp vụ, KHÔNG chấm code cao siêu. **TÂM THẾ: BẢO VỆ chứ không thuyết trình** — câu hỏi là để mình giải thích, KHÔNG phải lệnh bắt sửa; mỗi thiết kế thủ sẵn "vì sao chọn vậy + vì sao không cách khác".
 Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát triển; mô hình = dịch vụ SaaS.
 
-- **Vì sao đề tài (business trước):** (1) vấn đề thật & tốn kém — tuyển sai đắt, 62% DN nhỏ từng tuyển sai, hồ sơ thất lạc, quy trình tùy tiện (4.2); (2) khoảng trống — tool ngoại đắt + phải ghép nhiều cái, tool nội chấm CV nông, chưa ai làm "vừa đủ cấu trúc" cho công ty chưa có phòng HR; (3) tại sao BÂY GIỜ — SQL Server 2025 VECTOR native + Local AI mã nguồn mở + PDPD hiệu lực 2026.
+- **Vì sao đề tài (business trước):** (1) vấn đề thật & tốn kém — tuyển sai đắt, 62% DN nhỏ từng tuyển sai, hồ sơ thất lạc, quy trình tùy tiện (4.2); (2) khoảng trống — tool ngoại đắt + phải ghép nhiều cái, tool nội chấm CV nông, chưa ai làm "vừa đủ cấu trúc" cho công ty chưa có phòng HR; (3) tại sao BÂY GIỜ — Local AI mã nguồn mở chạy được trên máy phổ thông + PDPD hiệu lực 2026.
 - **"Công ty nhỏ tuyển ít, cần gì hệ thống?"** → 4 vế ở 4.2. "Tuyển ít" là lý do tồn tại của SRIS, không phải điểm yếu.
 - **"Quy trình quá phức tạp?"** → "Mặc định chỉ 4 pha, MỘT người làm được hết. Công ty nhỏ vốn đã làm gần đủ các bước này rồi nhưng làm phi cấu trúc (miệng, Zalo, trí nhớ). Hệ thống còn tự BỎ bước cho bạn — không có DM thì khỏi tầng duyệt." (5.16)
-- **"Tính năng chưa thông minh, ai cũng nghĩ đến rồi?"** → "thông minh nghiệp vụ, không khoe model": AI bóc tiêu chí từ JD để cả hội đồng chấm trên cùng một khung — và nhóm **chủ động bỏ** chấm điểm CV sau khi tự đo thấy nó không đáng tin (§16). **Dám bỏ tính năng vì số liệu chính là phần đáng nói.**
-- **"AI chấm CV dựa vào đâu?"** → "AI KHÔNG chấm CV. Nó bóc tiêu chí từ JD cho người duyệt; người đọc CV, và interviewer chấm theo bộ tiêu chí đó." Nếu hỏi vì sao bỏ: §16.
+- **"Tính năng chưa thông minh, ai cũng nghĩ đến rồi?"** → "thông minh nghiệp vụ, không khoe model": AI bóc tiêu chí từ JD để cả hội đồng chấm trên cùng một khung, thay vì mỗi người hỏi một kiểu rồi so bằng trí nhớ. Chất lượng bóc tiêu chí đã đo có số (§16).
+- **"AI chấm CV dựa vào đâu?"** → "AI KHÔNG chấm CV. Nó bóc tiêu chí từ JD cho người duyệt; người đọc CV, và interviewer chấm theo bộ tiêu chí đó."
 - **"AI đề xuất tiêu chí thì có uy tín không, phải người có chuyên môn chứ?"** → "Đúng — nên người có chuyên môn LÀ người đặt tiêu chí: họ viết yêu cầu tuyển dụng, và họ duyệt danh sách AI bóc ra. AI không quyết tiêu chí."
-- **"Có phương pháp đánh giá AI không?"** → khung §16: bộ test cố định, đổi 1 yếu tố/lần, đo 2 tầng (máy + rubric người). Đã áp dụng thật và có số — kết quả còn khiến nhóm bỏ hẳn một tính năng.
+- **"Có phương pháp đánh giá AI không?"** → khung §16: bộ test cố định, đổi 1 yếu tố/lần, đo 2 tầng (máy + rubric người). Đã áp dụng thật lên tính năng bóc tiêu chí và có số: Precision 0.841 · Recall 0.914 · F1 0.876, không tiêu chí nào AI tự bịa.
 - **"Giá trị cho người dùng là gì?"** → nối pain đo được → tính năng: hồ sơ thất lạc → kho tập trung truy vết; phỏng vấn không phiếu chấm, so bằng trí nhớ → cùng một bộ tiêu chí + đề xuất có lưu vết; mất ứng viên vì xếp lịch chậm/im lặng → self-scheduling + trang trạng thái; sợ luật dữ liệu → Local AI + cô lập = tuân thủ PDPD.
 - **Mô hình SaaS là gì, sao chọn:** phần mềm cung cấp như dịch vụ, thuê dùng trả phí kỳ, không mua đứt, không tự nuôi hạ tầng. Hợp target: công ty nhỏ cần dùng ngay, không nuôi đội IT; chi phí thêm 1 khách ≈ 0 (AI local) → giá thuê rẻ bền; dữ liệu cô lập từng công ty.
 - **Vì sao Ollama:** công cụ chạy LLM mã nguồn mở tại máy/máy chủ nội bộ → đúng Local AI: chi phí ≈ 0, dữ liệu không ra ngoài; kiến trúc tách service nên đổi model nhẹ nhàng.
@@ -325,9 +332,8 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 | Rò rỉ dữ liệu xuyên tenant | Cao | RLS + Global Query Filter + test cô lập (5.2) |
 | Review tăng scope | Cao | Kiểm soát chặt, Limitations & Exclusions |
 | User adoption (kháng Excel) | Cao | UI/UX mượt; magic link không cần login; mặc định 4 pha tối giản |
-| Chất lượng bóc tiêu chí chưa được đo | Trung | Thực nghiệm §16 trên bộ JD cố định trước khi khẳng định trong report |
+| Chất lượng bóc tiêu chí chưa được đo | Trung | **Đã xử lý** — thực nghiệm §16 trên bộ JD cố định 10 tin đa ngành: F1 0.876, 0 tiêu chí bịa |
 | PDF extract sai/rỗng | Trung | PdfPig; file scan → từ chối, báo rõ |
-| Đổi embedding model | Trung | Quy tắc re-embedding; đã chốt model |
 
 ---
 
@@ -346,7 +352,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 | 1 | Bổ sung bối cảnh và khảo sát | A. Thiếu minh chứng | Phỏng vấn sâu 3-5 công ty nhỏ + form song song (B2) + desk research có nguồn (4.1) + As-Is (4.2); mọi số As-Is phải có nguồn |
 | 2 | Trình bày rõ vấn đề; quy trình quá phức tạp, tốn thời gian | B. Phức tạp | Target thu hẹp; 4 pha hiển thị; tối giản mặc định + tùy chọn bật (5.16); demo đường đơn giản trước; "hệ thống tự bỏ bước cho bạn" |
 | 3 | Chứng minh quy trình đúng với doanh nghiệp | A + B | As-Is desk research (4.2) + phỏng vấn sâu quy trình thật; map 4 pha vào quy trình họ ĐANG làm; đối chiếu VPBank |
-| 4 | Tính năng chưa thông minh, ai cũng nghĩ đến rồi | C. Định vị "smart" | AI bóc tiêu chí → người duyệt → cả hội đồng chấm cùng khung; bỏ chấm điểm CV sau thực nghiệm §16; "thông minh nghiệp vụ, không khoe model" |
+| 4 | Tính năng chưa thông minh, ai cũng nghĩ đến rồi | C. Định vị "smart" | AI bóc tiêu chí → người duyệt → cả hội đồng chấm cùng khung; chất lượng bóc tiêu chí đo có số (§16); "thông minh nghiệp vụ, không khoe model" |
 | 5 | Làm sao thuyết phục giá trị cho người dùng | A | Value = pain đo được (B2 + 4.1) → tính năng → kết quả; PDPD compliance angle |
 
 ---
@@ -375,14 +381,13 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 - [ ] **B3 — ERD + thiết kế chi tiết:** schema trong code đã xong. Còn lại: (1) chốt cờ bật/tắt 5.16 nằm ở đâu (Company setting hay Job setting); (2) **vẽ lại ERD** khớp schema thật + đếm lại số entity.
   - Bảng phải có trong ERD mới: Company · User · Department · Job · RecruitmentRequest · Application · CvDocument · EvaluationCriteria · CriteriaTemplate · InterviewSlotPool · InterviewSlot · InterviewSchedule · InterviewScore · InterviewFeedback · OfferDetail · MagicLinkToken · EmailTemplate.
   - Quy ước vẽ: chỉ thuộc tính + quan hệ bằng đường nối, KHÔNG vẽ cột FK; KHÔNG vẽ ActivityLog + EmailLog; mọi bảng đều có `company_id`. Application → MagicLinkToken là 1-N (nhãn *generates*). Job có 2 FK tới User (`department_manager_id`, `created_by`) → 2 đường nối: *decides hiring for* + *creates*.
-- [ ] **B4 — THỰC NGHIỆM ĐÁNH GIÁ AI BÓC TIÊU CHÍ:** áp khung §16 lên tính năng đang chạy — đo chất lượng bóc tiêu chí từ JD (bộ JD cố định đa ngành, prompt versioning, đo 2 tầng: máy + rubric người). Xem §16.2 để biết đo cái gì.
+- [x] **B4 — THỰC NGHIỆM ĐÁNH GIÁ AI BÓC TIÊU CHÍ (xong 13/08/2026):** đã áp khung §16 lên tính năng đang chạy — bộ 10 JD đa ngành, 3 phiên bản prompt, đo 2 tầng (máy + rubric người). Kết quả: **F1 0.876**, giữ prompt baseline. Số liệu ở `ai-experiments/exp_criteria_extract/out/KET_QUA.md`, tóm tắt ở §16.2.
 - [ ] **B5 — Tài liệu + trình bày lại:** cập nhật Business Overview / SRS / Use Case / ERD / slide theo tái định vị; slide bảo vệ 2: mở bằng bối cảnh + minh chứng B2 → 4 pha demo đơn giản trước → điểm smart → Q&A dự phòng.
 
 ### Backlog kỹ thuật
-- [ ] Spike map native `SqlVector<float>` thay raw SQL cho cột embedding (verify trên SQL Server 2025 thật) — 5.11.
 - [ ] Test cô lập tenant tự động (tạo dữ liệu A+B, khẳng định A không thấy B) — 5.2.
 - [ ] Cost Analysis: chi phí AI ≈ 0đ; chi phí biên thêm 1 tenant ≈ 0; trade-off RAM local LLM.
-- [ ] Deploy Local AI: embedding lên VPS/cloud; LLM chạy nền/batch, KHÔNG host 24/7.
+- [ ] Deploy Local AI: LLM chạy nền/theo lượt, KHÔNG host 24/7; cân nhắc giữ model nóng quanh giờ demo.
 
 ---
 
@@ -390,10 +395,10 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 
 Kiến trúc: React → .NET (orchestration) → Python AI Service (stateless) + SQL Server 2025. **.NET là "bộ não"; Python là "máy tính toán" không đụng DB, không biết tenant.**
 
-- **Local AI + Vector:** PoC end-to-end "text → embedding → vector". Bài học: chốt model multilingual (MiniLM 384 → BAAI/bge-m3 1024/8192 token); quy tắc re-embedding; dùng `127.0.0.1` thay `localhost` trên Windows.
+- **Gọi service AI cục bộ:** dùng `127.0.0.1` thay `localhost` trên Windows (tránh chờ phân giải IPv6); AI service chạy tiến trình riêng để lỗi/nặng bên đó không kéo sập API.
 - **PDF extract:** PdfPig ở .NET (tránh iText7 AGPL); bóc text theo `GetWords()` (tránh dính chữ ở CV 2 cột). File CV gốc lưu MinIO, DB chỉ giữ metadata + text. 3 loại PDF: có-text → extract · 2 cột → được (thứ tự lộn xộn) · scan → text quá ngắn → `parse_status=FAILED`, từ chối. Còn thiếu: duplicate detection (trùng email/SĐT).
 - **Local LLM ra JSON có schema:** Ollama (11434) + qwen2.5, Structured Output (JSON schema Pydantic, `temperature=0`), validate + retry 3, fallback nhập tay. **Pattern "LLM ra JSON có schema + validate + retry + DRAFT→duyệt" là thứ đang chạy cho bóc tiêu chí (5.18).** Demo có thể dùng model nhẹ (gemma3:4b) nếu cần tốc độ.
-- **Bóc tiêu chí:** đầu vào phải gồm cả phần yêu cầu + kỹ năng của job, không chỉ mô tả — nếu không LLM biến "mô tả công việc" thành tiêu chí đánh giá. Sửa nội dung tiêu chí → repo tự NULL embedding (quy tắc re-embedding).
+- **Bóc tiêu chí:** đầu vào phải gồm cả phần yêu cầu + kỹ năng của job, không chỉ mô tả — nếu không LLM biến "mô tả công việc" thành tiêu chí đánh giá. Đo thật cho thấy lỗi này chỉ còn xuất hiện ở tin có phần yêu cầu quá mỏng (§16.2).
 
 ---
 
@@ -419,7 +424,7 @@ Purpose `SCHEDULE`, riêng từng ứng viên nhưng trỏ về CÙNG pool. Toke
 ### 15.4 Trạng thái code (M9)
 - **ĐÃ CÓ:** mở pool (`POST /api/jobs/{jobId}/interview-pools`) · mời danh sách (`POST /api/interview-pools/{poolId}/invitations`) · xem pool + cờ · hủy pool · chốt lịch tay · trang ứng viên chọn/chốt/báo bận (`/api/candidate/schedule`) · chống trùng giờ · email + .ics khi CONFIRMED (best-effort) · guard "kéo trước mới mời được".
 - **Chưa/một phần:** reschedule = mở pool vòng mới (chưa có nút gộp) · real-time ẩn slot · ô ghi chú gợi ý giờ.
-- **Bảng (đều có `company_id`):** `InterviewSlotPool` (OPEN/CLOSED/CANCELLED — 1 pool = job + round) · `InterviewSlot` (OPEN/BOOKED/LOCKED — thuộc pool, có `booked_application_id`) · `InterviewSchedule` (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
+- **Bảng (đều có `company_id`):** `InterviewSlotPool` (OPEN/CLOSED/CANCELLED — 1 pool = job + round, kèm `name` = tên vòng, V041) · `InterviewSlot` (OPEN/BOOKED/LOCKED — thuộc pool, có `booked_application_id`) · `InterviewSchedule` (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
 
 ---
 
@@ -429,24 +434,28 @@ Nguồn: khung **Prompt → Test → Đánh giá → Báo cáo** — "prompt t�
 
 ### 16.1 Khung
 - **Prompt versioning:** đánh version từng prompt, mỗi lần chỉ đổi MỘT yếu tố.
-- **Dataset cố định:** bộ JD/CV test không đổi giữa các lần chạy, đa ngành.
-- **Đo 2 tầng:** tầng máy (khách quan — % JSON hợp lệ, % tiêu chí trùng JD gốc…) + tầng người (rubric 0-5) → pass-rate.
+- **Dataset cố định:** bộ JD test không đổi giữa các lần chạy, đa ngành.
+- **Đo 2 tầng:** tầng máy (khách quan — % JSON hợp lệ, % tiêu chí trùng JD gốc…) + tầng người (rubric) → precision / recall / F1.
 - **Kỷ luật ghi:** mỗi lần chạy lưu `{version, input, output, điểm, ghi chú}`. Chạy → ghi số → **rồi mới** viết báo cáo.
 
-### 16.2 Đã áp dụng: thực nghiệm chọn ngưỡng chấm CV → **kết quả bác bỏ chính tính năng**
-Số liệu thô: `ai-experiments/exp_criteria_threshold/` (`out/KET_QUA.md`, `pair_similarity.csv`, `threshold_sweep.csv`, `llm_judge.csv`).
+### 16.2 Đã áp dụng: đo chất lượng AI bóc tiêu chí (Việc B4 — xong 13/08/2026)
+Áp đúng khung 16.1 lên **tính năng duy nhất còn chạy**. Số liệu đầy đủ: `ai-experiments/exp_criteria_extract/out/KET_QUA.md`; cách gán nhãn: `RUBRIC.md` (ngưỡng lấy từ nguồn ngoài và chốt TRƯỚC khi đọc số).
 
-- Bộ 72 cặp (tiêu chí, đoạn CV) có nhãn; đo Precision / Recall / F1 theo từng ngưỡng.
-- Phân bố similarity của cặp **đạt** (TB 0.568) và cặp **không đạt** (TB 0.560) **chồng lên nhau**. Ngưỡng tốt nhất chỉ đạt accuracy **0.611** trên dữ liệu cân bằng (đoán bừa = 0.500); ngưỡng 0.6 từng để trong code đạt **0.458** — **tệ hơn đoán bừa**.
-- Nguyên nhân: `bge-m3` là model **truy hồi** — nó đo *cùng chủ đề*, không đo *có chứng minh được hay không*.
-- Đối chứng bằng Local LLM trên đúng bộ đó: accuracy **0.972**, precision **1.000**.
-- **Kết luận → hành động:** bỏ hẳn tính năng máy chấm CV khỏi scope (Section 3 OUT). Vector chỉ hợp việc *truy hồi bằng chứng*, không hợp việc *phán đạt/không*.
-- **Đây là điểm mạnh của bài, không phải điểm yếu:** nhóm đo trước khi tin, phát hiện thiết kế ban đầu sai, và bỏ tính năng dựa trên số liệu. Hạn chế của phép đo ghi rõ trong `KET_QUA.md` (dữ liệu tự soạn, một người gán nhãn).
+**Bộ test:** 10 tin tuyển dụng đa ngành (kế toán, kinh doanh, kho vận, CNTT, hành chính, lễ tân, marketing, vận tải, sản xuất), mỗi tin chạy 2 lượt. Trong đó 3 ca cố tình khó: tin chỉ có đầu việc (phải trả rỗng), tin toàn yêu cầu giấy tờ, tin 13 yêu cầu vượt trần 10.
 
-### 16.3 Sắp làm: đo chất lượng AI bóc tiêu chí (Việc B4)
-Áp đúng khung 16.1 lên tính năng **đang chạy** — bóc tiêu chí từ JD để dùng làm phiếu chấm phỏng vấn:
-- **Dataset:** bộ JD cố định đa ngành (không chỉ IT — khớp scope "tuyển mọi vị trí").
-- **Tầng máy:** % JSON hợp lệ ngay lần đầu (không cần retry) · số tiêu chí bóc ra / JD · % tiêu chí truy được về câu chữ trong JD gốc (chống bịa) · tỷ lệ trùng lặp/chồng nghĩa giữa các tiêu chí.
-- **Tầng người (rubric 0-5):** tiêu chí có đo được khi phỏng vấn không · có đúng thứ JD đòi không · có nhầm "mô tả công việc" thành "tiêu chí đánh giá" không (lỗi đã gặp thật) · trọng số hợp lý không.
-- **Prompt versioning:** baseline → thêm few-shot → thêm ràng buộc "chỉ lấy từ phần yêu cầu/kỹ năng" → self-critique; mỗi version chạy trên cùng bộ JD, cùng rubric.
-- **Đầu ra cho report:** bảng version × chỉ số + kết luận chọn prompt nào, đặt cạnh §16.2 thành một mạch "nhóm đo cả cái bỏ đi lẫn cái giữ lại".
+**Tầng máy — so 3 phiên bản prompt → giữ baseline:**
+
+| | tiêu chí | giấy tờ sót | ổn định | lượt hỏng |
+|---|---|---|---|---|
+| **baseline** (đang dùng) | 63 | 5 (7.9%) | **1.000** | 0/20 |
+| v2 — thêm 2 đoạn luật dài | 52 | 4 (7.7%) | 0.865 | 0/20 |
+| v3 — chỉ thêm ví dụ ngắn | 62 | 5 (8.1%) | **1.000** | 0/20 |
+
+Hai lần sửa prompt đều không cải thiện, v2 còn làm hỏng thêm (làm tin kho vận sập, làm model gộp ngược `"C# và ASP.NET Core"`, và bịa ra một tiêu chí từ dòng đầu việc). **Bài học: prompt dài thêm thì luật cũ loãng đi — thêm luật không miễn phí.**
+
+**Tầng người — chấm tay 63 tiêu chí theo 6 mã trong `RUBRIC.md`:**
+- **Precision 0.841 · Recall 0.914 · F1 0.876** (53 dòng dùng được / 63 đề xuất, 5 yêu cầu bị bỏ sót).
+- **`BIA` = 0** — không dòng nào AI tự nghĩ ra, mọi tiêu chí truy được về câu chữ trong tin. Đây là số đứng sau câu chốt bảo vệ ở §5.18 *"tiêu chí không do AI nghĩ ra"*.
+- Ba chỗ mất điểm đều **có địa chỉ cụ thể**, không phải nhiễu đều: (1) 5 dòng `GIAYTO` mà regex trong `metrics.py` khoanh trúng y hệt người chấm → **lọc được bằng luật trong .NET, precision lên 0.914 mà không đụng token nào**; (2) riêng tin tài xế trả rỗng dù có 3 yêu cầu chấm được → bỏ tin này ra thì recall 0.964; (3) riêng tin kho vận (phần yêu cầu mỏng) độn tiêu chí từ ô mô tả công việc → precision tin đó 0.333.
+
+**Hạn chế nói rõ:** tin tuyển dụng do người làm đề tài soạn, không phải tin thật · 10 tin là ít · **một người gán nhãn** (cũng là người viết prompt) · lật hết 8 dòng `PHÂN VÂN` sang lỗi thì precision còn 0.714 / F1 0.796 — biên độ đó chính là độ nhạy của phép đo với người chấm · số thời gian đo trên GPU, không phải CPU.

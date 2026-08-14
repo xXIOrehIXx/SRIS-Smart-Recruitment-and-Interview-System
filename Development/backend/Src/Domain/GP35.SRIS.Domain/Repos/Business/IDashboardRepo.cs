@@ -30,6 +30,24 @@ public record ActivityRow(long ApplicationId, string CandidateName, string Actio
     string? FromState, string? ToState, DateTime? CreatedAt);
 
 /// <summary>
+/// 1 hồ sơ bị từ chối gần đây, kèm lý do và VỊ TRÍ.
+/// <para>
+/// Vì sao là danh sách chứ không phải phân rã theo lý do: <c>reject_reason</c> là text tự do
+/// và không bắt buộc, nên gom nhóm gần như luôn ra mỗi hồ sơ một nhóm — một "tỉ lệ" chỉ là
+/// 1/N viết cách khác. Đúng bản chất dữ liệu thì đây là mấy dòng ghi chú rời, và thứ người
+/// đọc cần biết trước tiên là lý do đó thuộc ứng viên nào, vị trí nào.
+/// </para>
+/// </summary>
+/// <param name="RejectedFromState">
+/// Pha hồ sơ đang đứng NGAY TRƯỚC khi bị từ chối, lấy từ ActivityLog. Đây là nửa còn lại của
+/// câu chuyện: "rớt ở sàng lọc" và "rớt sau khi phỏng vấn" tốn của công ty những thứ rất khác
+/// nhau, mà bảng Application chỉ giữ trạng thái cuối nên tự nó không trả lời được.
+/// Null với hồ sơ cũ chưa có log tương ứng.
+/// </param>
+public record RejectionRow(long ApplicationId, string CandidateName, string JobTitle,
+    string? RejectReason, DateTime? RejectedAt, string? RejectedFromState);
+
+/// <summary>
 /// Truy vấn tổng hợp cho Dashboard/Analytics (docs 4, M7). Mọi truy vấn tự kèm company_id
 /// (Global Query Filter) — cô lập tenant. jobId null = toàn công ty; có giá trị = lọc theo 1 job.
 /// <para>
@@ -44,8 +62,16 @@ public interface IDashboardRepo
     /// <summary>Phễu tuyển dụng: số hồ sơ theo từng state.</summary>
     Task<IReadOnlyList<StateCount>> GetFunnelAsync(long companyId, long? jobId, long? departmentManagerId = null);
 
-    /// <summary>Phân rã lý do loại (chỉ hồ sơ REJECTED có reject_reason) — dashboard "tại sao rớt".</summary>
+    /// <summary>
+    /// Phân rã lý do loại (chỉ hồ sơ REJECTED có reject_reason).
+    /// CẢNH BÁO khi dùng: gom nhóm trên text tự do nên số nhóm gần bằng số hồ sơ — đừng vẽ
+    /// thành biểu đồ tỉ lệ. Muốn hiện "vì sao rớt" cho người đọc thì dùng
+    /// <see cref="GetRecentRejectionsAsync"/>, nó kèm ứng viên và vị trí.
+    /// </summary>
     Task<IReadOnlyList<LabelCount>> GetRejectReasonsAsync(long companyId, long? jobId, long? departmentManagerId = null);
+
+    /// <summary>Hồ sơ bị từ chối gần nhất kèm lý do + vị trí (mới nhất trước).</summary>
+    Task<IReadOnlyList<RejectionRow>> GetRecentRejectionsAsync(long companyId, long? jobId, int take, long? departmentManagerId = null);
 
     /// <summary>Phân rã nguồn ứng viên (Candidate.source).</summary>
     Task<IReadOnlyList<LabelCount>> GetSourceBreakdownAsync(long companyId, long? jobId, long? departmentManagerId = null);
@@ -68,6 +94,11 @@ public interface IDashboardRepo
     /// <summary>Tiến độ theo phòng ban: số hồ sơ HIRED / tổng hồ sơ của các job trong phòng ban.</summary>
     Task<IReadOnlyList<DepartmentCount>> GetDepartmentProgressAsync(long companyId, long? departmentManagerId = null);
 
-    /// <summary>Hoạt động gần đây (ActivityLog mới nhất trước), giới hạn theo phạm vi DM nếu có.</summary>
-    Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, int take, long? departmentManagerId = null);
+    /// <summary>
+    /// Hoạt động gần đây (ActivityLog mới nhất trước), giới hạn theo phạm vi DM nếu có.
+    /// jobId null = toàn công ty — nhận jobId để khối này cùng phạm vi với phần còn lại của
+    /// overview; lệch phạm vi thì người dùng lọc theo một vị trí mà vẫn thấy hoạt động của
+    /// vị trí khác nằm cạnh số liệu đã lọc.
+    /// </summary>
+    Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, long? jobId, int take, long? departmentManagerId = null);
 }

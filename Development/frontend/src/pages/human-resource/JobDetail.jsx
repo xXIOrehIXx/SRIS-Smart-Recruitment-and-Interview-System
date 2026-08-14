@@ -171,7 +171,7 @@ const JobDetail = () => {
       render: (_, record) => (
         <Space size={4}>
           <Button size="small" onClick={() => navigate(`/human-resource/candidates/${record.id}`)}>Xem</Button>
-          <Button size="small" type="primary" onClick={() => navigate('/interviews/schedule')}>Lịch</Button>
+          <Button size="small" type="primary" onClick={() => navigate(`/interviews/schedule?jobId=${jobId}`)}>Lịch</Button>
           {record.state !== 'REJECTED' && record.state !== 'HIRED' && (
             <Button
               size="small"
@@ -351,7 +351,7 @@ const JobDetail = () => {
                 type="primary" 
                 icon={<UserAddOutlined />} 
                 block
-                onClick={() => navigate('/interviews/schedule')}
+                onClick={() => navigate(`/interviews/schedule?jobId=${jobId}`)}
                 className="primary-action"
               >
                 Lên Lịch Phỏng Vấn

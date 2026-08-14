@@ -162,6 +162,7 @@ const SubAccountManagement = () => {
     } catch (error) {
       console.error("Error updating account:", error);
       const msg =
+        error.response?.data?.userMsg ||
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Không thể cập nhật tài khoản";
@@ -186,6 +187,7 @@ const SubAccountManagement = () => {
     } catch (error) {
       console.error("Error deleting account:", error);
       const msg =
+        error.response?.data?.userMsg ||
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Không thể xóa tài khoản";
@@ -212,6 +214,7 @@ const SubAccountManagement = () => {
     } catch (error) {
       console.error("Error resetting password:", error);
       const msg =
+        error.response?.data?.userMsg ||
         error.response?.data?.message ||
         error.response?.data?.error ||
         "Không thể đặt lại mật khẩu";

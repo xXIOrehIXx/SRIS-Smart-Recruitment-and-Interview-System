@@ -59,9 +59,8 @@ phù hợp với Luật Bảo vệ dữ liệu cá nhân có hiệu lực từ 0
 |---|---|
 | **Career Site công khai** | Trang tuyển dụng riêng theo thương hiệu từng công ty (`/api/public/{slug}`), ứng viên nộp CV một trang, không cần tài khoản |
 | **Pipeline Kanban** | Hồ sơ chạy qua 4 pha hiển thị, được bảo vệ bởi state machine 6 trạng thái / 8 transition ở tầng nội bộ (forward-only) |
-| **AI bóc tiêu chí** | LLM cục bộ đọc JD → sinh danh sách tiêu chí **nháp** (HARD/SOFT + từ khóa + trọng số) → **người duyệt chốt**. AI không tự quyết tiêu chí |
-| **Chấm CV theo từng tiêu chí** | Không ném cả JD↔CV lấy một con số vô hồn: CV được chia chunk, embed vector, đối chiếu **từng tiêu chí** → khớp/thiếu **kèm câu trích dẫn làm bằng chứng** |
-| **Talent Pool (hero feature)** | Mở job mới → hệ thống quét ngược kho CV cũ *của chính công ty* bằng vector similarity. CV rớt job trước không chết, sống lại cho job sau |
+| **AI đề xuất tiêu chí** | LLM cục bộ đọc JD → sinh danh sách tiêu chí **nháp** (tên + trọng số) → **người duyệt chốt**. AI không tự quyết tiêu chí. Bộ tiêu chí đã chốt trở thành phiếu chấm phỏng vấn |
+| **Nhận & lưu hồ sơ** | Ứng viên nộp CV qua Career Site → bóc text từ PDF, lưu file gốc vào MinIO. Hệ thống **không** chấm điểm hay xếp hạng — sàng lọc là việc của người tuyển dụng |
 | **Đặt lịch phỏng vấn kiểu Calendly** | Recruiter mở **một bộ khung giờ dùng chung** (gán panel interviewer) → mời hàng loạt → ứng viên tự chọn, ai chốt trước lấy trước → email xác nhận kèm file `.ics` |
 | **Chấm phỏng vấn cộng tác** | Phiếu chấm theo đúng bộ tiêu chí đã chốt, tự lưu nháp; job có > 1 người chấm → **tự bật Blind Review**; nộp xong tổng hợp radar chart + gắn cờ tiêu chí bị lệch điểm nhiều |
 | **Offer & phản hồi ứng viên** | Gửi offer → ứng viên bấm nhận/từ chối qua magic link → tự động chuyển HIRED / REJECTED |
@@ -81,17 +80,16 @@ flowchart LR
         API["Controllers"]
         APP["Application Services"]
         DOM["Domain + EF Core"]
-        WRK["Background Workers<br/>CvScoring · JobExpiry"]
+        WRK["Background Workers<br/>CriteriaExtraction · JobExpiry"]
         API --> APP --> DOM
         APP --> WRK
     end
 
     subgraph AI["Python FastAPI — :8000"]
-        EMB["/embed — bge-m3"]
         EXT["/extract-criteria — qwen2.5"]
     end
 
-    DB[("SQL Server 2025<br/>VECTOR(1024) + RLS")]
+    DB[("SQL Server 2025<br/>Row-Level Security")]
     S3[("MinIO<br/>CV gốc")]
     SMTP["SMTP<br/>Email ứng viên"]
     OLL["Ollama<br/>Local LLM"]
@@ -109,7 +107,7 @@ flowchart LR
 - **Clean layering:** `Domain` không phụ thuộc `Application` hay hạ tầng; Web Host chỉ phụ thuộc `HostBase`.
 - **.NET không gọi AI trực tiếp** — mọi tác vụ AI đi qua HTTP nội bộ tới Python service.
 - **Python service stateless:** không chạm database, không biết tenant. Toàn bộ điều phối và ghi dữ liệu do .NET đảm nhiệm.
-- **Chấm CV bất đồng bộ:** nộp CV trả về ngay trạng thái `PENDING`, worker nền chấm sau; khi khởi động, hệ thống tự quét lại các CV chưa chấm.
+- **Bóc tiêu chí chạy nền:** bấm bóc tiêu chí chỉ xếp hàng rồi trả `202`; worker nền gọi AI và ghi kết quả, frontend hỏi trạng thái tới khi xong. LLM cục bộ mất hàng chục giây nên gọi đồng bộ sẽ bị timeout cắt ngang.
 
 ## 🛠 Công nghệ sử dụng
 
@@ -117,8 +115,8 @@ flowchart LR
 |---|---|
 | **Backend** | ASP.NET Core 10 · EF Core 10 · AutoMapper · Serilog · Swashbuckle (Swagger) |
 | **Frontend** | React 18 · Vite 8 · Ant Design 5 · TailwindCSS 4 · React Router 6 · Recharts |
-| **AI Service** | Python · FastAPI · Ollama (`bge-m3` embedding 1024 chiều · `qwen2.5` bóc tiêu chí) |
-| **Database** | SQL Server 2025 (compatibility level 170, kiểu `VECTOR(1024)`, Row-Level Security) |
+| **AI Service** | Python · FastAPI · Ollama (`qwen2.5` bóc tiêu chí, JSON schema + `temperature=0`) |
+| **Database** | SQL Server 2025 (compatibility level 170, Row-Level Security) |
 | **Lưu trữ file** | MinIO (S3-compatible) — lưu CV gốc |
 | **Migration** | DbUp — migration có version, kiểu Flyway, thuần .NET |
 | **Kiểm thử** | xUnit (backend) · Vitest + Testing Library (frontend) |
@@ -135,7 +133,7 @@ SRIS-Smart-Recruitment-and-Interview-System/
 │   │   │   ├── Domain/               # Entities · Shared (enum, exception) · SqlServer (repo, UoW)
 │   │   │   └── Library/              # Lib (email, HTTP client) · Cache · Storage · Storage.Minio
 │   │   ├── Tests/                    # Unit test (xUnit)
-│   │   ├── ai-service/               # Python FastAPI — embedding + bóc tiêu chí
+│   │   ├── ai-service/               # Python FastAPI — bóc tiêu chí từ JD
 │   │   ├── ai-experiments/           # Thí nghiệm đánh giá AI (KHÔNG chạy trong sản phẩm)
 │   │   ├── tools/
 │   │   │   ├── GP35.SRIS.DbMigrator/ # Migration DbUp (Scripts/V0xx__*.sql)
@@ -155,9 +153,9 @@ SRIS-Smart-Recruitment-and-Interview-System/
 |---|---|---|
 | .NET SDK | 10.0+ | Bắt buộc |
 | Node.js | 20+ | Bắt buộc |
-| SQL Server | 2025 (compat 170) | Bắt buộc — cần kiểu `VECTOR` |
+| SQL Server | 2025 (compat 170) | Bắt buộc |
 | Python | 3.10+ | Cho AI service |
-| Ollama | mới nhất | `ollama pull bge-m3` + `ollama pull qwen2.5` |
+| Ollama | mới nhất | `ollama pull qwen2.5` |
 | MinIO | — | `tools/run_minio.ps1` tự tải về |
 
 ### 1. Clone & cấu hình
@@ -282,7 +280,7 @@ Người dùng chỉ nhìn thấy **4 pha**: *Hồ sơ mới* · *Sàng lọc* �
 Sáu trạng thái là chuyện nội bộ. Pipeline **chỉ tiến, không lùi**; có thể loại ở bất kỳ pha nào.
 Phỏng vấn nhiều vòng là **dữ liệu** (`InterviewSchedule.RoundNumber`) chứ không sinh thêm trạng thái.
 
-### Trục tiêu chí — xuyên suốt từ lọc CV tới phỏng vấn
+### Trục tiêu chí — từ tin tuyển dụng tới phiếu chấm phỏng vấn
 
 ```
 DM tạo Yêu cầu tuyển dụng (tùy chọn)
@@ -290,13 +288,14 @@ DM tạo Yêu cầu tuyển dụng (tùy chọn)
 Recruiter tạo Tin tuyển dụng
         ↓
 AI bóc tiêu chí → DRAFT ──→ người duyệt chỉnh & chốt (APPROVED)
-        ↓                              ↓
-Chấm CV theo TỪNG tiêu chí       Phiếu chấm phỏng vấn
-(khớp/thiếu + câu bằng chứng)    (cùng bộ tiêu chí)
+                                       ↓
+                            Phiếu chấm phỏng vấn
+                        (cả hội đồng chấm cùng bộ tiêu chí)
 ```
 
-Cùng một bộ tiêu chí được dùng cho cả chấm CV lẫn chấm phỏng vấn — nhà tuyển dụng luôn
-so sánh ứng viên trên cùng một hệ quy chiếu, và mọi điểm số đều truy ngược được về bằng chứng.
+Mọi người phỏng vấn chấm trên **cùng một bộ tiêu chí**, thay vì mỗi người hỏi một kiểu rồi
+so sánh bằng trí nhớ. Tiêu chí không do AI nghĩ ra — nó nằm sẵn trong tin tuyển dụng do người
+có chuyên môn viết; AI chỉ bóc thành danh sách cho người duyệt.
 
 ## 🔐 Bảo mật & Cô lập dữ liệu
 
@@ -324,7 +323,7 @@ npm test
 ```
 
 Phạm vi test hiện có: state machine chuyển trạng thái, mã hóa/giải mã magic link token,
-xác thực & phân quyền, chia chunk CV, đối chiếu tiêu chí HARD.
+xác thực & phân quyền, bóc/duyệt tiêu chí, phiếu chấm phỏng vấn.
 
 ## 📚 Tài liệu
 
@@ -344,9 +343,10 @@ xác thực & phân quyền, chia chunk CV, đối chiếu tiêu chí HARD.
 ### Phương pháp đánh giá AI
 
 Nhóm áp dụng khung **Prompt → Test → Đánh giá → Báo cáo**: bộ dữ liệu test cố định,
-mỗi lần cải tiến chỉ đổi *một* yếu tố, đo hai tầng (chỉ số máy chấm + rubric người chấm 0–5).
-Kết quả và các bài học — bao gồm cả thí nghiệm **bác bỏ** cách chấm thuần ngưỡng similarity —
-được lưu đầy đủ trong `ai-experiments/` như bằng chứng cho kỷ luật đo lường.
+mỗi lần cải tiến chỉ đổi *một* yếu tố, đo hai tầng (chỉ số máy chấm + rubric người chấm).
+Đã áp dụng lên tính năng AI đề xuất tiêu chí — **Precision 0.841 · Recall 0.914 · F1 0.876**
+trên bộ 10 tin tuyển dụng đa ngành, không tiêu chí nào AI tự bịa. Số liệu, cách gán nhãn và
+hạn chế của phép đo nằm đầy đủ trong `ai-experiments/`.
 
 ## 👥 Nhóm thực hiện
 
@@ -355,7 +355,7 @@ Kết quả và các bài học — bao gồm cả thí nghiệm **bác bỏ** c
 | Thành viên | Vai trò | Phụ trách chính |
 |---|---|---|
 | **Vũ Gia Khánh** | BA/PM kiêm Backend Lead | Kiến trúc hệ thống, Auth & phân quyền, State Machine, magic link, AI service, đối chiếu theo tiêu chí, tài liệu |
-| **San** | Backend — Nền tảng dữ liệu & Hạ tầng | CSDL & migration, Multi-tenant/RLS, lưu trữ tệp, xử lý PDF & vector, Talent Pool, pool khung giờ, triển khai |
+| **San** | Backend — Nền tảng dữ liệu & Hạ tầng | CSDL & migration, Multi-tenant/RLS, lưu trữ tệp, xử lý PDF, pool khung giờ, triển khai |
 | **Huy Minh** | Backend — Nghiệp vụ & Tích hợp | Job & Yêu cầu tuyển dụng, quản lý người dùng & phòng ban, email automation, Dashboard & Analytics |
 | **Tùng Anh** | Frontend — Candidate Portal & Phỏng vấn | Career Site, form nộp CV, các trang magic link, phiếu chấm phỏng vấn |
 | **Hùng Anh** | Frontend — Employer Portal & Trực quan hóa | Kanban, quản lý tin tuyển dụng, duyệt tiêu chí, dashboard biểu đồ, brand theming |

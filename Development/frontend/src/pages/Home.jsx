@@ -11,13 +11,20 @@ import {
   Card,
   Avatar,
   Tag,
-  Statistic,
+  Progress,
 } from "antd";
 import {
   UserOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
-  ArrowUpOutlined,
+  RobotOutlined,
+  ThunderboltOutlined,
+  SolutionOutlined,
+  FormOutlined,
+  StarFilled,
+  AimOutlined,
+  CheckOutlined,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import "./Home.css";
 
@@ -26,13 +33,33 @@ const { Title, Paragraph, Text } = Typography;
 
 const Home = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user, getDashboardRoute } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
 
-  const stats = [
-    { title: "Total Jobs", value: 24, suffix: "+", trend: "+12%" },
-    { title: "Active Candidates", value: 156, suffix: "", trend: "+8%" },
-    { title: "Interviews Scheduled", value: 45, suffix: "", trend: "+15%" },
-    { title: "Offers Sent", value: 12, suffix: "", trend: "+5%" },
+  const workflowSteps = [
+    {
+      step: "01",
+      icon: <FormOutlined />,
+      title: "Tạo chiến dịch",
+      desc: "Thiết lập mô tả công việc, tiêu chí đánh giá và xuất bản bài đăng nhanh chóng.",
+    },
+    {
+      step: "02",
+      icon: <RobotOutlined />,
+      title: "Tạo tiêu chí chấm điểm",
+      desc: "AI tự động phân tích yêu cầu công việc và tạo tiêu chí chấm điểm từ nó.",
+    },
+    {
+      step: "03",
+      icon: <CalendarOutlined />,
+      title: "Lên lịch phỏng vấn",
+      desc: "Tự động gửi email mời phỏng vấn, đồng bộ calendar cho người phỏng vấn.",
+    },
+    {
+      step: "04",
+      icon: <SolutionOutlined />,
+      title: "Đánh giá & Offer",
+      desc: "Tổng hợp Scorecard, so sánh kết quả và gửi thư mời nhận việc tức thì.",
+    },
   ];
 
   return (
@@ -63,27 +90,35 @@ const Home = () => {
           </svg>
           <h2>SRIS</h2>
         </div>
+
+        <nav className="nav-links">
+          <a href="#features">Tính năng</a>
+          <a href="#ai-copilot">AI Bóc tách tiêu chí</a>
+          <a href="#workflow">Quy trình</a>
+        </nav>
+
         <div className="header-actions">
           {isAuthenticated ? (
             <Space size="middle">
               <Text strong>{user?.fullName || user?.email}</Text>
               <Button
-                type="primary"
-                shape="round"
-                className="dashboard-btn"
-                onClick={() => navigate(getDashboardRoute())}
+                type="text"
+                className="login-btn"
+                onClick={logout}
               >
-                Go to Dashboard
+                Log out
               </Button>
             </Space>
           ) : (
-            <Button
-              type="text"
-              className="login-btn"
-              onClick={() => navigate("/login")}
-            >
-              Log in
-            </Button>
+            <Space size="middle">
+              <Button
+                type="text"
+                className="login-btn"
+                onClick={() => navigate("/login")}
+              >
+                Log in
+              </Button>
+            </Space>
           )}
         </div>
       </Header>
@@ -110,22 +145,6 @@ const Home = () => {
               Hệ thống quản lý tuyển dụng và phỏng vấn thông minh. Thu hút, quản
               lý và tuyển dụng những ứng viên tốt nhất một cách dễ dàng.
             </Paragraph>
-            <div className="hero-stats">
-              <div className="stat-item">
-                <span className="stat-value">500+</span>
-                <span className="stat-label">Companies</span>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <span className="stat-value">10K+</span>
-                <span className="stat-label">Candidates</span>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <span className="stat-value">98%</span>
-                <span className="stat-label">Satisfaction</span>
-              </div>
-            </div>
           </Col>
 
           {/* Cột phải: Mockup bảng ứng viên (Kanban Pipeline) */}
@@ -240,32 +259,8 @@ const Home = () => {
         </Row>
       </Content>
 
-      {/* STATS SECTION */}
-      <section className="stats-section">
-        <Row gutter={[32, 24]} justify="center">
-          {stats.map((stat, index) => (
-            <Col xs={12} sm={12} md={6} key={index}>
-              <Card className="stat-card" bordered={false}>
-                <Statistic
-                  title={stat.title}
-                  value={stat.value}
-                  suffix={stat.suffix}
-                  valueStyle={{ color: "#5D8C3E", fontWeight: 700 }}
-                />
-                <div className="stat-trend">
-                  <ArrowUpOutlined
-                    style={{ color: "#52c41a", marginRight: 4 }}
-                  />
-                  <span>{stat.trend} this month</span>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </section>
-
       {/* FEATURES SECTION */}
-      <section className="features-section">
+      <section className="features-section" id="features">
         <div className="section-header">
           <Title level={2} className="section-title">
             Why choose SRIS?
@@ -312,6 +307,231 @@ const Home = () => {
             </Card>
           </Col>
         </Row>
+      </section>
+
+      {/* SECTION 1: AI BÓC TÁCH TIÊU CHÍ */}
+      <section className="ai-section" id="ai-copilot">
+        <div className="section-container">
+          <Row align="middle" gutter={[48, 48]}>
+            {/* Cột trái: Card mô phỏng UI Dashboard AI */}
+            <Col xs={24} lg={12}>
+              <Card className="ai-preview-card" bordered={false}>
+                <div className="ai-badge-header">
+                  <div className="ai-title-group">
+                    <div className="ai-icon-wrapper">
+                      <RobotOutlined />
+                    </div>
+                    <div className="ai-header-text-group">
+                      <Text strong className="ai-header-text">
+                        SRIS AI - Matrix Evaluation
+                      </Text>
+                      <Text type="secondary" className="ai-header-sub">
+                        Tự động phân tích & Bóc tách JD
+                      </Text>
+                    </div>
+                  </div>
+                  <Tag color="green" className="ai-status-pill">
+                    Live Screening
+                  </Tag>
+                </div>
+
+                {/* Bảng ma trận tiêu chí */}
+                <div className="criteria-matrix">
+                  <div className="criteria-row">
+                    <div className="criteria-info">
+                      <span className="criteria-name">
+                        <AimOutlined className="icon-tech" />
+                        Chuyên môn React / Frontend
+                      </span>
+                      <span className="criteria-weight">Trọng số: 35%</span>
+                    </div>
+                    <div className="criteria-progress">
+                      <Progress
+                        percent={92}
+                        strokeColor={{ "0%": "#7BA55C", "100%": "#5D8C3E" }}
+                        format={(percent) => (
+                          <span className="score-badge">{percent}/100</span>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="criteria-row">
+                    <div className="criteria-info">
+                      <span className="criteria-name">
+                        <ThunderboltOutlined className="icon-arch" />
+                        Kinh nghiệm dự án & Kiến trúc
+                      </span>
+                      <span className="criteria-weight">Trọng số: 30%</span>
+                    </div>
+                    <div className="criteria-progress">
+                      <Progress
+                        percent={85}
+                        strokeColor={{ "0%": "#7BA55C", "100%": "#5D8C3E" }}
+                        format={(percent) => (
+                          <span className="score-badge">{percent}/100</span>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="criteria-row">
+                    <div className="criteria-info">
+                      <span className="criteria-name">
+                        <SafetyCertificateOutlined className="icon-soft" />
+                        Ngoại ngữ & Soft Skills
+                      </span>
+                      <span className="criteria-weight">Trọng số: 20%</span>
+                    </div>
+                    <div className="criteria-progress">
+                      <Progress
+                        percent={80}
+                        strokeColor={{ "0%": "#7BA55C", "100%": "#5D8C3E" }}
+                        format={(percent) => (
+                          <span className="score-badge">{percent}/100</span>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thẻ tổng hợp điểm */}
+                <div className="ai-scorecard-summary">
+                  <div className="scorecard-total">
+                    <span className="total-label">ĐIỂM PHÙ HỢP TỔNG THỂ</span>
+                    <div className="total-val-wrapper">
+                      <span className="total-val">87.5</span>
+                      <span className="total-max">/ 100</span>
+                    </div>
+                  </div>
+                  <div className="scorecard-tags">
+                    <Tag icon={<CheckOutlined />} className="tag-pass">
+                      Đạt ngưỡng phỏng vấn
+                    </Tag>
+                    <Tag icon={<StarFilled />} className="tag-fit">
+                      High Fit
+                    </Tag>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+
+            {/* Cột phải: Nội dung giải thích */}
+            <Col xs={24} lg={12}>
+              <div className="ai-text-content">
+                <div className="sub-tag-pill">
+                  <ThunderboltOutlined /> AI CRITERIA EXTRACTION
+                </div>
+                <Title level={2} className="ai-title">
+                  Tự động chấm điểm ứng viên theo tiêu chí có sẵn
+                </Title>
+                <Paragraph className="ai-description">
+                  Chỉ cần tải bài đăng tuyển dụng (JD) lên, AI sẽ tự động đọc và
+                  tạo ra một "thước đo" chi tiết. Điều này giúp mọi ứng viên được
+                  đánh giá công bằng, chính xác và không bị phụ thuộc vào cảm
+                  tính cá nhân của người chấm.
+                </Paragraph>
+                <div className="ai-feature-list">
+                  <div className="ai-feature-item">
+                    <div className="check-bullet">
+                      <CheckOutlined />
+                    </div>
+                    <div>
+                      <strong>Tự động rút ra các yêu cầu quan trọng</strong>
+                      <p>
+                        AI sẽ tự tìm và gom nhóm các yêu cầu trong bài tuyển dụng
+                        thành: Kỹ năng chuyên môn, Kỹ năng mềm và Số năm kinh
+                        nghiệm cần thiết.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="ai-feature-item">
+                    <div className="check-bullet">
+                      <CheckOutlined />
+                    </div>
+                    <div>
+                      <strong>Tính điểm tự động trước khi phỏng vấn</strong>
+                      <p>
+                        Mỗi yêu cầu sẽ có mức độ quan trọng riêng. AI sẽ dựa vào đó
+                        để tự động tính ra điểm số phù hợp của từng ứng viên, giúp
+                        bạn biết ngay ai là người tiềm năng nhất để mời phỏng vấn.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </div>
+      </section>
+
+      {/* SECTION 2: QUY TRÌNH TUYỂN DỤNG (BỌC CARD) */}
+      <section className="workflow-section" id="workflow">
+        <div className="section-container">
+          <div className="section-header">
+            <span className="sub-tag-pill">HOW IT WORKS</span>
+            <Title level={2} className="section-title">
+              Quy trình tuyển dụng tối ưu
+            </Title>
+            <Paragraph className="section-subtitle">
+              4 bước đơn giản giúp doanh nghiệp chuẩn hóa và tăng tốc tuyển dụng
+            </Paragraph>
+          </div>
+
+          <Row gutter={[24, 24]}>
+            {workflowSteps.map((item, index) => (
+              <Col xs={24} sm={12} lg={6} key={index}>
+                <Card className="workflow-card" bordered={false}>
+                  <div className="step-number">{item.step}</div>
+                  <div className="workflow-icon">{item.icon}</div>
+                  <Title level={4} className="workflow-card-title">
+                    {item.title}
+                  </Title>
+                  <Paragraph className="workflow-card-desc">
+                    {item.desc}
+                  </Paragraph>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </div>
+      </section>
+
+      {/* SECTION 3: CTA BANNER (ĐƯA VÀO GIỮA) */}
+      <section className="cta-section">
+        <div className="section-container">
+          <div className="cta-container">
+            <Title
+              level={2}
+              style={{
+                color: "#ffffff",
+                marginBottom: "16px",
+                fontSize: "32px",
+              }}
+            >
+              Sẵn sàng nâng tầm quy trình tuyển dụng của bạn?
+            </Title>
+            <Paragraph
+              style={{
+                color: "rgba(255,255,255,0.85)",
+                fontSize: "16px",
+                marginBottom: "32px",
+                maxWidth: "600px",
+                margin: "0 auto 32px",
+              }}
+            >
+              Trải nghiệm ngay giải pháp quản trị phỏng vấn và tuyển dụng thông
+              minh SRIS hoàn toàn miễn phí.
+            </Paragraph>
+            <Button
+              size="large"
+              className="cta-btn"
+              onClick={() => navigate("/login")}
+            >
+              Bắt đầu ngay
+            </Button>
+          </div>
+        </div>
       </section>
 
       {/* FOOTER */}

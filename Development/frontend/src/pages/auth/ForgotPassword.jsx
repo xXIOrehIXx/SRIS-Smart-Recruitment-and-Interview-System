@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Form, Input, Button, Alert, Result } from "antd";
-import { MailOutlined } from "@ant-design/icons";
+import { MailOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { authAPI } from "../../services/api";
 import "./css/Auth.css";
 
@@ -18,6 +18,7 @@ import "./css/Auth.css";
  * cố tình nói "nếu email tồn tại" thay vì khẳng định đã gửi.
  */
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -95,6 +96,12 @@ const ForgotPassword = () => {
 
   return (
     <div className="auth-page forgot-password-page">
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => navigate('/')}
+        className="back-btn"
+      />
       <div className="auth-header">
         <h2>Quên mật khẩu</h2>
         <p>Nhập email tài khoản — chúng tôi sẽ gửi liên kết đặt lại mật khẩu.</p>

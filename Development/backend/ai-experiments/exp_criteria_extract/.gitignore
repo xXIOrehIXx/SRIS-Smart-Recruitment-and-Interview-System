@@ -1,1 +1,8 @@
 __pycache__/
+
+# .gitignore gốc có luật "out" (nhắm vào thư mục build), luật đó nuốt luôn out/ của
+# thí nghiệm này. Nhưng out/ ở đây KHÔNG phải build output — nó là SỐ LIỆU ĐO, tức là
+# bằng chứng cho phần đánh giá AI trong báo cáo. Mất nó thì các con số trích vào báo
+# cáo không còn chỗ đối chiếu. Gỡ ngoại lệ cho đúng thư mục này.
+!out/
+!out/**

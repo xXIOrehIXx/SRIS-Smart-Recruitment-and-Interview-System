@@ -66,9 +66,8 @@ src/
     ├── recruiter/      # Kanban, quản lý tin tuyển dụng, chi tiết ứng viên, đặt lịch
     ├── dept-manager/   # Yêu cầu tuyển dụng, quyết định tuyển dụng
     ├── interviewer/    # Buổi phỏng vấn, phiếu chấm, lịch sử chấm
-    ├── criteria/       # Duyệt & chỉnh bộ tiêu chí đánh giá
-    ├── talent-pool/    # Gợi ý ứng viên từ kho CV cũ
-    ├── analytics/      # Dashboard, kết quả chấm CV theo tiêu chí
+    ├── criteria/       # Gọi AI đề xuất tiêu chí + duyệt & chỉnh bộ tiêu chí
+    ├── analytics/      # Dashboard & biểu đồ tuyển dụng
     ├── offer/          # Quản lý thư mời làm việc
     ├── company/        # Thương hiệu công ty (logo, màu, giới thiệu)
     ├── mail-templates/ # Mẫu email tự động
