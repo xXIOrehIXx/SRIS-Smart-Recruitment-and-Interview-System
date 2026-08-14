@@ -66,10 +66,10 @@ V4 **không được chép lại** trong thư mục này — nó `import` thẳn
 
 | Ver | Tiêu chí | JSON hợp lệ | Giấy tờ | Gộp kỹ năng | Vượt trần | Ổn định | Giây/tin |
 |---|---|---|---|---|---|---|---|
-| V1 | 81 | 100% | 11,1% | 30,9% | **3** | 0,983 | 3,3 |
-| V2 | 79 | 100% | 8,9% | 34,2% | 0 | **1,000** | 2,5 |
-| V3 | 60 | 100% | 8,3% | 35,0% | 0 | 0,974 | 2,1 |
-| **V4** | 65 | 100% | **7,7%** | **27,7%** | 0 | 0,996 | 2,1 |
+| V1 | 80 | 100% | 8,8% | 33,8% | **3** | 0,983 | 3,5 |
+| V2 | 80 | 100% | **5,0%** | 35,0% | 0 | **1,000** | 2,5 |
+| V3 | 67 | 100% | 9,0% | 35,8% | 0 | 0,974 | 2,3 |
+| **V4** | 72 | 100% | 8,3% | **29,2%** | 0 | 0,996 | 2,3 |
 
 **V4 là bản tốt nhất** — bản duy nhất vừa lọc được tiêu chí rác vừa không cắt quá tay.
 
@@ -81,7 +81,7 @@ Ba điều rút ra (chi tiết + ví dụ thật ở `exp_criteria_extract/out/K
 - **Luật nghiệp vụ làm model biết im lặng.** Ca đối chứng `J09` (tin chỉ có đầu việc):
   không luật → **7 tiêu chí rác**, có luật → **0** ✅. Đây là so sánh trực quan nhất của cả bộ.
 - **Ví dụ dạy được thứ luật suông không dạy nổi.** Luật "mỗi tiêu chí một kỹ năng" không làm
-  giảm tỉ lệ gộp (34,2% → 35,0%, đứng yên); phải có ví dụ mới xuống 27,7%.
+  giảm tỉ lệ gộp (35,0% → 35,8%, nhích lên chứ không giảm); phải có ví dụ mới xuống 29,2%.
 
 ### 3.2 Tầng người — chấm tay prompt production (đo 12–13/08/2026)
 
@@ -91,7 +91,18 @@ Ba điều rút ra (chi tiết + ví dụ thật ở `exp_criteria_extract/out/K
 > Lượt chấm tay này chạy trên **cùng prompt production (= V4)** nhưng ở một lượt gọi model
 > khác lượt 14/08 (63 vs 65 tiêu chí — `temperature=0` giảm ngẫu nhiên chứ không xoá hẳn).
 > Dữ liệu nhãn thô nằm trong git history trước commit `4523d47`.
-> **Bốn phiên bản của lượt 14/08 CHƯA được chấm tay** — xem mục 5.
+
+### 3.3 Tầng người — chấm tay cả 4 bậc ablation (đo 14/08/2026)
+
+299 tiêu chí của cả 4 bậc đã gán nhãn. Đây là bộ số để trích vào báo cáo:
+
+| | V1 | V2 | V3 | **V4** |
+|---|---|---|---|---|
+| Precision | 0.588 | 0.637 | 0.791 | **0.833** |
+| Recall | 0.979 | 0.981 | 0.914 | **0.938** |
+| F1 | 0.734 | 0.773 | 0.848 | **0.882** |
+
+Chi tiết + cách đọc: `out/KET_QUA.md` mục 3. Bảng gộp cả hai tầng: `out/KET_QUA_TONG_HOP.xlsx`.
 
 ---
 
@@ -104,13 +115,13 @@ Cần **Ollama đang chạy** và đã `ollama pull qwen2.5`. Dùng Python trong
 cd Development\backend\ai-experiments\exp_criteria_extract
 
 # Chạy cả 4 phiên bản, mỗi tin 2 lượt  (~80 lượt gọi model)
-..\..\ai-service\.venv\Scripts\python.exe run.py --all --repeat 2
+..\..\ai-service\.venv\Scripts\python.exe 1_chay_model_va_may_cham.py --all --repeat 2
 
 # Chạy lại một phiên bản
-..\..\ai-service\.venv\Scripts\python.exe run.py --version v4 --repeat 2
+..\..\ai-service\.venv\Scripts\python.exe 1_chay_model_va_may_cham.py --version v4 --repeat 2
 
 # Thêm phép đo mới -> tính lại từ dữ liệu cũ, KHÔNG gọi model
-..\..\ai-service\.venv\Scripts\python.exe run.py --all --recompute
+..\..\ai-service\.venv\Scripts\python.exe 1_chay_model_va_may_cham.py --all --recompute
 ```
 
 > Lượt gọi **đầu tiên** chậm hơn hẳn vì Ollama phải nạp model vào bộ nhớ. Đừng lấy con số
@@ -120,10 +131,11 @@ cd Development\backend\ai-experiments\exp_criteria_extract
 
 ## 5. Cách chấm tay (tầng người)
 
-Mỗi phiên bản có một thư mục `out/<ver>/`. Làm 3 bước:
+Mỗi phiên bản có một thư mục `out/<ver>/`. **Cả 4 bậc đã chấm xong 14/08/2026** — phần dưới
+là cách chấm lại hoặc sửa nhãn.
 
-**Bước 1 — điền `labels.csv`.** Mỗi dòng là một tiêu chí AI đề xuất. Cột `nhan` đang trống,
-điền một trong 6 mã (định nghĩa đầy đủ + ranh giới ở **`RUBRIC.md`**):
+**Bước 1 — gán nhãn.** Mỗi dòng trong `nguoi_cham_tung_dong.csv` là một tiêu chí AI đề xuất,
+mang một trong 6 mã (định nghĩa đầy đủ + ranh giới ở **`LUAT_NGUOI_CHAM.md`**):
 
 | Mã | Nghĩa |
 |---|---|
@@ -137,29 +149,33 @@ Mỗi phiên bản có một thư mục `out/<ver>/`. Làm 3 bước:
 Phân vân thì ghi lý do vào cột `ghi_chu` — tỉ lệ dòng phân vân chính là **độ nhạy của phép đo
 với người chấm**, lúc viết báo cáo sẽ cần.
 
-**Bước 2 — điền `missing.csv`.** Mở tin gốc, đếm yêu cầu nào **AI bỏ sót không bóc**. Bỏ qua
-bước này thì recall vĩnh viễn bằng 1 và cả bộ số trông đẹp một cách vô nghĩa.
+> ⚠️ **Đừng sửa tay vào `nguoi_cham_tung_dong.csv`** — chạy lại `1_chay_model_va_may_cham.py`
+> là mất sạch. Nhãn nằm trong bảng `LABELS` của `2_nguoi_cham_dien_nhan.py`, khoá theo
+> *mã tin + nguyên văn tiêu chí* nên một tiêu chí xuất hiện ở nhiều bậc luôn nhận cùng nhãn.
+> Sửa ở đó rồi chạy lại script, nó ghi đè vào cả 4 thư mục.
 
-**Bước 3 — tính điểm:**
+**Bước 2 — đếm bỏ sót** (`nguoi_cham_bo_sot.csv`, cũng do `2_nguoi_cham_dien_nhan.py` ghi).
+Mở tin gốc, đếm yêu cầu nào **AI bỏ sót không bóc**. Bỏ qua bước này thì recall vĩnh viễn
+bằng 1 và cả bộ số trông đẹp một cách vô nghĩa.
+
+**Bước 3 — tính điểm và gộp báo cáo:**
 
 ```powershell
-..\..\ai-service\.venv\Scripts\python.exe score_rubric.py --tag v4
+..\..\ai-service\.venv\Scripts\python.exe 2_nguoi_cham_dien_nhan.py          # điền nhãn vào cả 4 bậc
+..\..\ai-service\.venv\Scripts\python.exe 3_nguoi_cham_tinh_diem.py --tag v4 # P / R / F1 một bậc
+..\..\ai-service\.venv\Scripts\python.exe 4_gop_ket_qua_excel.py             # gộp tất cả vào 1 file Excel
 ```
-
-> **Tối thiểu chấm V1 và V4** để có câu "F1 từ X lên Y". Chấm cả 4 thì có biểu đồ F1 đầy đủ
-> (~240 dòng). `labels.csv` của cả 4 phiên bản đều lưu sẵn, chấm thêm lúc nào cũng được.
 
 ---
 
 ## 6. Bộ test
 
 10 tin tuyển dụng đa ngành trong `dataset.json` — kế toán, kinh doanh, kho vận, CNTT, hành
-chính, lễ tân, marketing, vận tải, sản xuất. Trong đó **3 ca cố tình khó**:
+chính, lễ tân, marketing, sản xuất, chăm sóc khách hàng. Trong đó **2 ca cố tình khó**:
 
 | Tin | Bẫy | Kết quả đúng phải là |
 |---|---|---|
 | `J09_chi_dau_viec` | Chỉ liệt kê đầu việc, không nêu yêu cầu nào | **Trả về rỗng** ✅ V3/V4 làm đúng |
-| `J08_tai_xe` | Phần lớn yêu cầu là giấy tờ (bằng lái, tuổi, hộ khẩu) | Bỏ giấy tờ, **giữ 3 yêu cầu chấm được** ❌ V3/V4 trả rỗng — lỗi còn tồn |
 | `J10_qua_nhieu` | 13 yêu cầu, trần là 10 | Chọn 10 cái quan trọng nhất ✅ V2 trở đi làm đúng |
 
 Tin **do người làm đề tài soạn**, không phải tin thật của doanh nghiệp — hạn chế này phải nói
@@ -169,26 +185,53 @@ rõ trong báo cáo.
 
 ## 7. File nào là gì
 
-| File | Nội dung |
-|---|---|
-| `exp_criteria_extract/dataset.json` | 10 tin test — **không sửa giữa các lần chạy** |
-| `exp_criteria_extract/prompts.py` | Định nghĩa 4 phiên bản prompt (V4 nạp từ ai-service) |
-| `exp_criteria_extract/run.py` | Chạy bộ test, đo tầng máy, sinh phiếu chấm tay |
-| `exp_criteria_extract/metrics.py` | Các phép đo máy tự tính (giấy tờ, ngưỡng, gộp, trùng, ổn định) |
-| `exp_criteria_extract/RUBRIC.md` | **6 mã + ranh giới khi phân vân** — đọc trước khi chấm |
-| `exp_criteria_extract/score_rubric.py` | Đọc nhãn đã điền → precision / recall / F1 |
-| `out/KET_QUA.md` | **Bản tổng hợp đầy đủ** — kết quả, ví dụ thật, khiếm khuyết, hạn chế |
-| `out/so_sanh_version.csv` | Bảng so 4 phiên bản, dùng để vẽ biểu đồ |
-| `out/<ver>/raw.json` | Đầu ra thô của model, để đối chiếu khi nghi ngờ |
-| `out/<ver>/labels.csv` | **Phiếu chấm tay** — bạn điền cột `nhan` |
-| `AI_TESTING_REFERENCE.md` | Tham khảo **cách trình bày**, bóc từ slide một nhóm capstone khác — không phải thiết kế của SRIS. Khung ngưỡng Tốt/Chấp nhận được trong `RUBRIC.md` lấy từ đây |
+Tên file nói luôn nó thuộc tầng nào: **`may_cham_*` = máy tự đo · `nguoi_cham_*` = người chấm
+tay**. Bốn script có số ở đầu là **thứ tự chạy**.
+
+**Chạy theo thứ tự — mỗi bước một script:**
+
+| # | Script | Tầng | Làm gì |
+|---|---|---|---|
+| 1 | `1_chay_model_va_may_cham.py` | 🤖 máy | Gọi model 4 bậc prompt → ghi `raw.json` + đo tầng máy + sinh phiếu chấm tay còn trống |
+| 2 | `2_nguoi_cham_dien_nhan.py` | 🧑 người | **Bảng nhãn** — chứa nhãn của cả 285 tiêu chí, ghi vào 4 thư mục. **Sửa nhãn thì sửa ở đây** |
+| 3 | `3_nguoi_cham_tinh_diem.py` | 🧑 người | Đọc nhãn → precision / recall / F1 + bảng phân rã lỗi |
+| 4 | `4_gop_ket_qua_excel.py` | 🤖+🧑 | Gộp tất cả vào **một** file Excel để đọc |
+
+**File dùng chung (không chạy trực tiếp):**
+
+| File | Tầng | Nội dung |
+|---|---|---|
+| `dataset.json` | — | 10 tin test — **không sửa giữa các lần chạy** |
+| `prompts.py` | — | Định nghĩa 4 phiên bản prompt (V4 nạp thẳng từ ai-service) |
+| `may_cham.py` | 🤖 máy | Các phép đo máy tự tính (giấy tờ, ngưỡng, gộp, trùng, ổn định) |
+| `LUAT_NGUOI_CHAM.md` | 🧑 người | **6 mã + ranh giới khi phân vân** — luật chấm tay, đọc trước khi chấm |
+
+**Kết quả trong `out/`:**
+
+| File | Tầng | Nội dung |
+|---|---|---|
+| `out/KET_QUA_TONG_HOP.xlsx` | 🤖+🧑 | ⭐ **Mở file này trước** — 6 tab: `DocTruoc` (ai chấm cái gì) · `TongHop` (4 bậc, máy + người) · `TheoTin` (10 tin × 4 bậc) · và 3 tab bê nguyên 3 file chấm tay bên dưới: `NguoiCham_TungDong` / `NguoiCham_BoSot` / `NguoiCham_TongKet` |
+| `out/KET_QUA.md` | 🤖+🧑 | **Bản tường thuật đầy đủ** — kết quả, ví dụ thật, khiếm khuyết, hạn chế |
+| `out/may_cham_4_ban.csv` | 🤖 máy | Bảng so 4 phiên bản, dùng để vẽ biểu đồ |
+| `out/<ver>/may_cham.csv` | 🤖 máy | Số đo máy của từng tin trong một phiên bản |
+| `out/<ver>/nguoi_cham_tung_dong.csv` | 🧑 người | **Phiếu chấm tay** — mỗi tiêu chí một dòng + nhãn + lý do |
+| `out/<ver>/nguoi_cham_bo_sot.csv` | 🧑 người | Mỗi tin một dòng: AI bỏ sót mấy tiêu chí (mẫu số của recall) |
+| `out/<ver>/nguoi_cham_tong_ket.csv` | 🧑 người | P / R / F1 của phiên bản đó, do script 3 ghi ra |
+| `out/<ver>/raw.json` | — | Đầu ra thô của model, giữ để `--recompute` và để đối chiếu khi nghi ngờ |
+| `AI_TESTING_REFERENCE.md` | — | Tham khảo **cách trình bày**, bóc từ slide một nhóm capstone khác — không phải thiết kế của SRIS. Khung ngưỡng Tốt/Chấp nhận được trong `LUAT_NGUOI_CHAM.md` lấy từ đây |
+
+> **Vì sao cần cả hai tầng.** Máy đo được thứ có hình dạng cố định (đếm dấu phẩy, dò regex
+> giấy tờ, so hai lượt chạy có giống nhau không) — rẻ, lặp lại được, nhưng mù trước câu hỏi
+> *"tiêu chí này có dùng được không"*. Bằng chứng: cột "JSON hợp lệ" phẳng lì 100% ở cả 4 bậc,
+> chẳng phân biệt được bậc nào hơn bậc nào. Ngược lại chỉ chấm tay thì không đo nổi độ ổn định
+> giữa hai lượt và không lặp lại được. **Precision / Recall / F1 chỉ ra được từ tầng người.**
 
 ---
 
 ## 8. Nguyên tắc phải giữ
 
 - **Lượt 1 là lượt đem đi chấm**, không chọn lượt "đẹp nhất". Chọn lượt đẹp là tự chấm điểm cho mình.
-- **Ngưỡng Tốt / Chấp nhận được / Cần cải thiện chốt TRƯỚC khi đọc số** (`RUBRIC.md`), lấy của
+- **Ngưỡng Tốt / Chấp nhận được / Cần cải thiện chốt TRƯỚC khi đọc số** (`LUAT_NGUOI_CHAM.md`), lấy của
   nguồn ngoài để khỏi bị nghi gọt cho vừa.
 - **Không sửa `dataset.json` giữa các lần chạy** — đổi bộ test thì các phiên bản hết so được.
 - **Hạn chế phải viết ra**: tin tự soạn · 10 tin là ít · một người gán nhãn · thời gian đo trên

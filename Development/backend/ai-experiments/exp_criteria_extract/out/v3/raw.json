@@ -242,18 +242,34 @@
     "loi": []
   },
   {
-    "id": "J08_tai_xe",
-    "title": "Tài xế giao hàng",
-    "industry": "Vận tải",
-    "expect": "CA KHÓ NHẤT: 4/6 dòng là giấy tờ hoặc nhân khẩu (bằng lái, tuổi, nơi ở). Chỉ nên còn 2-3 tiêu chí. Đây là ca đo trực tiếp bộ lọc mới.",
-    "source_text": "[Mô tả công việc]\nGiao hàng theo tuyến được phân công trong nội thành. Kiểm tra hàng hóa trước khi rời kho. Thu tiền COD và nộp về công ty cuối ngày. Bảo quản xe, báo cáo sự cố kịp thời. Hỗ trợ bốc xếp hàng khi cần.\n\n[Yêu cầu ứng viên]\n- Có bằng lái xe hạng B2 còn hiệu lực\n- Nam, độ tuổi từ 22 đến 40\n- Thường trú hoặc tạm trú tại Hà Nội\n- Thuộc đường nội thành Hà Nội\n- Có kinh nghiệm giao hàng, biết xử lý khi khách từ chối nhận\n- Trung thực, có trách nhiệm với tiền COD\n\n[Kỹ năng yêu cầu]\nlái xe B2, giao hàng, COD, thuộc đường Hà Nội",
+    "id": "J08_cskh",
+    "title": "Nhân viên chăm sóc khách hàng",
+    "industry": "Dịch vụ khách hàng",
+    "expect": "Bỏ 'Tốt nghiệp Trung cấp' (giấy tờ). 'Giọng nói dễ nghe' là ca ranh giới nhưng NGHE là biết ngay trong buổi phỏng vấn nên GIỮ. Còn lại 5 dòng đều chấm được.",
+    "source_text": "[Mô tả công việc]\nTiếp nhận cuộc gọi và tin nhắn của khách qua tổng đài và fanpage. Giải đáp thắc mắc về sản phẩm, chính sách đổi trả và bảo hành. Ghi nhận khiếu nại rồi chuyển bộ phận liên quan xử lý. Gọi lại cho khách sau khi sự việc được giải quyết xong. Tổng hợp phản hồi của khách và báo cáo hàng tuần.\n\n[Yêu cầu ứng viên]\n- Tốt nghiệp Trung cấp trở lên\n- Có ít nhất 6 tháng kinh nghiệm chăm sóc khách hàng qua điện thoại\n- Giọng nói dễ nghe, phát âm rõ ràng\n- Kỹ năng lắng nghe và xoa dịu khách đang bức xúc\n- Sử dụng được Excel và phần mềm quản lý khách hàng\n- Kiên nhẫn, giữ được bình tĩnh khi bị khách lớn tiếng\n\n[Kỹ năng yêu cầu]\nchăm sóc khách hàng, tổng đài, Excel, xử lý khiếu nại",
     "cac_luot": [
-      [],
-      []
+      [
+        "Tốt nghiệp Trung cấp trở lên",
+        "Có ít nhất 6 tháng kinh nghiệm chăm sóc khách hàng qua điện thoại",
+        "Giọng nói dễ nghe, phát âm rõ ràng",
+        "Kỹ năng lắng nghe và xoa dịu khách đang bức xúc",
+        "Sử dụng được Excel",
+        "Sử dụng được phần mềm quản lý khách hàng",
+        "Kiên nhẫn, giữ được bình tĩnh khi bị khách lớn tiếng"
+      ],
+      [
+        "Tốt nghiệp Trung cấp trở lên",
+        "Có ít nhất 6 tháng kinh nghiệm chăm sóc khách hàng qua điện thoại",
+        "Giọng nói dễ nghe, phát âm rõ ràng",
+        "Kỹ năng lắng nghe và xoa dịu khách đang bức xúc",
+        "Sử dụng được Excel",
+        "Sử dụng phần mềm quản lý khách hàng",
+        "Kiên nhẫn, giữ được bình tĩnh khi bị khách lớn tiếng"
+      ]
     ],
     "giay": [
-      0.26,
-      0.2
+      2.7,
+      2.35
     ],
     "json_ok": 2,
     "so_luot": 2,

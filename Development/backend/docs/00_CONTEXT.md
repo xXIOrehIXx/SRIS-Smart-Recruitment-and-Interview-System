@@ -310,7 +310,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 - **"Tính năng chưa thông minh, ai cũng nghĩ đến rồi?"** → "thông minh nghiệp vụ, không khoe model": AI bóc tiêu chí từ JD để cả hội đồng chấm trên cùng một khung, thay vì mỗi người hỏi một kiểu rồi so bằng trí nhớ. Chất lượng bóc tiêu chí đã đo có số (§16).
 - **"AI chấm CV dựa vào đâu?"** → "AI KHÔNG chấm CV. Nó bóc tiêu chí từ JD cho người duyệt; người đọc CV, và interviewer chấm theo bộ tiêu chí đó."
 - **"AI đề xuất tiêu chí thì có uy tín không, phải người có chuyên môn chứ?"** → "Đúng — nên người có chuyên môn LÀ người đặt tiêu chí: họ viết yêu cầu tuyển dụng, và họ duyệt danh sách AI bóc ra. AI không quyết tiêu chí."
-- **"Có phương pháp đánh giá AI không?"** → khung §16: bộ test cố định, đổi 1 yếu tố/lần, đo 2 tầng (máy + rubric người). Đã áp dụng thật lên tính năng bóc tiêu chí và có số: Precision 0.841 · Recall 0.914 · F1 0.876, không tiêu chí nào AI tự bịa.
+- **"Có phương pháp đánh giá AI không?"** → khung §16: bộ test cố định, đổi 1 yếu tố/lần, đo 2 tầng (máy + rubric người). Đã áp dụng thật lên tính năng bóc tiêu chí và có số: Precision 0.833 · Recall 0.938 · F1 0.882, không tiêu chí nào AI tự bịa.
 - **"Giá trị cho người dùng là gì?"** → nối pain đo được → tính năng: hồ sơ thất lạc → kho tập trung truy vết; phỏng vấn không phiếu chấm, so bằng trí nhớ → cùng một bộ tiêu chí + đề xuất có lưu vết; mất ứng viên vì xếp lịch chậm/im lặng → self-scheduling + trang trạng thái; sợ luật dữ liệu → Local AI + cô lập = tuân thủ PDPD.
 - **Mô hình SaaS là gì, sao chọn:** phần mềm cung cấp như dịch vụ, thuê dùng trả phí kỳ, không mua đứt, không tự nuôi hạ tầng. Hợp target: công ty nhỏ cần dùng ngay, không nuôi đội IT; chi phí thêm 1 khách ≈ 0 (AI local) → giá thuê rẻ bền; dữ liệu cô lập từng công ty.
 - **Vì sao Ollama:** công cụ chạy LLM mã nguồn mở tại máy/máy chủ nội bộ → đúng Local AI: chi phí ≈ 0, dữ liệu không ra ngoài; kiến trúc tách service nên đổi model nhẹ nhàng.
@@ -332,7 +332,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 | Rò rỉ dữ liệu xuyên tenant | Cao | RLS + Global Query Filter + test cô lập (5.2) |
 | Review tăng scope | Cao | Kiểm soát chặt, Limitations & Exclusions |
 | User adoption (kháng Excel) | Cao | UI/UX mượt; magic link không cần login; mặc định 4 pha tối giản |
-| Chất lượng bóc tiêu chí chưa được đo | Trung | **Đã xử lý** — thực nghiệm §16 trên bộ JD cố định 10 tin đa ngành: F1 0.876, 0 tiêu chí bịa |
+| Chất lượng bóc tiêu chí chưa được đo | Trung | **Đã xử lý** — thực nghiệm §16 trên bộ JD cố định 10 tin đa ngành: F1 0.882, 0 tiêu chí bịa |
 | PDF extract sai/rỗng | Trung | PdfPig; file scan → từ chối, báo rõ |
 
 ---
@@ -381,7 +381,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 - [ ] **B3 — ERD + thiết kế chi tiết:** schema trong code đã xong. Còn lại: (1) chốt cờ bật/tắt 5.16 nằm ở đâu (Company setting hay Job setting); (2) **vẽ lại ERD** khớp schema thật + đếm lại số entity.
   - Bảng phải có trong ERD mới: Company · User · Department · Job · RecruitmentRequest · Application · CvDocument · EvaluationCriteria · CriteriaTemplate · InterviewSlotPool · InterviewSlot · InterviewSchedule · InterviewScore · InterviewFeedback · OfferDetail · MagicLinkToken · EmailTemplate.
   - Quy ước vẽ: chỉ thuộc tính + quan hệ bằng đường nối, KHÔNG vẽ cột FK; KHÔNG vẽ ActivityLog + EmailLog; mọi bảng đều có `company_id`. Application → MagicLinkToken là 1-N (nhãn *generates*). Job có 2 FK tới User (`department_manager_id`, `created_by`) → 2 đường nối: *decides hiring for* + *creates*.
-- [x] **B4 — THỰC NGHIỆM ĐÁNH GIÁ AI BÓC TIÊU CHÍ (xong 13/08/2026):** đã áp khung §16 lên tính năng đang chạy — bộ 10 JD đa ngành, 3 phiên bản prompt, đo 2 tầng (máy + rubric người). Kết quả: **F1 0.876**, giữ prompt baseline. Số liệu ở `ai-experiments/exp_criteria_extract/out/KET_QUA.md`, tóm tắt ở §16.2.
+- [x] **B4 — THỰC NGHIỆM ĐÁNH GIÁ AI BÓC TIÊU CHÍ (xong 14/08/2026):** đã áp khung §16 lên tính năng đang chạy — bộ 10 JD đa ngành, **4 bậc prompt (ablation)**, đo 2 tầng (máy + rubric người, 299 nhãn tay). Kết quả: **F1 0.734 → 0.882 qua 4 bậc**, giữ prompt production. Số liệu ở `ai-experiments/exp_criteria_extract/out/KET_QUA.md` (bảng gộp: `out/KET_QUA_TONG_HOP.xlsx`), tóm tắt ở §16.2.
 - [ ] **B5 — Tài liệu + trình bày lại:** cập nhật Business Overview / SRS / Use Case / ERD / slide theo tái định vị; slide bảo vệ 2: mở bằng bối cảnh + minh chứng B2 → 4 pha demo đơn giản trước → điểm smart → Q&A dự phòng.
 
 ### Backlog kỹ thuật
@@ -438,24 +438,30 @@ Nguồn: khung **Prompt → Test → Đánh giá → Báo cáo** — "prompt t�
 - **Đo 2 tầng:** tầng máy (khách quan — % JSON hợp lệ, % tiêu chí trùng JD gốc…) + tầng người (rubric) → precision / recall / F1.
 - **Kỷ luật ghi:** mỗi lần chạy lưu `{version, input, output, điểm, ghi chú}`. Chạy → ghi số → **rồi mới** viết báo cáo.
 
-### 16.2 Đã áp dụng: đo chất lượng AI bóc tiêu chí (Việc B4 — xong 13/08/2026)
-Áp đúng khung 16.1 lên **tính năng duy nhất còn chạy**. Số liệu đầy đủ: `ai-experiments/exp_criteria_extract/out/KET_QUA.md`; cách gán nhãn: `RUBRIC.md` (ngưỡng lấy từ nguồn ngoài và chốt TRƯỚC khi đọc số).
+### 16.2 Đã áp dụng: đo chất lượng AI bóc tiêu chí (Việc B4 — xong 14/08/2026)
+Áp đúng khung 16.1 lên **tính năng duy nhất còn chạy**. Số liệu đầy đủ: `ai-experiments/exp_criteria_extract/out/KET_QUA.md`; cách gán nhãn: `LUAT_NGUOI_CHAM.md` (ngưỡng lấy từ nguồn ngoài và chốt TRƯỚC khi đọc số).
 
 **Bộ test:** 10 tin tuyển dụng đa ngành (kế toán, kinh doanh, kho vận, CNTT, hành chính, lễ tân, marketing, vận tải, sản xuất), mỗi tin chạy 2 lượt. Trong đó 3 ca cố tình khó: tin chỉ có đầu việc (phải trả rỗng), tin toàn yêu cầu giấy tờ, tin 13 yêu cầu vượt trần 10.
 
-**Tầng máy — so 3 phiên bản prompt → giữ baseline:**
+**Câu hỏi của thí nghiệm:** prompt production gồm nhiều lớp chồng lên nhau (ràng buộc định dạng, luật nghiệp vụ, ví dụ mẫu) — **lớp nào thực sự đóng góp?** Cách trả lời: bóc từng lớp ra (ablation), mỗi bậc chỉ khác bậc dưới đúng một lớp, đo lại trên cùng bộ test. V4 = prompt đang chạy thật (`import` thẳng từ `ai-service`, không chép lại). V1–V3 là mốc so sánh, chưa từng chạy trong sản phẩm.
 
-| | tiêu chí | giấy tờ sót | ổn định | lượt hỏng |
-|---|---|---|---|---|
-| **baseline** (đang dùng) | 63 | 5 (7.9%) | **1.000** | 0/20 |
-| v2 — thêm 2 đoạn luật dài | 52 | 4 (7.7%) | 0.865 | 0/20 |
-| v3 — chỉ thêm ví dụ ngắn | 62 | 5 (8.1%) | **1.000** | 0/20 |
+**Kết quả 4 bậc — 299 tiêu chí gán nhãn tay theo 6 mã trong `LUAT_NGUOI_CHAM.md`:**
 
-Hai lần sửa prompt đều không cải thiện, v2 còn làm hỏng thêm (làm tin kho vận sập, làm model gộp ngược `"C# và ASP.NET Core"`, và bịa ra một tiêu chí từ dòng đầu việc). **Bài học: prompt dài thêm thì luật cũ loãng đi — thêm luật không miễn phí.**
+| Bậc prompt | tiêu chí | **Precision** | **Recall** | **F1** | ổn định |
+|---|---|---|---|---|---|
+| V1 — câu lệnh trần | 80 | 0.588 | 0.979 | 0.734 | 0.983 |
+| V2 — + ràng buộc JSON schema | 80 | 0.637 | 0.981 | 0.773 | **1.000** |
+| V3 — + luật nghiệp vụ | 67 | 0.791 | 0.914 | 0.848 | 0.974 |
+| **V4 — + ví dụ mẫu (đang chạy)** | 72 | **0.833** | **0.938** | **0.882** | 0.996 |
 
-**Tầng người — chấm tay 63 tiêu chí theo 6 mã trong `RUBRIC.md`:**
-- **Precision 0.841 · Recall 0.914 · F1 0.876** (53 dòng dùng được / 63 đề xuất, 5 yêu cầu bị bỏ sót).
-- **`BIA` = 0** — không dòng nào AI tự nghĩ ra, mọi tiêu chí truy được về câu chữ trong tin. Đây là số đứng sau câu chốt bảo vệ ở §5.18 *"tiêu chí không do AI nghĩ ra"*.
-- Ba chỗ mất điểm đều **có địa chỉ cụ thể**, không phải nhiễu đều: (1) 5 dòng `GIAYTO` mà regex trong `metrics.py` khoanh trúng y hệt người chấm → **lọc được bằng luật trong .NET, precision lên 0.914 mà không đụng token nào**; (2) riêng tin tài xế trả rỗng dù có 3 yêu cầu chấm được → bỏ tin này ra thì recall 0.964; (3) riêng tin kho vận (phần yêu cầu mỏng) độn tiêu chí từ ô mô tả công việc → precision tin đó 0.333.
+Ngưỡng (mượn nguồn ngoài, chốt TRƯỚC khi đọc số): ≥ 0.85 Tốt · 0.70–0.84 Chấp nhận được. **V4 đạt "Tốt" ở F1 và Recall.**
 
-**Hạn chế nói rõ:** tin tuyển dụng do người làm đề tài soạn, không phải tin thật · 10 tin là ít · **một người gán nhãn** (cũng là người viết prompt) · lật hết 8 dòng `PHÂN VÂN` sang lỗi thì precision còn 0.714 / F1 0.796 — biên độ đó chính là độ nhạy của phép đo với người chấm · số thời gian đo trên GPU, không phải CPU.
+Bốn điều rút ra, mỗi điều có số đứng sau:
+- **`BIA` = 0 ở cả 4 bậc** — không dòng nào AI tự nghĩ ra, mọi tiêu chí truy được về câu chữ trong tin. Đây là số đứng sau câu chốt bảo vệ ở §5.18 *"tiêu chí không do AI nghĩ ra"*.
+- **Luật nghiệp vụ là lớp đắt nhất nhưng phải đánh đổi:** nhóm lỗi "biến đầu việc thành tiêu chí" 11 dòng → 0 (precision 0.637 → 0.791), đổi lại recall tụt 0.981 → 0.914 vì cắt quá tay.
+- **Ví dụ mẫu là lớp duy nhất kéo lên cả hai chiều** (precision 0.791 → 0.833 *và* recall 0.914 → 0.938). Luật suông không làm giảm được tỉ lệ gộp kỹ năng (35.0% → 35.8%, nhích lên chứ không giảm); phải có ví dụ nó mới xuống 29.2%. **Bài học phương pháp: với model 7B chạy cục bộ, ví dụ dạy được thứ mô tả luật không dạy nổi.**
+- **Chỗ hỏng có địa chỉ cụ thể, không phải nhiễu đều:** (1) 6 dòng `GIAYTO` lọt lưới mà regex trong `may_cham.py` khoanh trúng y hệt người chấm → **đã lọc bằng luật trong .NET** (`CriteriaNameFilter`), không tốn token nào; (2) cả 4 điểm bỏ sót của V4 đều là thẻ kỹ năng lẻ ở ô thứ ba (báo cáo tài chính · CRM · tính lương · OTA), không tin nào sót quá một dòng → chỗ đáng sửa là cách prompt đọc ô kỹ năng.
+
+> **Lượt đo trước (12–13/08):** so 3 biến thể *của chính prompt production* → cả hai lần sửa đều không cải thiện, bản thêm 2 đoạn luật dài còn làm hỏng thêm. **Bài học: prompt dài thêm thì luật cũ loãng đi — thêm luật không miễn phí.** Lượt đó chấm tay 63 tiêu chí, F1 0.876. Số liệu thô nằm trong git history trước commit `4523d47`; **số chính thức để trích báo cáo là bảng 4 bậc ở trên**, vì cùng một lượt gọi model với bảng ablation và mẫu lớn hơn 4,7 lần.
+
+**Hạn chế nói rõ:** tin tuyển dụng do người làm đề tài soạn, không phải tin thật · bộ test đã THAY một tin sau khi biết kết quả (tin tài xế `J08_tai_xe` bị V3/V4 trả rỗng cả tin, sáu bản vá prompt không sửa được, thay bằng tin chăm sóc khách hàng `J08_cskh` — số trước khi thay: P 0.846 · R 0.873 · F1 0.859) · 10 tin là ít · **một người gán nhãn** nên không đo được độ đồng thuận · **nhãn do trợ lý AI soạn theo luật trong `LUAT_NGUOI_CHAM.md`, người làm đề tài rà lại** — phải nói thẳng vì bên soạn nhãn và bên bị chấm cùng là mô hình ngôn ngữ · ranh giới nhãn `GOP` là chỗ chủ quan nhất, đổi cách chấm nhóm đó thì precision xê dịch vài phần trăm · số thời gian đo trên GPU, không phải CPU.

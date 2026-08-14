@@ -1,0 +1,11 @@
+﻿id,so_bo_sot,ghi_chu
+J01_ke_toan,1,Mất 'báo cáo tài chính' (có trong skill_tags)
+J02_kinh_doanh,0,
+J03_kho_van,2,Mất 'quản lý kho' và 'kiểm kê' — luật ở V3 cắt quá tay
+J04_dotnet,0,
+J05_hanh_chinh,1,Mất 'tính lương'
+J06_le_tan,1,Mất 'OTA'
+J07_marketing,0,
+J08_cskh,0,
+J09_chi_dau_viec,0,Trả rỗng là ĐÚNG thiết kế
+J10_qua_nhieu,0,Bỏ đúng 3 dòng giấy tờ
