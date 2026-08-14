@@ -71,7 +71,16 @@ public class DashboardRepo : IDashboardRepo
             // KHÔNG lọc reject_reason != null: lý do là TÙY CHỌN (chốt 02/08/2026). Lọc bỏ hồ sơ
             // không ghi lý do thì danh sách "từ chối gần đây" nói dối về số lần từ chối thật.
             orderby a.RejectedAt descending
-            select new RejectionRow(a.ApplicationId, c.FullName, j.Title, a.RejectReason, a.RejectedAt))
+            select new RejectionRow(a.ApplicationId, c.FullName, j.Title, a.RejectReason, a.RejectedAt,
+                // Pha ngay trước khi rớt. Truy vấn con tương quan chứ không join: một hồ sơ có thể
+                // có nhiều dòng log về REJECTED (hiếm, nhưng join thì nhân bản dòng kết quả),
+                // còn ở đây LogId lớn nhất là lần cuối cùng — lấy đúng một giá trị.
+                // take nhỏ (6) nên chi phí không đáng kể.
+                _db.ActivityLogs.AsNoTracking()
+                    .Where(l => l.ApplicationId == a.ApplicationId && l.ToState == "REJECTED")
+                    .OrderByDescending(l => l.LogId)
+                    .Select(l => l.FromState)
+                    .FirstOrDefault()))
             .Take(take)
             .ToListAsync();
     }

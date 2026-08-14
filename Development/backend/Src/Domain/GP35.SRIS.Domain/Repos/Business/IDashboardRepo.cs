@@ -38,8 +38,14 @@ public record ActivityRow(long ApplicationId, string CandidateName, string Actio
 /// đọc cần biết trước tiên là lý do đó thuộc ứng viên nào, vị trí nào.
 /// </para>
 /// </summary>
+/// <param name="RejectedFromState">
+/// Pha hồ sơ đang đứng NGAY TRƯỚC khi bị từ chối, lấy từ ActivityLog. Đây là nửa còn lại của
+/// câu chuyện: "rớt ở sàng lọc" và "rớt sau khi phỏng vấn" tốn của công ty những thứ rất khác
+/// nhau, mà bảng Application chỉ giữ trạng thái cuối nên tự nó không trả lời được.
+/// Null với hồ sơ cũ chưa có log tương ứng.
+/// </param>
 public record RejectionRow(long ApplicationId, string CandidateName, string JobTitle,
-    string? RejectReason, DateTime? RejectedAt);
+    string? RejectReason, DateTime? RejectedAt, string? RejectedFromState);
 
 /// <summary>
 /// Truy vấn tổng hợp cho Dashboard/Analytics (docs 4, M7). Mọi truy vấn tự kèm company_id

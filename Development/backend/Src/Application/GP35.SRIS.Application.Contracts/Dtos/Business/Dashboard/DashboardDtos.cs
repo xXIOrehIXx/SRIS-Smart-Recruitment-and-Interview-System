@@ -63,6 +63,9 @@ public class RecentRejectionDto
     public string JobTitle { get; set; } = null!;
     public string? RejectReason { get; set; }
     public DateTime? RejectedAt { get; set; }
+
+    /// <summary>Pha hồ sơ đang đứng ngay trước khi bị từ chối. Null với hồ sơ cũ chưa có log.</summary>
+    public string? RejectedFromState { get; set; }
 }
 
 /// <summary>1 dòng hoạt động gần đây (từ ActivityLog).</summary>

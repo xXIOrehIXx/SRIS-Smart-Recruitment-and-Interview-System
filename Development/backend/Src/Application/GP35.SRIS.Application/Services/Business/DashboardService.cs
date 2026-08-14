@@ -99,7 +99,8 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
                     CandidateName = r.CandidateName,
                     JobTitle = r.JobTitle,
                     RejectReason = r.RejectReason,
-                    RejectedAt = r.RejectedAt
+                    RejectedAt = r.RejectedAt,
+                    RejectedFromState = r.RejectedFromState
                 })
                 .ToList(),
             RecentApplications = recentApps.Select(ToRecent).ToList(),

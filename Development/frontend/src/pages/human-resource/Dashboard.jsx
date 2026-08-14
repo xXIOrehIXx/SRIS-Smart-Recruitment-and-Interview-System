@@ -678,13 +678,27 @@ const HumanResourceDashboard = () => {
                         {formatRelativeTime(r.rejectedAt)}
                       </Text>
                     </div>
-                    <Text
-                      type="secondary"
-                      className="rejection-job"
-                      ellipsis={{ tooltip: r.jobTitle }}
-                    >
-                      <FileTextOutlined /> {r.jobTitle}
-                    </Text>
+                    <div className="rejection-meta">
+                      {/* Đã lọc theo một vị trí thì mọi dòng đều cùng vị trí đó — in lại 6 lần
+                          là chiếm chỗ mà không thêm thông tin. Nhường chỗ cho pha bị loại. */}
+                      {!selectedJob && (
+                        <Text
+                          type="secondary"
+                          className="rejection-job"
+                          ellipsis={{ tooltip: r.jobTitle }}
+                        >
+                          <FileTextOutlined /> {r.jobTitle}
+                        </Text>
+                      )}
+                      {r.rejectedFromState && (
+                        <Tag
+                          className="rejection-stage"
+                          color={STATE_COLORS[r.rejectedFromState] || undefined}
+                        >
+                          rớt ở {stateLabelOf(r.rejectedFromState).toLowerCase()}
+                        </Tag>
+                      )}
+                    </div>
                     {/* Lý do tùy chọn — không ghi thì nói thẳng là không ghi, đừng bỏ trống
                         khiến dòng trông như lỗi hiển thị. */}
                     <Text
