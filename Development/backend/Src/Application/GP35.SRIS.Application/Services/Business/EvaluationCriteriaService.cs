@@ -181,8 +181,14 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             // job từng duyệt tiêu chí rồi thì lần nào cũng hỏng.
             // Bỏ QUA dòng trùng chứ không xoá bản cũ: bản đã duyệt mới là bản đang dùng, và có
             // thể đã có phiếu chấm phỏng vấn trỏ vào nó.
+            // CHỈ tính tiêu chí CÒN HIỆU LỰC là "đã có tên". Tiêu chí bị xoá là xoá MỀM
+            // (active = 0) — coi tên của nó vẫn bị chiếm thì người dùng rơi vào ngõ cụt: xoá sạch
+            // tiêu chí của tin tuyển dụng rồi bấm bóc lại, AI (temperature = 0) trả về đúng những
+            // tên vừa xoá, tất cả bị bỏ qua, lượt bóc báo DONE với 0 tiêu chí và màn hình vẫn trống
+            // — không có cách nào lấy lại bộ tiêu chí ngoài việc gõ tay từng dòng.
+            // Ràng buộc DB cũng chỉ còn áp cho dòng active = 1 (xem V042), nên hai bên khớp nhau.
             var takenNames = (await _criteriaRepo.GetByJobAsync(companyId, jobId,
-                    activeOnly: false, approvedOnly: false))
+                    activeOnly: true, approvedOnly: false))
                 .Select(c => (c.Name ?? "").Trim())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
