@@ -111,14 +111,15 @@ const HumanResourceDashboard = () => {
 
   // Quay lại tab: đồng bộ lại board + KPI (state có thể đã đổi ở màn Offers / Quyết định tuyển dụng).
   useRefreshOnFocus(() => {
-    fetchDashboardOverview();
+    fetchDashboardOverview(selectedJob);
     fetchKanbanData(selectedJob);
   });
 
-  const fetchDashboardOverview = async () => {
+  const fetchDashboardOverview = async (jobId = selectedJob) => {
     try {
       setLoading(true);
-      const response = await dashboardAPI.getOverview();
+      // Truyền jobId: /dashboard/overview đã nhận tham số này từ đầu, chỉ là trang chưa gửi.
+      const response = await dashboardAPI.getOverview(jobId || undefined);
       setDashboardData(response.data);
     } catch (error) {
       console.error("Error fetching dashboard overview:", error);
@@ -149,9 +150,14 @@ const HumanResourceDashboard = () => {
     }
   };
 
+  // Bộ lọc phải áp cho CẢ trang, không riêng Kanban. Trước đây chỉ nạp lại board, nên 4 thẻ
+  // KPI và panel phải đứng im ở số toàn công ty trong khi người dùng đã chọn một vị trí —
+  // họ đọc số đó thành số của vị trí vừa chọn. Sai lệch im lặng, tệ hơn là không có bộ lọc.
   const handleJobFilter = (jobId) => {
-    setSelectedJob(jobId || null);
-    fetchKanbanData(jobId || null);
+    const next = jobId || null;
+    setSelectedJob(next);
+    fetchKanbanData(next);
+    fetchDashboardOverview(next);
   };
 
   /**
@@ -372,7 +378,15 @@ const HumanResourceDashboard = () => {
     },
   ];
 
-  const renderBreakdown = (items, emptyText) => {
+  /**
+   * showPercent=false dành cho lý do từ chối: reject_reason là text tự do và không bắt buộc,
+   * nên mỗi hồ sơ gần như tự thành một nhóm riêng — "33,3%" ở đó chỉ là 1/N viết cách khác,
+   * không phải một tỉ lệ có ý nghĩa. Thanh vẽ theo tỉ lệ so với dòng NHIỀU NHẤT thay vì so
+   * với tổng, để vẫn thấy lý do nào lặp lại nhiều mà không hứa hẹn một con số phần trăm.
+   * Nguồn ứng viên thì ngược lại: Candidate.source do code đặt ("Career Site"), danh mục
+   * đóng nên phần trăm ở đó nói lên điều thật.
+   */
+  const renderBreakdown = (items, emptyText, { showPercent = true } = {}) => {
     if (!items || items.length === 0) {
       return (
         <Text type="secondary" className="side-empty">
@@ -380,24 +394,27 @@ const HumanResourceDashboard = () => {
         </Text>
       );
     }
-    return items.map((item) => (
-      <div className="breakdown-row" key={item.label}>
-        <div className="breakdown-head">
-          <Text className="breakdown-label" ellipsis={{ tooltip: item.label }}>
-            {item.label}
-          </Text>
-          <Text type="secondary" className="breakdown-count">
-            {item.count} · {item.percentage}%
-          </Text>
+    const maxCount = Math.max(...items.map((i) => Number(i.count) || 0), 1);
+    return items.map((item) => {
+      const width = showPercent
+        ? Math.min(100, Number(item.percentage) || 0)
+        : ((Number(item.count) || 0) / maxCount) * 100;
+      return (
+        <div className="breakdown-row" key={item.label}>
+          <div className="breakdown-head">
+            <Text className="breakdown-label" ellipsis={{ tooltip: item.label }}>
+              {item.label}
+            </Text>
+            <Text type="secondary" className="breakdown-count">
+              {showPercent ? `${item.count} · ${item.percentage}%` : `${item.count} hồ sơ`}
+            </Text>
+          </div>
+          <div className="breakdown-track">
+            <div className="breakdown-fill" style={{ width: `${width}%` }} />
+          </div>
         </div>
-        <div className="breakdown-track">
-          <div
-            className="breakdown-fill"
-            style={{ width: `${Math.min(100, Number(item.percentage) || 0)}%` }}
-          />
-        </div>
-      </div>
-    ));
+      );
+    });
   };
 
   if (loading && !dashboardData) {
@@ -644,10 +661,12 @@ const HumanResourceDashboard = () => {
           <Card className="dashboard-card side-card" bordered={false}>
             <Title level={5} className="side-title">
               <CloseOutlined /> Lý do từ chối
+              {selectedJob && <span className="side-scope">vị trí đang lọc</span>}
             </Title>
             {renderBreakdown(
               dashboardData?.rejectReasons,
               "Chưa có hồ sơ nào bị từ chối",
+              { showPercent: false },
             )}
           </Card>
 

@@ -246,6 +246,17 @@
   font-size: 13px;
 }
 
+/* Nhắc rằng khối này đang thu hẹp theo bộ lọc vị trí, không phải số toàn công ty. */
+.side-scope {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background-color: rgba(93, 140, 62, 0.12);
+  color: #5d8c3e;
+  font-size: 11px;
+  font-weight: 400;
+}
+
 /* --- Hoạt động gần đây --- */
 .activity-list {
   list-style: none;

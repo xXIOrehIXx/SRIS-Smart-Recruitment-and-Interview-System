@@ -185,11 +185,11 @@ public class DashboardRepo : IDashboardRepo
             .ToListAsync();
     }
 
-    public async Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, int take, long? departmentManagerId = null)
+    public async Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, long? jobId, int take, long? departmentManagerId = null)
     {
         return await (
             from log in _db.ActivityLogs.AsNoTracking()
-            join a in ScopedApplications(null, departmentManagerId) on log.ApplicationId equals a.ApplicationId
+            join a in ScopedApplications(jobId, departmentManagerId) on log.ApplicationId equals a.ApplicationId
             join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
             orderby log.LogId descending
             select new ActivityRow(log.ApplicationId, c.FullName, log.Action,

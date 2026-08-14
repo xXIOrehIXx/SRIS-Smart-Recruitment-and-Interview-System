@@ -68,6 +68,11 @@ public interface IDashboardRepo
     /// <summary>Tiến độ theo phòng ban: số hồ sơ HIRED / tổng hồ sơ của các job trong phòng ban.</summary>
     Task<IReadOnlyList<DepartmentCount>> GetDepartmentProgressAsync(long companyId, long? departmentManagerId = null);
 
-    /// <summary>Hoạt động gần đây (ActivityLog mới nhất trước), giới hạn theo phạm vi DM nếu có.</summary>
-    Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, int take, long? departmentManagerId = null);
+    /// <summary>
+    /// Hoạt động gần đây (ActivityLog mới nhất trước), giới hạn theo phạm vi DM nếu có.
+    /// jobId null = toàn công ty — nhận jobId để khối này cùng phạm vi với phần còn lại của
+    /// overview; lệch phạm vi thì người dùng lọc theo một vị trí mà vẫn thấy hoạt động của
+    /// vị trí khác nằm cạnh số liệu đã lọc.
+    /// </summary>
+    Task<IReadOnlyList<ActivityRow>> GetRecentActivitiesAsync(long companyId, long? jobId, int take, long? departmentManagerId = null);
 }

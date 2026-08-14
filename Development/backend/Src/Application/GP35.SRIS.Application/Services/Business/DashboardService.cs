@@ -45,7 +45,7 @@ public class DashboardService : BaseService<DashboardService>, IDashboardService
         var recentApps = await _repo.GetRecentApplicationsAsync(companyId, jobId, 8, scope);
         var recentDecisions = await _repo.GetRecentDecisionsAsync(companyId, jobId, 5, scope);
         var departmentProgress = await _repo.GetDepartmentProgressAsync(companyId, scope);
-        var recentActivities = await _repo.GetRecentActivitiesAsync(companyId, 8, scope);
+        var recentActivities = await _repo.GetRecentActivitiesAsync(companyId, jobId, 8, scope);
 
         var byState = funnelRaw.ToDictionary(x => x.State, x => x.Count, StringComparer.OrdinalIgnoreCase);
         int CountOf(string state) => byState.TryGetValue(state, out var c) ? c : 0;
