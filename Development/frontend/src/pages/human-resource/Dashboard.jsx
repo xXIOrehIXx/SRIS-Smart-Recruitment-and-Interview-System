@@ -54,6 +54,46 @@ const KANBAN_STATES = ["NEW", "SCREENING", "INTERVIEW", "OFFER"];
 // Forward-only state machine order (matches backend ApplicationStateMachine)
 const STATE_ORDER = ["NEW", "SCREENING", "INTERVIEW", "OFFER", "HIRED"];
 
+// Nhãn cho hai state không nằm trên board (board chỉ có 4 pha đang chạy).
+const OUTCOME_LABELS = { HIRED: "Đã tuyển", REJECTED: "Từ chối" };
+
+const stateLabelOf = (state) =>
+  STATE_LABELS[state] || OUTCOME_LABELS[state] || state || "—";
+
+// ActivityLog.action — chỉ STATE_CHANGE mới có from/to state, 5 loại còn lại ghi log
+// mà không đổi trạng thái hồ sơ. Không có bảng nhãn này thì chúng hiện ra dấu gạch trống.
+const ACTIVITY_LABELS = {
+  INTERVIEW_INVITED: "Được mời phỏng vấn",
+  INTERVIEW_SCHEDULED: "Đã chốt lịch phỏng vấn",
+  INTERVIEW_CANCELLED: "Lịch phỏng vấn bị huỷ",
+  INTERVIEW_NO_SLOT_FITS: "Báo không có khung phù hợp",
+  OFFER_LETTER_SENT: "Đã gửi thư mời nhận việc",
+};
+
+/** Một dòng hoạt động đọc thành câu: chuyển pha thì "A → B", còn lại lấy nhãn của action. */
+const describeActivity = (act) => {
+  if (act.toState)
+    return act.fromState
+      ? `${stateLabelOf(act.fromState)} → ${stateLabelOf(act.toState)}`
+      : stateLabelOf(act.toState);
+  return ACTIVITY_LABELS[act.action] || act.action || "—";
+};
+
+/** "vừa xong" / "3 giờ trước" — feed hoạt động đọc bằng khoảng cách dễ hơn bằng mốc thời gian. */
+const formatRelativeTime = (value) => {
+  if (!value) return "";
+  const at = new Date(value).getTime();
+  if (Number.isNaN(at)) return "";
+  const mins = Math.round((Date.now() - at) / 60000);
+  if (mins < 1) return "vừa xong";
+  if (mins < 60) return `${mins} phút trước`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days} ngày trước`;
+  return new Date(value).toLocaleDateString("vi-VN");
+};
+
 const HumanResourceDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -71,14 +111,15 @@ const HumanResourceDashboard = () => {
 
   // Quay lại tab: đồng bộ lại board + KPI (state có thể đã đổi ở màn Offers / Quyết định tuyển dụng).
   useRefreshOnFocus(() => {
-    fetchDashboardOverview();
+    fetchDashboardOverview(selectedJob);
     fetchKanbanData(selectedJob);
   });
 
-  const fetchDashboardOverview = async () => {
+  const fetchDashboardOverview = async (jobId = selectedJob) => {
     try {
       setLoading(true);
-      const response = await dashboardAPI.getOverview();
+      // Truyền jobId: /dashboard/overview đã nhận tham số này từ đầu, chỉ là trang chưa gửi.
+      const response = await dashboardAPI.getOverview(jobId || undefined);
       setDashboardData(response.data);
     } catch (error) {
       console.error("Error fetching dashboard overview:", error);
@@ -109,9 +150,14 @@ const HumanResourceDashboard = () => {
     }
   };
 
+  // Bộ lọc phải áp cho CẢ trang, không riêng Kanban. Trước đây chỉ nạp lại board, nên 4 thẻ
+  // KPI và panel phải đứng im ở số toàn công ty trong khi người dùng đã chọn một vị trí —
+  // họ đọc số đó thành số của vị trí vừa chọn. Sai lệch im lặng, tệ hơn là không có bộ lọc.
   const handleJobFilter = (jobId) => {
-    setSelectedJob(jobId || null);
-    fetchKanbanData(jobId || null);
+    const next = jobId || null;
+    setSelectedJob(next);
+    fetchKanbanData(next);
+    fetchDashboardOverview(next);
   };
 
   /**
@@ -301,6 +347,70 @@ const HumanResourceDashboard = () => {
     );
   };
 
+  const summary = dashboardData?.summary;
+
+  // Ba con số /dashboard/overview vẫn trả về mà trang chưa hiển thị ở đâu.
+  // null (chưa ai được tuyển / chưa ai trả lời offer) khác 0 — hiện "—" kèm lời giải thích
+  // chứ không hiện 0, vì 0 đọc ra thành "tuyển mất 0 ngày".
+  const sideMetrics = [
+    {
+      label: "Thời gian tuyển TB",
+      value: summary?.avgTimeToHireDays != null ? `${summary.avgTimeToHireDays} ngày` : "—",
+      hint: summary?.avgTimeToHireDays == null ? "Chưa có hồ sơ nào được tuyển" : null,
+    },
+    {
+      label: "Tỉ lệ nhận offer",
+      value:
+        summary?.offerAcceptanceRatePct != null
+          ? `${summary.offerAcceptanceRatePct}%`
+          : "—",
+      hint:
+        summary?.offerAcceptanceRatePct == null
+          ? "Chưa ứng viên nào phản hồi offer"
+          : `${summary?.offersAccepted ?? 0}/${
+              (summary?.offersAccepted ?? 0) + (summary?.offersDeclined ?? 0)
+            } đã đồng ý`,
+    },
+    {
+      label: "Tỉ lệ chuyển đổi",
+      value: `${summary?.conversionRatePct ?? 0}%`,
+      hint: `${summary?.hired ?? 0}/${summary?.totalApplications ?? 0} hồ sơ`,
+    },
+  ];
+
+  /**
+   * Chỉ dùng cho nguồn ứng viên. Phần trăm ở đây có nghĩa vì Candidate.source do code đặt
+   * ("Career Site") — danh mục đóng, các nhãn cộng lại thành một tổng thật.
+   * Đừng tái dùng cho lý do từ chối: text tự do gom nhóm ra gần đúng mỗi hồ sơ một nhóm.
+   */
+  const renderBreakdown = (items, emptyText) => {
+    if (!items || items.length === 0) {
+      return (
+        <Text type="secondary" className="side-empty">
+          {emptyText}
+        </Text>
+      );
+    }
+    return items.map((item) => (
+      <div className="breakdown-row" key={item.label}>
+        <div className="breakdown-head">
+          <Text className="breakdown-label" ellipsis={{ tooltip: item.label }}>
+            {item.label}
+          </Text>
+          <Text type="secondary" className="breakdown-count">
+            {item.count} · {item.percentage}%
+          </Text>
+        </div>
+        <div className="breakdown-track">
+          <div
+            className="breakdown-fill"
+            style={{ width: `${Math.min(100, Number(item.percentage) || 0)}%` }}
+          />
+        </div>
+      </div>
+    ));
+  };
+
   if (loading && !dashboardData) {
     return (
       <div
@@ -370,8 +480,13 @@ const HumanResourceDashboard = () => {
         ))}
       </Row>
 
-      {/* Kanban Board */}
-      <Card className="dashboard-card kanban-card" bordered={false}>
+      {/* Kanban trái + panel phải. Trước đây board đứng một mình với cột rộng cố định
+          280px, nên màn hình nào rộng hơn ~1200px cũng thừa ra một mảng trắng bên phải. */}
+      <div className="dashboard-main">
+      {/* Không đặt class "kanban-card" cho Card này: tên đó thuộc về THẺ ỨNG VIÊN
+          (cursor: grab, border, margin-bottom) — dùng lại ở đây là cả khung board
+          dính chuột "kéo được" trong khi nó không kéo đi đâu cả. */}
+      <Card className="dashboard-card kanban-board-card" bordered={false}>
         <div className="card-header">
           <Title level={5}>Pipeline Ứng Viên</Title>
           <Button
@@ -467,6 +582,149 @@ const HumanResourceDashboard = () => {
           )}
       </Card>
 
+        <aside className="dashboard-side">
+          {/* Cả ba khối dưới đây dùng dữ liệu ĐÃ có sẵn trong /dashboard/overview —
+              trang vẫn tải về từ trước, chỉ là chưa hiện ra ở đâu. Không thêm lượt gọi API. */}
+          <Card className="dashboard-card side-card" bordered={false}>
+            <Title level={5} className="side-title">
+              <ClockCircleOutlined /> Hoạt động gần đây
+            </Title>
+            {/* Lưu ý: GetRecentActivitiesAsync không nhận jobId — khối này luôn là
+                toàn công ty, KHÔNG đổi theo bộ lọc vị trí ở đầu trang. */}
+            {dashboardData?.recentActivities?.length ? (
+              <ul className="activity-list">
+                {dashboardData.recentActivities.map((act, i) => (
+                  <li
+                    key={`${act.applicationId}-${act.createdAt}-${i}`}
+                    className="activity-item"
+                    onClick={() =>
+                      navigate(`/human-resource/candidates/${act.applicationId}`)
+                    }
+                  >
+                    <Avatar
+                      size={28}
+                      style={{ backgroundColor: STATE_COLORS[act.toState] || MATCHA_GREEN }}
+                      icon={<UserOutlined />}
+                    />
+                    <div className="activity-body">
+                      <Text strong ellipsis={{ tooltip: act.candidateName }}>
+                        {act.candidateName}
+                      </Text>
+                      <Text
+                        type="secondary"
+                        className="activity-move"
+                        ellipsis={{ tooltip: describeActivity(act) }}
+                      >
+                        {describeActivity(act)}
+                      </Text>
+                    </div>
+                    <Text type="secondary" className="activity-time">
+                      {formatRelativeTime(act.createdAt)}
+                    </Text>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Text type="secondary" className="side-empty">
+                Chưa có hoạt động nào
+              </Text>
+            )}
+          </Card>
+
+          <Card className="dashboard-card side-card" bordered={false}>
+            <Title level={5} className="side-title">
+              <TrophyOutlined /> Chỉ số tuyển dụng
+            </Title>
+            <div className="side-metrics">
+              {sideMetrics.map((m) => (
+                <div className="side-metric" key={m.label}>
+                  <Text type="secondary" className="side-metric-label">
+                    {m.label}
+                  </Text>
+                  <span className="side-metric-value">{m.value}</span>
+                  {m.hint && (
+                    <Text type="secondary" className="side-metric-hint">
+                      {m.hint}
+                    </Text>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="dashboard-card side-card" bordered={false}>
+            <Title level={5} className="side-title">
+              <CloseOutlined /> Từ chối gần đây
+            </Title>
+            {/* Danh sách chứ không phải phân rã theo lý do: reject_reason là text tự do và
+                tùy chọn, gom nhóm ra gần đúng mỗi hồ sơ một nhóm nên "tỉ lệ" chỉ là 1/N viết
+                cách khác. Và một lý do trần trụi ("ok em") không nói lên gì nếu không biết nó
+                thuộc ứng viên nào, vị trí nào — nên hiện đủ cả ba. */}
+            {dashboardData?.recentRejections?.length ? (
+              <ul className="rejection-list">
+                {dashboardData.recentRejections.map((r) => (
+                  <li
+                    key={r.applicationId}
+                    className="rejection-item"
+                    onClick={() =>
+                      navigate(`/human-resource/candidates/${r.applicationId}`)
+                    }
+                  >
+                    <div className="rejection-head">
+                      <Text strong ellipsis={{ tooltip: r.candidateName }}>
+                        {r.candidateName}
+                      </Text>
+                      <Text type="secondary" className="rejection-time">
+                        {formatRelativeTime(r.rejectedAt)}
+                      </Text>
+                    </div>
+                    <div className="rejection-meta">
+                      {/* Đã lọc theo một vị trí thì mọi dòng đều cùng vị trí đó — in lại 6 lần
+                          là chiếm chỗ mà không thêm thông tin. Nhường chỗ cho pha bị loại. */}
+                      {!selectedJob && (
+                        <Text
+                          type="secondary"
+                          className="rejection-job"
+                          ellipsis={{ tooltip: r.jobTitle }}
+                        >
+                          <FileTextOutlined /> {r.jobTitle}
+                        </Text>
+                      )}
+                      {r.rejectedFromState && (
+                        <Tag
+                          className="rejection-stage"
+                          color={STATE_COLORS[r.rejectedFromState] || undefined}
+                        >
+                          rớt ở {stateLabelOf(r.rejectedFromState).toLowerCase()}
+                        </Tag>
+                      )}
+                    </div>
+                    {/* Lý do tùy chọn — không ghi thì nói thẳng là không ghi, đừng bỏ trống
+                        khiến dòng trông như lỗi hiển thị. */}
+                    <Text
+                      className={`rejection-reason${r.rejectReason ? "" : " is-empty"}`}
+                      ellipsis={{ tooltip: r.rejectReason || undefined }}
+                    >
+                      {r.rejectReason || "Không ghi lý do"}
+                    </Text>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Text type="secondary" className="side-empty">
+                Chưa có hồ sơ nào bị từ chối
+              </Text>
+            )}
+          </Card>
+
+          <Card className="dashboard-card side-card" bordered={false}>
+            <Title level={5} className="side-title">
+              <TeamOutlined /> Nguồn ứng viên
+            </Title>
+            {renderBreakdown(dashboardData?.sources, "Chưa có dữ liệu nguồn")}
+          </Card>
+        </aside>
+      </div>
       </div>
   );
 };

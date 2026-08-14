@@ -9,9 +9,8 @@
 **Nhóm công ty nhỏ (≤ ⬜ nhân sự):** chưa có phòng ban riêng quản lý tuyển dụng; số lượng hồ sơ
 mỗi đợt tuyển chưa lớn. Với nhóm này, **nỗi đau chính không nằm ở khối lượng CV phải đọc,
 mà nằm ở NGUỒN ứng viên** — tin tuyển dụng không đến được đúng người, ứng viên nhỏ giọt.
-Vì vậy chấm CV theo tiêu chí đóng vai trò **tính năng nền chạy tự động** (mọi CV vào đều được
-chấm sẵn, không tốn thao tác), còn tính năng chủ lực cho nhóm này là **đề xuất ứng viên
-(Talent Pool)** và **Career Site quảng bá thương hiệu**.
+Vì vậy tính năng chủ lực cho nhóm này là **Career Site quảng bá thương hiệu** để kéo ứng viên
+về, chứ không phải công cụ lọc bớt hồ sơ.
 
 **Nhóm công ty vừa (⬜–200 nhân sự — vẫn trong định nghĩa DNNVV ≤200 lao động theo Luật Hỗ trợ
 DNNVV 04/2017/QH14, đúng target hệ thống):** phần nhiều đã có bộ phận tuyển dụng riêng, làm việc
@@ -31,10 +30,9 @@ phát triển, quy trình này lộ điểm yếu:
   thái độ tích cực với việc số hóa** và mong muốn một phương thức tuyển dụng đơn giản, nhanh,
   hiệu quả và dễ thao tác.
 
-→ Nhóm quyết định đưa **đề xuất ứng viên (Talent Pool)** lên làm một trong những tính năng
-chính của hệ thống, hỗ trợ công ty nhỏ tìm kiếm nhân lực từ chính kho CV cũ của họ. Đồng thời
-cung cấp **Career Site tùy biến thương hiệu** để công ty quảng bá tên tuổi, thu hút ứng viên
-tiềm năng.
+→ Nhóm quyết định cung cấp **Career Site tùy biến thương hiệu** làm một trong những tính năng
+chính, để công ty quảng bá tên tuổi và thu hút ứng viên tiềm năng — đánh đúng nỗi đau về nguồn
+ứng viên của nhóm này.
 
 ### Công ty vừa
 Quy trình đã bắt đầu chuyên nghiệp hóa, nhưng khi mở rộng lại lộ điểm yếu:
@@ -42,17 +40,20 @@ Quy trình đã bắt đầu chuyên nghiệp hóa, nhưng khi mở rộng lại
 - Nhiều hồ sơ đổ về mỗi đợt tuyển → duyệt thủ công quá tải, đứt gãy thông tin, **lãng quên
   các hồ sơ cũ tiềm năng**.
 - Một số đã dùng giải pháp duyệt CV bằng AI, nhưng **hệ thống phổ thông thường chỉ đưa ra
-  một con số tổng thể, không chấm theo từng tiêu chí kèm bằng chứng rõ ràng, hoặc tự động
-  loại ứng viên khiến doanh nghiệp mất quyền tự quyết.** *(→ minh chứng trực tiếp cho thiết kế
-  chấm CV theo tiêu chí có giải thích — giữ nguyên văn làm quote khi bảo vệ.)*
+  một con số tổng thể không giải thích được, hoặc tự động loại ứng viên khiến doanh nghiệp
+  mất quyền tự quyết.** *(→ minh chứng trực tiếp cho quyết định KHÔNG để máy chấm điểm ứng
+  viên: SRIS chỉ chuẩn bị bộ tiêu chí, người đọc hồ sơ và quyết — giữ nguyên văn làm quote
+  khi bảo vệ.)*
 - Dữ liệu ứng viên rải rác trên công cụ cá nhân (Zalo, Excel) — không phân quyền, không lưu
   vết truy cập → **rủi ro pháp lý nghiêm trọng** trước Luật Bảo vệ dữ liệu cá nhân (hiệu lực
   01/01/2026).
 
-→ Sàng lọc CV thông minh bằng AI vẫn là tính năng quan trọng của SRIS. Về dữ liệu: SRIS dùng
-**Local AI + cô lập dữ liệu theo từng công ty (tenant)** — dữ liệu CV không rời hệ thống ra
-bất kỳ bên thứ ba nào (không gọi API AI bên ngoài), mọi truy cập được phân quyền và lưu vết —
-giúp doanh nghiệp đáp ứng yêu cầu bảo vệ dữ liệu cá nhân 2026.
+→ SRIS trả lời nhóm này bằng **kho hồ sơ tập trung có phân quyền và lưu vết** thay vì một bộ
+máy chấm điểm: hồ sơ không còn rải rác trên Zalo/Excel, và mỗi vị trí có một bộ tiêu chí thống
+nhất để cả hội đồng phỏng vấn dựa vào. Về dữ liệu: **Local AI + cô lập dữ liệu theo từng công ty
+(tenant)** — dữ liệu CV không rời hệ thống ra bất kỳ bên thứ ba nào (không gọi API AI bên ngoài),
+mọi truy cập được phân quyền và lưu vết — giúp doanh nghiệp đáp ứng yêu cầu bảo vệ dữ liệu cá
+nhân 2026.
 
 ## 3. Những thay đổi trong quy trình hệ thống
 
@@ -65,7 +66,8 @@ giúp doanh nghiệp đáp ứng yêu cầu bảo vệ dữ liệu cá nhân 202
   1-chạm) — đáp ứng nhu cầu "đọc hồ sơ xong quyết luôn" ở chiều loại. Ở chiều tuyển, hệ thống
   giữ đúng một chốt chất lượng: phải có ít nhất một phiếu chấm phỏng vấn trước khi ra offer —
   khớp thực tế công ty nhỏ luôn gặp mặt ứng viên trước khi nhận việc.
-- Bổ sung tính năng **đề xuất ứng viên (Talent Pool)**.
+- Bổ sung **AI đề xuất tiêu chí đánh giá từ tin tuyển dụng**: người duyệt chốt, và bộ tiêu chí
+  đó trở thành phiếu chấm chung cho cả hội đồng phỏng vấn.
 - SRIS cung cấp theo mô hình **thuê bao trả phí theo tháng (subscription)**.
 
 ## 4. Bảng số liệu chờ điền (deliverable Việc B2)

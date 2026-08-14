@@ -1,0 +1,165 @@
+# Đo chất lượng AI đề xuất tiêu chí
+
+Thư mục này trả lời hai câu:
+
+1. **AI bóc tiêu chí từ tin tuyển dụng có dùng được không?** Dùng được tới mức nào?
+2. **Mỗi thành phần trong prompt đóng góp bao nhiêu?** Bỏ nó đi thì tệ hơn bao nhiêu?
+
+Đây **không phải code chạy trong sản phẩm** — xoá cả thư mục thì hệ thống vẫn chạy bình thường.
+
+---
+
+## 1. Hai tầng đo — ai làm việc gì
+
+Đây là chỗ dễ nhầm nhất, nên nói trước.
+
+| | Ai làm | Đo được gì | Đo KHÔNG được gì |
+|---|---|---|---|
+| **Tầng máy** | Script tự chạy | JSON có hợp lệ không · bao nhiêu tiêu chí · bao nhiêu dòng là "giấy tờ" · chạy lại có ra giống không · nhanh chậm | **Tiêu chí có ĐÚNG không** |
+| **Tầng người** | **Bạn ngồi chấm tay** | Precision / Recall / F1 · sai kiểu gì | — |
+
+Vì sao phải có tầng người: máy đếm được dòng nào chứa chữ "bằng cấp", nhưng máy **không biết**
+dòng *"Kỹ năng đàm phán"* là tiêu chí tốt còn *"Báo cáo doanh số hàng tuần"* là đầu việc.
+Phải có người đọc mới phán được.
+
+> **Số để trích vào báo cáo là số tầng người.** Tầng máy dùng để **so giữa các phiên bản**,
+> vì cùng một sai số xuất hiện ở cả hai bên nên không làm lệch kết luận.
+
+---
+
+## 2. Bốn phiên bản prompt
+
+Mỗi bậc thêm **đúng một lớp** so với bậc dưới. Có vậy chênh lệch số đo mới quy được cho
+một nguyên nhân duy nhất.
+
+| Ver | Thêm gì | Câu hỏi nó trả lời |
+|---|---|---|
+| **V1** | Câu lệnh trần. Không luật, không ví dụ, **không ép định dạng JSON** | Ném mỗi tin tuyển dụng cho model thì được gì? |
+| **V2** | **+ Ràng buộc JSON schema** (Pydantic) & `temperature=0` | Ép khuôn đầu ra có làm model trả JSON hợp lệ hơn không? Có ổn định hơn không? |
+| **V3** | **+ Luật nghiệp vụ**: phân biệt yêu cầu vs đầu việc · bỏ thứ đọc hồ sơ là biết · tách kỹ năng · trần 10 dòng | Dạy luật cho model có giảm được tiêu chí rác không? |
+| **V4** | **+ Khối ví dụ mẫu** (few-shot) = **prompt đang chạy thật** | Cho ví dụ cụ thể có hơn chỉ nói luật suông không? |
+
+### ⚠️ Gọi đúng tên khi báo cáo
+
+Đây là **thí nghiệm bóc lớp (ablation)**: lấy prompt production rồi **gỡ dần từng lớp ra**
+để xem lớp nào đáng giá bao nhiêu.
+
+**Nó KHÔNG phải nhật ký cải tiến của nhóm.** V1/V2/V3 chưa từng chạy trong sản phẩm —
+chúng được dựng ra chỉ để làm mốc so sánh.
+
+Nên slide phải ghi:
+
+- ✅ **"Đóng góp của từng thành phần trong prompt"**
+- ❌ ~~"Quá trình cải tiến prompt qua các phiên bản"~~ ← nói thế là sai sự thật, hội đồng hỏi
+  *"commit nào là V1?"* là lộ ngay.
+
+Kết luận rút ra thì y hệt (lớp nào đáng giá bao nhiêu), chỉ khác ở chỗ phát biểu đúng.
+
+V4 **không được chép lại** trong thư mục này — nó được nạp thẳng từ
+`ai-service/criteria_extract.py`, để không bao giờ có chuyện thí nghiệm đo nhầm một bản
+prompt đã cũ.
+
+---
+
+## 3. Bộ test
+
+10 tin tuyển dụng đa ngành trong `dataset.json` — kế toán, kinh doanh, kho vận, CNTT,
+hành chính, lễ tân, marketing, vận tải, sản xuất. Trong đó **3 ca cố tình khó**:
+
+| Tin | Bẫy | Kết quả đúng phải là |
+|---|---|---|
+| `J09_chi_dau_viec` | Tin chỉ liệt kê đầu việc, không nêu yêu cầu nào | **Trả về rỗng** |
+| `J08_tai_xe` | Phần lớn yêu cầu là giấy tờ (bằng lái, tuổi, hộ khẩu) | Bỏ giấy tờ, **giữ 3 yêu cầu chấm được** |
+| `J10_qua_nhieu` | 13 yêu cầu, trần là 10 | Chọn 10 cái quan trọng nhất, không cắt bừa |
+
+Tin do người làm đề tài soạn, không phải tin thật của doanh nghiệp — **hạn chế này phải nói
+rõ trong báo cáo**.
+
+---
+
+## 4. Cách chạy
+
+Cần **Ollama đang chạy** và đã `ollama pull qwen2.5`.
+
+Dùng Python trong venv của ai-service (đã có sẵn `ollama` + `pydantic`):
+
+```powershell
+cd Development\backend\ai-experiments\exp_criteria_extract
+
+# Chạy cả 4 phiên bản, mỗi tin 2 lượt  (~80 lượt gọi model)
+..\..\ai-service\.venv\Scripts\python.exe run.py --all --repeat 2
+
+# Hoặc chạy lại một phiên bản
+..\..\ai-service\.venv\Scripts\python.exe run.py --version v4 --repeat 2
+```
+
+> Lượt gọi **đầu tiên** chậm hơn hẳn vì Ollama phải nạp model vào bộ nhớ.
+> Đừng lấy con số thời gian của lượt đó đưa vào báo cáo.
+
+Chạy xong có ngay **bảng so 4 phiên bản ở tầng máy** + file `out/so_sanh_version.csv`.
+
+---
+
+## 5. Cách chấm tay (tầng người)
+
+Sau khi chạy, mỗi phiên bản có một thư mục `out/<ver>/`. Làm 3 bước:
+
+**Bước 1 — điền `labels.csv`.** Mỗi dòng là một tiêu chí AI đề xuất. Cột `nhan` đang trống,
+bạn điền một trong 6 mã (định nghĩa đầy đủ + ranh giới ở **`RUBRIC.md`**):
+
+| Mã | Nghĩa |
+|---|---|
+| `DUNG` | Tiêu chí dùng được |
+| `GIAYTO` | Đọc hồ sơ là biết, không đáng cho điểm phỏng vấn |
+| `DAUVIEC` | Là việc sẽ làm, không phải yêu cầu với ứng viên |
+| `GOP` | Nhồi nhiều kỹ năng vào một dòng |
+| `BIA` | AI tự nghĩ ra, không có trong tin |
+| `TRUNG` | Trùng nghĩa với một dòng khác |
+
+Phân vân thì ghi lý do vào cột `ghi_chu` — lúc viết báo cáo sẽ cần, vì tỉ lệ dòng phân vân
+chính là **độ nhạy của phép đo với người chấm**.
+
+**Bước 2 — điền `missing.csv`.** Mở tin gốc, đếm xem tin có yêu cầu nào **AI bỏ sót không bóc**.
+Bỏ qua bước này thì recall vĩnh viễn bằng 1 và cả bộ số trông đẹp một cách vô nghĩa.
+
+**Bước 3 — tính điểm:**
+
+```powershell
+..\..\ai-service\.venv\Scripts\python.exe score_rubric.py --tag v4
+```
+
+Ra precision / recall / F1 + bảng phân rã sai kiểu gì.
+
+> **Chấm tối thiểu V1 và V4** để có câu "F1 từ X lên Y". Chấm cả 4 thì có biểu đồ F1 đầy đủ,
+> nhưng tốn khoảng 240 dòng gán nhãn. `labels.csv` của cả 4 phiên bản đều được lưu sẵn, nên
+> chấm thêm lúc nào cũng được.
+
+---
+
+## 6. File nào là gì
+
+| File | Nội dung |
+|---|---|
+| `dataset.json` | 10 tin tuyển dụng test — **không sửa giữa các lần chạy** |
+| `prompts.py` | Định nghĩa 4 phiên bản prompt (V4 nạp từ ai-service) |
+| `run.py` | Chạy bộ test, đo tầng máy, sinh phiếu chấm tay |
+| `metrics.py` | Các phép đo máy tự tính (giấy tờ, gộp, trùng, ổn định) |
+| `RUBRIC.md` | **Định nghĩa 6 mã + ranh giới khi phân vân** — đọc trước khi chấm |
+| `score_rubric.py` | Đọc nhãn đã điền → precision / recall / F1 |
+| `out/<ver>/raw.json` | Đầu ra thô của model, để đối chiếu lại khi nghi ngờ |
+| `out/<ver>/auto_metrics.csv` | Số tầng máy từng tin |
+| `out/<ver>/labels.csv` | **Phiếu chấm tay** — bạn điền cột `nhan` |
+| `out/<ver>/missing.csv` | **Phiếu đếm bỏ sót** — bạn điền |
+| `out/so_sanh_version.csv` | Bảng so 4 phiên bản, dùng để vẽ biểu đồ |
+| `out/KET_QUA.md` | Bản viết tay tổng hợp kết quả + hạn chế |
+
+---
+
+## 7. Nguyên tắc phải giữ
+
+- **Lượt 1 là lượt đem đi chấm**, không chọn lượt "đẹp nhất". Chọn lượt đẹp là tự chấm điểm cho mình.
+- **Ngưỡng Tốt / Chấp nhận được / Cần cải thiện chốt TRƯỚC khi đọc số** (`RUBRIC.md`), và lấy
+  của nguồn ngoài để khỏi bị nghi gọt cho vừa.
+- **Không sửa `dataset.json` giữa các lần chạy** — đổi bộ test thì các phiên bản hết so được với nhau.
+- **Hạn chế phải viết ra**: tin tự soạn · 10 tin là ít · một người gán nhãn · số thời gian đo
+  trên GPU chứ không phải CPU. Nêu trước còn hơn để hội đồng tự tìm ra.

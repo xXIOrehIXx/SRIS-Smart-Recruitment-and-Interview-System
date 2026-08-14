@@ -125,10 +125,10 @@ Test Dataset → AI Assistant → Response Evaluation → Security Validation �
 |---|---|---|
 | Bài toán AI | Trợ lý hỏi–đáp HRM, sinh SQL read-only | Bóc tiêu chí đánh giá từ JD (LLM ra JSON có schema) |
 | Model | Gemini 2.5 Flash (API ngoài) | Ollama + qwen2.5 chạy local (bắt buộc, ràng buộc PDPL) |
-| Bộ test | 221 test case, 4 nhóm nghiệp vụ | Bộ JD cố định đa ngành (§16.3) |
-| Chỉ số | Precision / Recall / Accuracy / F1 / FPR | Tầng máy: % JSON hợp lệ lần đầu, % tiêu chí truy được về JD gốc, tỷ lệ trùng nghĩa. Tầng người: rubric 0–5 |
-| Prompt versioning | V1→V5, mỗi bước thêm 1 lớp | baseline → few-shot → ràng buộc "chỉ lấy từ phần yêu cầu/kỹ năng" → self-critique |
-| Đã có sẵn | — | Thực nghiệm 72 cặp bác bỏ tính năng chấm CV (§16.2): best accuracy 0.611 vs 0.500 baseline; đối chứng LLM 0.972 |
+| Bộ test | 221 test case, 4 nhóm nghiệp vụ | 10 JD cố định đa ngành, mỗi tin chạy 2 lượt (§16.2) |
+| Chỉ số | Precision / Recall / Accuracy / F1 / FPR | Tầng máy: % JSON hợp lệ lần đầu, % tiêu chí truy được về JD gốc, tỷ lệ trùng nghĩa. Tầng người: rubric 6 mã → precision / recall / F1 |
+| Prompt versioning | V1→V5, mỗi bước thêm 1 lớp | baseline → v2 (thêm luật dài) → v3 (thêm ví dụ ngắn); kết luận **giữ baseline** |
+| Kết quả | — | Precision 0.841 · Recall 0.914 · F1 0.876; 0 tiêu chí bịa (§16.2) |
 
 **Ba thứ nên bê nguyên cách làm:**
 
@@ -136,4 +136,4 @@ Test Dataset → AI Assistant → Response Evaluation → Security Validation �
 2. **Biểu đồ đường theo version prompt** — cho hội đồng thấy quá trình cải tiến, không chỉ con số cuối.
 3. **Sơ đồ 5 bước của khung kiểm thử** đặt ở đầu phần AI Testing để định khung trước khi vào số liệu.
 
-**Một thứ nên làm khác:** SmartHR trình bày như thể AI luôn thành công. SRIS có lợi thế riêng — thực nghiệm §16.2 **bác bỏ** một tính năng dựa trên số liệu. Đó là điểm mạnh học thuật, nên trình bày song song: "nhóm đo cả cái bỏ đi lẫn cái giữ lại".
+**Một thứ nên làm khác:** SmartHR trình bày như thể AI luôn thành công. SRIS nói thẳng cả chỗ hỏng — hai khiếm khuyết còn lại (lọt tiêu chí "giấy tờ", một tin bị trả rỗng) và biên độ 0.714–0.841 của phép đo đều ghi rõ trong `exp_criteria_extract/out/KET_QUA.md`. Nêu hạn chế trước còn hơn để hội đồng tự tìm ra.
