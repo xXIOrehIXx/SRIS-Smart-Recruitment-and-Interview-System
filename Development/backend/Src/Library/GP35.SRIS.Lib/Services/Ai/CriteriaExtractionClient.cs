@@ -62,11 +62,28 @@ public class CriteriaExtractionClient : ICriteriaExtractionClient
         // qua biến môi trường, địa chỉ AI service nằm trong config) nên không tin mù đầu vào.
         // Riêng Trim() thì KHÔNG thừa: tên "  " lọt min_length=2 của Pydantic vì đúng 2 ký tự,
         // trim xong mới lộ là rỗng — một dòng trắng trong phiếu chấm là dòng không ai chấm được.
-        return parsed.Criteria.Select(c => new ExtractedCriterion(
+        var tho = parsed.Criteria.Select(c => new ExtractedCriterion(
                 (c.Name ?? "").Trim(),
                 Math.Clamp(c.Weight, 0.1m, 5m)))
             .Where(c => c.Name.Length >= 2)
             .ToList();
+
+        // Dọn bằng luật những thứ prompt đã dặn mà model vẫn không bỏ: dòng giấy tờ (bỏ hẳn) và
+        // ngưỡng số năm (cắt, giữ phần chấm được). Xem CriteriaNameFilter để biết vì sao lọc ở
+        // .NET chứ không viết thêm luật vào prompt.
+        var loc = CriteriaNameFilter.Apply(tho);
+
+        // Người dùng KHÔNG thấy dòng bị bỏ — chỉ log này phân biệt được "model đã khá lên" với
+        // "regex đang giấu bớt". Cần khi đo lại prompt, và khi có người kêu thiếu tiêu chí.
+        if (loc.Dropped.Count > 0 || loc.Rewritten.Count > 0)
+        {
+            _logger.Here().Information(
+                "CriteriaExtractionClient: lọc {Raw} -> {Kept} tiêu chí. Bỏ=[{Dropped}] Sửa=[{Rewritten}]",
+                tho.Count, loc.Criteria.Count,
+                string.Join(" | ", loc.Dropped), string.Join(" | ", loc.Rewritten));
+        }
+
+        return loc.Criteria;
     }
 
     /// <summary>Body lỗi có thể rất dài (traceback Python) — cắt trước khi vào log.</summary>
