@@ -412,8 +412,6 @@ Một gói công việc chỉ được đánh dấu ✅ khi thỏa **toàn bộ*
 | Thời hạn | 15/07/2026 | 31/08/2026 | Bổ sung thời gian cho tái định vị và đo lường AI |
 
 **Tác động lên WBS:** toàn bộ công việc thuộc module Quiz (ước tính 86 giờ đã thực hiện) được ghi
-nhận là **chi phí chìm do thay đổi phạm vi**, không tính vào bảng ở Mục 5. Phần phương pháp
-đánh giá AI xây dựng trong giai đoạn đó được **tái sử dụng** cho việc đo chất lượng bóc tiêu chí
-(Mục 5.2) — xem `ai-experiments/README.md`.
+nhận là **chi phí chìm do thay đổi phạm vi**, không tính vào bảng ở Mục 5.
 
 ─────── Hết tài liệu ───────
