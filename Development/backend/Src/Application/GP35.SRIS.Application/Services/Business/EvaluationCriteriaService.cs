@@ -40,6 +40,14 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     {
         Validate(dto.Name, dto.Weight, dto.MaxScore);
 
+        // UNIQUE (job_id, name): để DB chặn thì người dùng nhận 500 kèm nguyên văn lỗi SQL.
+        // Chặn sớm để họ đọc được chuyện gì đang xảy ra.
+        var name = dto.Name.Trim();
+        var existed = await _criteriaRepo.GetByJobAsync(companyId, jobId,
+            activeOnly: false, approvedOnly: false);
+        if (existed.Any(c => string.Equals((c.Name ?? "").Trim(), name, StringComparison.OrdinalIgnoreCase)))
+            throw Bad($"Vị trí này đã có tiêu chí \"{name}\".");
+
         var entity = new EvaluationCriteria
         {
             JobId = jobId,
@@ -166,8 +174,31 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             // Bóc lại = thay trọn bộ DRAFT cũ (tiêu chí đã APPROVED giữ nguyên).
             await _criteriaRepo.DeleteDraftsAsync(companyId, jobId);
 
+            // Bảng có UNIQUE (job_id, name). Tiêu chí đã DUYỆT (hoặc gõ tay, hoặc áp từ khuôn)
+            // KHÔNG bị xoá ở trên, nên AI bóc lại mà trùng tên là INSERT ném lỗi -> cả lượt bóc
+            // rơi vào catch chung và người dùng đọc được "AI chưa đề xuất được tiêu chí" trong
+            // khi AI đã trả kết quả tốt. Đây chính là ca "lúc được lúc không": job mới thì chạy,
+            // job từng duyệt tiêu chí rồi thì lần nào cũng hỏng.
+            // Bỏ QUA dòng trùng chứ không xoá bản cũ: bản đã duyệt mới là bản đang dùng, và có
+            // thể đã có phiếu chấm phỏng vấn trỏ vào nó.
+            var takenNames = (await _criteriaRepo.GetByJobAsync(companyId, jobId,
+                    activeOnly: false, approvedOnly: false))
+                .Select(c => (c.Name ?? "").Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var inserted = 0;
+            var skipped = new List<string>();
+
             foreach (var c in extracted)
             {
+                // Add trả false = trùng — bắt cả trùng với bản cũ lẫn trùng bên trong chính
+                // lượt bóc (LLM thỉnh thoảng trả hai dòng y hệt nhau).
+                if (!takenNames.Add(c.Name))
+                {
+                    skipped.Add(c.Name);
+                    continue;
+                }
+
                 var entity = new EvaluationCriteria
                 {
                     JobId = jobId,
@@ -178,13 +209,31 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                     Source = CriteriaSource.AiExtracted,
                     Status = CriteriaStatus.Draft
                 };
-                entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
+
+                try
+                {
+                    entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
+                    inserted++;
+                }
+                catch (Exception ex)
+                {
+                    // Lưới an toàn cho phần va chạm mà HashSet ở trên không thấy: collation của
+                    // SQL Server có thể coi hai tên khác dấu là một, và người khác có thể vừa
+                    // thêm tiêu chí cùng tên. Mất 1 dòng thì bỏ 1 dòng — đừng đánh đổ cả lượt bóc.
+                    _logger.Warning(ex, "RunExtraction: bỏ qua tiêu chí \"{Name}\" (job={JobId}) — " +
+                        "không chèn được.", c.Name, jobId);
+                    skipped.Add(c.Name);
+                }
             }
 
+            if (skipped.Count > 0)
+                _logger.Information("RunExtraction: job={JobId} bỏ {N} tiêu chí trùng tên đã có: [{Names}]",
+                    jobId, skipped.Count, string.Join(" | ", skipped));
+
             await CloseAsync(companyId, extractionId, jobId, ExtractionStatus.Done,
-                extracted.Count, null, null);
+                inserted, null, null);
             _logger.Information("RunExtraction: job={JobId} -> {N} tiêu chí DRAFT chờ duyệt.",
-                jobId, extracted.Count);
+                jobId, inserted);
         }
         catch (Exception ex)
         {
