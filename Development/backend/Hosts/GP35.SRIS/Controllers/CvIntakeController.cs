@@ -65,7 +65,7 @@ namespace GP35.SRIS.Controllers
         /// </para>
         /// </summary>
         [HttpGet("{cvId:long}/file-url")]
-        [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
+        [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
         public async Task<IActionResult> GetCvFileUrl(long cvId)
         {
             var url = await _cvIntakeService.GetCvFileUrlAsync(_contextData.CompanyId, cvId);

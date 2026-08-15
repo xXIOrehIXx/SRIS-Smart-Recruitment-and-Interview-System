@@ -10,7 +10,8 @@ namespace GP35.SRIS.Controllers;
 /// <summary>Đọc hồ sơ ứng tuyển cho Kanban + màn chi tiết ứng viên (5.16). Human Resource/DM.</summary>
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager,
+    RoleConstants.Director)]
 public class ApplicationQueryController : ControllerBase
 {
     private readonly IContextData _contextData;

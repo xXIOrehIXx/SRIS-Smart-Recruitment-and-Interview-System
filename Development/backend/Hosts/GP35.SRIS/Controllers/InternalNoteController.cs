@@ -15,7 +15,8 @@ namespace GP35.SRIS.Controllers;
 [Route("api/applications/{applicationId:long}/notes")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager,
+    RoleConstants.Director)]
 public class InternalNoteController : ControllerBase
 {
     private readonly IContextData _contextData;

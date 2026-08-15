@@ -6,27 +6,37 @@ skinparam nodesep 80
 skinparam ranksep 80
 hide circle
 
-title **Feature 12: Interview Pool Management (Class Diagram)**
+title **Feature 12: Interview Scheduling (Class Diagram)**
 
-class InterviewPoolController <<boundary>> {
-    - _poolService : InterviewPoolService
-    + CreatePoolAsync(jobId : long, dto : Object) : Object
-    + InviteAsync(poolId : long, dto : Object) : Object
+note as N1
+  Rewritten 15/08/2026: the shared slot pool + candidate
+  self-scheduling link was dropped. HR agrees the time by
+  phone and enters the session; one session is stored as
+  a 1-slot pool so the scoring sheet stays unchanged.
+end note
+
+class InterviewScheduleController <<boundary>> {
+    - _scheduleService : InterviewScheduleService
+    + BookAsync(applicationId : long, dto : Object) : Object
+    + GetByJobAsync(jobId : long) : Object
+    + CancelAsync(scheduleId : long, dto : Object) : Object
 }
 
-class InterviewPoolService <<control>> {
+class InterviewScheduleService <<control>> {
     - _schedulingRepo : SchedulingRepository
     - _appRepo : ApplicationRepository
-    - _magicLink : MagicLinkService
-    - _stateService : ApplicationStateService
-    + CreatePoolAsync(companyId : long, userId : long, jobId : long, dto : Object) : PoolDto
-    + InviteAsync(companyId : long, userId : long, poolId : long, dto : Object) : InviteResultDto
+    - _criteriaRepo : EvaluationCriteriaRepository
+    - _notify : NotificationService
+    + BookAsync(companyId : long, userId : long, applicationId : long, dto : Object) : long
+    + GetByJobAsync(companyId : long, jobId : long) : List<InterviewSessionDto>
+    + CancelAsync(companyId : long, userId : long, scheduleId : long, dto : Object) : void
 }
 
 class InterviewSlotPool <<entity>> {
     - poolId : long
     - jobId : long
     - roundNumber : int
+    - name : string
     - status : string
 }
 
@@ -45,8 +55,8 @@ class InterviewSchedule <<entity>> {
     - status : string
 }
 
-InterviewPoolController --> InterviewPoolService : Association
-InterviewPoolService --> InterviewSlotPool : Dependency
+InterviewScheduleController --> InterviewScheduleService : Association
+InterviewScheduleService --> InterviewSlotPool : Dependency
 
 InterviewSlotPool "1" *--> "*" InterviewSlot : Composition
 InterviewSlotPool "1" *--> "*" InterviewSchedule : Composition

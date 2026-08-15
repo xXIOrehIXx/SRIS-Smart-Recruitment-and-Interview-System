@@ -13,7 +13,7 @@ Kim chỉ nam (single source of truth) cho mọi chat trong Project SRIS. Chat m
 - **Định vị đã chốt:** "Quy trình tuyển dụng tối giản đúng chuẩn cho công ty chưa có phòng HR" — target công ty ≤200 nhân sự + công ty gia đình. Nguyên tắc: **đơn giản là mặc định, phức tạp là tùy chọn**.
 - **AI làm ĐÚNG MỘT việc: bóc tiêu chí từ JD** → người duyệt chốt → cả hội đồng phỏng vấn chấm trên cùng bộ tiêu chí đó. Hệ thống **KHÔNG chấm điểm, KHÔNG xếp hạng ứng viên**.
 - AI chạy Local (Ollama), không OpenAI/Gemini.
-- Đã code end-to-end: Auth/RBAC, multi-tenant RLS, Career Site, pipeline 4 pha, Yêu cầu tuyển dụng, bóc tiêu chí + duyệt, phiếu chấm phỏng vấn + verdict, đặt lịch pool, thư mời nhận việc, email automation, dashboard.
+- Đã code end-to-end: Auth/RBAC, multi-tenant RLS, Career Site, pipeline 4 pha, Yêu cầu tuyển dụng, bóc tiêu chí + duyệt, phiếu chấm phỏng vấn + verdict, đặt lịch phỏng vấn, đề xuất tuyển + duyệt của Giám đốc, thư mời nhận việc, email automation, dashboard.
 - Việc còn lại: minh chứng sơ cấp (B2), vẽ lại ERD (B3), tài liệu + slide (B5).
 
 ---
@@ -38,15 +38,16 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 | Role | Mô tả | Cách vào | Quyền chính |
 |---|---|---|---|
 | Admin (per tenant) | Quản trị viên công ty | Đăng nhập Portal | Quản lý user, phòng ban, brand, email; **superuser — bypass mọi cổng quyền** |
-| Human Resource | Vận hành toàn bộ pipeline | Đăng nhập Portal | Duyệt Yêu cầu tuyển dụng → tạo Tin tuyển dụng; duyệt bộ tiêu chí AI bóc; Kanban, sàng lọc, đặt lịch, soạn thư mời |
+| Human Resource | Vận hành toàn bộ pipeline | Đăng nhập Portal | Duyệt Yêu cầu tuyển dụng → tạo Tin tuyển dụng; duyệt bộ tiêu chí AI bóc; Kanban, sàng lọc, ĐẶT LỊCH phỏng vấn, soạn thư mời theo điều khoản Giám đốc chốt |
 | Interviewer | Người chấm phỏng vấn | Đăng nhập Portal | Xem buổi được giao, chấm theo tiêu chí + nêu **đề xuất tuyển/không**, sửa tới khi hồ sơ khóa |
-| Department Manager | Trưởng bộ phận — ra đề và quyết | Đăng nhập Portal | Tạo Yêu cầu tuyển dụng (5.17); ở bước OFFER đọc đề xuất của panel rồi chốt tuyển hay không |
-| Candidate | Ứng viên ngoài hệ thống | Magic link | Nộp CV, chọn lịch, xem trạng thái, xem thư mời |
+| Department Manager | Trưởng bộ phận — ra đề và ĐỀ XUẤT | Đăng nhập Portal | Tạo Yêu cầu tuyển dụng (5.17); duyệt ứng viên vào vòng phỏng vấn; đọc đề xuất của panel rồi **gửi Đề xuất tuyển** lên Giám đốc |
+| **Giám đốc** (V043) | Người quyết tuyển | Đăng nhập Portal | Duyệt/không duyệt Đề xuất tuyển của DM + **chốt mức lương và ngày vào làm**; phạm vi toàn công ty |
+| Candidate | Ứng viên ngoài hệ thống | Magic link | Nộp CV, xem trạng thái, xem thư mời |
 
 - **Mỗi User giữ ĐÚNG 1 role** — code không gán chồng. Công ty gia đình dùng **1 tài khoản Admin** làm hết; tách vai = tạo thêm tài khoản khi công ty lớn lên.
 - ⚠️ **Human Resource là TÊN GỌI mới; GIÁ TRỊ trong `User.role` và trong JWT vẫn là `'Recruiter'`** (`RoleConstants.HumanResource`) — đổi giá trị sẽ phải migrate dữ liệu + đá mọi phiên đăng nhập. Viết SRS/ERD phải nhớ chi tiết này.
-- Câu thần chú: **Human Resource lái · Interviewer chấm · DM quyết (và ra đề) · Candidate ứng tuyển · Admin dựng sân.**
-- "Chấm" ≠ "quyết": Interviewer đưa INPUT (điểm + đề xuất). DM ra phán xét tuyển/loại — chỉ ở MỘT điểm duy nhất là bước OFFER. Job không gán DM → Human Resource quyết.
+- Câu thần chú: **Human Resource lái · Interviewer chấm · DM ra đề + chọn người gặp + đề xuất · Giám đốc quyết tuyển · Candidate ứng tuyển · Admin dựng sân.**
+- Ba tầng tách bạch (chốt 15/08/2026 sau bảo vệ hội đồng): Interviewer đưa INPUT (điểm + đề xuất) → DM đưa **KIẾN NGHỊ chuyên môn** (ai đáng gặp, ai nên tuyển) → **Giám đốc RA QUYẾT ĐỊNH** tuyển và chốt điều khoản. Trưởng bộ phận không đủ thẩm quyền tuyển người, nên hệ thống không cho họ tự đẩy hồ sơ sang bước Quyết định.
 
 ---
 
@@ -54,8 +55,8 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 
 ### IN-SCOPE
 - **Recruitment:** Career Site công khai · Yêu cầu tuyển dụng (DM) → Tin tuyển dụng (HR) — 5.17 · AI bóc tiêu chí từ JD → người duyệt chốt (5.18) · nhận + lưu CV (parse PDF, KHÔNG chấm) · Kanban 4 pha + state machine nội bộ · Email automation · Multi-tenant + brand theming.
-- **Interview:** phiếu chấm theo bộ tiêu chí chung + đề xuất tuyển của từng interviewer (5.7) · thư viện tiêu chí mẫu cấp công ty · đặt lịch phỏng vấn nội bộ theo pool + .ics (Section 15) · thư mời nhận việc (5.15).
-- **Chung:** Dashboard analytics · RBAC 4 role + candidate magic link · Activity Log & Internal Notes · danh mục phòng ban / loại hình làm việc.
+- **Interview:** phiếu chấm theo bộ tiêu chí chung + đề xuất tuyển của từng interviewer (5.7) · thư viện tiêu chí mẫu cấp công ty · đặt lịch phỏng vấn nội bộ + .ics (Section 15) · đề xuất tuyển → Giám đốc duyệt (5.14) · thư mời nhận việc (5.15).
+- **Chung:** Dashboard analytics · RBAC 5 role + candidate magic link · Activity Log & Internal Notes · danh mục phòng ban / loại hình làm việc.
 - **Điểm "smart":** AI bóc tiêu chí từ JD cho người duyệt, rồi cả hội đồng phỏng vấn chấm trên **CÙNG một bộ tiêu chí** — nhất quán, truy vết được, AI không quyết thay người.
 - **"Wow" phụ:** phiếu chấm ẩn cho tới khi nộp (chống hùa theo) · đặt lịch self-service kiểu Calendly thu nhỏ · trang trạng thái cho ứng viên.
 
@@ -89,7 +90,7 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 | 4. Sàng lọc | Chủ/quản lý tự đọc, cảm tính | Tuyển sai lặp lại (62% — Monster) | Pha Sàng lọc + bộ tiêu chí đã chốt làm khung đọc CV |
 | 5. Kiểm tra năng lực | Hầu như KHÔNG tổ chức test — thử việc mới là vòng đánh giá thật | — | Không có bước test |
 | 6. Phỏng vấn | Thường 1 vòng, không phiếu chấm | So sánh ứng viên bằng trí nhớ | Pha Phỏng vấn — phiếu chấm chung (5.7) |
-| 7. Quyết + offer | Quyết nhanh nhưng hay im lặng với UV; offer qua điện thoại | Mất ứng viên vì im lặng/chậm (78% — Calendly) | Pha Quyết định — DM chốt; thư mời + trang trạng thái (5.15) |
+| 7. Quyết + offer | Quyết nhanh nhưng hay im lặng với UV; offer qua điện thoại | Mất ứng viên vì im lặng/chậm (78% — Calendly) | Pha Quyết định — DM đề xuất, Giám đốc chốt; thư mời + trang trạng thái (5.15) |
 | 8. Thử việc, tham chiếu | Vòng đánh giá thật | — | Ngoài scope — ghi Internal Notes |
 
 **Luận điểm vàng cho defense:** công ty nhỏ KHÔNG thiếu bước — họ làm gần đủ các bước như công ty lớn nhưng làm PHI CẤU TRÚC (miệng, Zalo, trí nhớ, cảm tính). SRIS không thêm quy trình — SRIS cấu trúc hóa đúng những gì họ đang làm sẵn.
@@ -112,7 +113,7 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 ## 5. CÁC QUYẾT ĐỊNH THIẾT KẾ ĐÃ CHỐT
 
 ### 5.1 Authentication
-- Internal user (4 role): JWT + email/password, đăng nhập Portal.
+- Internal user (5 role): JWT + email/password, đăng nhập Portal.
 - Candidate: magic link, TTL cấu hình, KHÔNG cần account — actor ẩn danh duy nhất.
 - Vì sao người trong cuộc đều login: interviewer cần xem lịch sử + sửa điểm; DM cần xem kết quả để quyết. Nhu cầu định danh lâu dài, magic link một-tác-vụ không kham được. Giống ATS thật (Greenhouse, Lever).
 
@@ -160,14 +161,14 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - **Ai chạm hồ sơ (sửa sau bảo vệ hội đồng 15/08/2026 — DM có HAI cửa):**
   - `NEW→SCREENING`: Human Resource tự sàng lọc hồ sơ, không cổng duyệt.
   - `SCREENING→INTERVIEW` — **cửa 1 của DM: CHỌN ai được vào vòng phỏng vấn.** Human Resource KHÔNG tự đưa ai vào phỏng vấn; nhân sự chỉ **lên lịch** cho người đã được duyệt (mời vào pool / chốt lịch tay đều đòi hồ sơ đã ở INTERVIEW). Lý do hội đồng nêu: ai đáng gặp là phán đoán chuyên môn của trưởng bộ phận, không phải việc vận hành của nhân sự. Job **bắt buộc** có `department_manager_id` khi đăng (Status=Open) — không có DM thì không ai duyệt được, BE chặn ngay lúc đăng tin.
-  - `INTERVIEW→OFFER` — **cửa 2 của DM: quyết tuyển**, DM đọc đề xuất panel rồi chốt; job cũ chưa gán DM → Human Resource (giữ nguyên, chỉ còn áp cho dữ liệu tạo trước 15/08/2026).
+  - `INTERVIEW→OFFER` — **cửa của GIÁM ĐỐC: quyết tuyển** (chốt 15/08/2026, V043). Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển: họ đọc đề xuất panel rồi gửi **phiếu Đề xuất tuyển** (`HiringProposal`); Giám đốc duyệt — chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm mức lương + ngày vào làm đã chốt. Giám đốc có phạm vi TOÀN CÔNG TY, không gán theo vị trí. Không duyệt ≠ loại: hồ sơ ở lại INTERVIEW, DM đề xuất lại được.
   - Loại hồ sơ (`→REJECTED`) không bị khoá theo vai: nhân sự loại ở bước sàng lọc, DM loại ở hai màn duyệt của mình.
   - Admin là superuser, đi qua cả hai cửa (công ty nhỏ 1 tài khoản chạy trọn luồng).
 - forward-only ≠ cứng nhắc: reschedule + nhiều vòng diễn ra BÊN TRONG stage INTERVIEW (5.12).
 - Khi trình bày: nói "quy trình 4 pha, chỉ tiến không lùi, có chốt cửa". Thuật ngữ state machine/guard chỉ dùng trong Q&A kỹ thuật.
 
 ### 5.9 Đặt lịch phỏng vấn — tóm tắt
-Đặt lịch nội bộ, KHÔNG Google Calendar. MỘT mô hình duy nhất: HR mở 1 **POOL khung** (gán interviewer từng khung) cho job + vòng → mời danh sách ứng viên → mỗi người 1 magic link `SCHEDULE` → ứng viên tự chọn khung → khung đó BOOKED, các khung khác giữ OPEN cho người sau, email xác nhận + .ics. Chi tiết: Section 15.
+Đặt lịch nội bộ, KHÔNG Google Calendar. **Viết lại 15/08/2026 — bỏ pool khung + magic link `SCHEDULE`:** HR gọi cho người phỏng vấn hỏi lịch rảnh, gọi ứng viên thống nhất giờ, rồi NHẬP buổi vào hệ thống (ứng viên + panel 1..5 người + giờ). Hệ thống chống trùng giờ, gửi email xác nhận + .ics, tạo bản ghi để interviewer chấm. Lý do bỏ: ngồi đợi ứng viên bấm link chậm hơn một cuộc gọi. Chi tiết: Section 15.
 
 ### 5.10 Cấu trúc Web — 2 site tách biệt
 - **Career Site (công khai):** `/{slug}/career` — ứng viên xem tin + nộp CV, không đăng nhập. API `/api/public/{slug}/...`, tenant giải từ slug bằng middleware riêng.
@@ -181,7 +182,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Cửa thoát: `FromSqlRaw` cho câu EF dịch không gọn.
 
 ### 5.12 Phỏng vấn nhiều vòng — dữ liệu trong INTERVIEW
-- Nhiều vòng = DỮ LIỆU bên trong stage INTERVIEW, KHÔNG thêm state. Card nằm yên ở INTERVIEW; mỗi vòng = 1 pool + 1 phiếu chấm riêng (`round_number` trên pool/schedule). Xong vòng, HR chọn: mở vòng kế / sang OFFER (G2) / REJECTED.
+- Nhiều vòng = DỮ LIỆU bên trong stage INTERVIEW, KHÔNG thêm state. Card nằm yên ở INTERVIEW; mỗi vòng = 1 buổi + 1 phiếu chấm riêng (`round_number` trên schedule). Xong vòng: HR đặt buổi vòng kế, hoặc DM đề xuất tuyển để Giám đốc quyết, hoặc loại.
 - Guard G2 giữ mức "≥1 phiếu chấm" — KHÔNG siết "chấm hết mọi vòng".
 - Vì sao KHÔNG INTERVIEW_1/_2/_3: phình state, hard-code số vòng, phá forward-only.
 - Với công ty nhỏ: mặc định 1 vòng là đủ (khớp As-Is 4.2); multi-round là năng lực sẵn khi cần. Bằng chứng thực tế: VPBank Young Talents 2026 (Section 10).
@@ -195,19 +196,19 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 ### 5.13 Actionable Email + Magic Link
 - Magic link: URL chứa chuỗi ngẫu nhiên dài. DB lưu **hash** token (SHA-256) kèm purpose, hồ sơ, TTL, đã dùng chưa. Rate limit, đếm truy cập, ràng buộc purpose.
-- **3 purpose — đều của ứng viên: `SCHEDULE` · `STATUS` · `OFFER_RESPONSE`.**
+- **2 purpose — đều của ứng viên: `STATUS` · `OFFER_RESPONSE`.** (`SCHEDULE` bỏ 15/08/2026 cùng luồng ứng viên tự chọn khung.)
 - Actionable Email: email HTML có nút trỏ magic link. **BẪY:** nút trong email KHÔNG trực tiếp thực hiện hành động (trình quét email tự bấm thử) — nút chỉ MỞ trang, người dùng bấm trên trang mới ghi kết quả.
 - "one-time" = **đốt khi CHỐT**, không phải khi mở. Trong TTL mở lại được; đã chốt → trang "Đã xử lý, chỉ xem".
-- TTL theo purpose: SCHEDULE ~5 ngày · OFFER_RESPONSE ~5-7 ngày · STATUS dài.
+- TTL theo purpose: OFFER_RESPONSE ~5-7 ngày · STATUS dài.
 - Chấm điểm & quyết tuyển KHÔNG dùng magic link — nằm trong Portal.
 
 ### 5.14 Người quyết — Department Manager (cập nhật 15/08/2026)
 - Người quyết = DM sở hữu job (`Job.department_manager_id` → User). **Bắt buộc khi đăng tin** (Status=Open); bản nháp thì chưa cần.
-- **DM quyết ở HAI cửa của pipeline:**
+- **Hai cửa, hai người:**
   1. `SCREENING→INTERVIEW` — chọn ai được vào vòng phỏng vấn (màn *Duyệt Vào Phỏng Vấn*, `/dept/screening`).
   2. `INTERVIEW→OFFER` và rời OFFER — quyết tuyển (màn *Quyết Định Tuyển Dụng*, `/dept/hiring-decision`).
-- **Human Resource lái vận hành, không chọn người:** sàng lọc hồ sơ, xếp lịch phỏng vấn cho người đã duyệt, soạn thư mời. Mời vào pool và chốt lịch tay đều đòi hồ sơ đã ở INTERVIEW — trước 15/08/2026 hai thao tác này TỰ đẩy state, tức mời ai là mặc nhiên chọn người đó.
-- Cộng với 5.17, DM đứng **ba chốt**: ra đề (Yêu cầu tuyển dụng) → chọn người gặp → chốt tuyển. Vẫn KHÔNG đụng vận hành (không mở pool, không gửi email).
+- **Human Resource lái vận hành, không chọn người:** sàng lọc hồ sơ, ĐẶT LỊCH phỏng vấn cho người đã duyệt, soạn thư mời theo điều khoản Giám đốc chốt. Đặt lịch đòi hồ sơ đã ở INTERVIEW — trước 15/08/2026 thao tác mời TỰ đẩy state, tức mời ai là mặc nhiên chọn người đó.
+- Cộng với 5.17, DM đứng **ba chốt**: ra đề (Yêu cầu tuyển dụng) → chọn người gặp → **đề xuất tuyển**. Vẫn KHÔNG đụng vận hành (không đặt lịch, không gửi email) và KHÔNG quyết tuyển.
 - Job cũ chưa gán DM: cửa OFFER rơi về Human Resource như trước, nhưng cửa vào phỏng vấn thì BE chặn và báo "chưa gán Trưởng bộ phận phụ trách" — gán DM cho tin là xong.
 - Một người vừa là DM vừa chấm phỏng vấn: gán họ làm interviewer của khung. Không cần cơ chế riêng.
 
@@ -217,7 +218,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Liên hệ đầu thư (tên/địa chỉ/email/điện thoại công ty) lấy từ `Company`, nhập một lần ở hồ sơ công ty.
 - **Nội dung thư là EMAIL TEMPLATE sửa được** (loại `OFFER_RESPONSE`): code dựng các khối dữ liệu (`{{positionBlock}}`, `{{compensationBlock}}`, `{{termsBlock}}`, `{{signature}}`, `{{letterhead}}`), template giữ phần lời văn + hình ảnh. Mỗi công ty đổi được câu chữ mà không sợ nhãn trống thò ra.
 - **Mang brand của tenant:** logo + màu lấy từ cùng bộ brand với Career Site. Màu quá sáng tự làm tối cho đủ tương phản trên giấy trắng; chưa cấu hình brand → navy mặc định. Tải logo là best-effort (link hỏng → in thư không logo, không bao giờ lỗi 500).
-- **Luồng:** tại INTERVIEW→OFFER, DM quyết (không DM → HR) → HR soạn thư (form điền sẵn từ Job/Company, sửa được) → lưu `OfferDetail` (PENDING) + gửi email → ứng viên trả lời NGOÀI hệ thống → HR/DM bấm "Đã nhận việc"/"Từ chối" trong Portal → ACCEPTED+HIRED (kèm email onboarding) / DECLINED+REJECTED.
+- **Luồng:** DM gửi Đề xuất tuyển → **Giám đốc duyệt + chốt lương/ngày vào làm** (hồ sơ sang OFFER) → HR soạn thư (form điền sẵn ĐÚNG điều khoản Giám đốc chốt, phần còn lại lấy từ Job/Company, sửa được) → lưu `OfferDetail` (PENDING) + gửi email → ứng viên trả lời NGOÀI hệ thống → HR bấm "Đã nhận việc"/"Từ chối" trong Portal → ACCEPTED+HIRED (kèm email onboarding) / DECLINED+REJECTED.
 - Trang ứng viên (magic link `OFFER_RESPONSE`) **CHỈ ĐỌC**: tóm tắt + PDF thư mời (QuestPDF, font Lato có dấu tiếng Việt) + nút tải. Token **không bị đốt khi mở** — không chốt gì ở đó thì đốt chỉ làm ứng viên mất bản thư.
 - Ghi nhận kết quả **không** áp luật "chỉ DM của job quyết": ứng viên nhận hay từ chối là sự thật khách quan, không phải quyết định mới. Bắt đúng DM mới được gõ vào sẽ làm hồ sơ kẹt ở OFFER trong khi thư đã có câu trả lời.
 - KHÔNG làm: lịch sử thương lượng, ký số.
@@ -231,7 +232,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 | So sánh nhiều phiếu chấm | 1 người chấm | Job gán >1 interviewer |
 | Phiếu Yêu cầu tuyển dụng (5.17) | Không dùng | Công ty có DM tách vai (chủ nhỏ tạo job trực tiếp) |
 | Người duyệt/quyết tách khỏi nhân sự | Admin 1 tài khoản làm hết | Job gán `department_manager_id` (bắt buộc khi đăng tin) |
-| Phỏng vấn nhiều vòng | 1 vòng | HR mở pool vòng tiếp theo |
+| Phỏng vấn nhiều vòng | 1 vòng | HR đặt buổi cho vòng tiếp theo |
 
 - **Cách nói khi bảo vệ:** "Mặc định chỉ 4 bước, MỘT người làm được hết. Bước nâng cao là tùy chọn, bật khi công ty lớn lên. Quy trình này không phải nhóm bịa ra — nó cấu trúc hóa đúng các bước doanh nghiệp nhỏ ĐÃ làm, chỉ tự động hóa khúc chậm."
 - Trình bày demo: mở đầu bằng đường ĐƠN GIẢN NHẤT (đăng tin → AI bóc tiêu chí, người duyệt → CV vào → phỏng vấn chấm theo tiêu chí → tuyển), sau đó mới bật dần tùy chọn.
@@ -268,7 +269,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 **MẢNG 1 — RECRUITMENT:** [nếu bật phiếu] DM tạo Yêu cầu tuyển dụng → HR duyệt và tạo Tin tuyển dụng / [mặc định công ty nhỏ] chủ tạo job trực tiếp → AI bóc tiêu chí DRAFT → người duyệt chốt bộ tiêu chí (5.18) → ứng viên nộp CV qua Career Site hoặc HR nộp hộ → hệ thống parse PDF + lưu hồ sơ ở NEW → HR tự sàng lọc trên Kanban 4 pha (không điểm, không xếp hạng).
 
-**MẢNG 2 — INTERVIEW & OFFER:** HR mở pool khung + mời → ứng viên tự chọn lịch qua magic link (5.9, Section 15) → phỏng vấn + chấm theo CÙNG bộ tiêu chí, mỗi interviewer nêu đề xuất tuyển/không (5.7) → tại cửa Phỏng vấn→Quyết định: DM đọc bản tóm đề xuất rồi chốt (không DM → HR — 5.14) → HR soạn thư mời (5.15) → ứng viên trả lời ngoài hệ thống → HR/DM ghi nhận → HIRED/REJECTED + Dashboard.
+**MẢNG 2 — INTERVIEW & OFFER:** DM duyệt ứng viên vào vòng phỏng vấn → HR gọi chốt giờ rồi đặt buổi, hệ thống gửi xác nhận + .ics (5.9, Section 15) → phỏng vấn + chấm theo CÙNG bộ tiêu chí, mỗi interviewer nêu đề xuất tuyển/không (5.7) → DM đọc bản tóm đề xuất rồi **gửi đề xuất tuyển**; **GIÁM ĐỐC duyệt** = hồ sơ sang Quyết định kèm lương + ngày vào làm đã chốt (5.14) → HR soạn thư mời theo đúng điều khoản đó (5.15) → ứng viên trả lời ngoài hệ thống → HR ghi nhận → HIRED/REJECTED + Dashboard.
 
 ---
 
@@ -283,8 +284,8 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 | M5. Interview Scoring | Phiếu chấm theo bộ tiêu chí chung, blind cho tới khi nộp, đề xuất tuyển của từng interviewer, bản tóm cho người quyết |
 | M6. Dashboard & Analytics | Funnel, time-to-hire, offer acceptance rate, reject-reason/source breakdown |
 | M7. Multi-tenant & Brand | Cô lập theo `company_id` (RLS + Global Query Filter), brand theming dùng chung cho Career Site + thư mời |
-| M8. Auth & Authorization | JWT + RBAC 4 role (mỗi user 1 role; Admin superuser); candidate magic link; hồ sơ + avatar user |
-| M9. Interview Scheduling | Pool khung dùng chung + magic link SCHEDULE + .ics + chốt lịch tay (15.4) |
+| M8. Auth & Authorization | JWT + RBAC 5 role (mỗi user 1 role; Admin superuser); candidate magic link; hồ sơ + avatar user |
+| M9. Interview Scheduling | Nhân sự đặt lịch trực tiếp (panel 1..5) + chống trùng + .ics (15.4) |
 
 *(M10 Offer: thư mời nhận việc — 5.15; gộp vào M2 khi vẽ tài liệu hay tách riêng đều được, miễn nhất quán.)*
 
@@ -292,7 +293,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 ## 8. TIẾN ĐỘ
 
-- **Xong:** Auth/RBAC, multi-tenant, CRUD Job & Application, Career Site, Kanban + state machine, email automation, dashboard, bóc tiêu chí + duyệt, phiếu chấm + đề xuất tuyển, đặt lịch pool, Yêu cầu tuyển dụng, thư mời nhận việc.
+- **Xong:** Auth/RBAC, multi-tenant, CRUD Job & Application, Career Site, Kanban + state machine, email automation, dashboard, bóc tiêu chí + duyệt, phiếu chấm + đề xuất tuyển, đặt lịch phỏng vấn, phiếu Đề xuất tuyển + duyệt của Giám đốc, Yêu cầu tuyển dụng, thư mời nhận việc.
 - **Đang/còn:** minh chứng sơ cấp (B2) · ERD mới (B3) · tài liệu + slide bảo vệ 2 (B5). Chi tiết ở **CÁC VIỆC**.
 
 ---
@@ -377,9 +378,9 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
   - **Hệ thống KHÔNG chấm điểm / xếp hạng ứng viên.** AI làm đúng một việc: bóc tiêu chí từ JD (5.18).
   - **Luồng tiêu chí:** DM tạo Yêu cầu tuyển dụng (tùy chọn) → HR tạo Job → AI bóc tiêu chí DRAFT → người duyệt chốt → bộ tiêu chí đó LÀ phiếu chấm phỏng vấn. **Đã code — đừng thiết kế lại.**
   - Pipeline: hiển thị **4 pha**; **6 state nội bộ, 8 transition**, forward-only, guard G2 (5.8, 5.16).
-  - Chấm vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**; **DM quyết ở HAI cửa — chọn ai vào phỏng vấn (SCREENING→INTERVIEW) và chốt tuyển (INTERVIEW→OFFER)**; HR sàng lọc + xếp lịch, không chọn người. `reject_reason` tùy chọn.
-  - Token (5.13): one-time = đốt khi CHỐT; **3 purpose**: SCHEDULE · STATUS · OFFER_RESPONSE.
-  - Role: 4 role, mỗi user 1 role, Admin superuser; **giá trị role của Human Resource trong DB/JWT là `'Recruiter'`**.
+  - Chấm vs đề xuất vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**, duyệt ai vào phỏng vấn (SCREENING→INTERVIEW) rồi **gửi Đề xuất tuyển**; **GIÁM ĐỐC quyết tuyển** (INTERVIEW→OFFER) và chốt lương/ngày vào làm; HR sàng lọc + đặt lịch + soạn thư. `reject_reason` tùy chọn.
+  - Token (5.13): one-time = đốt khi CHỐT; **2 purpose**: STATUS · OFFER_RESPONSE.
+  - Role: 5 role (thêm **Giám đốc** — V043), mỗi user 1 role, Admin superuser; **giá trị role của Human Resource trong DB/JWT là `'Recruiter'`**.
   - Stack: SQL Server 2025 · EF Core · MinIO · Redis · Local AI (Ollama + qwen2.5, chỉ bóc tiêu chí). PDPD 2026 = luận điểm tuân thủ.
   - Số liệu: KHÔNG bịa; mọi As-Is chờ B2 hoặc trích desk research có nguồn (4.1).
 
@@ -414,27 +415,27 @@ Kiến trúc: React → .NET (orchestration) → Python AI Service (stateless) +
 
 ## 15. ĐẶT LỊCH PHỎNG VẤN — CHI TIẾT (ĐÃ CODE)
 
-Tách 2 bài toán: "chốt mốc thời gian" (nghiệp vụ lõi = IN) vs "đẩy lịch vào Google/Outlook" (OUT). Một tính năng đặt lịch duy nhất, kiểu Calendly thu nhỏ: xóa vòng email qua lại, tái dùng magic link.
+Tách 2 bài toán: "chốt mốc thời gian" (nghiệp vụ lõi = IN) vs "đẩy lịch vào Google/Outlook" (OUT).
 
-**Mô hình lõi = POOL KHUNG DÙNG CHUNG:** HR mở 1 pool (job + vòng) một lần, mời DANH SÁCH ứng viên, ai chốt trước lấy trước, các khung khác giữ OPEN cho người sau. Cá nhân = pool mời 1 người; PV nhóm = mời nhiều người cùng pool. KHÔNG có luồng 1-1 riêng.
+**VIẾT LẠI 15/08/2026 — mô hình lõi = NHÂN SỰ CHỦ ĐỘNG CHỐT.** Bộ phận nhân sự gọi cho người phỏng vấn hỏi lịch rảnh, gọi cho ứng viên thống nhất giờ, rồi NHẬP buổi vào hệ thống. Mô hình cũ (pool khung dùng chung + magic link `SCHEDULE` cho ứng viên tự chọn) **đã bỏ hẳn**: nó bắt nhân sự ngồi đợi ứng viên bấm link, trong khi một cuộc gọi là chốt xong — và khi ứng viên không bấm thì vẫn phải gọi, tức mọi trường hợp đều tốn thêm một vòng chờ.
 
-### 15.1 Thứ tự thao tác: DM DUYỆT trước, MỞ POOL + MỜI sau
-DM duyệt hồ sơ vào vòng Phỏng vấn TRƯỚC (cửa quyết định con người — 5.8/5.14; từ 15/08/2026 HR không tự kéo card sang cột này nữa) → hồ sơ hiện ở màn Lịch Phỏng Vấn của HR → HR mở pool (nhiều khung, gán interviewer) rồi tick chọn ứng viên để mời. Mời/chốt lịch tay cho hồ sơ CHƯA duyệt bị BE từ chối ("chưa được Trưởng bộ phận duyệt vào vòng phỏng vấn"). Bản ghi per-ứng-viên (`InterviewSchedule`) tạo lúc MỜI: `PENDING → CONFIRMED` (chốt khung) / `NO_SLOT_FITS` (báo bận) / `CANCELLED`. **Slot thuộc pool, KHÔNG thuộc từng ứng viên.**
+### 15.1 Thứ tự thao tác: DM DUYỆT trước, NHÂN SỰ ĐẶT LỊCH sau
+DM duyệt hồ sơ vào vòng Phỏng vấn TRƯỚC (cửa quyết định con người — 5.8/5.14) → hồ sơ hiện ở màn Lịch Phỏng Vấn của nhân sự → nhân sự bấm "Đặt lịch phỏng vấn": chọn ứng viên + 1..5 người phỏng vấn + giờ đã hẹn. Đặt lịch cho hồ sơ CHƯA duyệt bị BE từ chối ("chưa được Trưởng bộ phận duyệt vào vòng phỏng vấn").
 
-### 15.2 Token
-Purpose `SCHEDULE`, riêng từng ứng viên nhưng trỏ về CÙNG pool. Token 32 byte, lưu hash, one-time (đốt khi chốt / báo bận), TTL ~5 ngày, đếm truy cập. Đổi khung sau khi đã chốt = KHÔNG self-service — HR xử lý tay.
+### 15.2 Hệ thống lo gì sau khi nhân sự bấm lưu
+- **Chống trùng giờ (giữ nguyên):** chặn nếu chính ứng viên, hoặc bất kỳ ai trong panel, đã có buổi cách dưới `MinGap` (1 tiếng). Nhân sự đã gọi điện nhưng không nhớ hết lịch của 5 người — đây là lưới an toàn, và lỗi báo TÊN người bận kèm giờ buổi kia.
+- **Chặn giờ quá khứ** và **chặn nhảy cóc vòng** (buổi đầu tiên của một ứng viên luôn là vòng 1).
+- **Email xác nhận + tệp .ics** gửi ứng viên (best-effort — email hỏng không làm rớt buổi đã lưu).
+- **Tạo phiếu chấm** cho từng người trong panel (`InterviewSchedule` CONFIRMED → InterviewScore gắn theo `schedule_id`).
+- **Hủy buổi:** `POST /api/interview-schedules/{id}/cancel` — khóa khung, lịch CANCELLED, email báo ứng viên kèm lý do (tùy chọn). Đổi giờ = hủy rồi đặt lại.
 
-### 15.3 Tranh slot, báo bận, so với Calendly
-- Lọc slot = token còn hạn AND slot tương lai AND slot OPEN của pool.
-- **"Tranh slot" là hành vi đúng** — khóa lạc quan: `UPDATE InterviewSlot SET status='BOOKED', booked_application_id=@a WHERE slot_id=@s AND status='OPEN'`; rowcount=0 → "khung vừa có người đặt, chọn khung khác". Chốt CHỈ khung đó, không khóa khung anh em. Cũng kiểm interviewer có BOOKED ở pool khác cùng giờ không.
-- **Báo bận:** nút "Không khung nào phù hợp" → schedule của ứng viên đó = `NO_SLOT_FITS` + đốt token (pool + người khác không ảnh hưởng). Đếm số lần báo bận → cờ nhắc HR: 1 lần = vàng, ≥2 = đỏ ("nên gọi điện chốt tay"). **KHÔNG auto-reject.**
-- **Chốt lịch tay:** `POST /api/applications/{id}/manual-interview` tạo pool 1 khung (CLOSED, slot BOOKED) + schedule CONFIRMED → có schedule để interviewer chấm (không qua magic link).
-- So Calendly: Calendly phụ thuộc Google/Outlook API — đúng phần SRIS cố ý OUT. SRIS = self-scheduling KHÔNG sync, thay bằng .ics. Số liệu dẫn nguồn (Calendly Blog): Muck Rack tốn 80% thời gian xếp lại lịch, giảm time-to-hire 8 ngày; ~78% recruiter mất ứng viên vì xếp lịch chậm.
+### 15.3 So với Calendly / vì sao không self-service
+Calendly phụ thuộc Google/Outlook API — đúng phần SRIS cố ý OUT. Bản thân self-scheduling cũng đã thử và bỏ: với công ty nhỏ, người tuyển dụng vốn ĐANG gọi điện cho ứng viên (khớp As-Is 4.2), nên giá trị của hệ thống không nằm ở chỗ thay cuộc gọi mà ở chỗ **ghi lại buổi đã chốt, chống trùng, và tự gửi xác nhận + .ics**. Số liệu dẫn nguồn (Calendly Blog) vẫn dùng được cho luận điểm "xếp lịch là khâu chậm": Muck Rack tốn 80% thời gian xếp lại lịch, giảm time-to-hire 8 ngày; ~78% recruiter mất ứng viên vì xếp lịch chậm.
 
 ### 15.4 Trạng thái code (M9)
-- **ĐÃ CÓ:** mở pool (`POST /api/jobs/{jobId}/interview-pools`) · mời danh sách (`POST /api/interview-pools/{poolId}/invitations`) · xem pool + cờ · hủy pool · chốt lịch tay · trang ứng viên chọn/chốt/báo bận (`/api/candidate/schedule`) · chống trùng giờ · email + .ics khi CONFIRMED (best-effort) · guard "DM duyệt trước mới mời được".
-- **Chưa/một phần:** reschedule = mở pool vòng mới (chưa có nút gộp) · real-time ẩn slot · ô ghi chú gợi ý giờ.
-- **Bảng (đều có `company_id`):** `InterviewSlotPool` (OPEN/CLOSED/CANCELLED — 1 pool = job + round, kèm `name` = tên vòng, V041) · `InterviewSlot` (OPEN/BOOKED/LOCKED — thuộc pool, có `booked_application_id`) · `InterviewSchedule` (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
+- **ĐÃ CÓ:** đặt buổi (`POST /api/applications/{id}/interviews`) · xem buổi theo vị trí (`GET /api/jobs/{jobId}/interviews`) · hủy buổi (`POST /api/interview-schedules/{id}/cancel`, email báo ứng viên) · chống trùng giờ (ứng viên + cả panel) · email + .ics khi đặt (best-effort) · guard "DM duyệt trước mới đặt lịch được".
+- **Chưa/một phần:** đổi giờ = hủy rồi đặt lại (chưa có nút "dời lịch") · chưa gợi ý khung rảnh của interviewer.
+- **Bảng (đều có `company_id`) — giữ nguyên hình dạng cũ để phiếu chấm không phải đổi:** mỗi buổi = 1 `InterviewSlotPool` (CLOSED) + 1 `InterviewSlot` (BOOKED, giữ giờ + panel) + 1 `InterviewSchedule` (CONFIRMED/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
 
 ---
 

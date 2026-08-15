@@ -4,56 +4,57 @@ skinparam sequenceMessageAlign center
 skinparam roundcorner 5
 skinparam minClassWidth 100
 
-title **Feature 12: Interview Pool Management - Sequence: Invite Candidates**
+title **Feature 12: Interview Scheduling - Sequence: Cancel a Session**
 
 actor Recruiter
 participant "Web UI" as UI
-participant "<<controller>>\nInterviewPoolController" as Ctrl
-participant "<<service>>\nInterviewPoolService" as Svc
-participant "<<repository>>\nApplicationRepository" as AppRepo
+participant "<<controller>>\nInterviewScheduleController" as Ctrl
+participant "<<service>>\nInterviewScheduleService" as Svc
 participant "<<repository>>\nSchedulingRepository" as Repo
-participant "<<service>>\nMagicLinkService" as MagicLink
+participant "<<repository>>\nActivityLogRepository" as LogRepo
+participant "<<service>>\nNotificationService" as Notify
 participant "Database" as DB
 
-Recruiter -> UI: Select Candidates & Click "Invite"
+Recruiter -> UI: Click "Cancel session"
 activate UI
 
-UI -> Ctrl: POST /api/interview-pools/{id}/invite
+UI -> Ctrl: POST /api/interview-schedules/{id}/cancel
 activate Ctrl
 
-Ctrl -> Svc: InviteAsync(companyId, userId, poolId, dto)
+Ctrl -> Svc: CancelAsync(companyId, userId, scheduleId, dto)
 activate Svc
 
-loop For each applicationId in dto.ApplicationIds
-    Svc -> AppRepo: GetByIdAsync(companyId, applicationId)
-    activate AppRepo
-    AppRepo --> Svc: return Application
-    deactivate AppRepo
+Svc -> Repo: GetScheduleByIdAsync / GetSlotAsync
+activate Repo
+note right of Repo: Read the start time BEFORE cancelling\nso the email can name the session
+Repo --> Svc: return schedule + slot
+deactivate Repo
 
-    note right of Svc: Recruiter only SCHEDULES.\nSkip unless currentState = INTERVIEW\n(Department Manager approves the move)
+Svc -> Repo: CancelPoolAsync(companyId, poolId)
+activate Repo
+Repo -> DB: pool CANCELLED + slot LOCKED + schedule CANCELLED
+activate DB
+DB --> Repo: rows affected
+deactivate DB
+Repo --> Svc: return true/false
+deactivate Repo
 
-    Svc -> Repo: InsertInviteScheduleAsync(..., schedule)
-    activate Repo
-    Repo -> DB: INSERT Schedule
-    activate DB
-    DB --> Repo: return scheduleId
-    deactivate DB
-    Repo --> Svc: return scheduleId
-    deactivate Repo
+Svc -> LogRepo: InsertAsync(INTERVIEW_CANCELLED)
+activate LogRepo
+LogRepo --> Svc: ok
+deactivate LogRepo
 
-    Svc -> MagicLink: IssueAsync(..., "SCHEDULE")
-    activate MagicLink
-    note right of MagicLink: Generates Token & \nSends Email
-    MagicLink --> Svc: return (RawToken, ExpiresAt)
-    deactivate MagicLink
-end
+Svc -> Notify: SendInterviewCancelledAsync(...)
+activate Notify
+Notify --> Svc: ok
+deactivate Notify
 
-Svc --> Ctrl: return InviteResultDto
+Svc --> Ctrl: void
 deactivate Svc
 
-Ctrl --> UI: return JSON (Invited & Skipped list)
+Ctrl --> UI: 204 No Content
 deactivate Ctrl
 
-UI --> Recruiter: Show Invite Results
+UI --> Recruiter: Session cancelled, candidate notified
 deactivate UI
 @enduml

@@ -238,7 +238,7 @@ for c in CANDIDATES:
 
     panel = [IV1_ID, IV2_ID] if c["panel"] == "both" else [IV1_ID]
     start = time.strftime(f"%Y-%m-%dT09:00:00Z", time.gmtime(time.time() + c["day"] * 86400))
-    s, sch = call("POST", f"/applications/{app_id}/manual-interview", token=rec,
+    s, sch = call("POST", f"/applications/{app_id}/interviews", token=rec,
                   body={"interviewerIds": panel, "startTime": start, "roundNumber": 1})
     must(s, sch, f"chot lich {c['name']}")
     sched_id = sch["scheduleId"]

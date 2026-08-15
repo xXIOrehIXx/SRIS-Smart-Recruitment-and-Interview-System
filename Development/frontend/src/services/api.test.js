@@ -32,6 +32,7 @@ import axios from 'axios';
 import {
   authAPI, jobsAPI, cvAPI, applicationAPI, interviewAPI, candidateAPI,
   offerAPI, criteriaAPI, dashboardAPI, usersAPI, recruitmentRequestAPI,
+  hiringProposalAPI,
 } from './api';
 
 // api.js tạo 2 instance: [0] = api (có token), [1] = publicApi (career site ẩn danh)
@@ -72,11 +73,10 @@ describe('authAPI', () => {
 });
 
 describe('candidateAPI — token LUÔN qua query string (backend đọc [FromQuery])', () => {
-  test('confirmSchedule: token ở query (được encode), body chỉ có slotId', () => {
-    candidateAPI.confirmSchedule('6.tok+en', 5);
-    expect(apiInst.post).toHaveBeenCalledWith(
-      `/candidate/schedule/confirm?token=${encodeURIComponent('6.tok+en')}`,
-      { slotId: 5 },
+  test('getStatus: token ở query (được encode)', () => {
+    candidateAPI.getStatus('6.tok+en');
+    expect(apiInst.get).toHaveBeenCalledWith(
+      `/candidate/status?token=${encodeURIComponent('6.tok+en')}`,
     );
   });
 
@@ -87,9 +87,11 @@ describe('candidateAPI — token LUÔN qua query string (backend đọc [FromQue
       .toBe(`/api/candidate/offer/letter?token=${encodeURIComponent('6.tok+en')}`);
   });
 
-  test('noSlotAvailable: token ở query, không body', () => {
-    candidateAPI.noSlotAvailable('6.abc');
-    expect(apiInst.post).toHaveBeenCalledWith('/candidate/schedule/no-slot?token=6.abc');
+  // 15/08/2026: ứng viên KHÔNG tự chọn khung nữa — nhân sự gọi điện chốt giờ rồi nhập buổi.
+  test('API ứng viên tự chọn khung đã bị gỡ', () => {
+    expect(candidateAPI.getSchedule).toBeUndefined();
+    expect(candidateAPI.confirmSchedule).toBeUndefined();
+    expect(candidateAPI.noSlotAvailable).toBeUndefined();
   });
 });
 
@@ -130,16 +132,21 @@ describe('offerAPI — thư mời nhận việc (5.15)', () => {
   });
 });
 
-describe('interviewAPI — model slot POOL (không còn API lịch 1-1 cũ)', () => {
-  test('createPool đúng endpoint + shape CreatePoolDto', () => {
-    const data = { roundNumber: 1, slots: [{ interviewerIds: [13, 14], startTime: '2026-07-25T09:00:00Z' }] };
-    interviewAPI.createPool(3, data);
-    expect(apiInst.post).toHaveBeenCalledWith('/jobs/3/interview-pools', data);
+describe('interviewAPI — nhân sự đặt lịch trực tiếp (pool khung đã bỏ 15/08/2026)', () => {
+  test('bookInterview đúng endpoint + shape BookInterviewDto', () => {
+    const data = { interviewerIds: [13, 14], startTime: '2026-07-25T09:00:00', name: 'Chuyên môn' };
+    interviewAPI.bookInterview(100, data);
+    expect(apiInst.post).toHaveBeenCalledWith('/applications/100/interviews', data);
   });
 
-  test('invite gửi { applicationIds }', () => {
-    interviewAPI.invite(4, [100, 101]);
-    expect(apiInst.post).toHaveBeenCalledWith('/interview-pools/4/invitations', { applicationIds: [100, 101] });
+  test('getJobInterviews lấy buổi theo vị trí', () => {
+    interviewAPI.getJobInterviews(3);
+    expect(apiInst.get).toHaveBeenCalledWith('/jobs/3/interviews');
+  });
+
+  test('cancelInterview gửi { reason } theo scheduleId', () => {
+    interviewAPI.cancelInterview(7, 'Sếp đi công tác');
+    expect(apiInst.post).toHaveBeenCalledWith('/interview-schedules/7/cancel', { reason: 'Sếp đi công tác' });
   });
 
   test('submitMySheet KHÔNG có body (backend kiểm draft đã lưu server)', () => {
@@ -147,10 +154,38 @@ describe('interviewAPI — model slot POOL (không còn API lịch 1-1 cũ)', ()
     expect(apiInst.post).toHaveBeenCalledWith('/interview-schedules/7/my-sheet/submit');
   });
 
-  test('API lịch 1-1 cũ đã bị gỡ', () => {
-    expect(interviewAPI.createSchedule).toBeUndefined();
-    expect(interviewAPI.reschedule).toBeUndefined();
-    expect(interviewAPI.cancelSchedule).toBeUndefined();
+  test('API pool khung đã bị gỡ', () => {
+    expect(interviewAPI.createPool).toBeUndefined();
+    expect(interviewAPI.invite).toBeUndefined();
+    expect(interviewAPI.cancelPool).toBeUndefined();
+    expect(interviewAPI.getInterviewPools).toBeUndefined();
+    expect(interviewAPI.manualConfirm).toBeUndefined();
+  });
+});
+
+// Đề xuất tuyển (V043): DM đề xuất -> Giám đốc quyết. Duyệt đề xuất là đường DUY NHẤT
+// đẩy hồ sơ sang bước Quyết định trong luồng bình thường.
+describe('hiringProposalAPI', () => {
+  test('create gắn theo applicationId', () => {
+    const data = { note: 'Tay nghề chắc', proposedSalary: 15000000 };
+    hiringProposalAPI.create(100, data);
+    expect(apiInst.post).toHaveBeenCalledWith('/applications/100/hiring-proposal', data);
+  });
+
+  test('getList lọc theo status khi có tham số', () => {
+    hiringProposalAPI.getList('PENDING');
+    expect(apiInst.get).toHaveBeenCalledWith('/hiring-proposals?status=PENDING');
+  });
+
+  test('getList không tham số thì lấy tất cả', () => {
+    hiringProposalAPI.getList();
+    expect(apiInst.get).toHaveBeenCalledWith('/hiring-proposals');
+  });
+
+  test('decide gửi quyết định + điều khoản chốt', () => {
+    const data = { approve: true, note: 'OK', approvedSalary: 14000000, approvedStartDate: null };
+    hiringProposalAPI.decide(77, data);
+    expect(apiInst.post).toHaveBeenCalledWith('/hiring-proposals/77/decision', data);
   });
 });
 

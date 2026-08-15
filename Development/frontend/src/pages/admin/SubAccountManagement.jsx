@@ -230,6 +230,7 @@ const SubAccountManagement = () => {
       Recruiter: "blue",
       Interviewer: "purple",
       DepartmentManager: "cyan",
+      Director: "magenta",
       User: "default",
     };
     const labels = {
@@ -237,6 +238,7 @@ const SubAccountManagement = () => {
       Recruiter: "Human Resource",
       Interviewer: "Interviewer",
       DepartmentManager: "Department Manager",
+      Director: "Giám đốc",
       User: "User",
     };
     return (
@@ -387,6 +389,7 @@ const SubAccountManagement = () => {
             <Select.Option value="DepartmentManager">
               Department Manager
             </Select.Option>
+            <Select.Option value="Director">Giám đốc</Select.Option>
           </Select>
         </div>
 
@@ -517,6 +520,7 @@ const SubAccountManagement = () => {
               <Select.Option value="DepartmentManager">
                 Department Manager
               </Select.Option>
+              <Select.Option value="Director">Giám đốc</Select.Option>
             </Select>
           </Form.Item>
 

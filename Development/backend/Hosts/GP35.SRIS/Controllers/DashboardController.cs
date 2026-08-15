@@ -14,7 +14,8 @@ namespace GP35.SRIS.Controllers;
 [Route("api/dashboard")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Admin)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director,
+    RoleConstants.Admin)]
 public class DashboardController : ControllerBase
 {
     private readonly IContextData _contextData;

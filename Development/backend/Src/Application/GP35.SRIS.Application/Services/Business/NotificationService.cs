@@ -471,7 +471,6 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         var baseUrl = (_config.CandidatePortal?.BaseUrl ?? DefaultBaseUrl).TrimEnd('/');
         var path = purpose?.ToUpperInvariant() switch
         {
-            "SCHEDULE" => "schedule",
             "OFFER_RESPONSE" => "offer",
             "STATUS" => "status",
             _ => "candidate"
@@ -482,8 +481,6 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     private static (string Subject, string Intro, string Button) MagicLinkContent(string purpose, string jobTitle)
         => purpose?.ToUpperInvariant() switch
         {
-            "SCHEDULE" => ($"Mời chọn lịch phỏng vấn — vị trí {jobTitle}",
-                       $"Vui lòng chọn khung giờ phỏng vấn phù hợp cho vị trí <b>{jobTitle}</b>.", "Chọn lịch phỏng vấn"),
             // 5.15: link mở thẳng file PDF thư mời — ứng viên KHÔNG bấm đồng ý/từ chối trong
             // hệ thống nữa, nên lời email phải mời họ trả lời lại email/HR, không mời "phản hồi".
             "OFFER_RESPONSE" => ($"Thư mời nhận việc — vị trí {jobTitle}",

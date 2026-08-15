@@ -134,6 +134,7 @@ public class ApplicationStateServiceTests
     public async Task InterviewToOffer_WithoutSubmittedScore_BlockedByGuardG2()
     {
         var service = CreateService("INTERVIEW", submittedScores: 0);
+        _context.Role = RoleConstants.Director;   // cửa quyết tuyển là của Giám đốc (V043)
 
         var ex = await Assert.ThrowsAsync<BaseException>(
             () => service.TransitionAsync(CompanyId, UserId, AppId, "OFFER", null));
@@ -146,6 +147,7 @@ public class ApplicationStateServiceTests
     public async Task InterviewToOffer_WithOneSubmittedScore_Passes()
     {
         var service = CreateService("INTERVIEW", submittedScores: 1);
+        _context.Role = RoleConstants.Director;
 
         var result = await service.TransitionAsync(CompanyId, UserId, AppId, "OFFER", null);
 
@@ -179,6 +181,8 @@ public class ApplicationStateServiceTests
     public async Task Reject_FromAnyOpenState_PersistsReason(string from)
     {
         var service = CreateService(from);
+        // Rời bước Quyết định (kể cả loại) là việc của Giám đốc; các bước trước thì nhân sự làm.
+        if (from == "OFFER") _context.Role = RoleConstants.Director;
 
         var result = await service.RejectAsync(CompanyId, UserId, AppId, "Không đạt yêu cầu");
 
@@ -205,17 +209,18 @@ public class ApplicationStateServiceTests
     public async Task Transition_ToHired_SendsResultNotification()
     {
         var service = CreateService("OFFER");
+        _context.Role = RoleConstants.Director;
 
         await service.TransitionAsync(CompanyId, UserId, AppId, "HIRED", null);
 
         _notify.Verify(n => n.SendResultAsync(CompanyId, AppId, "HIRED"), Times.Once);
     }
 
-    // ===== Quyết tuyển ở cửa OFFER: chỉ DM của job (5.14) =====
+    // ===== Quyết tuyển: chỉ GIÁM ĐỐC (5.14 — V043, chốt 15/08/2026) =====
 
-    /// <summary>Job gán DM khác -> người khác chốt OFFER→HIRED bị chặn.</summary>
+    /// <summary>Nhân sự không chốt được kết quả ở bước Quyết định.</summary>
     [Fact]
-    public async Task Transition_OutOfOffer_ByOtherUser_Throws403()
+    public async Task Transition_OutOfOffer_ByHumanResource_Throws403()
     {
         var service = CreateService("OFFER");
         _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
@@ -227,12 +232,33 @@ public class ApplicationStateServiceTests
         Assert.Equal("FORBIDDEN", ex.ErrorCode);
     }
 
+    /// <summary>
+    /// Trưởng bộ phận PHỤ TRÁCH vị trí cũng không đủ thẩm quyền tuyển — họ chỉ ĐỀ XUẤT.
+    /// Đây là điều hội đồng chốt 15/08/2026; trước đó chính DM là người quyết ở cửa này.
+    /// </summary>
     [Fact]
-    public async Task Transition_OutOfOffer_ByAssignedDepartmentManager_Succeeds()
+    public async Task InterviewToOffer_ByAssignedDepartmentManager_Throws403()
     {
-        var service = CreateService("OFFER");
+        var service = CreateService("INTERVIEW", submittedScores: 1);
+        _context.Role = RoleConstants.DepartmentManager;
         _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
             .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = UserId });
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => service.TransitionAsync(CompanyId, UserId, AppId, "OFFER", null));
+
+        Assert.Equal("FORBIDDEN", ex.ErrorCode);
+        Assert.Contains("Giám đốc", ex.ErrorMessage);
+    }
+
+    /// <summary>Giám đốc có phạm vi toàn công ty: không đối chiếu với DM của vị trí.</summary>
+    [Fact]
+    public async Task Transition_OutOfOffer_ByDirector_Succeeds()
+    {
+        var service = CreateService("OFFER");
+        _context.Role = RoleConstants.Director;
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
 
         var result = await service.TransitionAsync(CompanyId, UserId, AppId, "HIRED", null);
 

@@ -119,6 +119,9 @@ namespace GP35.SRIS.HostBase.Extensions
             // Yêu cầu tuyển dụng (5.17 — DM ra đề)
             services.AddScoped<IRecruitmentRequestRepo, RecruitmentRequestRepo>();
 
+            // Đề xuất tuyển (5.14 — DM đề xuất, Giám đốc quyết; V043)
+            services.AddScoped<IHiringProposalRepo, HiringProposalRepo>();
+
             // Danh mục phòng ban (V022)
             services.AddScoped<IDepartmentRepo, DepartmentRepo>();
             services.AddScoped<IEmploymentTypeRepo, EmploymentTypeRepo>();
@@ -145,8 +148,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IApplicationStateService, ApplicationStateService>();
             services.AddScoped<IApplicationQueryService, ApplicationQueryService>();
             services.AddScoped<IUserManageService, UserManageService>();
-            services.AddScoped<IInterviewPoolService, InterviewPoolService>();
-            services.AddScoped<ICandidateScheduleService, CandidateScheduleService>();
+            services.AddScoped<IInterviewScheduleService, InterviewScheduleService>();
             services.AddScoped<ICandidateStatusService, CandidateStatusService>();
             services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
             services.AddScoped<ICriteriaTemplateService, CriteriaTemplateService>();
@@ -156,6 +158,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IInternalNoteService, InternalNoteService>();
             services.AddScoped<IRecruitmentRequestService, RecruitmentRequestService>();
+            services.AddScoped<IHiringProposalService, HiringProposalService>();
             services.AddScoped<IDepartmentService, DepartmentService>();
             services.AddScoped<IEmploymentTypeService, EmploymentTypeService>();
             services.AddScoped<IActivityLogService, ActivityLogService>();

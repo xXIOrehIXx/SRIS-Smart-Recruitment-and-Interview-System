@@ -10,11 +10,13 @@ const ROLE_MAPPING = {
   Interviewer: ROLES.INTERVIEWER,
   Candidate: ROLES.CANDIDATE,
   DepartmentManager: ROLES.DEPARTMENT_MANAGER,
+  Director: ROLES.DIRECTOR,
   admin: ROLES.ADMIN,
   recruiter: ROLES.HUMAN_RESOURCE,
   interviewer: ROLES.INTERVIEWER,
   candidate: ROLES.CANDIDATE,
   departmentmanager: ROLES.DEPARTMENT_MANAGER,
+  director: ROLES.DIRECTOR,
 };
 
 // Chuyển đổi role về chuẩn

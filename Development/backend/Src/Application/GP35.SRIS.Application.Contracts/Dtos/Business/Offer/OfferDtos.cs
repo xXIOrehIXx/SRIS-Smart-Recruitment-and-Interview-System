@@ -58,9 +58,22 @@ public class OfferLetterDefaultsDto
     public string? ReportingTo { get; set; }
     public string? EmploymentType { get; set; }
     public string? WorkLocation { get; set; }
+    /// <summary>
+    /// Mức lương gợi ý. Ưu tiên mức GIÁM ĐỐC ĐÃ CHỐT khi duyệt đề xuất tuyển (V043); chưa có
+    /// đề xuất nào thì rơi về khoảng lương của tin tuyển dụng.
+    /// </summary>
     public decimal? SalaryAmount { get; set; }
     public string? Currency { get; set; }
     public string? SalaryPeriod { get; set; }
+
+    /// <summary>Ngày vào làm Giám đốc đã chốt (null nếu Giám đốc không ghi).</summary>
+    public DateTime? StartDate { get; set; }
+
+    /// <summary>
+    /// True khi lương/ngày vào làm ở trên đến từ quyết định của Giám đốc — form cảnh báo nhân sự
+    /// rằng đây là điều khoản đã chốt, sửa tay là lệch với thứ Giám đốc duyệt.
+    /// </summary>
+    public bool TermsFromDirector { get; set; }
 
     /// <summary>
     /// Phúc lợi của job (bảng JobBenefit, mỗi dòng 1 mục) gộp thành text nhiều dòng.

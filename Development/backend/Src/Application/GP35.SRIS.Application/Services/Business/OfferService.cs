@@ -13,11 +13,13 @@ using Serilog;
 namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
-/// Thư mời nhận việc (docs 5.15). Human Resource/DM soạn thư cho hồ sơ đang ở trạng thái OFFER
-/// (đã được người quyết duyệt) → lưu OfferDetail + phát magic link OFFER_RESPONSE; link đó mở
+/// Thư mời nhận việc (docs 5.15). GIÁM ĐỐC quyết tuyển và chốt điều khoản khi duyệt đề xuất
+/// (V043); Human Resource soạn thư cho hồ sơ đang ở trạng thái OFFER — form mở sẵn ĐÚNG mức lương
+/// và ngày vào làm Giám đốc đã chốt → lưu OfferDetail + phát magic link OFFER_RESPONSE; link đó mở
 /// ra file PDF thư mời chứ không phải trang bấm Đồng ý/Từ chối.
 ///
-/// Ứng viên trả lời NGOÀI hệ thống; Human Resource/DM ghi nhận kết quả bằng <see cref="RecordOutcomeAsync"/>.
+/// Ứng viên trả lời NGOÀI hệ thống; Human Resource ghi nhận kết quả bằng <see cref="RecordOutcomeAsync"/>
+/// (ghi nhận câu trả lời KHÔNG phải quyết định mới nên không đòi quyền Giám đốc — docs 5.15).
 /// </summary>
 public class OfferService : BaseService<OfferService>, IOfferService
 {
@@ -30,6 +32,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
     private readonly IOfferRepo _offerRepo;
     private readonly ICompanyRepo _companyRepo;
     private readonly IUserRepo _userRepo;
+    private readonly IHiringProposalRepo _proposalRepo;
     private readonly IApplicationStateService _stateService;
     private readonly IMagicLinkService _magicLink;
     private readonly IOfferLetterPdfGenerator _pdf;
@@ -46,6 +49,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
         _offerRepo = serviceProvider.GetRequiredService<IOfferRepo>();
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _userRepo = serviceProvider.GetRequiredService<IUserRepo>();
+        _proposalRepo = serviceProvider.GetRequiredService<IHiringProposalRepo>();
         _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _pdf = serviceProvider.GetRequiredService<IOfferLetterPdfGenerator>();
@@ -81,6 +85,11 @@ public class OfferService : BaseService<OfferService>, IOfferService
         if (benefitText.Length > MaxBenefitsLength)
             benefitText = benefitText[..MaxBenefitsLength];
 
+        // Điều khoản Giám đốc đã chốt khi duyệt đề xuất tuyển (V043) — đây mới là con số THẬT
+        // của lá thư. Lấy khoảng lương của tin tuyển dụng làm mặc định là mời sai mức người
+        // đã duyệt, và nhân sự phải quay lại hỏi Giám đốc "rốt cuộc chốt bao nhiêu".
+        var approved = await _proposalRepo.GetApprovedByApplicationAsync(companyId, applicationId);
+
         return new OfferLetterDefaultsDto
         {
             CompanyName = company?.Name,
@@ -96,9 +105,11 @@ public class OfferService : BaseService<OfferService>, IOfferService
             ReportingTo = NameOrEmail(manager),
             EmploymentType = job?.EmploymentType,
             WorkLocation = job?.Location,
-            SalaryAmount = job?.SalaryMax ?? job?.SalaryMin,
+            SalaryAmount = approved?.ApprovedSalary ?? job?.SalaryMax ?? job?.SalaryMin,
             Currency = string.IsNullOrWhiteSpace(job?.Currency) ? "VND" : job!.Currency,
             SalaryPeriod = SalaryPeriods.Month,
+            StartDate = approved?.ApprovedStartDate,
+            TermsFromDirector = approved?.ApprovedSalary is not null || approved?.ApprovedStartDate is not null,
             Benefits = benefitText.Length == 0 ? null : benefitText,
             Terms = OfferLetterPdfGenerator.DefaultTerms,
             SignerName = NameOrEmail(signer),
@@ -116,7 +127,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
             ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={applicationId}).");
 
         if (!string.Equals(app.CurrentState, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase))
-            throw Conflict("Hồ sơ chưa được Department Manager duyệt (phải ở trạng thái OFFER mới được gửi thư mời).");
+            throw Conflict("Hồ sơ chưa được Giám đốc duyệt tuyển (phải ở bước Quyết định mới soạn được thư mời).");
 
         // Một offer / một application (UNIQUE application_id — 5.15).
         if (await _offerRepo.GetByApplicationAsync(companyId, applicationId) is not null)
@@ -356,6 +367,7 @@ public class OfferService : BaseService<OfferService>, IOfferService
         RoleConstants.Admin => "Quản trị viên",
         RoleConstants.HumanResource => "Chuyên viên tuyển dụng",
         RoleConstants.DepartmentManager => "Trưởng bộ phận",
+        RoleConstants.Director => "Giám đốc",
         RoleConstants.Interviewer => "Người phỏng vấn",
         _ => null
     };

@@ -1,8 +1,9 @@
 namespace GP35.SRIS.Domain.Shared.Constants;
 
 /// <summary>
-/// 4 role đăng nhập Portal (khớp CHECK constraint User.role ở V001). Candidate KHÔNG phải role —
-/// là khách ẩn danh dùng magic link, không có User row. Admin được coi là superuser (bỏ qua mọi [WithRole]).
+/// 5 role đăng nhập Portal (khớp CHECK constraint User.role — V001, mở rộng ở V043).
+/// Candidate KHÔNG phải role — là khách ẩn danh dùng magic link, không có User row.
+/// Admin được coi là superuser (bỏ qua mọi [WithRole]).
 /// </summary>
 public static class RoleConstants
 {
@@ -22,5 +23,12 @@ public static class RoleConstants
     public const string Interviewer = "Interviewer";
     public const string DepartmentManager = "DepartmentManager";
 
-    public static readonly string[] All = { Admin, HumanResource, Interviewer, DepartmentManager };
+    /// <summary>
+    /// Giám đốc (V043, chốt 15/08/2026) — người DUY NHẤT quyết tuyển: duyệt đề xuất của Trưởng
+    /// bộ phận và chốt điều khoản (lương, ngày vào làm) cho thư mời. Phạm vi toàn công ty,
+    /// không gán theo từng tin tuyển dụng.
+    /// </summary>
+    public const string Director = "Director";
+
+    public static readonly string[] All = { Admin, HumanResource, Interviewer, DepartmentManager, Director };
 }

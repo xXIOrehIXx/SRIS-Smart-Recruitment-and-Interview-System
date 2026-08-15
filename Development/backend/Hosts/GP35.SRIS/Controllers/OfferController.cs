@@ -9,9 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Thư mời nhận việc (docs 5.15). Người quyết (DM của job; job không gán DM -> Human Resource) đã đẩy
-/// hồ sơ sang OFFER; Human Resource gọi API này để soạn + gửi thư mời (PDF qua email), rồi ghi nhận
-/// kết quả ứng viên trả lời ngoài hệ thống.
+/// Thư mời nhận việc (docs 5.15). GIÁM ĐỐC đã duyệt đề xuất tuyển (hồ sơ sang OFFER) và chốt
+/// điều khoản; Human Resource gọi API này để soạn + gửi thư mời (PDF qua email), rồi ghi nhận
+/// kết quả ứng viên trả lời ngoài hệ thống. Giám đốc/DM chỉ ĐỌC lại thư đã gửi.
 /// </summary>
 [Route("api/applications/{applicationId:long}/offer")]
 [ApiController]
@@ -44,8 +44,9 @@ public class OfferController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Xem offer của hồ sơ (Portal).</summary>
+    /// <summary>Xem offer của hồ sơ (Portal). Giám đốc/DM đọc lại thư đã gửi cho ứng viên.</summary>
     [HttpGet]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.Director, RoleConstants.DepartmentManager)]
     public async Task<IActionResult> Get(long applicationId)
     {
         var offer = await _offerService.GetByApplicationAsync(_contextData.CompanyId, applicationId);
@@ -54,6 +55,7 @@ public class OfferController : ControllerBase
 
     /// <summary>Xem lại chính file PDF thư mời đã gửi cho ứng viên.</summary>
     [HttpGet("letter")]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.Director, RoleConstants.DepartmentManager)]
     public async Task<IActionResult> GetLetter(long applicationId)
     {
         var letter = await _offerService.GetLetterPdfAsync(_contextData.CompanyId, applicationId);
