@@ -157,7 +157,12 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Forward (4): NEW→SCREENING · SCREENING→INTERVIEW · INTERVIEW→OFFER (**Guard G2: ≥1 phiếu chấm đã nộp**) · OFFER→HIRED.
 - Reject (4): từ NEW/SCREENING/INTERVIEW/OFFER → một REJECTED duy nhất.
 - Confirm marker trên transition tới hạn (vào OFFER, nhận việc, mọi reject). KHÔNG admin override.
-- Ai chạm hồ sơ: NEW/SCREENING — Human Resource tự sàng lọc, KHÔNG cổng duyệt riêng. INTERVIEW→OFFER — điểm quyết duy nhất: DM của job đọc đề xuất panel rồi chốt; không có DM → Human Resource.
+- **Ai chạm hồ sơ (sửa sau bảo vệ hội đồng 15/08/2026 — DM có HAI cửa):**
+  - `NEW→SCREENING`: Human Resource tự sàng lọc hồ sơ, không cổng duyệt.
+  - `SCREENING→INTERVIEW` — **cửa 1 của DM: CHỌN ai được vào vòng phỏng vấn.** Human Resource KHÔNG tự đưa ai vào phỏng vấn; nhân sự chỉ **lên lịch** cho người đã được duyệt (mời vào pool / chốt lịch tay đều đòi hồ sơ đã ở INTERVIEW). Lý do hội đồng nêu: ai đáng gặp là phán đoán chuyên môn của trưởng bộ phận, không phải việc vận hành của nhân sự. Job **bắt buộc** có `department_manager_id` khi đăng (Status=Open) — không có DM thì không ai duyệt được, BE chặn ngay lúc đăng tin.
+  - `INTERVIEW→OFFER` — **cửa 2 của DM: quyết tuyển**, DM đọc đề xuất panel rồi chốt; job cũ chưa gán DM → Human Resource (giữ nguyên, chỉ còn áp cho dữ liệu tạo trước 15/08/2026).
+  - Loại hồ sơ (`→REJECTED`) không bị khoá theo vai: nhân sự loại ở bước sàng lọc, DM loại ở hai màn duyệt của mình.
+  - Admin là superuser, đi qua cả hai cửa (công ty nhỏ 1 tài khoản chạy trọn luồng).
 - forward-only ≠ cứng nhắc: reschedule + nhiều vòng diễn ra BÊN TRONG stage INTERVIEW (5.12).
 - Khi trình bày: nói "quy trình 4 pha, chỉ tiến không lùi, có chốt cửa". Thuật ngữ state machine/guard chỉ dùng trong Q&A kỹ thuật.
 
@@ -196,9 +201,14 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - TTL theo purpose: SCHEDULE ~5 ngày · OFFER_RESPONSE ~5-7 ngày · STATUS dài.
 - Chấm điểm & quyết tuyển KHÔNG dùng magic link — nằm trong Portal.
 
-### 5.14 Người quyết tuyển — Department Manager
-- Người quyết = DM sở hữu job (`Job.department_manager_id` → User, nullable). Có DM → DM quyết ở OFFER; trống → Human Resource quyết (đường mặc định của công ty nhỏ).
-- DM đứng HAI ĐẦU quy trình: **ra đề** (Yêu cầu tuyển dụng — 5.17) và **chốt** (OFFER). KHÔNG gác cổng CV, KHÔNG đụng vận hành.
+### 5.14 Người quyết — Department Manager (cập nhật 15/08/2026)
+- Người quyết = DM sở hữu job (`Job.department_manager_id` → User). **Bắt buộc khi đăng tin** (Status=Open); bản nháp thì chưa cần.
+- **DM quyết ở HAI cửa của pipeline:**
+  1. `SCREENING→INTERVIEW` — chọn ai được vào vòng phỏng vấn (màn *Duyệt Vào Phỏng Vấn*, `/dept/screening`).
+  2. `INTERVIEW→OFFER` và rời OFFER — quyết tuyển (màn *Quyết Định Tuyển Dụng*, `/dept/hiring-decision`).
+- **Human Resource lái vận hành, không chọn người:** sàng lọc hồ sơ, xếp lịch phỏng vấn cho người đã duyệt, soạn thư mời. Mời vào pool và chốt lịch tay đều đòi hồ sơ đã ở INTERVIEW — trước 15/08/2026 hai thao tác này TỰ đẩy state, tức mời ai là mặc nhiên chọn người đó.
+- Cộng với 5.17, DM đứng **ba chốt**: ra đề (Yêu cầu tuyển dụng) → chọn người gặp → chốt tuyển. Vẫn KHÔNG đụng vận hành (không mở pool, không gửi email).
+- Job cũ chưa gán DM: cửa OFFER rơi về Human Resource như trước, nhưng cửa vào phỏng vấn thì BE chặn và báo "chưa gán Trưởng bộ phận phụ trách" — gán DM cho tin là xong.
 - Một người vừa là DM vừa chấm phỏng vấn: gán họ làm interviewer của khung. Không cần cơ chế riêng.
 
 ### 5.15 Thư mời nhận việc (Offer Letter)
@@ -220,7 +230,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 |---|---|---|
 | So sánh nhiều phiếu chấm | 1 người chấm | Job gán >1 interviewer |
 | Phiếu Yêu cầu tuyển dụng (5.17) | Không dùng | Công ty có DM tách vai (chủ nhỏ tạo job trực tiếp) |
-| Người quyết tách riêng (DM ở OFFER) | HR quyết | Job gán `department_manager_id` |
+| Người duyệt/quyết tách khỏi nhân sự | Admin 1 tài khoản làm hết | Job gán `department_manager_id` (bắt buộc khi đăng tin) |
 | Phỏng vấn nhiều vòng | 1 vòng | HR mở pool vòng tiếp theo |
 
 - **Cách nói khi bảo vệ:** "Mặc định chỉ 4 bước, MỘT người làm được hết. Bước nâng cao là tùy chọn, bật khi công ty lớn lên. Quy trình này không phải nhóm bịa ra — nó cấu trúc hóa đúng các bước doanh nghiệp nhỏ ĐÃ làm, chỉ tự động hóa khúc chậm."
@@ -367,7 +377,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
   - **Hệ thống KHÔNG chấm điểm / xếp hạng ứng viên.** AI làm đúng một việc: bóc tiêu chí từ JD (5.18).
   - **Luồng tiêu chí:** DM tạo Yêu cầu tuyển dụng (tùy chọn) → HR tạo Job → AI bóc tiêu chí DRAFT → người duyệt chốt → bộ tiêu chí đó LÀ phiếu chấm phỏng vấn. **Đã code — đừng thiết kế lại.**
   - Pipeline: hiển thị **4 pha**; **6 state nội bộ, 8 transition**, forward-only, guard G2 (5.8, 5.16).
-  - Chấm vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**; DM quyết chỉ ở OFFER, trống → HR. `reject_reason` tùy chọn.
+  - Chấm vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**; **DM quyết ở HAI cửa — chọn ai vào phỏng vấn (SCREENING→INTERVIEW) và chốt tuyển (INTERVIEW→OFFER)**; HR sàng lọc + xếp lịch, không chọn người. `reject_reason` tùy chọn.
   - Token (5.13): one-time = đốt khi CHỐT; **3 purpose**: SCHEDULE · STATUS · OFFER_RESPONSE.
   - Role: 4 role, mỗi user 1 role, Admin superuser; **giá trị role của Human Resource trong DB/JWT là `'Recruiter'`**.
   - Stack: SQL Server 2025 · EF Core · MinIO · Redis · Local AI (Ollama + qwen2.5, chỉ bóc tiêu chí). PDPD 2026 = luận điểm tuân thủ.
@@ -408,8 +418,8 @@ Tách 2 bài toán: "chốt mốc thời gian" (nghiệp vụ lõi = IN) vs "đ�
 
 **Mô hình lõi = POOL KHUNG DÙNG CHUNG:** HR mở 1 pool (job + vòng) một lần, mời DANH SÁCH ứng viên, ai chốt trước lấy trước, các khung khác giữ OPEN cho người sau. Cá nhân = pool mời 1 người; PV nhóm = mời nhiều người cùng pool. KHÔNG có luồng 1-1 riêng.
 
-### 15.1 Thứ tự thao tác: KÉO trước, MỞ POOL + MỜI sau
-Card kéo sang Phỏng vấn TRƯỚC ("cửa quyết định con người") → mới mở khóa "Mở pool khung" → HR mở pool (nhiều khung, gán interviewer) rồi tick chọn ứng viên để mời. Bản ghi per-ứng-viên (`InterviewSchedule`) tạo lúc MỜI: `PENDING → CONFIRMED` (chốt khung) / `NO_SLOT_FITS` (báo bận) / `CANCELLED`. **Slot thuộc pool, KHÔNG thuộc từng ứng viên.**
+### 15.1 Thứ tự thao tác: DM DUYỆT trước, MỞ POOL + MỜI sau
+DM duyệt hồ sơ vào vòng Phỏng vấn TRƯỚC (cửa quyết định con người — 5.8/5.14; từ 15/08/2026 HR không tự kéo card sang cột này nữa) → hồ sơ hiện ở màn Lịch Phỏng Vấn của HR → HR mở pool (nhiều khung, gán interviewer) rồi tick chọn ứng viên để mời. Mời/chốt lịch tay cho hồ sơ CHƯA duyệt bị BE từ chối ("chưa được Trưởng bộ phận duyệt vào vòng phỏng vấn"). Bản ghi per-ứng-viên (`InterviewSchedule`) tạo lúc MỜI: `PENDING → CONFIRMED` (chốt khung) / `NO_SLOT_FITS` (báo bận) / `CANCELLED`. **Slot thuộc pool, KHÔNG thuộc từng ứng viên.**
 
 ### 15.2 Token
 Purpose `SCHEDULE`, riêng từng ứng viên nhưng trỏ về CÙNG pool. Token 32 byte, lưu hash, one-time (đốt khi chốt / báo bận), TTL ~5 ngày, đếm truy cập. Đổi khung sau khi đã chốt = KHÔNG self-service — HR xử lý tay.
@@ -422,7 +432,7 @@ Purpose `SCHEDULE`, riêng từng ứng viên nhưng trỏ về CÙNG pool. Toke
 - So Calendly: Calendly phụ thuộc Google/Outlook API — đúng phần SRIS cố ý OUT. SRIS = self-scheduling KHÔNG sync, thay bằng .ics. Số liệu dẫn nguồn (Calendly Blog): Muck Rack tốn 80% thời gian xếp lại lịch, giảm time-to-hire 8 ngày; ~78% recruiter mất ứng viên vì xếp lịch chậm.
 
 ### 15.4 Trạng thái code (M9)
-- **ĐÃ CÓ:** mở pool (`POST /api/jobs/{jobId}/interview-pools`) · mời danh sách (`POST /api/interview-pools/{poolId}/invitations`) · xem pool + cờ · hủy pool · chốt lịch tay · trang ứng viên chọn/chốt/báo bận (`/api/candidate/schedule`) · chống trùng giờ · email + .ics khi CONFIRMED (best-effort) · guard "kéo trước mới mời được".
+- **ĐÃ CÓ:** mở pool (`POST /api/jobs/{jobId}/interview-pools`) · mời danh sách (`POST /api/interview-pools/{poolId}/invitations`) · xem pool + cờ · hủy pool · chốt lịch tay · trang ứng viên chọn/chốt/báo bận (`/api/candidate/schedule`) · chống trùng giờ · email + .ics khi CONFIRMED (best-effort) · guard "DM duyệt trước mới mời được".
 - **Chưa/một phần:** reschedule = mở pool vòng mới (chưa có nút gộp) · real-time ẩn slot · ô ghi chú gợi ý giờ.
 - **Bảng (đều có `company_id`):** `InterviewSlotPool` (OPEN/CLOSED/CANCELLED — 1 pool = job + round, kèm `name` = tên vòng, V041) · `InterviewSlot` (OPEN/BOOKED/LOCKED — thuộc pool, có `booked_application_id`) · `InterviewSchedule` (PENDING/CONFIRMED/NO_SLOT_FITS/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
 

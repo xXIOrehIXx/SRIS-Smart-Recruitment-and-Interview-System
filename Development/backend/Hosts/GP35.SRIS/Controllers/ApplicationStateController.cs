@@ -9,8 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// State machine hồ sơ (docs 5.8) — Human Resource thao tác Kanban; ở cửa INTERVIEW→OFFER là điểm
-/// quyết tuyển (Department Manager / Human Resource mặc định). Forward-only + guard G1/G2 + reject reason.
+/// State machine hồ sơ (docs 5.8) — Human Resource thao tác Kanban, TRỪ 2 cửa của Trưởng bộ phận:
+/// SCREENING→INTERVIEW (chọn ai được vào phỏng vấn) và INTERVIEW→OFFER (quyết tuyển).
+/// Forward-only + guard G2 + reject reason.
 /// </summary>
 [Route("api/applications/{applicationId:long}")]
 [ApiController]

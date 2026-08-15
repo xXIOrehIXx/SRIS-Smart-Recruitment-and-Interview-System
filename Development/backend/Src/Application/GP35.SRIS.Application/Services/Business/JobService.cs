@@ -23,11 +23,15 @@ public class JobService : BaseService<JobService>, IJobService
 
         var jobRepo = _serviceProvider.GetRequiredService<IJobRepo>();
 
+        var status = string.IsNullOrWhiteSpace(dto.Status) ? "Open" : dto.Status.Trim();
+        var managerId = await ResolveDepartmentManagerAsync(companyId, dto.Department, dto.DepartmentManagerId);
+        EnsureManagerWhenPublished(status, managerId);
+
         var job = new Job
         {
             Title = dto.Title.Trim(),
             JdText = dto.JdText,
-            DepartmentManagerId = await ResolveDepartmentManagerAsync(companyId, dto.Department, dto.DepartmentManagerId),
+            DepartmentManagerId = managerId,
             CreatedBy = createdBy,
             Department = dto.Department,
             Location = dto.Location,
@@ -42,7 +46,7 @@ public class JobService : BaseService<JobService>, IJobService
             // Không gửi / gửi số vô lý -> 1: tin tuyển dụng nào cũng cần ít nhất 1 người,
             // để 0 thì mọi màn đếm "còn tuyển bao nhiêu" đọc ra số sai.
             Quantity = dto.Quantity is > 0 ? dto.Quantity.Value : 1,
-            Status = string.IsNullOrWhiteSpace(dto.Status) ? "Open" : dto.Status.Trim()
+            Status = status
         };
 
         // InsertAsync set company_id, lưu rồi đọc lại job_id (IDENTITY) + created_at (store-generated).
@@ -101,11 +105,14 @@ public class JobService : BaseService<JobService>, IJobService
         if (dto.Deadline != existing.Deadline)
             ValidateDeadline(dto.Deadline);
 
+        var managerId = await ResolveDepartmentManagerAsync(companyId, dto.Department, dto.DepartmentManagerId);
+        EnsureManagerWhenPublished(status, managerId);
+
         var updatedJob = new Job
         {
             Title = dto.Title.Trim(),
             JdText = dto.JdText,
-            DepartmentManagerId = await ResolveDepartmentManagerAsync(companyId, dto.Department, dto.DepartmentManagerId),
+            DepartmentManagerId = managerId,
             Department = dto.Department,
             Location = dto.Location,
             EmploymentType = dto.EmploymentType,
@@ -158,6 +165,21 @@ public class JobService : BaseService<JobService>, IJobService
         if (managerId is > 0)
             Serilog.Log.Information("Job: tự gán DM {ManagerId} theo phòng ban '{Department}'.", managerId, department);
         return managerId;
+    }
+
+    /// <summary>
+    /// Tin ĐĂNG (Open) bắt buộc có Trưởng bộ phận phụ trách: người đó là cửa duyệt ứng viên vào
+    /// vòng phỏng vấn (5.8) và cửa quyết tuyển (5.14) — thiếu thì hồ sơ nộp về sẽ kẹt ở Sàng lọc
+    /// vì không ai có quyền duyệt. Bản NHÁP không ép: đang soạn dở còn chưa biết giao cho ai.
+    /// </summary>
+    private static void EnsureManagerWhenPublished(string? status, long? managerId)
+    {
+        if (managerId is > 0) return;
+        if (!string.Equals(status, "Open", StringComparison.OrdinalIgnoreCase)) return;
+
+        throw Bad("Tin tuyển dụng phải có Trưởng bộ phận phụ trách trước khi đăng — người này duyệt " +
+                  "ứng viên vào vòng phỏng vấn và chốt tuyển. Hãy chọn người phụ trách (hoặc gán " +
+                  "trưởng bộ phận cho phòng ban) rồi đăng lại.");
     }
 
     /// <summary>

@@ -29,6 +29,7 @@ import DeptInterviewSchedule from "./pages/dept-manager/InterviewSchedule";
 import DeptInterviewDetail from "./pages/dept-manager/InterviewDetail";
 import DeptRecruitmentRequests from "./pages/dept-manager/RecruitmentRequests";
 import HiringDecision from "./pages/dept-manager/HiringDecision";
+import ScreeningApproval from "./pages/dept-manager/ScreeningApproval";
 import CreateRecruitmentRequest from "./pages/dept-manager/CreateRecruitmentRequest";
 import OfferManagement from "./pages/offer/OfferManagement";
 import OfferDetail from "./pages/offer/OfferDetail";
@@ -144,6 +145,8 @@ const App = () => {
         <Route path="/dept/requests" element={<DeptRecruitmentRequests />} />
         <Route path="/dept/interviews" element={<DeptInterviewSchedule />} />
         <Route path="/dept/interview/:id" element={<DeptInterviewDetail />} />
+        {/* Cửa 1 của DM: chọn ai được vào vòng phỏng vấn (SCREENING→INTERVIEW) */}
+        <Route path="/dept/screening" element={<ScreeningApproval />} />
         <Route path="/dept/hiring-decision" element={<HiringDecision />} />
         <Route path="/dept/hiring-decision/:id" element={<HiringDecision />} />
         <Route

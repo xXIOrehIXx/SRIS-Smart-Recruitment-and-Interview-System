@@ -21,6 +21,8 @@ import {
   ApartmentOutlined,
   ScheduleOutlined,
   InboxOutlined,
+  SolutionOutlined,
+  AuditOutlined,
 } from "@ant-design/icons";
 import { useAuth, ROLES } from "../contexts/AuthContext";
 import { useCompany } from "../contexts/CompanyContext";
@@ -45,6 +47,10 @@ const ICON_MAP = {
   ApartmentOutlined: <ApartmentOutlined />,
   ScheduleOutlined: <ScheduleOutlined />,
   InboxOutlined: <InboxOutlined />,
+  // Hai cửa của Trưởng bộ phận. AuditOutlined vốn đã dùng trong ROLE_MENUS nhưng thiếu ở đây,
+  // nên mục "Quyết Định Tuyển Dụng" xưa nay hiện trống chỗ icon.
+  SolutionOutlined: <SolutionOutlined />,
+  AuditOutlined: <AuditOutlined />,
 };
 
 const AdminLayout = () => {

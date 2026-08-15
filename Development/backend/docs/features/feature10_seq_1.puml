@@ -30,6 +30,8 @@ activate Repo
 Repo --> Svc: return Application
 deactivate Repo
 
+note right of Svc: Validate Decision Guard (EnsureCanDecideAsync)\nSCREENING->INTERVIEW and INTERVIEW->OFFER:\nonly the job's Department Manager (Admin bypass)
+
 note right of Svc: Validate StateMachine Guard\n(e.g. Ensure Interview Score exists)
 
 Svc -> Repo: TransitionStateAsync(appId, toState, ...)

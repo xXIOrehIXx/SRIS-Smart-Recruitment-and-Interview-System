@@ -270,17 +270,90 @@ public class ApplicationStateServiceTests
         Assert.Equal("HIRED", result.ToState);
     }
 
-    /// <summary>Guard chỉ áp ở cửa OFFER — các bước trước đó Human Resource vẫn đi bình thường.</summary>
+    /// <summary>Sàng lọc là việc của Human Resource — cửa duyệt chỉ bắt đầu ở SCREENING→INTERVIEW.</summary>
     [Fact]
-    public async Task Transition_BeforeOffer_NotAffectedByDecisionGuard()
+    public async Task Transition_NewToScreening_NotAffectedByDecisionGuard()
+    {
+        var service = CreateService("NEW");
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
+
+        var result = await service.TransitionAsync(CompanyId, UserId, AppId, "SCREENING", null);
+
+        Assert.Equal("SCREENING", result.ToState);
+    }
+
+    // ===== Duyệt vào vòng phỏng vấn: chỉ DM của job (5.8, chốt 15/08/2026) =====
+
+    /// <summary>Human Resource (hay DM phòng khác) không được tự đưa ứng viên vào vòng phỏng vấn.</summary>
+    [Fact]
+    public async Task ScreeningToInterview_ByOtherUser_Throws403()
     {
         var service = CreateService("SCREENING");
         _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
             .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
 
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => service.TransitionAsync(CompanyId, UserId, AppId, "INTERVIEW", null));
+
+        Assert.Equal("FORBIDDEN", ex.ErrorCode);
+        _appRepo.Verify(r => r.TransitionStateAsync(
+            It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string?>(),
+            It.IsAny<DateTime>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ScreeningToInterview_ByAssignedDepartmentManager_Succeeds()
+    {
+        var service = CreateService("SCREENING");
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = UserId });
+
         var result = await service.TransitionAsync(CompanyId, UserId, AppId, "INTERVIEW", null);
 
         Assert.Equal("INTERVIEW", result.ToState);
+    }
+
+    /// <summary>
+    /// Job chưa gán DM: cửa OFFER rơi về Human Resource, nhưng cửa vào phỏng vấn thì KHÔNG —
+    /// chặn và nói rõ thiếu người phụ trách, thay vì lặng lẽ cho Human Resource tự chọn người.
+    /// </summary>
+    [Fact]
+    public async Task ScreeningToInterview_JobWithoutManager_Throws403()
+    {
+        var service = CreateService("SCREENING");
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => service.TransitionAsync(CompanyId, UserId, AppId, "INTERVIEW", null));
+
+        Assert.Equal("FORBIDDEN", ex.ErrorCode);
+        Assert.Contains("chưa gán Trưởng bộ phận", ex.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ScreeningToInterview_ByAdmin_Succeeds()
+    {
+        var service = CreateService("SCREENING");
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
+        _context.Role = "Admin";
+
+        var result = await service.TransitionAsync(CompanyId, UserId, AppId, "INTERVIEW", null);
+
+        Assert.Equal("INTERVIEW", result.ToState);
+    }
+
+    /// <summary>Loại hồ sơ ở bước sàng lọc vẫn là việc của Human Resource — không vướng cửa duyệt.</summary>
+    [Fact]
+    public async Task Reject_FromScreening_NotAffectedByDecisionGuard()
+    {
+        var service = CreateService("SCREENING");
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
+
+        var result = await service.RejectAsync(CompanyId, UserId, AppId, "Chuyên môn chưa đạt");
+
+        Assert.Equal("REJECTED", result.ToState);
     }
 
     // ===== AdvanceToAsync: duyệt/chốt ở màn khác tự đẩy card, khỏi kéo Kanban =====
@@ -289,6 +362,9 @@ public class ApplicationStateServiceTests
     public async Task AdvanceTo_WalksEveryStep_AndLogsEachHop()
     {
         var service = CreateService("NEW");
+        // Chặng NEW→SCREENING→INTERVIEW đi qua cửa duyệt -> người đẩy phải là DM của job.
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = UserId });
 
         await service.AdvanceToAsync(CompanyId, UserId, AppId, "INTERVIEW");
 
@@ -296,6 +372,26 @@ public class ApplicationStateServiceTests
             CompanyId, AppId, "SCREENING", null, It.IsAny<DateTime>(), null, null), Times.Once);
         _appRepo.Verify(r => r.TransitionStateAsync(
             CompanyId, AppId, "INTERVIEW", null, It.IsAny<DateTime>(), null, null), Times.Once);
+    }
+
+    /// <summary>
+    /// Chặng bị chặn ở nấc SAU thì không được đi nấc TRƯỚC: hồ sơ nhảy sang SCREENING rồi mới
+    /// báo 403 là người dùng thấy state đổi trong khi việc họ bấm thất bại.
+    /// </summary>
+    [Fact]
+    public async Task AdvanceTo_BlockedMidPath_MovesNothing()
+    {
+        var service = CreateService("NEW");
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => service.AdvanceToAsync(CompanyId, UserId, AppId, "INTERVIEW"));
+
+        Assert.Equal("FORBIDDEN", ex.ErrorCode);
+        _appRepo.Verify(r => r.TransitionStateAsync(
+            It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<string?>(),
+            It.IsAny<DateTime>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>()), Times.Never);
     }
 
     [Fact]

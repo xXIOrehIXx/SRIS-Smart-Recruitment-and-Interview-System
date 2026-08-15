@@ -29,6 +29,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useNavigate } from "react-router-dom";
 import { dashboardAPI, applicationAPI, jobsAPI } from "../../services/api";
+import { useAuth, ROLES } from "../../contexts/AuthContext";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { APPLICATION_STATE_LABELS } from "../../components/ApplicationStateTag";
 import "./css/Dashboard.css";
@@ -96,6 +97,7 @@ const formatRelativeTime = (value) => {
 
 const HumanResourceDashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [kanbanLoading, setKanbanLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
@@ -196,6 +198,17 @@ const HumanResourceDashboard = () => {
       return;
     }
 
+    // Cửa của Trưởng bộ phận (BE chặn bằng 403): CHỌN ai vào vòng phỏng vấn không phải việc
+    // của bộ phận nhân sự. Chặn ngay ở đây để card không nhảy cột rồi bật ngược lại.
+    // Admin là superuser nên vẫn kéo được (công ty nhỏ 1 tài khoản chạy trọn luồng).
+    if (user?.role !== ROLES.ADMIN && steps.includes("INTERVIEW")) {
+      message.warning(
+        "Trưởng bộ phận phụ trách vị trí là người duyệt ứng viên vào vòng phỏng vấn. " +
+          "Ứng viên được duyệt sẽ tự hiện ở màn Lịch Phỏng Vấn để bạn xếp lịch.",
+      );
+      return;
+    }
+
     // Save previous state for rollback
     const previousKanbanData = JSON.parse(JSON.stringify(kanbanData));
 
@@ -236,7 +249,10 @@ const HumanResourceDashboard = () => {
       fetchDashboardOverview();
     } catch (error) {
       console.error("Error transitioning application:", error);
+      // BE trả ErrorObjectCommon: câu dành cho người dùng nằm ở userMsg. Thiếu key này thì
+      // mọi lỗi nghiệp vụ (403 cửa duyệt, guard G2...) rơi hết về câu chung chung vô nghĩa.
       const errorMsg =
+        error.response?.data?.userMsg ||
         error.response?.data?.errorMessage ||
         error.response?.data?.message ||
         "Không thể chuyển trạng thái ứng viên";

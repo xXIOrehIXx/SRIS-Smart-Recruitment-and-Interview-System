@@ -82,8 +82,9 @@ export const ROLE_MENUS = {
     { key: '/dept/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/dept/requests', icon: 'FileTextOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/dept/interviews', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
-    // DM duyệt ứng viên ở cửa INTERVIEW->OFFER thông qua Quyết Định Tuyển Dụng.
-    // Human Resource sẽ là người tạo OfferDetail.
+    // DM đứng ở HAI cửa: chọn ai vào phỏng vấn (SCREENING->INTERVIEW) và chốt tuyển
+    // (INTERVIEW->OFFER). Human Resource sàng lọc, xếp lịch và tạo OfferDetail.
+    { key: '/dept/screening', icon: 'SolutionOutlined', label: 'Duyệt Vào Phỏng Vấn' },
     { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Quyết Định Tuyển Dụng' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],

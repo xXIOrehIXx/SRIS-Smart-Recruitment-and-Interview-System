@@ -741,7 +741,7 @@ const InterviewScheduleRecruit = () => {
                 value: a.applicationId,
                 label: `${a.candidateName}${a.candidateEmail ? ` — ${a.candidateEmail}` : ''}`,
               }))}
-              notFoundContent={<Text type="secondary">Không có hồ sơ nào ở bước Phỏng vấn — kéo card sang cột Phỏng vấn trước</Text>}
+              notFoundContent={<Text type="secondary">Chưa có hồ sơ nào được duyệt vào vòng phỏng vấn — Trưởng bộ phận phụ trách vị trí duyệt trước, hồ sơ sẽ tự hiện ở đây</Text>}
             />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -765,7 +765,7 @@ const InterviewScheduleRecruit = () => {
         <Form form={manualForm} layout="vertical" onFinish={handleManualConfirm}>
           <Form.Item
             name="applicationId"
-            label="Ứng viên (đang ở bước Phỏng vấn)"
+            label="Ứng viên (đã được duyệt vào vòng phỏng vấn)"
             rules={[{ required: true, message: 'Chọn ứng viên' }]}
           >
             <Select
@@ -776,6 +776,7 @@ const InterviewScheduleRecruit = () => {
                 value: a.applicationId,
                 label: `${a.candidateName}${a.candidateEmail ? ` — ${a.candidateEmail}` : ''}`,
               }))}
+              notFoundContent={<Text type="secondary">Chưa có hồ sơ nào được duyệt vào vòng phỏng vấn — Trưởng bộ phận phụ trách vị trí duyệt trước</Text>}
             />
           </Form.Item>
           <Form.Item

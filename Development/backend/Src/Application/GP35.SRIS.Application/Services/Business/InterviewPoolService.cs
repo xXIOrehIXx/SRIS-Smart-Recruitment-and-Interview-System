@@ -34,7 +34,6 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
     private readonly IMagicLinkService _magicLink;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly INotificationService _notify;
-    private readonly IApplicationStateService _stateService;
     private readonly ILogger _logger;
 
     public InterviewPoolService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -46,7 +45,6 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _notify = serviceProvider.GetRequiredService<INotificationService>();
-        _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<InterviewPoolService>();
     }
 
@@ -195,15 +193,16 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
                 continue;
             }
 
-            // Mời phỏng vấn = hồ sơ đã sang bước Phỏng vấn -> tự đẩy state (NEW/SCREENING→INTERVIEW).
-            // Hồ sơ đã HIRED/REJECTED thì không đẩy được -> báo lý do, không mời.
-            try
+            // Human Resource LÊN LỊCH, không CHỌN người: hồ sơ phải được Trưởng bộ phận duyệt
+            // sang bước Phỏng vấn trước thì mới mời được (chốt sau bảo vệ 15/08/2026). Trước đây
+            // chỗ này tự đẩy state — mời ai là mặc nhiên chọn người đó, đúng thứ vừa bị bỏ.
+            if (!string.Equals(app.CurrentState, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase))
             {
-                await _stateService.AdvanceToAsync(companyId, userId, applicationId, ApplicationState.Interview);
-            }
-            catch (BaseException ex)
-            {
-                result.Skipped.Add(new InviteSkippedDto { ApplicationId = applicationId, Reason = ex.ErrorMessage });
+                result.Skipped.Add(new InviteSkippedDto
+                {
+                    ApplicationId = applicationId,
+                    Reason = NotApprovedReason(app.CurrentState)
+                });
                 continue;
             }
 
@@ -290,8 +289,11 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
         var app = await _appRepo.GetByIdAsync(companyId, applicationId)
             ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={applicationId}).");
 
-        // MỌI validate phải chạy TRƯỚC khi đẩy state: ném lỗi sau AdvanceToAsync thì hồ sơ đã
-        // nhảy sang INTERVIEW mà không có buổi nào được tạo.
+        // Cùng luật với mời qua pool: chỉ chốt lịch cho hồ sơ Trưởng bộ phận ĐÃ duyệt vào
+        // vòng phỏng vấn. Nhánh gọi điện cũng là lên lịch, không phải cửa chọn người.
+        if (!string.Equals(app.CurrentState, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase))
+            throw Conflict(NotApprovedReason(app.CurrentState));
+
         await EnsureJobHasApprovedCriteriaAsync(companyId, app.JobId);
 
         if (dto.InterviewerIds is null || dto.InterviewerIds.Count == 0)
@@ -334,9 +336,6 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             throw Conflict(
                 $"Interviewer #{busy.InterviewerId} đã có buổi lúc {busy.StartTime:HH:mm dd/MM/yyyy} — " +
                 $"các buổi phải cách nhau ít nhất {InterviewTiming.MinGapHours} tiếng.");
-
-        // Qua hết cửa -> "hồ sơ đã sang bước Phỏng vấn", tự đẩy state, khỏi kéo Kanban.
-        await _stateService.AdvanceToAsync(companyId, userId, applicationId, ApplicationState.Interview);
 
         var scheduleId = await _schedulingRepo.ManualConfirmAsync(
             companyId, app.JobId, applicationId, panel, dto.StartTime, round,
@@ -480,6 +479,20 @@ public class InterviewPoolService : BaseService<InterviewPoolService>, IIntervie
             throw Bad($"Tên vòng tối đa {MaxRoundNameLength} ký tự.");
         return trimmed;
     }
+
+    /// <summary>
+    /// Lý do không lên lịch được, nói theo chỗ hồ sơ ĐANG đứng. Hồ sơ đã chốt (HIRED/REJECTED)
+    /// khác hẳn hồ sơ mới/đang sàng lọc — gộp chung một câu "chưa được duyệt" thì Human Resource
+    /// đi hỏi Trưởng bộ phận duyệt một hồ sơ đã bị loại.
+    /// </summary>
+    private static string NotApprovedReason(string? currentState) =>
+        string.Equals(currentState, ApplicationState.Hired, StringComparison.OrdinalIgnoreCase)
+            ? "Ứng viên đã được tuyển — không xếp lịch phỏng vấn nữa."
+        : string.Equals(currentState, ApplicationState.Rejected, StringComparison.OrdinalIgnoreCase)
+            ? "Hồ sơ đã bị loại — không xếp lịch phỏng vấn nữa."
+        : string.Equals(currentState, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase)
+            ? "Hồ sơ đã sang bước ra quyết định — không xếp thêm buổi phỏng vấn."
+        : "Hồ sơ chưa được Trưởng bộ phận duyệt vào vòng phỏng vấn — chỉ xếp lịch được sau khi duyệt.";
 
     private static BaseException Bad(string msg) => new(msg)
     {
