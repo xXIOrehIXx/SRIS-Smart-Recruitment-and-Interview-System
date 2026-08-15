@@ -133,6 +133,11 @@ const FIELD_RULES = {
   department: () => [
     { required: true, message: "Vui lòng chọn phòng ban" },
   ],
+  // Bắt buộc khi ĐĂNG tin: người này duyệt ứng viên vào vòng phỏng vấn và chốt tuyển.
+  // Thiếu thì hồ sơ nộp về sẽ kẹt ở cột Sàng lọc vì không ai có quyền duyệt (BE cũng chặn).
+  departmentManagerId: () => [
+    { required: true, message: "Vui lòng chọn trưởng bộ phận phụ trách" },
+  ],
   location: () => [
     { required: true, message: "Vui lòng nhập địa điểm" },
     { whitespace: true, message: "Địa điểm không được chỉ chứa khoảng trắng" },
@@ -217,6 +222,7 @@ const buildRules = (mode, form) => {
     // Mô tả, lương, địa điểm — chỉ bắt buộc khi Đăng tin
     description: isDraft ? [] : FIELD_RULES.description(),
     department: isDraft ? [] : FIELD_RULES.department(),
+    departmentManagerId: isDraft ? [] : FIELD_RULES.departmentManagerId(),
     location: isDraft ? [] : FIELD_RULES.location(),
     type: isDraft ? [] : FIELD_RULES.type(),
     quantity: isDraft ? [] : FIELD_RULES.quantity(),
@@ -687,11 +693,13 @@ const CreateJob = () => {
                   <Form.Item
                     name="departmentManagerId"
                     label="Trưởng bộ phận phụ trách"
-                    tooltip="Người này chốt tuyển hay loại ở bước Quyết định. Bỏ trống thì bộ phận nhân sự tự quyết."
+                    tooltip="Người này duyệt ứng viên vào vòng phỏng vấn và chốt tuyển ở bước Quyết định. Bắt buộc khi đăng tin — thiếu thì hồ sơ nộp về sẽ kẹt ở bước Sàng lọc."
+                    rules={rules.departmentManagerId}
                   >
                     <Select
                       allowClear
                       showSearch
+                      onChange={dismissFormError}
                       optionFilterProp="label"
                       placeholder="Chọn trưởng bộ phận"
                       options={dmOptions.map((u) => ({

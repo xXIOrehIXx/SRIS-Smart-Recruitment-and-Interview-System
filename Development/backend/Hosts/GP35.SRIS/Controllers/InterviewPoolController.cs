@@ -12,7 +12,8 @@ namespace GP35.SRIS.Controllers;
 /// <summary>
 /// Đặt lịch phỏng vấn theo POOL dùng chung — Human Resource (docs Section 15). Mở 1 bộ khung cho job +
 /// vòng, mời nhiều ứng viên (mỗi người 1 magic link SCHEDULE), ai chốt trước lấy trước. Chốt lịch
-/// tay cho nhánh gọi điện. Nhiều vòng = round_number (5.12), KÉO trước (card ở INTERVIEW), MỜI sau.
+/// tay cho nhánh gọi điện. Nhiều vòng = round_number (5.12).
+/// Human Resource chỉ LÊN LỊCH: chỉ mời được hồ sơ Trưởng bộ phận ĐÃ duyệt (card ở INTERVIEW).
 /// </summary>
 [ApiController]
 [Authorize]

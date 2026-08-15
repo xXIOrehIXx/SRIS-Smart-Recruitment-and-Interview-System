@@ -53,7 +53,8 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
 
         var from = app.CurrentState;
 
-        // QUYẾT TUYỂN: Chuyển từ INTERVIEW -> OFFER (duyệt), hoặc rời state OFFER (thu hồi/từ chối) — chỉ DM được quyết.
+        // 2 cửa quyết định của DM: SCREENING→INTERVIEW (chọn ai được vào phỏng vấn) và
+        // INTERVIEW→OFFER / rời OFFER (quyết tuyển). Xem EnsureCanDecideAsync.
         if (!isCandidateAnswer)
             await EnsureCanDecideAsync(companyId, userId, app.JobId, from, toState);
 
@@ -145,6 +146,12 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         if (fromIndex >= targetIndex)
             return;
 
+        // Kiểm quyền của CẢ chặng đường TRƯỚC khi đi bước nào: NEW→SCREENING qua được nhưng
+        // SCREENING→INTERVIEW bị chặn thì hồ sơ đã nhảy một nấc rồi mới báo lỗi — người dùng
+        // thấy state đổi trong khi việc họ bấm thất bại.
+        for (var i = fromIndex; i < targetIndex; i++)
+            await EnsureCanDecideAsync(companyId, userId, app.JobId, ForwardOrder[i], ForwardOrder[i + 1]);
+
         // Đi TỪNG BƯỚC để mỗi chặng đều qua guard + ghi ActivityLog (audit không bị hổng).
         for (var i = fromIndex; i < targetIndex; i++)
             await TransitionAsync(companyId, userId, applicationId, ForwardOrder[i + 1], null);
@@ -153,18 +160,25 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     // ============================================================
 
     /// <summary>
-    /// Chốt ở cửa INTERVIEW→OFFER (Duyệt ứng viên) hoặc rời cửa OFFER (→HIRED / →REJECTED) là QUYẾT TUYỂN 
-    /// — chỉ DM được gán cho job đó quyết (docs 5.14).
-    /// Job không gán DM -> giữ đường mặc định của công ty nhỏ: Human Resource quyết.
-    /// Admin là superuser -> bỏ qua.
+    /// Hai cửa DM quyết (docs 5.14):
+    /// <list type="bullet">
+    /// <item>SCREENING→INTERVIEW — CHỌN ứng viên vào vòng phỏng vấn. Chuyên môn ai đáng gặp là của
+    /// trưởng bộ phận; Human Resource chỉ LÊN LỊCH cho người đã được duyệt (chốt sau bảo vệ 15/08/2026).
+    /// Cửa này BẮT BUỘC job phải có DM — không gán thì không ai duyệt được, chặn ngay và nói rõ.</item>
+    /// <item>INTERVIEW→OFFER và rời OFFER (→HIRED / →REJECTED) — QUYẾT TUYỂN. Job không gán DM thì
+    /// giữ đường cũ: Human Resource quyết (dữ liệu cũ tạo trước khi DM thành bắt buộc).</item>
+    /// </list>
+    /// Admin là superuser -> bỏ qua cả hai.
     /// </summary>
     private async Task EnsureCanDecideAsync(long companyId, long userId, long jobId, string from, string to)
     {
-        bool isInterviewToOffer = string.Equals(from, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase) && 
+        bool isScreeningToInterview = string.Equals(from, ApplicationState.Screening, StringComparison.OrdinalIgnoreCase) &&
+                                      string.Equals(to, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase);
+        bool isInterviewToOffer = string.Equals(from, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase) &&
                                   string.Equals(to, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase);
         bool isLeavingOffer = string.Equals(from, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase);
 
-        if (!isInterviewToOffer && !isLeavingOffer)
+        if (!isScreeningToInterview && !isInterviewToOffer && !isLeavingOffer)
             return;
 
         // userId = 0 -> hành động không đến từ một người dùng Portal cụ thể (job nền, seed…).
@@ -179,8 +193,19 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         var job = await _jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy vị trí (job) của hồ sơ (job_id={jobId}).");
 
-        if (job.DepartmentManagerId is long dmId && dmId != userId)
-            throw Forbidden("Chỉ Department Manager phụ trách vị trí này mới được duyệt/quyết tuyển hồ sơ.");
+        if (job.DepartmentManagerId is not long dmId)
+        {
+            if (isScreeningToInterview)
+                throw Forbidden(
+                    "Vị trí này chưa gán Trưởng bộ phận phụ trách nên chưa ai duyệt được ứng viên vào vòng " +
+                    "phỏng vấn. Hãy gán người phụ trách cho tin tuyển dụng trước.");
+            return;
+        }
+
+        if (dmId != userId)
+            throw Forbidden(isScreeningToInterview
+                ? "Chỉ Trưởng bộ phận phụ trách vị trí này mới được duyệt ứng viên vào vòng phỏng vấn."
+                : "Chỉ Department Manager phụ trách vị trí này mới được duyệt/quyết tuyển hồ sơ.");
     }
 
     /// <summary>Kiểm guard cần dữ liệu trước khi tiến.</summary>

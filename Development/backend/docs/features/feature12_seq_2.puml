@@ -10,7 +10,7 @@ actor Recruiter
 participant "Web UI" as UI
 participant "<<controller>>\nInterviewPoolController" as Ctrl
 participant "<<service>>\nInterviewPoolService" as Svc
-participant "<<service>>\nApplicationStateService" as StateSvc
+participant "<<repository>>\nApplicationRepository" as AppRepo
 participant "<<repository>>\nSchedulingRepository" as Repo
 participant "<<service>>\nMagicLinkService" as MagicLink
 participant "Database" as DB
@@ -25,10 +25,12 @@ Ctrl -> Svc: InviteAsync(companyId, userId, poolId, dto)
 activate Svc
 
 loop For each applicationId in dto.ApplicationIds
-    Svc -> StateSvc: AdvanceToAsync(..., "INTERVIEW")
-    activate StateSvc
-    StateSvc --> Svc: ok
-    deactivate StateSvc
+    Svc -> AppRepo: GetByIdAsync(companyId, applicationId)
+    activate AppRepo
+    AppRepo --> Svc: return Application
+    deactivate AppRepo
+
+    note right of Svc: Recruiter only SCHEDULES.\nSkip unless currentState = INTERVIEW\n(Department Manager approves the move)
 
     Svc -> Repo: InsertInviteScheduleAsync(..., schedule)
     activate Repo

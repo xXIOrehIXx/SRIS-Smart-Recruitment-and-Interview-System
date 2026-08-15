@@ -20,7 +20,6 @@ public class InterviewPoolServiceTests
     private readonly Mock<IMagicLinkService> _magicLink = new();
     private readonly Mock<IActivityLogRepo> _activityLogRepo = new();
     private readonly Mock<INotificationService> _notify = new();
-    private readonly Mock<IApplicationStateService> _stateService = new();
     private readonly Mock<ILogger> _logger = new();
 
     private InterviewPoolService CreateService()
@@ -46,38 +45,54 @@ public class InterviewPoolServiceTests
             s.AddSingleton(_magicLink.Object);
             s.AddSingleton(_activityLogRepo.Object);
             s.AddSingleton(_notify.Object);
-            s.AddSingleton(_stateService.Object);
             s.AddSingleton(_logger.Object);
         });
         return new InterviewPoolService(provider);
     }
 
-    [Fact]
-    public async Task InviteAsync_Should_Skip_If_AdvanceState_Throws()
+    [Theory]
+    [InlineData("NEW")]
+    [InlineData("SCREENING")]
+    public async Task InviteAsync_Should_Skip_Application_Not_Approved_By_Manager(string state)
     {
-        // Arrange
+        // Human Resource chỉ LÊN LỊCH: hồ sơ chưa được Trưởng bộ phận duyệt sang bước Phỏng vấn
+        // thì không mời được. Trước đây mời là tự đẩy state — tức Human Resource chọn người.
         var svc = CreateService();
-        var pool = new InterviewSlotPool { PoolId = 10, Status = "Open", RoundNumber = 1 };
-        _schedulingRepo.Setup(r => r.GetPoolByIdAsync(1L, 10L)).ReturnsAsync(pool);
-        
-        var app = new GP35.SRIS.Domain.Entities.Application { ApplicationId = 100 };
-        _appRepo.Setup(r => r.GetByIdAsync(1L, 100L)).ReturnsAsync(app);
+        _schedulingRepo.Setup(r => r.GetPoolByIdAsync(1L, 10L))
+            .ReturnsAsync(new InterviewSlotPool { PoolId = 10, JobId = 5, Status = "Open", RoundNumber = 1 });
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 100L))
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application
+            {
+                ApplicationId = 100, JobId = 5, CurrentState = state
+            });
 
-        // Mock state service throws exception when advancing
-        _stateService.Setup(s => s.AdvanceToAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>()))
-            .ThrowsAsync(new BaseException("State error") { ErrorCode = "CONFLICT", ErrorMessage = "State error" });
+        var result = await svc.InviteAsync(1L, 1L, 10L, new InvitePoolDto { ApplicationIds = new List<long> { 100 } });
 
-        var dto = new InvitePoolDto { ApplicationIds = new List<long> { 100 } };
-
-        // Act
-        var result = await svc.InviteAsync(1L, 1L, 10L, dto);
-
-        // Assert
-        Assert.NotNull(result);
         Assert.Empty(result.Invited);
         Assert.Single(result.Skipped);
         Assert.Equal(100, result.Skipped[0].ApplicationId);
-        Assert.Equal("State error", result.Skipped[0].Reason);
+        Assert.Contains("chưa được Trưởng bộ phận duyệt", result.Skipped[0].Reason);
+        _schedulingRepo.Verify(r => r.InsertInviteScheduleAsync(It.IsAny<long>(), It.IsAny<InterviewSchedule>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task InviteAsync_Should_Skip_Rejected_Application_With_Its_Own_Reason()
+    {
+        // Hồ sơ đã loại không phải "chờ duyệt" — nói đúng chỗ nó đang đứng, đừng để Human Resource
+        // đi hỏi Trưởng bộ phận duyệt một hồ sơ đã đóng.
+        var svc = CreateService();
+        _schedulingRepo.Setup(r => r.GetPoolByIdAsync(1L, 10L))
+            .ReturnsAsync(new InterviewSlotPool { PoolId = 10, JobId = 5, Status = "Open", RoundNumber = 1 });
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 100L))
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application
+            {
+                ApplicationId = 100, JobId = 5, CurrentState = "REJECTED"
+            });
+
+        var result = await svc.InviteAsync(1L, 1L, 10L, new InvitePoolDto { ApplicationIds = new List<long> { 100 } });
+
+        Assert.Single(result.Skipped);
+        Assert.Contains("đã bị loại", result.Skipped[0].Reason);
     }
 
     [Fact]
@@ -98,10 +113,9 @@ public class InterviewPoolServiceTests
             svc.InviteAsync(1L, 1L, 10L, new InvitePoolDto { ApplicationIds = new List<long> { 100 } }));
 
         Assert.Equal("CONFLICT", ex.ErrorCode);
-        // Chặn TRƯỚC vòng lặp: không hồ sơ nào bị đẩy state khi cả job còn chưa chấm được.
-        _stateService.Verify(
-            s => s.AdvanceToAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>()),
-            Times.Never);
+        // Chặn TRƯỚC vòng lặp: không hồ sơ nào được mời khi cả job còn chưa chấm được.
+        _schedulingRepo.Verify(
+            r => r.InsertInviteScheduleAsync(It.IsAny<long>(), It.IsAny<InterviewSchedule>()), Times.Never);
     }
 
     [Fact]
@@ -111,7 +125,10 @@ public class InterviewPoolServiceTests
         _schedulingRepo.Setup(r => r.GetPoolByIdAsync(1L, 10L))
             .ReturnsAsync(new InterviewSlotPool { PoolId = 10, JobId = 5, Status = "Open", RoundNumber = 1 });
         _appRepo.Setup(r => r.GetByIdAsync(1L, 100L))
-            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application { ApplicationId = 100, JobId = 5 });
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application
+            {
+                ApplicationId = 100, JobId = 5, CurrentState = "INTERVIEW"
+            });
         // Đã chốt vòng 1 ở pool KHÁC -> mời tiếp thành 2 buổi cùng vòng.
         _schedulingRepo.Setup(r => r.HasConfirmedScheduleForRoundAsync(1L, 100L, 1)).ReturnsAsync(true);
 
@@ -120,9 +137,8 @@ public class InterviewPoolServiceTests
         Assert.Empty(result.Invited);
         Assert.Single(result.Skipped);
         Assert.Contains("vòng 1", result.Skipped[0].Reason);
-        _stateService.Verify(
-            s => s.AdvanceToAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>()),
-            Times.Never);
+        _schedulingRepo.Verify(
+            r => r.InsertInviteScheduleAsync(It.IsAny<long>(), It.IsAny<InterviewSchedule>()), Times.Never);
     }
 
     [Fact]
@@ -270,7 +286,10 @@ public class InterviewPoolServiceTests
     {
         var svc = CreateService();
         _appRepo.Setup(r => r.GetByIdAsync(1L, 100L))
-            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application { ApplicationId = 100, JobId = 5 });
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application
+            {
+                ApplicationId = 100, JobId = 5, CurrentState = "INTERVIEW"
+            });
         // Ứng viên chưa phỏng vấn buổi nào -> buổi đầu tiên phải là vòng 1.
         _schedulingRepo.Setup(r => r.GetNextRoundNumberAsync(1L, 100L)).ReturnsAsync(1);
 
@@ -284,8 +303,33 @@ public class InterviewPoolServiceTests
         var ex = await Assert.ThrowsAsync<BaseException>(() => svc.ManualConfirmAsync(1L, 1L, 100L, dto));
 
         Assert.Contains("vòng 1", ex.ErrorMessage);
-        _stateService.Verify(
-            s => s.AdvanceToAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<string>()),
+    }
+
+    [Fact]
+    public async Task ManualConfirmAsync_Should_Block_Application_Not_Approved_By_Manager()
+    {
+        // Nhánh gọi điện cũng chỉ là LÊN LỊCH — không phải cửa sau để đưa người vào phỏng vấn.
+        var svc = CreateService();
+        _appRepo.Setup(r => r.GetByIdAsync(1L, 100L))
+            .ReturnsAsync(new GP35.SRIS.Domain.Entities.Application
+            {
+                ApplicationId = 100, JobId = 5, CurrentState = "SCREENING"
+            });
+
+        var dto = new ManualConfirmDto
+        {
+            InterviewerIds = new List<long> { 7 },
+            StartTime = DateTime.Now.AddDays(3)
+        };
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => svc.ManualConfirmAsync(1L, 1L, 100L, dto));
+
+        Assert.Equal("CONFLICT", ex.ErrorCode);
+        Assert.Contains("chưa được Trưởng bộ phận duyệt", ex.ErrorMessage);
+        _schedulingRepo.Verify(
+            r => r.ManualConfirmAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(),
+                It.IsAny<IReadOnlyList<long>>(), It.IsAny<DateTime>(), It.IsAny<int>(),
+                It.IsAny<string?>(), It.IsAny<long?>()),
             Times.Never);
     }
 }

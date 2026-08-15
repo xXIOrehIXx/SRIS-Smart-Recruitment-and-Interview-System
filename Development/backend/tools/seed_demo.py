@@ -161,7 +161,11 @@ for key, title, jd in [
      "Tuyen Nhan vien kinh doanh: 1 nam kinh nghiem ban hang/cham soc khach hang, giao tiep tot, "
      "chiu duoc ap luc doanh so. Uu tien biet tieng Anh. Luong cung + hoa hong."),
 ]:
-    s, d = call("POST", "/jobs", token=recruiter, body={"title": title, "jdText": jd})
+    # departmentManagerId BAT BUOC khi dang tin (Status mac dinh = Open): DM la cua duyet
+    # ung vien vao vong phong van (chot 15/08/2026), thieu thi ho so ket o Sang loc.
+    s, d = call("POST", "/jobs", token=recruiter,
+                body={"title": title, "jdText": jd,
+                      "departmentManagerId": users["DepartmentManager"]["id"]})
     must(s, d, f"tao job {title}")
     jobs[key] = d["jobId"]
     print(f"   + Job {d['jobId']}: {title}")
@@ -252,7 +256,10 @@ for jobkey, name, lines in CVS:
 # (Truoc day cho AI cham diem CV o day. Sang loc CV bang AI + Talent Pool da bi cat khoi
 #  scope 08/08/2026: khong con endpoint /cv-scoring, nhan ho so chi con parse + luu file.)
 def transition(app, to):
-    must(*call("POST", f"/applications/{apps[app]['id']}/transition", token=recruiter, body={"toState": to}),
+    # Ai bam buoc nao: nhan su sang loc (NEW->SCREENING), Truong bo phan duyet vao vong
+    # phong van (SCREENING->INTERVIEW) va chot tuyen (INTERVIEW->OFFER) — token nhan su 403.
+    token = dm if to in ("INTERVIEW", "OFFER", "HIRED") else recruiter
+    must(*call("POST", f"/applications/{apps[app]['id']}/transition", token=token, body={"toState": to}),
          f"{app} -> {to}")
 
 # An (java): -> INTERVIEW -> (cham diem) -> OFFER PENDING

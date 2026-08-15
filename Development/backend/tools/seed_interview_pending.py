@@ -17,6 +17,9 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 BASE = "http://localhost:5082/api"
 PASS = "demo123456"
 RECRUITER = "recruiter.7b880@demo.vn"
+# Duyệt vào vòng phỏng vấn là cửa của Trưởng bộ phận (chốt 15/08/2026) — token nhân sự
+# bị 403 ở bước SCREENING->INTERVIEW, nên script phải đăng nhập thêm DM của job.
+MANAGER = "dm.7b880@demo.vn"
 JOB_ID = 45          # "Lập trình viên Backend (.NET)" — Phòng Kỹ thuật
 RUN = uuid.uuid4().hex[:4]
 INBOX = "giakhanh27403@gmail.com"
@@ -111,12 +114,20 @@ s, d = call("POST", "/account/login", body={"email": RECRUITER, "password": PASS
 must(s, d, "login")
 rec = d["accessToken"]
 
+s, d = call("POST", "/account/login", body={"email": MANAGER, "password": PASS})
+must(s, d, f"login {MANAGER}")
+dm = d["accessToken"]
+
+# Ai bấm bước nào: nhân sự sàng lọc, Trưởng bộ phận duyệt vào vòng phỏng vấn.
+STEP_TOKEN = {"SCREENING": rec, "INTERVIEW": dm}
+
 local, domain = INBOX.split("@")
 for name, phone, cv in CANDIDATES:
     email = f"{local}+{name.split()[-1].lower()}.{RUN}@{domain}"
     app_id = upload_cv(rec, name, email, phone, cv)
     for state in ("SCREENING", "INTERVIEW"):
-        must(*call("POST", f"/applications/{app_id}/transition", token=rec, body={"toState": state}),
+        must(*call("POST", f"/applications/{app_id}/transition", token=STEP_TOKEN[state],
+                   body={"toState": state}),
              f"{name} -> {state}")
     print(f"   + {name:16s} app {app_id} | INTERVIEW, chua co lich")
 

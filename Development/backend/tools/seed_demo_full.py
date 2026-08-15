@@ -227,14 +227,16 @@ dm = login(users["dm"]["email"], PASS)
 itv = {k: login(users[k]["email"], PASS) for k in ("itv1", "itv2", "itv3")}
 
 # ---------- 2) Phòng ban ----------
-# Phòng Kỹ thuật gán DM -> job thuộc phòng này tự lấy DM làm người quyết tuyển (V023).
+# MỌI phòng ban đều gán DM (V023 tự lấy manager của phòng làm người quyết của job).
+# Bắt buộc từ 15/08/2026: tin đăng phải có người phụ trách, vì DM là cửa duyệt ứng viên
+# vào vòng phỏng vấn. Phòng không có DM = hồ sơ kẹt vĩnh viễn ở Sàng lọc.
 DEPTS = [
     ("Phòng Kỹ thuật", users["dm"]["id"]),
-    ("Phòng Kinh doanh", None),
-    ("Phòng Tài chính - Kế toán", None),
-    ("Phòng Nhân sự", None),
-    ("Phòng Marketing", None),
-    ("Phòng Chăm sóc Khách hàng", None),
+    ("Phòng Kinh doanh", users["dm"]["id"]),
+    ("Phòng Tài chính - Kế toán", users["dm"]["id"]),
+    ("Phòng Nhân sự", users["dm"]["id"]),
+    ("Phòng Marketing", users["dm"]["id"]),
+    ("Phòng Chăm sóc Khách hàng", users["dm"]["id"]),
 ]
 for name, mgr in DEPTS:
     s, _ = call("POST", "/departments", token=admin, body={"name": name, "managerUserId": mgr})
@@ -616,11 +618,13 @@ for jobkey, name, plan, live, cv in CANDS:
 print(f"   + {len(CANDS)} ứng viên đã nộp CV PDF qua career site")
 
 # ---------- 7) Kéo pipeline ----------
-DECIDER = {}   # job có DM (Phòng Kỹ thuật) -> DM quyết; job khác -> HR quyết
+# Mọi job đều có DM -> DM đi trước ở các cửa duyệt (SCREENING->INTERVIEW, INTERVIEW->OFFER).
+# HR vẫn giữ trong danh sách cho bước NEW->SCREENING và reject (không phải cửa của DM);
+# admin đứng cuối làm lưới an toàn nếu quyền có đổi.
 
 
 def deciders(jobkey):
-    return [dm, hr, admin] if jobkey in ("be", "fe") else [hr, dm, admin]
+    return [dm, hr, admin]
 
 
 def transition(name, to):
