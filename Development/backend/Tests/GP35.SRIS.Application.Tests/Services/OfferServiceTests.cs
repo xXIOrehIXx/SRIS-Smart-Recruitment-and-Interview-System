@@ -20,6 +20,7 @@ public class OfferServiceTests
     private readonly Mock<IOfferRepo> _offerRepo = new();
     private readonly Mock<ICompanyRepo> _companyRepo = new();
     private readonly Mock<IUserRepo> _userRepo = new();
+    private readonly Mock<IHiringProposalRepo> _proposalRepo = new();
     private readonly Mock<IApplicationStateService> _stateService = new();
     private readonly Mock<IMagicLinkService> _magicLink = new();
     private readonly Mock<INotificationService> _notification = new();
@@ -46,6 +47,7 @@ public class OfferServiceTests
             s.AddSingleton(_offerRepo.Object);
             s.AddSingleton(_companyRepo.Object);
             s.AddSingleton(_userRepo.Object);
+            s.AddSingleton(_proposalRepo.Object);
             s.AddSingleton(_stateService.Object);
             s.AddSingleton(_magicLink.Object);
             s.AddSingleton(_notification.Object);

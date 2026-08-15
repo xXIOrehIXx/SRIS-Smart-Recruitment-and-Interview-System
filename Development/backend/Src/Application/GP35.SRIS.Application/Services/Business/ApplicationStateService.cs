@@ -160,15 +160,17 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     // ============================================================
 
     /// <summary>
-    /// Hai cửa DM quyết (docs 5.14):
+    /// Hai cửa có người gác (docs 5.14 — cập nhật 15/08/2026 sau bảo vệ hội đồng):
     /// <list type="bullet">
-    /// <item>SCREENING→INTERVIEW — CHỌN ứng viên vào vòng phỏng vấn. Chuyên môn ai đáng gặp là của
-    /// trưởng bộ phận; Human Resource chỉ LÊN LỊCH cho người đã được duyệt (chốt sau bảo vệ 15/08/2026).
+    /// <item>SCREENING→INTERVIEW — CHỌN ứng viên vào vòng phỏng vấn: <b>Trưởng bộ phận phụ trách
+    /// vị trí</b>. Chuyên môn ai đáng gặp là của họ; Human Resource chỉ LÊN LỊCH cho người đã duyệt.
     /// Cửa này BẮT BUỘC job phải có DM — không gán thì không ai duyệt được, chặn ngay và nói rõ.</item>
-    /// <item>INTERVIEW→OFFER và rời OFFER (→HIRED / →REJECTED) — QUYẾT TUYỂN. Job không gán DM thì
-    /// giữ đường cũ: Human Resource quyết (dữ liệu cũ tạo trước khi DM thành bắt buộc).</item>
+    /// <item>INTERVIEW→OFFER và rời OFFER (→HIRED / →REJECTED) — QUYẾT TUYỂN: <b>Giám đốc</b>.
+    /// Trưởng bộ phận không đủ thẩm quyền tuyển, họ chỉ ĐỀ XUẤT (<c>HiringProposal</c>) và Giám đốc
+    /// duyệt đề xuất đó — chính đường duyệt gọi vào đây. Giám đốc có phạm vi TOÀN CÔNG TY nên không
+    /// đối chiếu với vị trí nào cả.</item>
     /// </list>
-    /// Admin là superuser -> bỏ qua cả hai.
+    /// Admin là superuser -> bỏ qua cả hai (công ty nhỏ 1 tài khoản chạy trọn luồng).
     /// </summary>
     private async Task EnsureCanDecideAsync(long companyId, long userId, long jobId, string from, string to)
     {
@@ -190,22 +192,27 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         if (string.Equals(_contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase))
             return;
 
+        // ----- Cửa quyết tuyển: của Giám đốc, không phụ thuộc vị trí -----
+        if (isInterviewToOffer || isLeavingOffer)
+        {
+            if (!string.Equals(_contextData.Role, RoleConstants.Director, StringComparison.OrdinalIgnoreCase))
+                throw Forbidden(isInterviewToOffer
+                    ? "Chỉ Giám đốc mới quyết tuyển. Trưởng bộ phận hãy gửi ĐỀ XUẤT TUYỂN để Giám đốc duyệt."
+                    : "Chỉ Giám đốc mới chốt kết quả ở bước Quyết định.");
+            return;
+        }
+
+        // ----- Cửa vào vòng phỏng vấn: của Trưởng bộ phận phụ trách vị trí -----
         var job = await _jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy vị trí (job) của hồ sơ (job_id={jobId}).");
 
         if (job.DepartmentManagerId is not long dmId)
-        {
-            if (isScreeningToInterview)
-                throw Forbidden(
-                    "Vị trí này chưa gán Trưởng bộ phận phụ trách nên chưa ai duyệt được ứng viên vào vòng " +
-                    "phỏng vấn. Hãy gán người phụ trách cho tin tuyển dụng trước.");
-            return;
-        }
+            throw Forbidden(
+                "Vị trí này chưa gán Trưởng bộ phận phụ trách nên chưa ai duyệt được ứng viên vào vòng " +
+                "phỏng vấn. Hãy gán người phụ trách cho tin tuyển dụng trước.");
 
         if (dmId != userId)
-            throw Forbidden(isScreeningToInterview
-                ? "Chỉ Trưởng bộ phận phụ trách vị trí này mới được duyệt ứng viên vào vòng phỏng vấn."
-                : "Chỉ Department Manager phụ trách vị trí này mới được duyệt/quyết tuyển hồ sơ.");
+            throw Forbidden("Chỉ Trưởng bộ phận phụ trách vị trí này mới được duyệt ứng viên vào vòng phỏng vấn.");
     }
 
     /// <summary>Kiểm guard cần dữ liệu trước khi tiến.</summary>

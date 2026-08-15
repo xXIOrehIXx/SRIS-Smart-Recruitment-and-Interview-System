@@ -14,7 +14,9 @@ namespace GP35.SRIS.Application.Services.Business;
 /// </summary>
 public class MagicLinkService : BaseService<MagicLinkService>, IMagicLinkService
 {
-    private static readonly string[] ValidPurposes = { "SCHEDULE", "STATUS", "OFFER_RESPONSE" };
+    // Purpose SCHEDULE đã bỏ (15/08/2026): ứng viên không tự chọn khung nữa, bộ phận nhân sự
+    // gọi điện chốt giờ rồi nhập buổi vào hệ thống.
+    private static readonly string[] ValidPurposes = { "STATUS", "OFFER_RESPONSE" };
 
     private readonly IMagicLinkTokenRepo _tokenRepo;
     private readonly INotificationService _notify;
@@ -95,7 +97,6 @@ public class MagicLinkService : BaseService<MagicLinkService>, IMagicLinkService
     /// <summary>TTL gợi ý theo purpose (docs 5.13).</summary>
     private static TimeSpan DefaultTtl(string purpose) => purpose switch
     {
-        "SCHEDULE" => TimeSpan.FromDays(5),
         "OFFER_RESPONSE" => TimeSpan.FromDays(7),
         "STATUS" => TimeSpan.FromDays(30),
         _ => TimeSpan.FromDays(1)

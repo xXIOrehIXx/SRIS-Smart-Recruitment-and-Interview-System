@@ -202,6 +202,7 @@ STAFF = [
     ("itv2", "Interviewer", "Phạm Quang Huy"),
     ("itv3", "Interviewer", "Đỗ Thanh Tùng"),
     ("dm", "DepartmentManager", "Ngô Thị Lan"),
+    ("dir", "Director", "Bùi Quang Hưng"),
 ]
 users = {}
 for key, role, fullname in STAFF:
@@ -224,6 +225,7 @@ for key, role, fullname in STAFF:
 
 hr = login(users["hr"]["email"], PASS)
 dm = login(users["dm"]["email"], PASS)
+director = login(users["dir"]["email"], PASS)
 itv = {k: login(users[k]["email"], PASS) for k in ("itv1", "itv2", "itv3")}
 
 # ---------- 2) Phòng ban ----------
@@ -618,13 +620,13 @@ for jobkey, name, plan, live, cv in CANDS:
 print(f"   + {len(CANDS)} ứng viên đã nộp CV PDF qua career site")
 
 # ---------- 7) Kéo pipeline ----------
-# Mọi job đều có DM -> DM đi trước ở các cửa duyệt (SCREENING->INTERVIEW, INTERVIEW->OFFER).
-# HR vẫn giữ trong danh sách cho bước NEW->SCREENING và reject (không phải cửa của DM);
-# admin đứng cuối làm lưới an toàn nếu quyền có đổi.
+# Ai bấm được bước nào (chốt 15/08/2026): nhân sự sàng lọc, DM duyệt vào vòng phỏng vấn,
+# GIÁM ĐỐC quyết tuyển. call_any thử lần lượt nên cứ đưa cả ba; admin đứng cuối làm lưới
+# an toàn nếu quyền có đổi.
 
 
 def deciders(jobkey):
-    return [dm, hr, admin]
+    return [dm, director, hr, admin]
 
 
 def transition(name, to):
@@ -676,36 +678,20 @@ PANEL_TOKEN = {
     "cs": [itv["itv3"]], "mkt": [itv["itv3"]], "lead": [itv["itv1"], itv["itv3"]],
 }
 
-# 8a) Pool slot dùng chung: mời người ở trạng thái invited/booked, booked thì chốt luôn 1 slot.
-pool_people = {}
+# 8a) Ứng viên đã được duyệt vào vòng phỏng vấn nhưng CHƯA tới buổi: nhân sự đặt lịch trực
+# tiếp (pool khung + magic link SCHEDULE đã bỏ 15/08/2026 — nhân sự gọi điện chốt giờ).
+scheduled_people = {}
 for name, a in apps.items():
     if a["plan"] in ("invited", "booked"):
-        pool_people.setdefault(a["job"], []).append(name)
+        scheduled_people.setdefault(a["job"], []).append(name)
 
-for jobkey, names in pool_people.items():
-    # slot nhiều hơn số người -> còn khung trống để demo "ứng viên tự chọn giờ"
-    slots = [{"interviewerIds": PANEL[jobkey], "startTime": next_time()}
-             for _ in range(len(names) + 2)]
-    pool = must(*call("POST", f"/jobs/{jobs[jobkey]}/interview-pools", token=hr,
-                      body={"roundNumber": 1, "slots": slots}), f"tạo pool {jobkey}")
-    inv = must(*call("POST", f"/interview-pools/{pool['poolId']}/invitations", token=hr,
-                     body={"applicationIds": [apps[n]["id"] for n in names]}), f"mời pool {jobkey}")
-    by_app = {i["applicationId"]: i for i in inv["invited"]}
+for jobkey, names in scheduled_people.items():
     for n in names:
-        apps[n]["scheduleId"] = by_app[apps[n]["id"]]["scheduleId"]
-        apps[n]["token"] = by_app[apps[n]["id"]]["magicToken"]
-    # người "booked" tự chọn giờ qua magic link
-    for n in names:
-        if apps[n]["plan"] != "booked":
-            continue
-        tok = urllib.request.quote(apps[n]["token"])
-        sched = must(*call("GET", f"/candidate/schedule?token={tok}"), f"{n} xem lịch")
-        for cs in sched["slots"]:
-            st, _ = call("POST", f"/candidate/schedule/confirm?token={tok}", body={"slotId": cs["slotId"]})
-            if st in (200, 201):
-                break
-    print(f"   + Pool {jobkey}: {len(slots)} khung giờ, mời {len(names)} ứng viên "
-          f"({sum(1 for n in names if apps[n]['plan'] == 'booked')} đã chốt lịch)")
+        book = must(*call("POST", f"/applications/{apps[n]['id']}/interviews", token=hr,
+                          body={"interviewerIds": PANEL[jobkey], "startTime": next_time()}),
+                    f"đặt lịch {n}")
+        apps[n]["scheduleId"] = book["scheduleId"]
+    print(f"   + {jobkey}: đã đặt lịch phỏng vấn cho {len(names)} ứng viên")
 
 # 8b) Người đã phỏng vấn xong (scored/offer/hired/offer_declined): chốt lịch tay + nộp phiếu chấm
 SUMMARIES = {
@@ -740,9 +726,9 @@ for name, a in apps.items():
     if a["plan"] not in SCORE_PLAN:
         continue
     jobkey = a["job"]
-    man = must(*call("POST", f"/applications/{a['id']}/manual-interview", token=hr,
+    man = must(*call("POST", f"/applications/{a['id']}/interviews", token=hr,
                      body={"interviewerIds": PANEL[jobkey], "startTime": next_time()}),
-               f"chốt lịch tay {name}")
+               f"đặt lịch {name}")
     a["scheduleId"] = man["scheduleId"]
     for tk, (score, rec) in zip(PANEL_TOKEN[jobkey], SCORE_PLAN[a["plan"]]):
         submit_sheet(tk, man["scheduleId"], score, rec, name)
@@ -768,7 +754,15 @@ OFFERS = {
 start_date = time.strftime("%Y-%m-%dT00:00:00", time.gmtime(time.time() + 20 * 86400))
 for name, extra in OFFERS.items():
     a = apps[name]
-    transition(name, "OFFER")
+    # V043: DM chỉ ĐỀ XUẤT, Giám đốc duyệt — chính hành động duyệt đẩy hồ sơ sang OFFER.
+    prop = must(*call("POST", f"/applications/{a['id']}/hiring-proposal", token=dm,
+                      body={"note": "Panel đánh giá tốt, đề nghị tuyển.",
+                            "proposedSalary": extra["salaryAmount"]}),
+                f"đề xuất tuyển {name}")
+    must(*call("POST", f"/hiring-proposals/{prop['proposalId']}/decision", token=director,
+               body={"approve": True, "note": "Đồng ý tuyển.",
+                     "approvedSalary": extra["salaryAmount"]}),
+         f"giám đốc duyệt {name}")
     body = dict(currency="VND", salaryPeriod="THANG", startDate=start_date, expiresInDays=7,
                 benefits="Bảo hiểm sức khỏe, 12 ngày phép/năm, lương tháng 13",
                 hrContactName=users["hr"]["name"], hrContactEmail=users["hr"]["email"],
@@ -828,12 +822,13 @@ Tài khoản (mật khẩu chung: {PASS})
   Human Resource : {users['hr']['email']}
   Interviewer    : {users['itv1']['email']} · {users['itv2']['email']} · {users['itv3']['email']}
   DM             : {users['dm']['email']}
+  Giám đốc       : {users['dir']['email']}
 Dữ liệu: {len(JOBS_DEF)} tin tuyển dụng · {len(CANDS)} ứng viên
   {' · '.join(f'{k}: {v}' for k, v in sorted(state_count.items()))}
 Điểm demo:
   - Kanban job Backend: đủ NEW / SCREENING / INTERVIEW / OFFER / HIRED / REJECTED
-  - Lịch phỏng vấn: pool có slot đã đặt + slot còn trống + người được mời chưa chọn giờ
-  - Interviewer đăng nhập -> phiếu chấm; DM -> màn Quyết định tuyển dụng (tổng hợp panel)
+  - Lịch phỏng vấn: nhân sự đặt buổi trực tiếp (ứng viên + panel + giờ), có buổi đã chấm xong
+  - Interviewer -> phiếu chấm; DM -> Đề xuất tuyển; Giám đốc -> Duyệt đề xuất (chốt lương)
   - Offer: 2 chờ trả lời · 4 đã nhận việc · 1 từ chối
   - Yêu cầu tuyển dụng: 2 chờ duyệt · 1 đã convert · 1 bị từ chối
 ============================================================""")

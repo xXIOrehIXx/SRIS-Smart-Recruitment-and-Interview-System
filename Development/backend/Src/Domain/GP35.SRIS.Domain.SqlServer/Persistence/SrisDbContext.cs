@@ -63,6 +63,7 @@ public class SrisDbContext : DbContext
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<RecruitmentRequest> RecruitmentRequests => Set<RecruitmentRequest>();
+    public DbSet<HiringProposal> HiringProposals => Set<HiringProposal>();
     public DbSet<JobRequirement> JobRequirements => Set<JobRequirement>();
     public DbSet<JobBenefit> JobBenefits => Set<JobBenefit>();
     public DbSet<Department> Departments => Set<Department>();
@@ -280,6 +281,16 @@ public class SrisDbContext : DbContext
             e.HasKey(x => x.RequestId);
             e.Property(x => x.SalaryMin).HasColumnType("decimal(18,2)");
             e.Property(x => x.SalaryMax).HasColumnType("decimal(18,2)");
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<HiringProposal>(e =>
+        {
+            e.ToTable("HiringProposal");
+            e.HasKey(x => x.ProposalId);
+            e.Property(x => x.ProposedSalary).HasColumnType("decimal(18,2)");
+            e.Property(x => x.ApprovedSalary).HasColumnType("decimal(18,2)");
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

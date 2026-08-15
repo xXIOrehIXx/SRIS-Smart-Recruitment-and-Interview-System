@@ -16,52 +16,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         _db = serviceProvider.GetRequiredService<SrisDbContext>();
     }
 
-    // ---------- Pool ----------
-
-    public async Task<long> InsertPoolWithSlotsAsync(
-        long companyId, InterviewSlotPool pool, IEnumerable<InterviewSlot> slots)
-    {
-        pool.CompanyId = companyId;
-
-        await using var tx = await _db.Database.BeginTransactionAsync();
-
-        _db.InterviewSlotPools.Add(pool);
-        await _db.SaveChangesAsync();
-
-        var slotList = slots.ToList();
-        var allPanel = new List<InterviewSlotInterviewer>();
-        foreach (var s in slotList)
-        {
-            s.CompanyId = companyId;
-            s.PoolId = pool.PoolId;
-            s.Status = InterviewSlotStatus.Open;
-            _db.InterviewSlots.Add(s);
-        }
-        await _db.SaveChangesAsync();
-
-        // Panel interviewer — tạo SAU khi slot có slot_id (FK).
-        foreach (var s in slotList)
-        {
-            foreach (var iid in s.InterviewerIds ?? new List<long>())
-            {
-                allPanel.Add(new InterviewSlotInterviewer
-                {
-                    SlotId = s.SlotId,
-                    CompanyId = companyId,
-                    InterviewerId = iid,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-        }
-        if (allPanel.Count > 0)
-        {
-            _db.InterviewSlotInterviewers.AddRange(allPanel);
-            await _db.SaveChangesAsync();
-        }
-
-        await tx.CommitAsync();
-        return pool.PoolId;
-    }
+    // ---------- Buổi phỏng vấn (pool 1 khung) ----------
 
     public async Task<InterviewSlotPool?> GetPoolByIdAsync(long companyId, long poolId)
     {
@@ -92,22 +47,38 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return result;
     }
 
-    public async Task<IReadOnlyList<InterviewSlot>> GetSlotsByPoolAsync(
-        long companyId, long poolId, bool onlyOpenFuture)
+    public async Task<IReadOnlyList<JobScheduleRow>> GetSchedulesByJobAsync(long companyId, long jobId)
     {
-        var q = _db.InterviewSlots
+        // Join qua slot (giờ) + pool (tên vòng) + candidate (tên) để bảng lịch của bộ phận nhân sự
+        // hiện đủ trong 1 lần gọi. Buổi mới nhất lên đầu.
+        var query =
+            from s in _db.InterviewSchedules.AsNoTracking()
+            join sl in _db.InterviewSlots.AsNoTracking() on s.ConfirmedSlotId equals sl.SlotId
+            join p in _db.InterviewSlotPools.AsNoTracking() on sl.PoolId equals p.PoolId
+            join a in _db.Applications.AsNoTracking() on s.ApplicationId equals a.ApplicationId
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            where a.JobId == jobId
+            orderby sl.StartTime descending
+            select new JobScheduleRow(
+                s.ScheduleId, s.ApplicationId, sl.SlotId, s.RoundNumber, p.Name,
+                s.Status, sl.StartTime, c.FullName, c.Email, a.CurrentState);
+        return await query.ToListAsync();
+    }
+
+    public async Task<IReadOnlyDictionary<long, List<long>>> GetPanelsBySlotIdsAsync(
+        long companyId, IReadOnlyList<long> slotIds)
+    {
+        if (slotIds.Count == 0) return new Dictionary<long, List<long>>();
+
+        var rows = await _db.InterviewSlotInterviewers
             .AsNoTracking()
-            .Include(x => x.Interviewers)
-            .Where(x => x.PoolId == poolId);
-        if (onlyOpenFuture)
-        {
-            // Giờ LOCAL, không UtcNow: start_time lưu local naive (FE gửi không kèm 'Z'), so với
-            // UtcNow thì khung đã qua trong vòng <offset múi giờ> vẫn được coi là tương lai và
-            // hiện ra cho ứng viên chọn.
-            var now = DateTime.Now;
-            q = q.Where(x => x.Status == InterviewSlotStatus.Open && x.StartTime > now);
-        }
-        return await q.OrderBy(x => x.StartTime).ToListAsync();
+            .Where(x => slotIds.Contains(x.SlotId))
+            .Select(x => new { x.SlotId, x.InterviewerId })
+            .ToListAsync();
+
+        return rows
+            .GroupBy(x => x.SlotId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.InterviewerId).ToList());
     }
 
     public async Task<InterviewSlot?> GetSlotAsync(long companyId, long slotId)
@@ -158,35 +129,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return true;
     }
 
-    // ---------- Invite / lịch per-ứng-viên ----------
-
-    public async Task<long> InsertInviteScheduleAsync(long companyId, InterviewSchedule schedule)
-    {
-        schedule.CompanyId = companyId;
-        schedule.Status = InterviewScheduleStatus.Pending;
-        _db.InterviewSchedules.Add(schedule);
-        await _db.SaveChangesAsync();
-        return schedule.ScheduleId;
-    }
-
-    public async Task<IReadOnlyList<InterviewSchedule>> GetSchedulesByPoolAsync(long companyId, long poolId)
-    {
-        return await _db.InterviewSchedules
-            .AsNoTracking()
-            .Where(s => s.PoolId == poolId)
-            .OrderBy(s => s.ScheduleId)
-            .ToListAsync();
-    }
-
-    public async Task<bool> HasActiveInviteInPoolAsync(long companyId, long poolId, long applicationId)
-    {
-        return await _db.InterviewSchedules
-            .AsNoTracking()
-            .AnyAsync(s => s.PoolId == poolId
-                && s.ApplicationId == applicationId
-                && (s.Status == InterviewScheduleStatus.Pending
-                    || s.Status == InterviewScheduleStatus.Confirmed));
-    }
+    // ---------- Lịch per-ứng-viên ----------
 
     public async Task<bool> HasConfirmedScheduleForRoundAsync(
         long companyId, long applicationId, int roundNumber)
@@ -196,36 +139,6 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .AnyAsync(s => s.ApplicationId == applicationId
                 && s.RoundNumber == roundNumber
                 && s.Status == InterviewScheduleStatus.Confirmed);
-    }
-
-    public async Task<InterviewSchedule?> GetLatestPendingScheduleAsync(long companyId, long applicationId)
-    {
-        return await _db.InterviewSchedules
-            .AsNoTracking()
-            .Where(s => s.ApplicationId == applicationId && s.Status == InterviewScheduleStatus.Pending)
-            .OrderByDescending(s => s.ScheduleId)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<InterviewSchedule?> GetPendingScheduleInPoolAsync(
-        long companyId, long applicationId, long poolId)
-    {
-        return await _db.InterviewSchedules
-            .AsNoTracking()
-            .Where(s => s.ApplicationId == applicationId
-                && s.PoolId == poolId
-                && s.Status == InterviewScheduleStatus.Pending)
-            .OrderByDescending(s => s.ScheduleId)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<InterviewSchedule?> GetLatestScheduleAsync(long companyId, long applicationId)
-    {
-        return await _db.InterviewSchedules
-            .AsNoTracking()
-            .Where(s => s.ApplicationId == applicationId)
-            .OrderByDescending(s => s.ScheduleId)
-            .FirstOrDefaultAsync();
     }
 
     public async Task<IReadOnlyList<InterviewSchedule>> GetSchedulesByApplicationAsync(long companyId, long applicationId)
@@ -245,14 +158,6 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             .FirstOrDefaultAsync(s => s.ScheduleId == scheduleId);
     }
 
-    public async Task<int> CountNoSlotFitsAsync(long companyId, long applicationId)
-    {
-        return await _db.InterviewSchedules
-            .AsNoTracking()
-            .CountAsync(s => s.ApplicationId == applicationId
-                && s.Status == InterviewScheduleStatus.NoSlotFits);
-    }
-
     public async Task<int> GetNextRoundNumberAsync(long companyId, long applicationId)
     {
         // Lịch ĐÃ HỦY không tính: buổi đó không diễn ra, nên nó không "chiếm" số vòng. Đếm cả
@@ -267,38 +172,7 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return (max ?? 0) + 1;
     }
 
-    // ---------- Chốt khung ----------
-
-    public async Task<bool> BookAndConfirmAsync(
-        long companyId, long scheduleId, long slotId, long applicationId)
-    {
-        await using var tx = await _db.Database.BeginTransactionAsync();
-
-        // Khóa lạc quan: chỉ ăn dòng nếu khung CÒN OPEN (người chốt sau rowcount=0). Gắn ứng viên đặt.
-        var booked = await _db.InterviewSlots
-            .Where(x => x.SlotId == slotId && x.Status == InterviewSlotStatus.Open)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(x => x.Status, InterviewSlotStatus.Booked)
-                .SetProperty(x => x.BookedApplicationId, applicationId)
-                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
-
-        if (booked == 0)
-        {
-            await tx.RollbackAsync();
-            return false;
-        }
-
-        // KHÔNG khóa khung anh em — pool dùng chung, giữ OPEN cho người sau.
-        await _db.InterviewSchedules
-            .Where(s => s.ScheduleId == scheduleId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(x => x.Status, InterviewScheduleStatus.Confirmed)
-                .SetProperty(x => x.ConfirmedSlotId, slotId)
-                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
-
-        await tx.CommitAsync();
-        return true;
-    }
+    // ---------- Chống trùng giờ ----------
 
     /// <summary>
     /// Check cả panel 1 lúc: interviewer đầu tiên có khung BOOKED (slot khác) rơi vào cửa sổ
@@ -346,15 +220,6 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             orderby sl.StartTime
             select (DateTime?)sl.StartTime
         ).FirstOrDefaultAsync();
-    }
-
-    public async Task SetScheduleStatusAsync(long companyId, long scheduleId, string status)
-    {
-        await _db.InterviewSchedules
-            .Where(s => s.ScheduleId == scheduleId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(x => x.Status, status)
-                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
     }
 
     public async Task<long> ManualConfirmAsync(

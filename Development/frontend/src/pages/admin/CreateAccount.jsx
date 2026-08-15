@@ -33,6 +33,7 @@ const CreateAccount = () => {
     { value: "Recruiter", label: "Human Resource" },
     { value: "Interviewer", label: "Interviewer" },
     { value: "DepartmentManager", label: "Department Manager" },
+    { value: "Director", label: "Giám đốc" },
   ];
 
   const handleSubmit = async (values) => {

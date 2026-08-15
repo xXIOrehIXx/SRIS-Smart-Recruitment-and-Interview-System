@@ -4,68 +4,75 @@ skinparam sequenceMessageAlign center
 skinparam roundcorner 5
 skinparam minClassWidth 100
 
-title **Feature 3: Candidate Schedule Booking - Sequence: Candidate Booking**
+title **Feature 3: Hiring Proposal - Sequence: Manager proposes, Director decides**
 
-actor Candidate
-participant "Candidate UI" as UI
-participant "<<controller>>\nCandidateScheduleController" as Ctrl
-participant "<<service>>\nCandidateScheduleService" as Svc
-participant "<<service>>\nMagicLinkService" as MagicLink
-participant "<<repository>>\nSchedulingRepository" as Repo
-participant "<<dbcontext>>\nAppDbContext" as DbContext
+actor "Department Manager" as DM
+actor Director
+participant "Web UI" as UI
+participant "<<controller>>\nHiringProposalController" as Ctrl
+participant "<<service>>\nHiringProposalService" as Svc
+participant "<<service>>\nApplicationStateService" as StateSvc
+participant "<<repository>>\nHiringProposalRepository" as Repo
 participant "Database" as DB
-participant "<<service>>\nNotificationService" as Notify
 
-Candidate -> UI: Select slot & Book
+DM -> UI: Read panel verdicts, click "Propose to hire"
 activate UI
 
-UI -> Ctrl: POST /api/candidate/schedule/book
+UI -> Ctrl: POST /api/applications/{id}/hiring-proposal
 activate Ctrl
 
-Ctrl -> Svc: ConfirmAsync(rawToken, dto)
+Ctrl -> Svc: CreateAsync(companyId, userId, applicationId, dto)
+activate Svc
+note right of Svc: Application must be at INTERVIEW,\nhave >=1 submitted score (G2),\nand the caller must own the job
+
+Svc -> Repo: InsertAsync(proposal PENDING)
+activate Repo
+Repo -> DB: INSERT HiringProposal
+activate DB
+DB --> Repo: proposalId
+deactivate DB
+Repo --> Svc: return proposalId
+deactivate Repo
+
+Svc --> Ctrl: return HiringProposalDto (PENDING)
+deactivate Svc
+Ctrl --> UI: return JSON
+deactivate Ctrl
+UI --> DM: "Sent to the director"
+deactivate UI
+
+== Director opens the queue ==
+
+Director -> UI: Review proposal, set salary & start date, approve
+activate UI
+
+UI -> Ctrl: POST /api/hiring-proposals/{id}/decision
+activate Ctrl
+
+Ctrl -> Svc: DecideAsync(companyId, userId, proposalId, dto)
 activate Svc
 
-Svc -> MagicLink: ValidateAsync(rawToken)
-activate MagicLink
-MagicLink --> Svc: return TokenInfo
-deactivate MagicLink
+Svc -> StateSvc: TransitionAsync(..., "OFFER", note)
+activate StateSvc
+note right of StateSvc: Guard G2 + "only the director\ndecides" check run here.\nTransition FIRST so a failure\nleaves the proposal PENDING.
+StateSvc --> Svc: ok
+deactivate StateSvc
 
-Svc -> Repo: GetLatestPendingScheduleAsync()
+Svc -> Repo: SaveAsync(status APPROVED + approved terms)
 activate Repo
-Repo -> DbContext: Query Schedule
-activate DbContext
-DbContext -> DB: SELECT
+Repo -> DB: UPDATE HiringProposal
 activate DB
-DB --> DbContext: Data
+DB --> Repo: success
 deactivate DB
-DbContext --> Repo: Data
-deactivate DbContext
-Repo --> Svc: return InterviewSchedule
+Repo --> Svc: ok
 deactivate Repo
 
-Svc -> Repo: BookAndConfirmAsync(scheduleId, slotId)
-activate Repo
-Repo -> DbContext: Update(Schedule & Slot)
-activate DbContext
-DbContext -> DB: Execute SQL UPDATE
-activate DB
-DB --> DbContext: ok
-deactivate DB
-DbContext --> Repo: ok
-deactivate DbContext
-Repo --> Svc: return true
-deactivate Repo
-
-Svc -> MagicLink: MarkUsedAsync()
-
-Svc -> Notify: SendInterviewConfirmedAsync()
-
-Svc --> Ctrl: return ScheduleConfirmationDto
+Svc --> Ctrl: return HiringProposalDto (APPROVED)
 deactivate Svc
-
-Ctrl --> UI: return JSON data
+Ctrl --> UI: return JSON
 deactivate Ctrl
-
-UI --> Candidate: Display booking confirmed
+UI --> Director: Application moved to the decision stage
 deactivate UI
+
+note over UI: HR then drafts the offer letter, pre-filled\nwith the salary and start date the director set.
 @enduml

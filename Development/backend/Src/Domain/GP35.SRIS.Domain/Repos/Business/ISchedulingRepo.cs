@@ -9,67 +9,51 @@ public record PoolWithSlots(InterviewSlotPool Pool, IReadOnlyList<InterviewSlot>
 public record BusyInterviewer(long InterviewerId, DateTime StartTime);
 
 /// <summary>
-/// Đặt lịch phỏng vấn theo POOL DÙNG CHUNG (docs Section 15). Human Resource mở 1 pool (job + vòng) với
-/// nhiều khung; mời nhiều ứng viên vào cùng pool; ai chốt trước lấy trước (OPEN -> BOOKED, khóa lạc
-/// quan). Các khung khác GIỮ OPEN cho người sau. InterviewSchedule = bản ghi per-ứng-viên (mời/chốt),
-/// dùng cho chấm điểm (InterviewScore gắn theo schedule_id).
+/// 1 buổi phỏng vấn của một vị trí, đủ để hiện thẳng lên bảng của bộ phận nhân sự
+/// (ứng viên + giờ + vòng + trạng thái). Panel lấy riêng theo slot_id.
+/// </summary>
+public record JobScheduleRow(
+    long ScheduleId, long ApplicationId, long SlotId, int RoundNumber, string? RoundName,
+    string Status, DateTime StartTime, string CandidateName, string CandidateEmail,
+    string ApplicationState);
+
+/// <summary>
+/// Đặt lịch phỏng vấn (docs Section 15 — viết lại 15/08/2026). Bộ phận nhân sự gọi điện thống nhất
+/// giờ với ứng viên và người phỏng vấn rồi NHẬP buổi đã chốt vào hệ thống: mỗi buổi = 1 pool 1 khung
+/// (CLOSED/BOOKED) + 1 InterviewSchedule CONFIRMED. Không còn pool khung mở cho ứng viên tự chọn.
+/// Pool/slot giữ lại làm nơi lưu giờ + panel của buổi; InterviewScore gắn theo schedule_id.
 /// </summary>
 public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
 {
-    // ---------- Pool (bộ khung dùng chung) ----------
-
-    /// <summary>Tạo 1 pool + các khung (status OPEN) trong 1 transaction. Trả pool_id.</summary>
-    Task<long> InsertPoolWithSlotsAsync(long companyId, InterviewSlotPool pool, IEnumerable<InterviewSlot> slots);
+    // ---------- Buổi phỏng vấn (pool 1 khung) ----------
 
     /// <summary>Lấy 1 pool theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<InterviewSlotPool?> GetPoolByIdAsync(long companyId, long poolId);
 
-    /// <summary>Mọi pool của 1 job kèm khung (mới nhất trước) — cho Human Resource xem/quản lý.</summary>
+    /// <summary>Mọi pool của 1 job kèm khung (mới nhất trước) — đánh số vòng khi đặt lịch.</summary>
     Task<IReadOnlyList<PoolWithSlots>> GetPoolsByJobAsync(long companyId, long jobId);
 
-    /// <summary>Khung của 1 pool. onlyOpenFuture = chỉ OPEN + giờ tương lai (lọc cho ứng viên — 15.3).</summary>
-    Task<IReadOnlyList<InterviewSlot>> GetSlotsByPoolAsync(long companyId, long poolId, bool onlyOpenFuture);
+    /// <summary>Mọi buổi phỏng vấn của 1 vị trí kèm tên ứng viên + giờ (bảng của nhân sự).</summary>
+    Task<IReadOnlyList<JobScheduleRow>> GetSchedulesByJobAsync(long companyId, long jobId);
+
+    /// <summary>Panel (interviewer) của các khung — trả map slot_id -> danh sách interviewer_id.</summary>
+    Task<IReadOnlyDictionary<long, List<long>>> GetPanelsBySlotIdsAsync(long companyId, IReadOnlyList<long> slotIds);
 
     /// <summary>Lấy 1 khung theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<InterviewSlot?> GetSlotAsync(long companyId, long slotId);
 
     /// <summary>
-    /// Hủy pool: pool -> CANCELLED + khóa mọi khung chưa khóa (OPEN/BOOKED -> LOCKED) + mọi lịch
-    /// PENDING lẫn CONFIRMED của pool -> CANCELLED, trong 1 transaction. Trả false nếu pool đã
-    /// CANCELLED từ trước.
+    /// Hủy buổi: pool -> CANCELLED + khóa khung (OPEN/BOOKED -> LOCKED) + lịch của pool -> CANCELLED,
+    /// trong 1 transaction. Trả false nếu pool đã CANCELLED từ trước.
     /// </summary>
     Task<bool> CancelPoolAsync(long companyId, long poolId);
 
-    // ---------- Invite / lịch per-ứng-viên ----------
-
-    /// <summary>Tạo 1 invite (InterviewSchedule PENDING gắn pool_id) khi Human Resource mời 1 ứng viên. Trả schedule_id.</summary>
-    Task<long> InsertInviteScheduleAsync(long companyId, InterviewSchedule schedule);
-
-    /// <summary>Các invite (schedule) của 1 pool — để liệt kê ứng viên đã mời + trạng thái.</summary>
-    Task<IReadOnlyList<InterviewSchedule>> GetSchedulesByPoolAsync(long companyId, long poolId);
-
-    /// <summary>Ứng viên đã có invite (PENDING/CONFIRMED) ở pool này chưa (chống mời trùng)?</summary>
-    Task<bool> HasActiveInviteInPoolAsync(long companyId, long poolId, long applicationId);
+    // ---------- Lịch per-ứng-viên ----------
 
     /// <summary>
-    /// Ứng viên đã CHỐT lịch cho vòng này chưa — kể cả ở pool KHÁC. Chặn mời lại người đã có
-    /// buổi vòng 1, thứ tạo ra 2 schedule CONFIRMED cùng vòng
-    /// (<see cref="HasActiveInviteInPoolAsync"/> chỉ nhìn trong 1 pool nên không thấy).
+    /// Ứng viên đã CHỐT lịch cho vòng này chưa — chặn đặt 2 buổi cùng một vòng cho một người.
     /// </summary>
     Task<bool> HasConfirmedScheduleForRoundAsync(long companyId, long applicationId, int roundNumber);
-
-    /// <summary>Lịch PENDING mới nhất của hồ sơ (cho ứng viên chọn khung). Null nếu không có.</summary>
-    Task<InterviewSchedule?> GetLatestPendingScheduleAsync(long companyId, long applicationId);
-
-    /// <summary>
-    /// Lời mời còn CHỜ của hồ sơ TRONG ĐÚNG pool này. Magic link phát theo HỒ SƠ chứ không theo
-    /// buổi, nên khi hồ sơ có nhiều lời mời đang chờ thì "mới nhất" có thể là vòng khác với vòng
-    /// của khung ứng viên vừa bấm — chốt phải bám theo pool của khung đó.
-    /// </summary>
-    Task<InterviewSchedule?> GetPendingScheduleInPoolAsync(long companyId, long applicationId, long poolId);
-
-    /// <summary>Lịch mới nhất của hồ sơ ở BẤT KỲ trạng thái nào (để hiển thị trạng thái cho ứng viên).</summary>
-    Task<InterviewSchedule?> GetLatestScheduleAsync(long companyId, long applicationId);
 
     /// <summary>
     /// Mọi buổi phỏng vấn của 1 hồ sơ, vòng nhỏ trước (multi-round = dữ liệu trong state INTERVIEW).
@@ -80,30 +64,18 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// <summary>Lấy 1 lịch theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<InterviewSchedule?> GetScheduleByIdAsync(long companyId, long scheduleId);
 
-    /// <summary>Số lần hồ sơ báo bận (schedule NO_SLOT_FITS) — để suy cờ vàng/đỏ (15).</summary>
-    Task<int> CountNoSlotFitsAsync(long companyId, long applicationId);
-
     /// <summary>
-    /// Số vòng kế tiếp cho hồ sơ (max round hiện có + 1; 1 nếu chưa có) — dùng khi chốt tay.
-    /// Lịch đã HỦY không tính (buổi không diễn ra thì không chiếm số vòng), khớp với cách
-    /// CreatePoolAsync bỏ qua pool CANCELLED.
+    /// Số vòng kế tiếp cho hồ sơ (max round hiện có + 1; 1 nếu chưa có).
+    /// Lịch đã HỦY không tính — buổi không diễn ra thì không chiếm số vòng.
     /// </summary>
     Task<int> GetNextRoundNumberAsync(long companyId, long applicationId);
 
-    // ---------- Chốt khung ----------
-
-    /// <summary>
-    /// Ứng viên chốt 1 khung (khóa lạc quan): OPEN -> BOOKED + gắn booked_application_id NẾU khung còn
-    /// OPEN; đồng thời set schedule CONFIRMED + confirmed_slot_id — trong 1 transaction. KHÔNG khóa các
-    /// khung khác của pool (giữ OPEN cho người sau). Trả false nếu khung không còn OPEN (người khác vừa đặt).
-    /// </summary>
-    Task<bool> BookAndConfirmAsync(long companyId, long scheduleId, long slotId, long applicationId);
+    // ---------- Chống trùng giờ ----------
 
     /// <summary>
     /// Check CẢ PANEL cùng lúc — trả về interviewer đầu tiên trong panel đã có khung BOOKED nằm
     /// trong cửa sổ ±<paramref name="minGap"/> quanh <paramref name="startTime"/>, kèm giờ buổi đó.
-    /// Trả null nếu cả panel rảnh. Dùng khi ứng viên chốt khung (panel N interviewers — mở rộng A).
-    /// Cách nhau ĐÚNG minGap là hợp lệ (biên mở).
+    /// Trả null nếu cả panel rảnh. Cách nhau ĐÚNG minGap là hợp lệ (biên mở).
     /// </summary>
     Task<BusyInterviewer?> FindBusyInterviewerAsync(
         long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime,
@@ -118,12 +90,9 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
         long companyId, long applicationId, DateTime startTime,
         TimeSpan minGap, long excludeScheduleId);
 
-    /// <summary>Đổi trạng thái lịch (vd NO_SLOT_FITS).</summary>
-    Task SetScheduleStatusAsync(long companyId, long scheduleId, string status);
-
     /// <summary>
-    /// Human Resource chốt lịch TAY (nhánh gọi điện): tạo pool 1 khung (CLOSED, slot BOOKED) + schedule
-    /// CONFIRMED cho ứng viên, trong 1 transaction. Trả schedule_id (để chấm điểm).
+    /// Đặt 1 buổi phỏng vấn đã thống nhất qua điện thoại: tạo pool 1 khung (CLOSED, slot BOOKED)
+    /// + schedule CONFIRMED cho ứng viên, trong 1 transaction. Trả schedule_id (để chấm điểm).
     /// </summary>
     Task<long> ManualConfirmAsync(
         long companyId, long jobId, long applicationId, IReadOnlyList<long> interviewerIds,

@@ -131,7 +131,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 ## 9. Chuyển trạng thái — `ApplicationState` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| POST | `/api/applications/{applicationId}/transition` | Rec/DM | forward-only; guard G2 ở INTERVIEW→OFFER. **2 cửa chỉ DM của job đi được (403 nếu không): `SCREENING→INTERVIEW` (duyệt vào phỏng vấn — job chưa gán DM cũng 403) và `INTERVIEW→OFFER` / rời OFFER (quyết tuyển — job chưa gán DM thì Rec đi được). Admin bypass.** |
+| POST | `/api/applications/{applicationId}/transition` | Rec/DM/Dir | forward-only; guard G2 ở INTERVIEW→OFFER. **2 cửa có người gác (403 nếu sai vai): `SCREENING→INTERVIEW` chỉ DM của vị trí (job chưa gán DM cũng 403); `INTERVIEW→OFFER` và rời OFFER chỉ GIÁM ĐỐC — đường bình thường là Giám đốc duyệt phiếu Đề xuất tuyển (§11b). Admin bypass.** |
 | POST | `/api/applications/{applicationId}/reject` | Rec/DM | `rejectReason` **TÙY CHỌN** (ép nhập chỉ đẻ lý do rác) — FE cho chip chọn nhanh, bỏ trống vẫn reject được |
 
 ## 10. Lịch sử & ghi chú — (Rec/Itv/DM)
@@ -141,19 +141,30 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | POST | `/api/applications/{applicationId}/notes` | Rec/Itv/DM | thêm ghi chú nội bộ |
 | GET | `/api/applications/{applicationId}/notes` | Rec/Itv/DM | list ghi chú |
 
-## 11. Đặt lịch phỏng vấn — POOL khung dùng chung (Rec)
-> **ĐỔI MÔ HÌNH 07/2026:** không còn tạo lịch 1-1 per-ứng-viên. Human Resource mở 1 POOL khung cho job+vòng,
-> mời DANH SÁCH ứng viên (mỗi người 1 magic link SCHEDULE), ai chốt trước lấy khung trước.
-> Điều kiện mời: hồ sơ đã được **Trưởng bộ phận duyệt** vào pha Phỏng vấn (DM DUYỆT trước, MỜI sau —
-> chốt 15/08/2026). Hồ sơ chưa duyệt: `invitations` bỏ qua kèm lý do, `manual-interview` trả 409.
+## 11. Đặt lịch phỏng vấn (Rec)
+> **VIẾT LẠI 15/08/2026 — bỏ pool khung + magic link SCHEDULE.** Bộ phận nhân sự gọi cho người
+> phỏng vấn hỏi lịch rảnh, gọi ứng viên chốt giờ, rồi NHẬP buổi. Hệ thống chống trùng giờ
+> (ứng viên + cả panel, cách nhau ≥1 tiếng), gửi email xác nhận + .ics, tạo phiếu chấm.
+> Điều kiện: hồ sơ đã được **Trưởng bộ phận duyệt** vào pha Phỏng vấn — chưa duyệt thì trả 409.
 
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| POST | `/api/jobs/{jobId}/interview-pools` | Rec | mở pool. body `{ roundNumber?, slots: [{ interviewerId, startTime }] }` |
-| GET | `/api/jobs/{jobId}/interview-pools` | Rec | mọi pool của job kèm khung + ứng viên đã mời + cờ vàng/đỏ báo bận (nhắc gọi điện) |
-| POST | `/api/interview-pools/{poolId}/invitations` | Rec | mời ứng viên — body `{ applicationIds: [...] }`; BE tự phát magic link + gửi email |
-| POST | `/api/interview-pools/{poolId}/cancel` | Rec | hủy pool — body `{ reason? }`; khóa khung, hủy invite chờ, email báo người đã chốt |
-| POST | `/api/applications/{applicationId}/manual-interview` | Rec | chốt lịch TAY (nhánh gọi điện) — body `{ interviewerId, startTime, roundNumber? }` → trả `{ scheduleId }` |
+| POST | `/api/applications/{applicationId}/interviews` | Rec | đặt buổi — body `{ interviewerIds: [1..5], startTime, roundNumber?, name? }` → `{ scheduleId }`. `startTime` là giờ ĐỊA PHƯƠNG (không 'Z') |
+| GET | `/api/jobs/{jobId}/interviews` | Rec/DM/Dir | mọi buổi của vị trí kèm ứng viên + panel + giờ + trạng thái |
+| POST | `/api/interview-schedules/{scheduleId}/cancel` | Rec | hủy buổi — body `{ reason? }`; khóa khung + email báo ứng viên. Đổi giờ = hủy rồi đặt lại |
+| GET | `/api/interviews/interviewers` | Rec | dropdown người phỏng vấn (role Interviewer, Active) |
+
+## 11b. Đề xuất tuyển — `HiringProposal` (DM đề xuất → Giám đốc quyết)
+> **MỚI 15/08/2026 (V043).** Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển: họ gửi đề xuất, **Giám đốc**
+> duyệt. Duyệt đề xuất = hồ sơ sang OFFER kèm mức lương + ngày vào làm đã chốt (thư mời lấy đúng
+> hai con số đó). Không duyệt ≠ loại ứng viên: hồ sơ ở lại INTERVIEW, DM đề xuất lại được.
+
+| Method | Path | Role | Ghi chú |
+|---|---|---|---|
+| POST | `/api/applications/{applicationId}/hiring-proposal` | DM | đề xuất — body `{ note?, proposedSalary?, proposedStartDate? }`. Đòi hồ sơ ở INTERVIEW + ≥1 phiếu chấm đã nộp + đúng DM của vị trí |
+| GET | `/api/applications/{applicationId}/hiring-proposals` | DM/Dir/Rec | lịch sử đề xuất của 1 hồ sơ (gồm lần bị từ chối) |
+| GET | `/api/hiring-proposals` | Dir/DM/Rec | hàng đợi — `?status=PENDING\|APPROVED\|REJECTED` |
+| POST | `/api/hiring-proposals/{proposalId}/decision` | **Dir** | quyết — body `{ approve, note?, approvedSalary?, approvedStartDate? }`. Duyệt → transition INTERVIEW→OFFER |
 
 ## 12. Chấm phỏng vấn — `InterviewScoring`
 | Method | Path | Role | Ghi chú |
@@ -178,7 +189,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 ## 14. Magic link (Human Resource phát) — `applications/{applicationId}/magic-links`
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| POST | `/api/applications/{applicationId}/magic-links` | Rec | phát link cho candidate (SCHEDULE/STATUS/OFFER_RESPONSE) |
+| POST | `/api/applications/{applicationId}/magic-links` | Rec | phát link cho candidate (STATUS/OFFER_RESPONSE — purpose SCHEDULE đã bỏ 15/08/2026) |
 
 ## 15. Mẫu email — `email-templates` (Rec)
 | Method | Path | Role | Ghi chú |
@@ -202,11 +213,9 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | GET | `/api/dashboard/kanban` | Rec/DM/Adm | Kanban board pipeline. `?jobId=` lọc theo 1 job |
 
 ## 17. Candidate (magic link, không đăng nhập) — `Anon`
+> Trang ứng viên tự chọn khung phỏng vấn đã bỏ 15/08/2026 — nhân sự gọi điện chốt giờ rồi nhập buổi.
 | Method | Path | Purpose | Ghi chú |
 |---|---|---|---|
-| GET | `/api/candidate/schedule?token=…` | SCHEDULE | xem slot phỏng vấn |
-| POST | `/api/candidate/schedule/confirm` | SCHEDULE | chọn slot |
-| POST | `/api/candidate/schedule/no-slot` | SCHEDULE | báo không slot nào phù hợp |
 | GET | `/api/candidate/status?token=…` | STATUS | tra trạng thái hồ sơ |
 | GET | `/api/candidate/offer?token=…` | OFFER_RESPONSE | tóm tắt thư mời nhận việc |
 | GET | `/api/candidate/offer/letter?token=…` | OFFER_RESPONSE | file PDF thư mời (`application/pdf`) — link trong email trỏ về trang này |
@@ -222,8 +231,9 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 ---
 
 ## Ghi chú cho FE
-- **Luồng chính Human Resource:** [tùy chọn] duyệt Yêu cầu tuyển dụng của DM (§4b) → tạo Job (§4) → bóc tiêu chí + chốt (§5) → [nếu đã duyệt yêu cầu] gắn job về yêu cầu bằng `convert` (§4b) → nhận CV (§7) → tự đọc/sàng lọc hồ sơ (§9) → transition sang pha Sàng lọc (§10) → **chờ DM duyệt vào pha Phỏng vấn** → mở pool + mời ứng viên (§12 — magic link SCHEDULE tự phát khi mời) → **chờ DM chốt sang Quyết định** → soạn + gửi thư mời nhận việc (§14) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
-- **Luồng DM:** tạo Yêu cầu tuyển dụng (§4b) → **duyệt ứng viên ở pha Sàng lọc vào pha Phỏng vấn** (đọc hồ sơ + CV, rồi transition `INTERVIEW` / reject — §10) → tới bước Quyết định thì đọc `decision-brief` (§13) rồi chốt bằng transition/reject (§10). Danh sách chờ duyệt lấy từ cột `SCREENING` của `GET /api/dashboard/kanban` (BE đã thu hẹp về job DM phụ trách).
+- **Luồng chính Human Resource:** [tùy chọn] duyệt Yêu cầu tuyển dụng của DM (§4b) → tạo Job (§4) → bóc tiêu chí + chốt (§5) → [nếu đã duyệt yêu cầu] gắn job về yêu cầu bằng `convert` (§4b) → nhận CV (§7) → tự đọc/sàng lọc hồ sơ (§9) → transition sang pha Sàng lọc (§10) → **chờ DM duyệt vào pha Phỏng vấn** → gọi chốt giờ rồi đặt buổi (§11) → **chờ Giám đốc duyệt đề xuất của DM** → soạn + gửi thư mời nhận việc theo lương/ngày vào làm Giám đốc chốt (§14) → ứng viên trả lời NGOÀI hệ thống → ghi nhận kết quả `offer/outcome` (§14) → HIRED/REJECTED.
+- **Luồng DM:** tạo Yêu cầu tuyển dụng (§4b) → **duyệt ứng viên ở pha Sàng lọc vào pha Phỏng vấn** (đọc hồ sơ + CV, rồi transition `INTERVIEW` / reject — §10) → phỏng vấn xong đọc `decision-brief` (§13) rồi **gửi Đề xuất tuyển** (§11b). DM KHÔNG tự chuyển hồ sơ sang bước Quyết định được nữa.
+- **Luồng Giám đốc:** mở hàng đợi `GET /api/hiring-proposals?status=PENDING` (§11b) → đọc đề xuất + `decision-brief` (§13) → `decision` duyệt kèm lương/ngày vào làm, hoặc không duyệt. Duyệt là hành động đẩy hồ sơ sang bước Quyết định.
 - **Chọn người trong form:** gán interviewer vào khung / chọn DM cho job → `GET /api/users/options?role=…` (§2) — KHÔNG dùng `GET /api/users` (Admin-only).
 - **Luồng Interviewer:** chỉ §13.
 - **Luồng Admin:** §2 (users) + §3 (company) + §17 (dashboard).

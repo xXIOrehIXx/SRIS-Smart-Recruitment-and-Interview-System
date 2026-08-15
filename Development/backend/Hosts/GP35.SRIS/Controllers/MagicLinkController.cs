@@ -9,11 +9,11 @@ namespace GP35.SRIS.Controllers;
 
 /// <summary>
 /// Nội bộ: phát magic link cho ứng viên (docs 5.13). Token GỐC chỉ trả 1 lần ở đây
-/// để nhúng vào email; DB chỉ lưu hash. 3 purpose: SCHEDULE/STATUS/OFFER_RESPONSE.
+/// để nhúng vào email; DB chỉ lưu hash. 2 purpose: STATUS/OFFER_RESPONSE (SCHEDULE bỏ 15/08/2026).
 /// <para>
 /// Human Resource phát được mọi purpose. DepartmentManager chỉ phát lại được OFFER_RESPONSE —
 /// "gửi nhắc nhở" ở màn Offers là một phần việc quyết tuyển của họ (5.14/5.15); còn
-/// SCHEDULE/STATUS thuộc khâu vận hành của Human Resource.
+/// STATUS thuộc khâu vận hành của Human Resource.
 /// </para>
 /// </summary>
 [Route("api/applications/{applicationId:long}/magic-links")]
@@ -31,7 +31,7 @@ public class MagicLinkController : ControllerBase
         _magicLink = magicLink;
     }
 
-    /// <summary>Phát 1 magic link cho hồ sơ. TTL mặc định theo purpose (vd SCHEDULE ~5 ngày).</summary>
+    /// <summary>Phát 1 magic link cho hồ sơ. TTL mặc định theo purpose (vd OFFER_RESPONSE ~7 ngày).</summary>
     [HttpPost]
     public async Task<IActionResult> Issue(long applicationId, [FromQuery] string purpose = "STATUS")
     {

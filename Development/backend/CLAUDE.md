@@ -125,12 +125,15 @@ Nguyên tắc thiết kế: **đơn giản là mặc định, phức tạp là t
 > **MODULE QUIZ ĐÃ LOẠI HOÀN TOÀN KHỎI SCOPE (07/2026)** — cả quiz nhập tay lẫn AI gen
 > (docs Section 3 OUT). Không thiết kế, không code, không tài liệu gì thêm cho quiz.
 
-### Roles (4 login + 1 ẩn danh — mỗi user 1 role; công ty nhỏ dùng 1 tài khoản Admin)
-- `Admin` / **Human Resource** / `Interviewer` / `DepartmentManager` → đăng nhập Portal (JWT)
+### Roles (5 login + 1 ẩn danh — mỗi user 1 role; công ty nhỏ dùng 1 tài khoản Admin)
+- `Admin` / **Human Resource** / `Interviewer` / `DepartmentManager` / `Director` → đăng nhập Portal (JWT)
   - ⚠️ Human Resource: tên gọi mới (khớp báo cáo). GIÁ TRỊ trong `User.role` + JWT vẫn là `'Recruiter'`
     — xem `RoleConstants.HumanResource` / `ROLES.HUMAN_RESOURCE`. URL Portal: `/human-resource/*`.
 - `Candidate` → **magic link only**, không có account, không có User row
-- Câu thần chú: Human Resource lái · Interviewer chấm · DM quyết (RA ĐỀ · CHỌN NGƯỜI GẶP · CHỐT) · Candidate ứng tuyển · Admin dựng sân
+- `Director` (**Giám đốc**, V043 — chốt 15/08/2026): người DUY NHẤT quyết tuyển. Phạm vi toàn công ty,
+  không gán theo job. URL Portal: `/director/*`.
+- Câu thần chú: Human Resource lái · Interviewer chấm · DM ra đề + chọn người gặp + ĐỀ XUẤT ·
+  **Giám đốc quyết tuyển** · Candidate ứng tuyển · Admin dựng sân
 
 ### Pipeline: 6 state nội bộ, hiển thị 4 PHA
 NEW → SCREENING → INTERVIEW → OFFER → HIRED / REJECTED (8 transition)  
@@ -163,20 +166,30 @@ người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng v�
   trong khi backend vẫn đang chạy.
 
 ### Magic link purposes (chỉ của Candidate)
-`SCHEDULE` · `STATUS` · `OFFER_RESPONSE` (3 purpose — QUIZ đã loại)  
+`STATUS` · `OFFER_RESPONSE` (2 purpose — QUIZ loại 07/2026, **SCHEDULE loại 15/08/2026**)  
 Lưu **hash** token (SHA-256), không lưu gốc. "One-time" = đốt khi CHỐT, không phải khi mở.
 
-### Người quyết (cập nhật 15/08/2026 — sau bảo vệ hội đồng)
-`Job.department_manager_id` → DM quyết ở **HAI cửa**:
-1. `SCREENING→INTERVIEW` — **chọn ai được vào vòng phỏng vấn.** Job chưa gán DM thì KHÔNG ai
-   đi qua cửa này (403, kể cả HR) — vì thế đăng tin (Status=Open) bắt buộc có DM.
-2. `INTERVIEW→OFFER` + rời OFFER — quyết tuyển. Job cũ chưa gán DM → HR quyết (chỉ còn áp cho
-   dữ liệu tạo trước 15/08/2026).
+### Đặt lịch phỏng vấn (viết lại 15/08/2026)
+KHÔNG còn pool khung dùng chung cho ứng viên tự chọn. Bộ phận nhân sự gọi cho người phỏng vấn
+hỏi lịch rảnh, gọi ứng viên chốt giờ, rồi NHẬP buổi (`POST /api/applications/{id}/interviews`).
+Hệ thống chống trùng giờ + gửi email xác nhận kèm .ics. Lưu trữ giữ nguyên hình dạng cũ
+(pool 1 khung CLOSED + slot BOOKED + schedule CONFIRMED) nên phiếu chấm không phải đổi.
+Lý do bỏ: chờ ứng viên bấm link chậm hơn một cuộc gọi.
 
-Human Resource sàng lọc (`NEW→SCREENING`), **lên lịch** cho người đã duyệt, soạn thư mời — không
-chọn người. Mời vào pool / chốt lịch tay đòi hồ sơ ĐÃ ở INTERVIEW (không còn tự đẩy state).
-Interviewer chỉ chấm (input), không quyết. Admin bypass cả hai cửa.
-DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn người gặp · chốt (OFFER).
+### Người quyết (cập nhật 15/08/2026 — sau bảo vệ hội đồng)
+Hai cửa có người gác, HAI người KHÁC NHAU:
+1. `SCREENING→INTERVIEW` — **Trưởng bộ phận phụ trách vị trí** (`Job.department_manager_id`)
+   chọn ai được vào vòng phỏng vấn. Job chưa gán DM thì KHÔNG ai đi qua cửa này (403, kể cả
+   HR) — vì thế đăng tin (Status=Open) bắt buộc có DM.
+2. `INTERVIEW→OFFER` + rời OFFER — **GIÁM ĐỐC** quyết tuyển (phạm vi toàn công ty). DM KHÔNG
+   đủ thẩm quyền: họ gửi **phiếu Đề xuất tuyển** (`HiringProposal`, V043), Giám đốc duyệt —
+   chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm mức lương + ngày vào làm đã chốt.
+   Không duyệt ≠ loại ứng viên: hồ sơ ở lại INTERVIEW, DM đề xuất lại được.
+
+Human Resource sàng lọc (`NEW→SCREENING`), **đặt lịch** cho người đã duyệt, soạn thư mời theo
+điều khoản Giám đốc chốt — không chọn người, không quyết. Đặt lịch đòi hồ sơ ĐÃ ở INTERVIEW.
+Interviewer chỉ chấm (input). Admin bypass cả hai cửa.
+DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn người gặp · đề xuất tuyển.
 
 ---
 
@@ -188,8 +201,8 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
 
 2. **State machine guard:** INTERVIEW→OFFER cần G2 (≥1 phiếu chấm `status='SUBMITTED'`).
    Check guard trước khi transition. (G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 khớp tài liệu cũ.)
-   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`): SCREENING→INTERVIEW và
-   INTERVIEW→OFFER/rời OFFER chỉ DM của job đi được. Đường nào tự đẩy state hộ người dùng
+   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`): SCREENING→INTERVIEW chỉ
+   DM của job; INTERVIEW→OFFER và rời OFFER chỉ Giám đốc. Đường nào tự đẩy state hộ người dùng
    (`AdvanceToAsync`) phải kiểm quyền CẢ chặng TRƯỚC khi đi bước đầu — nếu không hồ sơ nhảy
    một nấc rồi mới báo 403.
 

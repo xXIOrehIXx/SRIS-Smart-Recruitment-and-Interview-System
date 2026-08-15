@@ -16,7 +16,7 @@ namespace GP35.SRIS.Controllers;
 [Route("api/applications/{applicationId:long}")]
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
 public class ApplicationStateController : ControllerBase
 {
     private readonly IContextData _contextData;
