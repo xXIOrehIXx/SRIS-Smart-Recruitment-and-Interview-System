@@ -63,6 +63,10 @@ services.AddHostedService<GP35.SRIS.Workers.JobExpiryWorker>();
 // Worker chạy hàng đợi bóc tiêu chí — Local LLM mất hàng chục giây nên không bắt người dùng
 // ngồi đợi trong request HTTP (V037).
 services.AddHostedService<GP35.SRIS.Workers.CriteriaExtractionWorker>();
+// Worker chạy hàng đợi sàng lọc CV theo JD (V044). Tách riêng khỏi worker trên vì hai việc
+// dùng hai model Ollama khác nhau — xen kẽ trong một vòng lặp là bắt Ollama nạp/đuổi model
+// liên tục.
+services.AddHostedService<GP35.SRIS.Workers.CvScreeningWorker>();
 services
   .AddControllers()
   .AddJsonOptions(options =>

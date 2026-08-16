@@ -41,4 +41,13 @@ public class CvDocumentRepo : BaseRepo<long, CvDocument>, ICvDocumentRepo
             .Select(c => c.ExtractedText)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<int> UpdateExtractedTextAsync(long companyId, long cvId, string extractedText)
+    {
+        return await _db.CvDocuments
+            .Where(c => c.CvId == cvId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.ExtractedText, extractedText)
+                .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
+    }
 }

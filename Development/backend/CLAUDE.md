@@ -144,26 +144,41 @@ Người dùng thấy **4 pha**: Hồ sơ mới (NEW) · Sàng lọc (SCREENING)
 DM tạo Yêu cầu tuyển dụng (tùy chọn) → Human Resource tạo Job → AI bóc tiêu chí `DRAFT` →
 người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng vấn** (interviewer chấm, 5.7).
 
-> **SÀNG LỌC CV BẰNG AI + TALENT POOL ĐÃ LOẠI KHỎI SCOPE (chốt 08/08/2026).**
-> Hệ thống KHÔNG chấm điểm / xếp hạng ứng viên: bỏ cả điểm tổng JD↔CV lẫn chấm CV
-> theo từng tiêu chí, bỏ Talent Pool. Không thiết kế, không code, không tài liệu gì
-> thêm cho việc máy chấm CV. Nhận hồ sơ = `CvIntakeService` (parse PDF + lưu, không chấm).
+> **SÀNG LỌC CV BẰNG AI QUAY LẠI SCOPE (chốt 16/08/2026 — V044).** Ở màn chi tiết ứng
+> viên, người tuyển dụng bấm một nút để AI đọc CV và đối chiếu với tin tuyển dụng: tóm
+> tắt CV, liệt kê yêu cầu **đạt** (kèm câu trích nguyên văn từ CV) / **thiếu**, mức phù
+> hợp 0-100 và đề xuất `PROCEED`/`CONSIDER`/`REJECT`.
 >
-> **HẠ TẦNG VECTOR ĐÃ XOÁ HẲN (V036).** Không còn `CvChunk`, không còn cột `embedding`
+> Ranh giới phải giữ: đề xuất là **THAM KHẢO**. Không đường code nào đọc `decision` rồi
+> tự đổi `current_state`, và điểm phù hợp **không** lên danh sách/Kanban — hệ thống vẫn
+> không xếp hạng ứng viên với nhau, chỉ phân tích trong hồ sơ của một người.
+> Cách làm mới KHÔNG phải cách cũ đã cắt 08/08/2026: bản cũ chấm điểm bằng vector cho
+> mọi hồ sơ tự động; bản này là LLM đọc hiểu, chạy theo yêu cầu của người dùng, và luôn
+> phải trích dẫn được câu trong CV thì mới được tính là đạt.
+>
+> **TALENT POOL vẫn OUT (08/08/2026).** Không thiết kế, không code lại.
+>
+> **HẠ TẦNG VECTOR VẪN XOÁ HẲN (V036).** Không còn `CvChunk`, không còn cột `embedding`
 > ở Job/CvDocument/EvaluationCriteria, không còn `IEmbeddingClient` / endpoint `/embed`.
-> AI của hệ thống chỉ còn ĐÚNG MỘT đường: bóc tiêu chí từ JD. Đừng thêm lại vector cho
-> tính năng nào mà chưa có quyết định mở lại scope.
+> Sàng lọc CV ở V044 là LLM đọc hiểu, KHÔNG phải so vector — đừng thêm lại vector.
 
 ### AI Service (Python FastAPI — port riêng)
 - .NET **không gọi AI trực tiếp** — chỉ gọi qua HTTP nội bộ đến Python service
 - Python stateless, không đụng DB, không biết tenant
-- Endpoint DUY NHẤT: **`/extract-criteria`** (Ollama `qwen2.5`, `temperature=0`, output ràng buộc
-  bằng JSON schema + validate Pydantic + retry 3 lượt). Lỗi → HTTP 502.
-- **Chạy NỀN (V037):** `POST /api/jobs/{id}/criteria/extract` chỉ xếp hàng rồi trả `202`;
-  `CriteriaExtractionWorker` nhặt việc, gọi AI, ghi kết quả vào bảng `CriteriaExtraction`.
-  FE hỏi `GET .../criteria/extract-status` tới khi `running=false`.
-  Lý do: Local LLM trên CPU mất hàng chục giây — gọi đồng bộ là axios (30s) cắt ngang
-  trong khi backend vẫn đang chạy.
+- Hai endpoint, hai model riêng (đổi độc lập qua env), `temperature=0`, output ràng buộc bằng
+  JSON schema + validate Pydantic + retry 3 lượt. Lỗi → HTTP 502.
+  - **`/extract-criteria`** — bóc tiêu chí từ JD. Model `SRIS_LLM_MODEL` (mặc định `qwen2.5`).
+  - **`/screen-cv`** — đối chiếu CV với JD. Model `SRIS_CV_MODEL` (mặc định `qwen3:8b`);
+    bài này bắt model đọc hai văn bản dài rồi kết luận nên cần model khá hơn hẳn việc kia.
+- **Cả hai chạy NỀN,** cùng một khuôn (xếp hàng → `202` → worker → FE hỏi lại tới khi
+  `running=false`). Lý do: Local LLM trên CPU mất hàng chục giây — gọi đồng bộ là axios (30s)
+  cắt ngang trong khi backend vẫn đang chạy.
+  - V037: `POST /api/jobs/{id}/criteria/extract` → bảng `CriteriaExtraction` → `CriteriaExtractionWorker`
+    → `GET .../criteria/extract-status`.
+  - V044: `POST /api/applications/{id}/cv-screening` → bảng `CvScreening` → `CvScreeningWorker`
+    → `GET .../cv-screening`.
+  - Hai worker TÁCH RIÊNG, không gộp: hai việc dùng hai model, xen kẽ trong một vòng lặp là
+    bắt Ollama nạp/đuổi model liên tục.
 
 ### Magic link purposes (chỉ của Candidate)
 `STATUS` · `OFFER_RESPONSE` (2 purpose — QUIZ loại 07/2026, **SCHEDULE loại 15/08/2026**)  
@@ -224,7 +239,20 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
 
 6. **OfferDetail:** 0..1 per Application (UNIQUE `application_id`). Một offer / một application.
 
+7. **Sàng lọc CV (CvScreening, V044):** AI đề xuất, KHÔNG quyết. `CvScreeningService` không
+   được gọi `IApplicationStateService` và không được đụng `current_state` — ai định nối
+   "REJECT → tự chuyển hồ sơ sang REJECTED" là đang biến gợi ý của model thành quyết định
+   nghiệp vụ. Mỗi mục "đạt" phải kèm `evidence` trích từ CV; không trích được thì xếp xuống
+   "thiếu". `fit_score` chỉ hiện trong hồ sơ MỘT người, không lên danh sách/Kanban để không
+   ai xếp hạng ứng viên bằng con số máy chấm.
+   Chất lượng phụ thuộc `PdfTextExtractor`: nó phải bóc text theo ĐÚNG THỨ TỰ ĐỌC
+   (Docstrum + reading-order của PdfPig). Bản trước cố ý vứt thứ tự vì text chỉ dùng cho
+   embedding — đó chính là lý do tính năng tóm tắt CV ở V033 chết ngay ở V034. Đừng "tối ưu"
+   nó về lại `page.GetWords()` nối bằng dấu cách.
+
 > Khi đụng feature lớn (tiêu chí, chấm phỏng vấn, scheduling), đọc section tương ứng
 > trong `docs/00_CONTEXT.md` (tiêu chí → 5.17/5.18, chấm phỏng vấn → 5.7, scheduling → Section 15).
-> Phần mô tả chấm CV/Talent Pool trong docs là hồ sơ thiết kế CŨ — đọc khối "CHỐT 08/08/2026"
-> ở đầu Section 3 trước khi tin bất cứ dòng nào nói hệ thống có chấm điểm CV.
+> Phần mô tả chấm CV bằng vector / Talent Pool trong docs là hồ sơ thiết kế CŨ đã cắt
+> 08/08/2026 — KHÔNG phải mô tả tính năng sàng lọc CV hiện tại (V044, LLM đọc hiểu, người
+> bấm mới chạy, chỉ đề xuất). Đọc khối "CHỐT 08/08/2026" ở đầu Section 3 rồi đọc tiếp mục 7
+> trong "Coding Rules" ở trên trước khi tin bất cứ dòng nào nói hệ thống chấm điểm CV.

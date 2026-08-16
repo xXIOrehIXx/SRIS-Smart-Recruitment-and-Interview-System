@@ -3,7 +3,7 @@ namespace GP35.SRIS.Lib.Services.Ai;
 /// <summary>Phân loại 1 file PDF sau khi extract.</summary>
 public enum PdfKind
 {
-    /// <summary>Loại 1 + 2: bóc được text -> đẩy tiếp sang luồng chấm điểm.</summary>
+    /// <summary>Loại 1 + 2: bóc được text -> nhận hồ sơ, text dùng cho luồng sàng lọc CV.</summary>
     HasText,
 
     /// <summary>Loại 3: PDF scan ảnh, text rỗng -> cần HR nhập tay (Manual Edit).</summary>

@@ -55,6 +55,7 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSlotInterviewer> InterviewSlotInterviewers => Set<InterviewSlotInterviewer>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
     public DbSet<CriteriaExtraction> CriteriaExtractions => Set<CriteriaExtraction>();
+    public DbSet<CvScreening> CvScreenings => Set<CvScreening>();
     public DbSet<CriteriaTemplate> CriteriaTemplates => Set<CriteriaTemplate>();
     public DbSet<CriteriaTemplateItem> CriteriaTemplateItems => Set<CriteriaTemplateItem>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
@@ -208,6 +209,14 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("CriteriaExtraction");
             e.HasKey(x => x.ExtractionId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<CvScreening>(e =>
+        {
+            e.ToTable("CvScreening");
+            e.HasKey(x => x.ScreeningId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

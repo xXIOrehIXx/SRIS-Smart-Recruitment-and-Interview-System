@@ -115,12 +115,29 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | POST | `/api/criteria-templates/{templateId}/apply/{jobId}` | Rec | áp mẫu vào job |
 
 ## 7. Nhận hồ sơ / CV — `cvs` (Rec)
-> 08/08/2026: bỏ chấm điểm + xếp hạng CV. Upload chỉ NHẬN hồ sơ (trả `RECEIVED`).
+> 08/08/2026: bỏ chấm điểm + xếp hạng CV **tự động**. Upload chỉ NHẬN hồ sơ (trả `RECEIVED`).
+> 16/08/2026 (V044): thêm phân tích CV↔JD **theo yêu cầu** ở §7b — người bấm mới chạy, kết quả
+> chỉ là đề xuất, không xếp hạng ứng viên với nhau.
 
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/cvs/upload` | Rec | upload CV (PDF) — multipart; tạo Application ở NEW |
 | GET | `/api/cvs/{cvId}/file-url` | Rec/DM | presigned URL xem file CV |
+
+## 7b. Sàng lọc CV theo JD bằng AI — `cv-screening` (Rec/DM/Dir)
+> V044. Chạy NỀN như lượt bóc tiêu chí: POST chỉ xếp hàng rồi trả `202`, `CvScreeningWorker`
+> mới gọi AI. FE hỏi lại GET tới khi `running=false`. Bấm lại = chạy lượt mới đè kết quả cũ.
+>
+> Kết quả **THAM KHẢO**: không endpoint nào ở đây đổi trạng thái hồ sơ. `fitScore` chỉ hiện
+> trong màn chi tiết một ứng viên, không lên board.
+
+| Method | Path | Role | Ghi chú |
+|---|---|---|---|
+| POST | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir | xếp hàng lượt phân tích → `202` |
+| GET | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir | trạng thái + kết quả; `status`: NONE/PENDING/RUNNING/DONE/FAILED |
+
+`result` khi DONE: `summary` · `matched[{requirement, evidence}]` (evidence = câu trích nguyên
+văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/REJECT · `decisionReason`.
 
 ## 8. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
 | Method | Path | Role | Ghi chú |

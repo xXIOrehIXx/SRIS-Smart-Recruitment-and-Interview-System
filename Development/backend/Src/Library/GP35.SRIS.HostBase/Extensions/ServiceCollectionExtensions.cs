@@ -48,10 +48,11 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IEncodeService, EncodeService>();
             services.AddScoped<IContextData, ContextData>();
 
-            // AI: gọi HTTP + bóc PDF + bóc tiêu chí từ JD (Python AI service)
+            // AI: gọi HTTP + bóc PDF + bóc tiêu chí từ JD + sàng lọc CV (Python AI service)
             services.AddScoped<IHttpService, HttpService>();
             services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
             services.AddScoped<ICriteriaExtractionClient, CriteriaExtractionClient>();
+            services.AddScoped<ICvScreeningClient, CvScreeningClient>();
 
             // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
             // Đổi sang EmailService nếu muốn gửi qua NotificationCenter (HTTP).
@@ -101,6 +102,7 @@ namespace GP35.SRIS.HostBase.Extensions
             // Collaborative scoring
             services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
             services.AddScoped<ICriteriaExtractionRepo, CriteriaExtractionRepo>();
+            services.AddScoped<ICvScreeningRepo, CvScreeningRepo>();
             services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
 
@@ -141,6 +143,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvIntakeService, CvIntakeService>();
+            services.AddScoped<ICvScreeningService, CvScreeningService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();
