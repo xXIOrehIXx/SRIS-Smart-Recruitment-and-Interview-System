@@ -168,7 +168,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Khi trình bày: nói "quy trình 4 pha, chỉ tiến không lùi, có chốt cửa". Thuật ngữ state machine/guard chỉ dùng trong Q&A kỹ thuật.
 
 ### 5.9 Đặt lịch phỏng vấn — tóm tắt
-Đặt lịch nội bộ, KHÔNG Google Calendar. **Viết lại 15/08/2026 — bỏ pool khung + magic link `SCHEDULE`:** HR gọi cho người phỏng vấn hỏi lịch rảnh, gọi ứng viên thống nhất giờ, rồi NHẬP buổi vào hệ thống (ứng viên + panel 1..5 người + giờ). Hệ thống chống trùng giờ, gửi email xác nhận + .ics, tạo bản ghi để interviewer chấm. Lý do bỏ: ngồi đợi ứng viên bấm link chậm hơn một cuộc gọi. Chi tiết: Section 15.
+Đặt lịch nội bộ, KHÔNG Google Calendar. **Viết lại 15/08/2026 — bỏ pool khung + magic link `SCHEDULE`:** HR gọi cho người phỏng vấn hỏi lịch rảnh, gọi ứng viên thống nhất giờ, rồi NHẬP buổi vào hệ thống (ứng viên + panel 1..5 người + giờ). Hệ thống chống trùng giờ, gửi email xác nhận + .ics, tạo bản ghi để interviewer chấm. Lý do bỏ: ngồi đợi ứng viên bấm link chậm hơn một cuộc gọi. **Cập nhật 16/08/2026 (V045):** panel không còn do HR tự chọn — DM chỉ định ai được gặp từng ứng viên, HR chọn trong danh sách đó. Chi tiết: Section 15.
 
 ### 5.10 Cấu trúc Web — 2 site tách biệt
 - **Career Site (công khai):** `/{slug}/career` — ứng viên xem tin + nộp CV, không đăng nhập. API `/api/public/{slug}/...`, tenant giải từ slug bằng middleware riêng.
@@ -205,9 +205,10 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 ### 5.14 Người quyết — Department Manager (cập nhật 15/08/2026)
 - Người quyết = DM sở hữu job (`Job.department_manager_id` → User). **Bắt buộc khi đăng tin** (Status=Open); bản nháp thì chưa cần.
 - **Hai cửa, hai người:**
-  1. `SCREENING→INTERVIEW` — chọn ai được vào vòng phỏng vấn (màn *Duyệt Vào Phỏng Vấn*, `/dept/screening`).
+  1. `SCREENING→INTERVIEW` — chọn ai được vào vòng phỏng vấn **và ai sẽ phỏng vấn người đó** (màn *Duyệt Vào Phỏng Vấn*, `/dept/screening`).
   2. `INTERVIEW→OFFER` và rời OFFER — quyết tuyển (màn *Quyết Định Tuyển Dụng*, `/dept/hiring-decision`).
-- **Human Resource lái vận hành, không chọn người:** sàng lọc hồ sơ, ĐẶT LỊCH phỏng vấn cho người đã duyệt, soạn thư mời theo điều khoản Giám đốc chốt. Đặt lịch đòi hồ sơ đã ở INTERVIEW — trước 15/08/2026 thao tác mời TỰ đẩy state, tức mời ai là mặc nhiên chọn người đó.
+- **Người phỏng vấn do DM chỉ định (V045 — 16/08/2026).** Duyệt vào vòng phỏng vấn và chỉ định người phỏng vấn là MỘT quyết định, gửi trong một lệnh (`POST .../transition` kèm `interviewerIds`) — tách ra màn riêng thì DM quên làm và nhân sự ngồi chờ. Sửa sau đó: `PUT /api/applications/{id}/interviewers` (màn *Lịch Phỏng Vấn* của DM), dùng khi vòng sau cần người khác hoặc người được chỉ định nghỉ việc. Bảng `ApplicationInterviewer` (không có `round_number`: đây là "ai ĐƯỢC PHÉP gặp người này", mỗi buổi nhân sự lấy một tập con).
+- **Human Resource lái vận hành, không chọn người:** sàng lọc hồ sơ, ĐẶT LỊCH phỏng vấn cho người đã duyệt, soạn thư mời theo điều khoản Giám đốc chốt. Đặt lịch đòi hồ sơ đã ở INTERVIEW — trước 15/08/2026 thao tác mời TỰ đẩy state, tức mời ai là mặc nhiên chọn người đó. Từ V045, dropdown người phỏng vấn của nhân sự chỉ hiện nhóm DM đã chỉ định; id ngoài danh sách bị BE trả 409.
 - Cộng với 5.17, DM đứng **ba chốt**: ra đề (Yêu cầu tuyển dụng) → chọn người gặp → **đề xuất tuyển**. Vẫn KHÔNG đụng vận hành (không đặt lịch, không gửi email) và KHÔNG quyết tuyển.
 - Job cũ chưa gán DM: cửa OFFER rơi về Human Resource như trước, nhưng cửa vào phỏng vấn thì BE chặn và báo "chưa gán Trưởng bộ phận phụ trách" — gán DM cho tin là xong.
 - Một người vừa là DM vừa chấm phỏng vấn: gán họ làm interviewer của khung. Không cần cơ chế riêng.
@@ -419,8 +420,14 @@ Tách 2 bài toán: "chốt mốc thời gian" (nghiệp vụ lõi = IN) vs "đ�
 
 **VIẾT LẠI 15/08/2026 — mô hình lõi = NHÂN SỰ CHỦ ĐỘNG CHỐT.** Bộ phận nhân sự gọi cho người phỏng vấn hỏi lịch rảnh, gọi cho ứng viên thống nhất giờ, rồi NHẬP buổi vào hệ thống. Mô hình cũ (pool khung dùng chung + magic link `SCHEDULE` cho ứng viên tự chọn) **đã bỏ hẳn**: nó bắt nhân sự ngồi đợi ứng viên bấm link, trong khi một cuộc gọi là chốt xong — và khi ứng viên không bấm thì vẫn phải gọi, tức mọi trường hợp đều tốn thêm một vòng chờ.
 
-### 15.1 Thứ tự thao tác: DM DUYỆT trước, NHÂN SỰ ĐẶT LỊCH sau
-DM duyệt hồ sơ vào vòng Phỏng vấn TRƯỚC (cửa quyết định con người — 5.8/5.14) → hồ sơ hiện ở màn Lịch Phỏng Vấn của nhân sự → nhân sự bấm "Đặt lịch phỏng vấn": chọn ứng viên + 1..5 người phỏng vấn + giờ đã hẹn. Đặt lịch cho hồ sơ CHƯA duyệt bị BE từ chối ("chưa được Trưởng bộ phận duyệt vào vòng phỏng vấn").
+### 15.1 Thứ tự thao tác: DM DUYỆT + CHỈ ĐỊNH NGƯỜI trước, NHÂN SỰ CHỐT GIỜ sau
+DM duyệt hồ sơ vào vòng Phỏng vấn TRƯỚC (cửa quyết định con người — 5.8/5.14) **và chỉ định luôn ai được phỏng vấn ứng viên đó** → hồ sơ hiện ở màn Lịch Phỏng Vấn của nhân sự → nhân sự bấm "Đặt lịch phỏng vấn": chọn ứng viên + giờ đã hẹn, người phỏng vấn đã điền sẵn theo chỉ định của DM (bỏ bớt ai bận thì bấm x, KHÔNG thêm được người ngoài danh sách).
+
+Hai lời từ chối của BE ở bước này nói hai chuyện khác nhau:
+- hồ sơ chưa duyệt → "chưa được Trưởng bộ phận duyệt vào vòng phỏng vấn";
+- duyệt rồi nhưng chưa ai được chỉ định → "Trưởng bộ phận chưa chỉ định người phỏng vấn cho ứng viên này".
+
+**Vì sao chia đôi như vậy (V045 — 16/08/2026):** chọn ai gặp ứng viên là phán đoán chuyên môn (ai đủ sức hỏi mảng này, ai đang rảnh tay trong bộ phận), còn chốt giờ là việc vận hành. Trước V045 nhân sự truyền id tùy ý khi đặt buổi, tức là họ đang quyết cả hai. Danh sách chỉ chặn được khi nó là ràng buộc — đừng nới thành "gợi ý".
 
 ### 15.2 Hệ thống lo gì sau khi nhân sự bấm lưu
 - **Chống trùng giờ (giữ nguyên):** chặn nếu chính ứng viên, hoặc bất kỳ ai trong panel, đã có buổi cách dưới `MinGap` (1 tiếng). Nhân sự đã gọi điện nhưng không nhớ hết lịch của 5 người — đây là lưới an toàn, và lỗi báo TÊN người bận kèm giờ buổi kia.
@@ -433,7 +440,7 @@ DM duyệt hồ sơ vào vòng Phỏng vấn TRƯỚC (cửa quyết định con
 Calendly phụ thuộc Google/Outlook API — đúng phần SRIS cố ý OUT. Bản thân self-scheduling cũng đã thử và bỏ: với công ty nhỏ, người tuyển dụng vốn ĐANG gọi điện cho ứng viên (khớp As-Is 4.2), nên giá trị của hệ thống không nằm ở chỗ thay cuộc gọi mà ở chỗ **ghi lại buổi đã chốt, chống trùng, và tự gửi xác nhận + .ics**. Số liệu dẫn nguồn (Calendly Blog) vẫn dùng được cho luận điểm "xếp lịch là khâu chậm": Muck Rack tốn 80% thời gian xếp lại lịch, giảm time-to-hire 8 ngày; ~78% recruiter mất ứng viên vì xếp lịch chậm.
 
 ### 15.4 Trạng thái code (M9)
-- **ĐÃ CÓ:** đặt buổi (`POST /api/applications/{id}/interviews`) · xem buổi theo vị trí (`GET /api/jobs/{jobId}/interviews`) · hủy buổi (`POST /api/interview-schedules/{id}/cancel`, email báo ứng viên) · chống trùng giờ (ứng viên + cả panel) · email + .ics khi đặt (best-effort) · guard "DM duyệt trước mới đặt lịch được".
+- **ĐÃ CÓ:** đặt buổi (`POST /api/applications/{id}/interviews`) · xem buổi theo vị trí (`GET /api/jobs/{jobId}/interviews`) · hủy buổi (`POST /api/interview-schedules/{id}/cancel`, email báo ứng viên) · chống trùng giờ (ứng viên + cả panel) · email + .ics khi đặt (best-effort) · guard "DM duyệt trước mới đặt lịch được" · **V045: DM chỉ định người phỏng vấn (`GET`/`PUT /api/applications/{id}/interviewers`, bảng `ApplicationInterviewer`), nhân sự chỉ chọn trong danh sách đó**.
 - **Chưa/một phần:** đổi giờ = hủy rồi đặt lại (chưa có nút "dời lịch") · chưa gợi ý khung rảnh của interviewer.
 - **Bảng (đều có `company_id`) — giữ nguyên hình dạng cũ để phiếu chấm không phải đổi:** mỗi buổi = 1 `InterviewSlotPool` (CLOSED) + 1 `InterviewSlot` (BOOKED, giữ giờ + panel) + 1 `InterviewSchedule` (CONFIRMED/CANCELLED — per-ứng-viên, dùng cho chấm điểm). Nhiều vòng = `round_number`, không thêm state.
 

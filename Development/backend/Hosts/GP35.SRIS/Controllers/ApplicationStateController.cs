@@ -28,12 +28,16 @@ public class ApplicationStateController : ControllerBase
         _stateService = stateService;
     }
 
-    /// <summary>Chuyển hồ sơ sang state đích (gồm REJECTED). Reason tùy chọn.</summary>
+    /// <summary>
+    /// Chuyển hồ sơ sang state đích (gồm REJECTED). Reason tùy chọn.
+    /// Đi INTERVIEW thì gửi kèm <c>interviewerIds</c> — người Trưởng bộ phận cho gặp ứng viên (V045).
+    /// </summary>
     [HttpPost("transition")]
     public async Task<IActionResult> Transition(long applicationId, [FromBody] TransitionRequestDto dto)
     {
         var result = await _stateService.TransitionAsync(
-            _contextData.CompanyId, _contextData.UserId, applicationId, dto.ToState, dto.Reason);
+            _contextData.CompanyId, _contextData.UserId, applicationId, dto.ToState, dto.Reason,
+            interviewerIds: dto.InterviewerIds);
         return Ok(result);
     }
 

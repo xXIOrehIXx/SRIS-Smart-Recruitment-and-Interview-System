@@ -25,6 +25,10 @@ const apiMessage = (error, fallback) =>
  * ngồi đợi ứng viên bấm link chậm hơn một cuộc gọi.
  *
  * Chỉ đặt được cho ứng viên đã được Trưởng bộ phận duyệt vào vòng phỏng vấn (state INTERVIEW).
+ *
+ * V045 (16/08/2026): người phỏng vấn KHÔNG còn là dropdown toàn công ty. Trưởng bộ phận chỉ
+ * định ai được gặp từng ứng viên; ở đây chỉ hiện đúng những người đó (chọn sẵn cả nhóm, bỏ bớt
+ * được). Bạn chốt GIỜ, họ chốt NGƯỜI.
  */
 const InterviewScheduleRecruit = () => {
   // ?jobId= — mở thẳng đúng vị trí người dùng vừa đứng (trang ứng viên, trang tin tuyển dụng).
@@ -35,8 +39,12 @@ const InterviewScheduleRecruit = () => {
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [interviewers, setInterviewers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Người phỏng vấn Trưởng bộ phận chỉ định cho ỨNG VIÊN đang chọn trong form (V045).
+  // Rỗng = DM chưa chỉ định -> BE sẽ từ chối đặt buổi, nên chặn luôn ở đây cho khỏi bấm phí.
+  const [assignedPanel, setAssignedPanel] = useState([]);
+  const [panelLoading, setPanelLoading] = useState(false);
 
   const [bookModalOpen, setBookModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +52,6 @@ const InterviewScheduleRecruit = () => {
 
   useEffect(() => {
     fetchJobs();
-    fetchInterviewers();
   }, []);
 
   const fetchJobs = async () => {
@@ -63,13 +70,23 @@ const InterviewScheduleRecruit = () => {
     }
   };
 
-  const fetchInterviewers = async () => {
+  // Đổi ứng viên trong form -> nạp đúng nhóm người phỏng vấn của người đó và chọn sẵn cả nhóm
+  // (thường cả nhóm cùng dự; bỏ bớt ai bận thì bấm x).
+  const handleCandidateChange = async (applicationId) => {
+    bookForm.setFieldsValue({ interviewerIds: [] });
+    setAssignedPanel([]);
+    if (!applicationId) return;
+    setPanelLoading(true);
     try {
-      const response = await interviewAPI.getInterviewers();
-      setInterviewers(response.data || []);
+      const res = await interviewAPI.getAssignedInterviewers(applicationId);
+      const panel = res.data || [];
+      setAssignedPanel(panel);
+      bookForm.setFieldsValue({ interviewerIds: panel.map((p) => p.interviewerId) });
     } catch (error) {
-      console.error('Error fetching interviewers:', error);
-      setInterviewers([]);
+      console.error(error);
+      message.error(apiMessage(error, 'Không tải được danh sách người phỏng vấn của ứng viên này'));
+    } finally {
+      setPanelLoading(false);
     }
   };
 
@@ -125,6 +142,7 @@ const InterviewScheduleRecruit = () => {
       message.success('Đã lưu buổi phỏng vấn — hệ thống đã gửi email xác nhận kèm lịch (.ics) cho ứng viên.');
       setBookModalOpen(false);
       bookForm.resetFields();
+      setAssignedPanel([]);
       fetchJobData(selectedJobId);
     } catch (error) {
       console.error(error);
@@ -231,7 +249,7 @@ const InterviewScheduleRecruit = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => { bookForm.resetFields(); setBookModalOpen(true); }}
+            onClick={() => { bookForm.resetFields(); setAssignedPanel([]); setBookModalOpen(true); }}
             disabled={!selectedJobId}
           >
             Đặt lịch phỏng vấn
@@ -287,7 +305,7 @@ const InterviewScheduleRecruit = () => {
       <Modal
         title="Đặt lịch phỏng vấn"
         open={bookModalOpen}
-        onCancel={() => { setBookModalOpen(false); bookForm.resetFields(); }}
+        onCancel={() => { setBookModalOpen(false); bookForm.resetFields(); setAssignedPanel([]); }}
         footer={null}
         width={560}
         destroyOnClose
@@ -309,6 +327,7 @@ const InterviewScheduleRecruit = () => {
               placeholder="Chọn ứng viên"
               showSearch
               optionFilterProp="label"
+              onChange={handleCandidateChange}
               options={interviewStageApps.map((a) => ({
                 value: a.applicationId,
                 label: `${a.candidateName}${a.candidateEmail ? ` — ${a.candidateEmail}` : ''}`,
@@ -324,8 +343,19 @@ const InterviewScheduleRecruit = () => {
 
           <Form.Item
             name="interviewerIds"
-            label="Người phỏng vấn (1–5 người)"
+            label="Người phỏng vấn"
+            tooltip="Trưởng bộ phận chỉ định ai được gặp ứng viên này. Bạn chỉ chọn trong nhóm đó."
             rules={[{ required: true, message: 'Chọn ít nhất 1 người' }]}
+            extra={
+              !panelLoading && assignedPanel.length === 0 ? (
+                <Text type="warning">
+                  Trưởng bộ phận chưa chỉ định người phỏng vấn cho ứng viên này — hãy đề nghị họ
+                  chọn ở màn Duyệt Ứng Viên Vào Phỏng Vấn, rồi quay lại đặt lịch.
+                </Text>
+              ) : (
+                'Cả nhóm được chọn sẵn — bỏ bớt người bận nếu buổi này không cần đủ.'
+              )
+            }
           >
             <Select
               mode="multiple"
@@ -333,12 +363,14 @@ const InterviewScheduleRecruit = () => {
               placeholder="Chọn người phỏng vấn"
               showSearch
               optionFilterProp="label"
-              options={interviewers.map((i) => ({
-                value: i.userId,
+              loading={panelLoading}
+              disabled={panelLoading || assignedPanel.length === 0}
+              options={assignedPanel.map((i) => ({
+                value: i.interviewerId,
                 label: i.fullName || i.email,
               }))}
               notFoundContent={
-                <Text type="secondary">Chưa có tài khoản Interviewer — nhờ Admin tạo</Text>
+                <Text type="secondary">Chọn ứng viên trước để thấy người phỏng vấn được chỉ định</Text>
               }
             />
           </Form.Item>
@@ -368,7 +400,7 @@ const InterviewScheduleRecruit = () => {
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => { setBookModalOpen(false); bookForm.resetFields(); }}>
+              <Button onClick={() => { setBookModalOpen(false); bookForm.resetFields(); setAssignedPanel([]); }}>
                 Hủy
               </Button>
               <Button type="primary" htmlType="submit" loading={submitting}>

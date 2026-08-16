@@ -257,11 +257,19 @@ for jobkey, name, lines in CVS:
 # ---------- 6) Pipeline: keo trang thai ----------
 # (Truoc day cho AI cham diem CV o day. Sang loc CV bang AI + Talent Pool da bi cat khoi
 #  scope 08/08/2026: khong con endpoint /cv-scoring, nhan ho so chi con parse + luu file.)
+# Panel co dinh cua demo. V045: Truong bo phan chi dinh nguoi phong van NGAY khi duyet vao
+# vong phong van; khong chi dinh thi BE tu choi moi lenh dat lich o muc 7.
+iv_ids = [users["Interviewer"]["id"], users["Interviewer2"]["id"]]
+
+
 def transition(app, to):
     # Ai bam buoc nao (V043): nhan su sang loc (NEW->SCREENING), Truong bo phan duyet vao
     # vong phong van (SCREENING->INTERVIEW), GIAM DOC quyet tuyen (INTERVIEW->OFFER, roi OFFER).
     token = director if to in ("OFFER", "HIRED") else dm if to == "INTERVIEW" else recruiter
-    must(*call("POST", f"/applications/{apps[app]['id']}/transition", token=token, body={"toState": to}),
+    body = {"toState": to}
+    if to == "INTERVIEW":
+        body["interviewerIds"] = iv_ids
+    must(*call("POST", f"/applications/{apps[app]['id']}/transition", token=token, body=body),
          f"{app} -> {to}")
 
 # An (java): -> INTERVIEW -> (cham diem) -> OFFER PENDING
@@ -280,7 +288,6 @@ print("   + Pipeline: NEW/SCREENING/INTERVIEW/REJECTED da co du")
 # ---------- 7) Dat lich phong van (panel 2 interviewer) ----------
 # 15/08/2026: khong con pool khung + magic link SCHEDULE. Nhan su goi dien chot gio roi NHAP
 # buoi vao he thong (POST /applications/{id}/interviews).
-iv_ids = [users["Interviewer"]["id"], users["Interviewer2"]["id"]]
 _offs = random.randint(0, 40)  # phút lệch theo run — tránh trùng giờ giữa các lần seed
 future = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00", time.gmtime(time.time() + 3 * 86400))
 # Buoi cua Hong: NGAY KHAC. Backend chan 2 buoi cach nhau < 1 tieng (cung interviewer hoac

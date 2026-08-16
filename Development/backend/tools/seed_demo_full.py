@@ -629,10 +629,27 @@ def deciders(jobkey):
     return [dm, director, hr, admin]
 
 
+# Ai phỏng vấn ai — Trưởng bộ phận chỉ định NGAY khi duyệt vào vòng phỏng vấn (V045).
+# Không chỉ định thì BE từ chối mọi lệnh đặt lịch sau đó, seed sẽ đứng ở mục 8.
+PANEL = {
+    "be": [users["itv1"]["id"], users["itv2"]["id"]],
+    "fe": [users["itv1"]["id"], users["itv3"]["id"]],
+    "acc": [users["itv2"]["id"]],
+    "sale": [users["itv3"]["id"], users["itv2"]["id"]],
+    "hrcb": [users["itv2"]["id"]],
+    "cs": [users["itv3"]["id"]],
+    "mkt": [users["itv3"]["id"]],
+    "lead": [users["itv1"]["id"], users["itv3"]["id"]],
+}
+
+
 def transition(name, to):
     a = apps[name]
+    body = {"toState": to}
+    if to == "INTERVIEW":
+        body["interviewerIds"] = PANEL[a["job"]]
     call_any("POST", f"/applications/{a['id']}/transition", deciders(a["job"]),
-             body={"toState": to}, what=f"{name} -> {to}")
+             body=body, what=f"{name} -> {to}")
 
 
 REJECT_REASONS = {
@@ -662,16 +679,6 @@ for name, a in apps.items():
 print("   + Pipeline: đã kéo NEW / SCREENING / INTERVIEW / REJECTED")
 
 # ---------- 8) Phỏng vấn ----------
-PANEL = {
-    "be": [users["itv1"]["id"], users["itv2"]["id"]],
-    "fe": [users["itv1"]["id"], users["itv3"]["id"]],
-    "acc": [users["itv2"]["id"]],
-    "sale": [users["itv3"]["id"], users["itv2"]["id"]],
-    "hrcb": [users["itv2"]["id"]],
-    "cs": [users["itv3"]["id"]],
-    "mkt": [users["itv3"]["id"]],
-    "lead": [users["itv1"]["id"], users["itv3"]["id"]],
-}
 PANEL_TOKEN = {
     "be": [itv["itv1"], itv["itv2"]], "fe": [itv["itv1"], itv["itv3"]],
     "acc": [itv["itv2"]], "sale": [itv["itv3"], itv["itv2"]], "hrcb": [itv["itv2"]],

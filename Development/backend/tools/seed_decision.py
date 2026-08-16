@@ -231,12 +231,17 @@ for c in CANDIDATES:
     email = f"{local}+{c['name'].split()[-1].lower()}.{RUN}@{domain}"
     app_id = upload_cv(rec, c["name"], email, c["phone"], c["cv"])
 
+    # V045: Truong bo phan chi dinh nguoi phong van NGAY khi duyet vao vong phong van.
+    # Khong gui interviewerIds thi lenh dat lich ben duoi bi BE tu choi (409).
+    panel = [IV1_ID, IV2_ID] if c["panel"] == "both" else [IV1_ID]
+
     for state in ("SCREENING", "INTERVIEW"):
-        must(*call("POST", f"/applications/{app_id}/transition", token=STEP_TOKEN[state],
-                   body={"toState": state}),
+        body = {"toState": state}
+        if state == "INTERVIEW":
+            body["interviewerIds"] = panel
+        must(*call("POST", f"/applications/{app_id}/transition", token=STEP_TOKEN[state], body=body),
              f"{c['name']} -> {state}")
 
-    panel = [IV1_ID, IV2_ID] if c["panel"] == "both" else [IV1_ID]
     start = time.strftime(f"%Y-%m-%dT09:00:00Z", time.gmtime(time.time() + c["day"] * 86400))
     s, sch = call("POST", f"/applications/{app_id}/interviews", token=rec,
                   body={"interviewerIds": panel, "startTime": start, "roundNumber": 1})

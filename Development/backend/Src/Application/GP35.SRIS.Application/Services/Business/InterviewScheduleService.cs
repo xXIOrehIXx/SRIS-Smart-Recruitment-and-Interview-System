@@ -23,9 +23,6 @@ namespace GP35.SRIS.Application.Services.Business;
 /// </summary>
 public class InterviewScheduleService : BaseService<InterviewScheduleService>, IInterviewScheduleService
 {
-    /// <summary>Số interviewer tối đa trong 1 panel.</summary>
-    private const int MaxPanelSize = 5;
-
     /// <summary>Độ dài tối đa tên vòng — khớp cột NVARCHAR(120) ở V041.</summary>
     private const int MaxRoundNameLength = 120;
 
@@ -63,10 +60,12 @@ public class InterviewScheduleService : BaseService<InterviewScheduleService>, I
 
         if (dto.InterviewerIds is null || dto.InterviewerIds.Count == 0)
             throw Bad("Phải chọn ít nhất 1 người phỏng vấn.");
-        if (dto.InterviewerIds.Count > MaxPanelSize)
-            throw Bad($"Tối đa {MaxPanelSize} người phỏng vấn cho một buổi.");
+        if (dto.InterviewerIds.Count > InterviewPanel.MaxSize)
+            throw Bad($"Tối đa {InterviewPanel.MaxSize} người phỏng vấn cho một buổi.");
         if (dto.InterviewerIds.Distinct().Count() != dto.InterviewerIds.Count)
             throw Bad("Danh sách người phỏng vấn bị trùng.");
+
+        await EnsureInterviewersAssignedAsync(companyId, applicationId, dto.InterviewerIds);
 
         // FE gửi giờ NGƯỜI DÙNG CHỌN dạng local naive (không 'Z'), nên so với giờ LOCAL của
         // server. So với UtcNow là lệch đúng bằng offset múi giờ (VN: +7) -> buổi 09:00 sáng nay
@@ -231,6 +230,38 @@ public class InterviewScheduleService : BaseService<InterviewScheduleService>, I
             : $"Tin tuyển dụng này có {all.Count} tiêu chí nhưng chưa cái nào được duyệt và đang bật. " +
               "Hãy duyệt tiêu chí trước khi đặt lịch phỏng vấn — phiếu chấm chỉ hiện tiêu chí " +
               "đã duyệt.");
+    }
+
+    /// <summary>
+    /// Nhân sự chốt GIỜ, Trưởng bộ phận chốt NGƯỜI (V045 — chốt 16/08/2026). Panel của buổi phải
+    /// nằm trọn trong danh sách DM đã chỉ định cho chính ứng viên này.
+    ///
+    /// Trước V045 nhân sự truyền id tùy ý, tức là họ đang quyết cả "ai gặp ai" — quyết định
+    /// chuyên môn không thuộc về họ. Đừng nới lại thành "gợi ý": danh sách chỉ chặn được khi nó
+    /// là ràng buộc.
+    /// </summary>
+    private async Task EnsureInterviewersAssignedAsync(
+        long companyId, long applicationId, IReadOnlyList<long> requested)
+    {
+        var assigned = await _schedulingRepo.GetAssignedInterviewersAsync(companyId, applicationId);
+
+        if (assigned.Count == 0)
+            throw Conflict(
+                "Trưởng bộ phận chưa chỉ định người phỏng vấn cho ứng viên này. Hãy đề nghị họ " +
+                "chọn người phỏng vấn ở màn Duyệt Ứng Viên Vào Phỏng Vấn, hồ sơ sẽ xếp lịch được ngay.");
+
+        var outsiders = requested.Where(id => !assigned.Contains(id)).ToList();
+        if (outsiders.Count == 0) return;
+
+        // Gọi tên người bị từ chối — "có người không hợp lệ" bắt nhân sự đoán xem là ai trong 5 ô.
+        var names = (await _userRepo.GetNamesByIdsAsync(companyId, outsiders))
+            .Select(u => u.FullName ?? u.Email)
+            .ToList();
+        var who = names.Count > 0 ? string.Join(", ", names) : string.Join(", ", outsiders);
+
+        throw Conflict(
+            $"{who} không nằm trong danh sách người phỏng vấn Trưởng bộ phận chỉ định cho ứng " +
+            "viên này. Muốn đổi người thì Trưởng bộ phận cập nhật danh sách trước.");
     }
 
     /// <summary>

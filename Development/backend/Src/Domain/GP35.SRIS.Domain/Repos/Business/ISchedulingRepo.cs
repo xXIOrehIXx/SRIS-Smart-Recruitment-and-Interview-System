@@ -70,6 +70,22 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     /// </summary>
     Task<int> GetNextRoundNumberAsync(long companyId, long applicationId);
 
+    // ---------- Người phỏng vấn DM chỉ định cho hồ sơ (V045) ----------
+
+    /// <summary>
+    /// Danh sách interviewer Trưởng bộ phận đã chỉ định cho hồ sơ (rỗng = chưa chỉ định).
+    /// Đây là tập NGƯỜI ĐƯỢC PHÉP gặp ứng viên; nhân sự đặt buổi chỉ chọn trong đây.
+    /// </summary>
+    Task<IReadOnlyList<long>> GetAssignedInterviewersAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// Ghi đè danh sách chỉ định của hồ sơ (xóa hết rồi thêm mới, trong 1 transaction) — DM
+    /// chỉ định lần đầu hoặc đổi người cho vòng sau. Buổi ĐÃ đặt không bị đụng: panel của buổi
+    /// nằm ở InterviewSlotInterviewer, đổi danh sách không rút người khỏi buổi đã hẹn.
+    /// </summary>
+    Task ReplaceAssignedInterviewersAsync(
+        long companyId, long applicationId, IReadOnlyList<long> interviewerIds, long? assignedBy);
+
     // ---------- Chống trùng giờ ----------
 
     /// <summary>

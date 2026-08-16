@@ -110,6 +110,28 @@ describe('applicationAPI', () => {
     applicationAPI.transition(9, 'SCREENING');
     expect(apiInst.post).toHaveBeenCalledWith('/applications/9/transition', { toState: 'SCREENING', reason: undefined });
   });
+
+  // V045: duyệt vào phỏng vấn = một quyết định gồm CẢ "cho vào vòng" lẫn "cho gặp ai".
+  // Gửi 2 request riêng thì hồ sơ có thể sang INTERVIEW mà không ai được chỉ định.
+  test('transition sang INTERVIEW gửi kèm interviewerIds do Trưởng bộ phận chỉ định', () => {
+    applicationAPI.transition(9, 'INTERVIEW', undefined, [4, 7]);
+    expect(apiInst.post).toHaveBeenCalledWith(
+      '/applications/9/transition',
+      { toState: 'INTERVIEW', reason: undefined, interviewerIds: [4, 7] },
+    );
+  });
+});
+
+describe('interviewAPI — người phỏng vấn do Trưởng bộ phận chỉ định (V045)', () => {
+  test('getAssignedInterviewers đọc nhóm được chỉ định cho 1 ứng viên', () => {
+    interviewAPI.getAssignedInterviewers(9);
+    expect(apiInst.get).toHaveBeenCalledWith('/applications/9/interviewers');
+  });
+
+  test('assignInterviewers ghi đè cả danh sách (PUT, không POST từng người)', () => {
+    interviewAPI.assignInterviewers(9, [4, 7]);
+    expect(apiInst.put).toHaveBeenCalledWith('/applications/9/interviewers', { interviewerIds: [4, 7] });
+  });
 });
 
 describe('offerAPI — thư mời nhận việc (5.15)', () => {

@@ -132,7 +132,7 @@ Nguyên tắc thiết kế: **đơn giản là mặc định, phức tạp là t
 - `Candidate` → **magic link only**, không có account, không có User row
 - `Director` (**Giám đốc**, V043 — chốt 15/08/2026): người DUY NHẤT quyết tuyển. Phạm vi toàn công ty,
   không gán theo job. URL Portal: `/director/*`.
-- Câu thần chú: Human Resource lái · Interviewer chấm · DM ra đề + chọn người gặp + ĐỀ XUẤT ·
+- Câu thần chú: Human Resource lái · Interviewer chấm · DM ra đề + chọn người gặp (và chọn ai gặp) + ĐỀ XUẤT ·
   **Giám đốc quyết tuyển** · Candidate ứng tuyển · Admin dựng sân
 
 ### Pipeline: 6 state nội bộ, hiển thị 4 PHA
@@ -191,11 +191,18 @@ Hệ thống chống trùng giờ + gửi email xác nhận kèm .ics. Lưu tr�
 (pool 1 khung CLOSED + slot BOOKED + schedule CONFIRMED) nên phiếu chấm không phải đổi.
 Lý do bỏ: chờ ứng viên bấm link chậm hơn một cuộc gọi.
 
+**V045 (16/08/2026) — nhân sự chốt GIỜ, Trưởng bộ phận chốt NGƯỜI.** Panel không còn là
+dropdown toàn công ty: DM chỉ định ai được gặp từng ứng viên (bảng `ApplicationInterviewer`),
+nhân sự đặt buổi chỉ chọn được trong danh sách đó. Chỉ định đi KÈM hành động duyệt vào vòng
+phỏng vấn (`POST .../transition` nhận thêm `interviewerIds`); sửa sau bằng
+`PUT /api/applications/{id}/interviewers` (chỉ DM của job, Admin bypass).
+Bảng KHÔNG có `round_number` — đây là "ai ĐƯỢC PHÉP gặp người này", mỗi buổi lấy một tập con.
+
 ### Người quyết (cập nhật 15/08/2026 — sau bảo vệ hội đồng)
 Hai cửa có người gác, HAI người KHÁC NHAU:
 1. `SCREENING→INTERVIEW` — **Trưởng bộ phận phụ trách vị trí** (`Job.department_manager_id`)
-   chọn ai được vào vòng phỏng vấn. Job chưa gán DM thì KHÔNG ai đi qua cửa này (403, kể cả
-   HR) — vì thế đăng tin (Status=Open) bắt buộc có DM.
+   chọn ai được vào vòng phỏng vấn **và ai sẽ phỏng vấn người đó** (V045). Job chưa gán DM thì
+   KHÔNG ai đi qua cửa này (403, kể cả HR) — vì thế đăng tin (Status=Open) bắt buộc có DM.
 2. `INTERVIEW→OFFER` + rời OFFER — **GIÁM ĐỐC** quyết tuyển (phạm vi toàn công ty). DM KHÔNG
    đủ thẩm quyền: họ gửi **phiếu Đề xuất tuyển** (`HiringProposal`, V043), Giám đốc duyệt —
    chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm mức lương + ngày vào làm đã chốt.
@@ -220,6 +227,9 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
    DM của job; INTERVIEW→OFFER và rời OFFER chỉ Giám đốc. Đường nào tự đẩy state hộ người dùng
    (`AdvanceToAsync`) phải kiểm quyền CẢ chặng TRƯỚC khi đi bước đầu — nếu không hồ sơ nhảy
    một nấc rồi mới báo 403.
+   V045: panel của buổi phải nằm TRỌN trong `ApplicationInterviewer` của hồ sơ
+   (`EnsureInterviewersAssignedAsync`). Đừng nới thành "gợi ý" — danh sách chỉ chặn được khi nó
+   là ràng buộc, và nới ra là trả quyền chọn người về cho nhân sự.
 
 3. **Multi-round interview = DỮ LIỆU trong state INTERVIEW** (`InterviewSchedule.round_number`),
    KHÔNG thêm state INTERVIEW_1/_2. Sơ đồ 6 state/8 transition giữ nguyên.

@@ -152,6 +152,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IApplicationQueryService, ApplicationQueryService>();
             services.AddScoped<IUserManageService, UserManageService>();
             services.AddScoped<IInterviewScheduleService, InterviewScheduleService>();
+            services.AddScoped<IInterviewPanelService, InterviewPanelService>();
             services.AddScoped<ICandidateStatusService, CandidateStatusService>();
             services.AddScoped<IEvaluationCriteriaService, EvaluationCriteriaService>();
             services.AddScoped<ICriteriaTemplateService, CriteriaTemplateService>();
