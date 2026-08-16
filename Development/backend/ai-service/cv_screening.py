@@ -22,6 +22,7 @@ Người tuyển dụng đọc rồi tự quyết (xem CvScreeningService bên .
 
 import json
 import os
+import re
 from typing import Literal
 
 import ollama
@@ -76,8 +77,20 @@ QUY TẮC BẮT BUỘC:
 - CHỈ dùng thông tin có trong CV. TUYỆT ĐỐI KHÔNG suy diễn, KHÔNG bịa thêm kinh nghiệm.
   Ứng viên học ngành CNTT KHÔNG có nghĩa là biết Java; làm ở công ty phần mềm KHÔNG có
   nghĩa là biết mọi công nghệ công ty đó dùng.
-- Mỗi mục trong "matched" phải kèm "evidence" là CÂU/CỤM TỪ TRÍCH NGUYÊN VĂN từ CV.
+- Mỗi mục trong "matched" phải kèm "evidence" là CÂU/CỤM TỪ TRÍCH NGUYÊN VĂN từ CV — chép
+  y hệt, không diễn đạt lại, không dịch.
   Không trích được nguyên văn thì KHÔNG được đưa vào matched — đưa xuống missing.
+  TUYỆT ĐỐI KHÔNG viết "missing", "không có", "không tìm thấy" hay bất cứ ghi chú nào vào
+  ô "evidence". Ô đó CHỈ chứa chữ có sẵn trong CV. Một yêu cầu chỉ được nằm ở MỘT trong hai
+  danh sách: hoặc matched (có trích dẫn), hoặc missing. Không được nằm ở cả hai.
+
+- YÊU CẦU CÓ NGƯỠNG SỐ (số năm kinh nghiệm, số người quản lý, cấp độ chứng chỉ) chỉ tính là
+  ĐẠT khi CV nêu con số BẰNG HOẶC LỚN HƠN ngưỡng đó. Không đủ ngưỡng -> missing, dù có làm
+  việc gần giống. Ví dụ: yêu cầu "quản lý đội nhóm từ 2 người" mà CV viết "hướng dẫn 1 thực
+  tập sinh" thì KHÔNG đạt.
+
+- KỸ NĂNG GẦN GIỐNG KHÔNG PHẢI LÀ ĐẠT. Docker không phải Kubernetes, Excel không phải
+  Power BI, tiếng Anh không phải tiếng Nhật, viết unit test không phải triển khai CI/CD.
 - "missing" là những yêu cầu của tin tuyển dụng mà CV KHÔNG hề nhắc tới hoặc nhắc quá
   mờ nhạt để kết luận. Viết đúng tên yêu cầu, mỗi mục một dòng ngắn.
 - Văn bản CV được bóc từ file PDF nên có thể lộn xộn, dính chữ, thiếu dấu câu. Cứ đọc
@@ -109,6 +122,58 @@ cầu chứ không đếm đầu mục:
 ========== CV ỨNG VIÊN ==========
 {cv_text}
 """
+
+
+def _norm(s: str) -> str:
+    """Gom khoảng trắng + hạ chữ thường — so khớp bỏ qua khác biệt vụn vặt về trình bày."""
+    return re.sub(r"\s+", " ", s).strip().lower()
+
+
+def _norm_loose(s: str) -> str:
+    """Như trên, bỏ luôn dấu câu: model hay chép lại thiếu/thừa dấu phẩy, gạch, ngoặc."""
+    return re.sub(r"[^0-9a-zÀ-ỹ]+", " ", _norm(s)).strip()
+
+
+def _verify(result: "CvScreeningResult", cv_text: str) -> None:
+    """
+    Bỏ khỏi "matched" mọi mục có evidence KHÔNG thật sự nằm trong CV, và dồn yêu cầu đó
+    xuống "missing". Sửa tại chỗ.
+
+    Vì sao cần dù prompt đã dặn: đo trên model 8B thấy nó lách schema — nhét cả yêu cầu
+    KHÔNG đạt vào matched rồi ghi "evidence": "missing" như một cái nhãn. JSON vẫn hợp lệ,
+    Pydantic vẫn cho qua, và màn hình hiện ra "Đáp ứng: Thành thạo Power BI — 'missing'".
+    Prompt không bao giờ chặn được hết mấy trò kiểu này, nhưng đây là ràng buộc KIỂM ĐƯỢC
+    BẰNG MÁY: evidence phải là chữ có sẵn trong CV, đúng nghĩa đen. Chặn luôn cả trích dẫn
+    bịa nguyên câu — thứ nguy hiểm hơn nhiều vì đọc rất thuyết phục.
+
+    Cố ý chỉ đẩy XUỐNG missing chứ không bao giờ kéo ngược lên: nhầm theo hướng "báo thiếu
+    trong khi thật ra có" thì người tuyển dụng mở CV ra là thấy; nhầm theo hướng ngược lại
+    thì họ tin luôn và không kiểm tra.
+    """
+    hay = _norm(cv_text)
+    hay_loose = _norm_loose(cv_text)
+
+    ket, bo = [], []
+    for m in result.matched:
+        ev = m.evidence.strip()
+        if _norm(ev) in hay or _norm_loose(ev) in hay_loose:
+            ket.append(m)
+        else:
+            bo.append(m.requirement.strip())
+
+    result.matched = ket
+
+    # Dồn xuống missing, không nhân bản dòng đã có sẵn ở đó.
+    da_co = {_norm(x) for x in result.missing}
+    for req in bo:
+        if req and _norm(req) not in da_co:
+            result.missing.append(req)
+            da_co.add(_norm(req))
+
+    # Cùng một yêu cầu nằm ở CẢ HAI danh sách -> giữ bên matched (đã có trích dẫn thật),
+    # bỏ bên missing. Hai bên mâu thuẫn nhau trên màn hình là lỗi người dùng thấy ngay.
+    ten_dat = {_norm(m.requirement) for m in result.matched}
+    result.missing = [x for x in result.missing if _norm(x) not in ten_dat]
 
 
 def _band(score: int) -> str:
@@ -173,13 +238,18 @@ def screen_cv(cv_text: str, jd_text: str) -> CvScreeningResult:
             last_error = e
             continue
 
-        # Hậu kiểm: ép decision khớp fit_score (xem PROCEED_MIN ở đầu file).
-        result.decision = _band(result.fit_score)
         # Dọn dòng trắng: Pydantic đếm ký tự trước khi trim nên "  " lọt min_length.
         result.missing = [m.strip() for m in result.missing if m and m.strip()]
         result.matched = [
             m for m in result.matched if m.requirement.strip() and m.evidence.strip()
         ]
+
+        # Đối chiếu từng trích dẫn với CV thật (xem _verify).
+        _verify(result, cv)
+
+        # Ép decision khớp fit_score (xem PROCEED_MIN ở đầu file). Chạy SAU _verify để
+        # điểm và danh sách đạt/thiếu là của cùng một kết quả đã lọc.
+        result.decision = _band(result.fit_score)
         return result
 
     raise RuntimeError(f"LLM khong ra JSON hop le sau {MAX_RETRY} luot: {last_error}")
