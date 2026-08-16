@@ -13,6 +13,13 @@ public interface ICvDocumentRepo : IBaseRepo<long, CvDocument>
     /// <summary>Lấy thông tin file gốc (object key + tên + mime) của 1 CV, lọc theo company.</summary>
     Task<CvFileInfo?> GetFileInfoAsync(long companyId, long cvId);
 
-    /// <summary>Lấy text đã bóc từ CV (để chấm nền — Cách A). Null nếu không thấy / chưa có text.</summary>
+    /// <summary>Lấy text đã bóc từ CV (đầu vào cho luồng sàng lọc). Null nếu không thấy / chưa có text.</summary>
     Task<string?> GetExtractedTextAsync(long companyId, long cvId);
+
+    /// <summary>
+    /// Ghi đè text đã bóc của 1 CV. Dùng khi bóc lại từ file gốc bằng bản
+    /// <c>PdfTextExtractor</c> mới (giữ thứ tự đọc) — CV nhận trước đó được bóc bằng bản cũ
+    /// vốn cố ý vứt thứ tự chữ, đọc bằng AI thì sai. Trả số dòng cập nhật.
+    /// </summary>
+    Task<int> UpdateExtractedTextAsync(long companyId, long cvId, string extractedText);
 }

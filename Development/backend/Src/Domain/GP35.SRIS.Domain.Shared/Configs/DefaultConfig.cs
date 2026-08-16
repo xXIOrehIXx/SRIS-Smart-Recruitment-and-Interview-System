@@ -53,6 +53,13 @@ namespace GP35.SRIS.Domain.Shared.Configs
         /// tay hơn hẳn HTTP thường; worker chạy nền nên người dùng không ngồi đợi con số này.
         /// </summary>
         public int ExtractTimeoutSeconds { get; set; } = 300;
+
+        /// <summary>
+        /// Trần thời gian chờ AI service sàng lọc xong 1 CV. Rộng hơn bóc tiêu chí vì prompt
+        /// chứa cả CV lẫn JD, và model dùng cho việc này lớn hơn. Worker chạy nền nên người
+        /// dùng không ngồi đợi con số này.
+        /// </summary>
+        public int ScreenCvTimeoutSeconds { get; set; } = 420;
     }
 
     public class AuthOptions

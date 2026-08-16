@@ -174,7 +174,9 @@ export const jobsAPI = {
 
 // ==================== CV (nhận hồ sơ) ====================
 
-// Nhận CV vào hệ thống. KHÔNG chấm điểm, không xếp hạng — sàng lọc là việc của người.
+// Nhận CV vào hệ thống + phân tích CV theo JD bằng AI.
+// Bản phân tích là THAM KHẢO: backend không đổi trạng thái hồ sơ theo nó, không xếp hạng
+// ứng viên với nhau. Quyết định vẫn là của người tuyển dụng.
 export const cvAPI = {
   uploadCV: async (formData, onProgress) => {
     const response = await api.post('/cvs/upload', formData, {
@@ -189,6 +191,17 @@ export const cvAPI = {
   // Trả { url } — presigned URL (~1h) để mở/tải file CV gốc
   getCvFileUrl: (cvId) =>
     api.get(`/cvs/${cvId}/file-url`),
+
+  // XẾP HÀNG lượt AI đối chiếu CV với JD → trả 202 ngay, worker nền mới gọi AI.
+  // Local LLM chạy CPU mất hàng chục giây nên không đợi trong request (timeout axios 30s).
+  // Bấm lại = chạy lượt mới đè lên kết quả cũ.
+  requestScreening: (applicationId) =>
+    api.post(`/applications/${applicationId}/cv-screening`),
+
+  // Hỏi trạng thái + kết quả — gọi lặp cho tới khi running=false.
+  // status: NONE (chưa phân tích bao giờ) | PENDING | RUNNING | DONE | FAILED
+  getScreening: (applicationId) =>
+    api.get(`/applications/${applicationId}/cv-screening`),
 };
 
 // ==================== APPLICATIONS ====================

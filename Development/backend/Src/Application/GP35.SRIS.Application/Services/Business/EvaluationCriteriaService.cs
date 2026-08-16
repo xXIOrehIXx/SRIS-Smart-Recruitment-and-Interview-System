@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -353,35 +352,14 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     // ============================================================
 
     /// <summary>
-    /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc. Giữ tiêu đề
-    /// từng mục để LLM thấy rõ ranh giới đầu việc / yêu cầu — prompt bóc tiêu chí dựa vào đúng
-    /// ranh giới đó. Mục trống thì bỏ hẳn, không để tiêu đề rỗng gây nhiễu.
+    /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc — prompt bóc
+    /// tiêu chí dựa vào ranh giới giữa các mục. Dùng chung với luồng sàng lọc CV
+    /// (xem <see cref="JobSourceText"/>) để hai bên không đọc hai phiên bản khác nhau của cùng
+    /// một tin tuyển dụng.
     /// </summary>
     private static string BuildSourceText(
-        string? jdText, IReadOnlyList<JobRequirement> requirements, string? skillTags)
-    {
-        var sb = new StringBuilder();
-
-        if (!string.IsNullOrWhiteSpace(jdText))
-            sb.Append("[Mô tả công việc]\n").Append(jdText.Trim()).Append("\n\n");
-
-        var reqLines = requirements
-            .Select(r => r.Content?.Trim())
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .ToList();
-        if (reqLines.Count > 0)
-        {
-            sb.Append("[Yêu cầu ứng viên]\n");
-            foreach (var line in reqLines)
-                sb.Append("- ").Append(line).Append('\n');
-            sb.Append('\n');
-        }
-
-        if (!string.IsNullOrWhiteSpace(skillTags))
-            sb.Append("[Kỹ năng yêu cầu]\n").Append(skillTags.Trim()).Append('\n');
-
-        return sb.ToString().Trim();
-    }
+        string? jdText, IReadOnlyList<JobRequirement> requirements, string? skillTags) =>
+        JobSourceText.Build(jdText, requirements, skillTags);
 
     private static void Validate(string? name, decimal weight, decimal maxScore)
     {

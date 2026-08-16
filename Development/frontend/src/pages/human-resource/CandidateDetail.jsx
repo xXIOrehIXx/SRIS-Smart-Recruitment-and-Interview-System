@@ -13,7 +13,10 @@ import {
   FileTextOutlined,
   ReloadOutlined,
   CloseCircleOutlined,
-  LinkOutlined
+  LinkOutlined,
+  RobotOutlined,
+  CheckCircleOutlined,
+  MinusCircleOutlined
 } from '@ant-design/icons';
 import { applicationAPI, cvAPI, interviewAPI } from '../../services/api';
 import ApplicationStateTag, { stateLabel } from '../../components/ApplicationStateTag';
@@ -40,14 +43,23 @@ const RECOMMENDATION_COLORS = {
   NO_HIRE: 'error',
 };
 
+// Đề xuất của AI sau khi đối chiếu CV với tin tuyển dụng (CvScreeningResultDto.decision).
+// Nhãn cố ý viết dưới dạng LỜI KHUYÊN chứ không phải phán quyết ("Nên mời phỏng vấn", không
+// phải "Đạt"): đây là gợi ý của máy, người tuyển dụng mới là người quyết.
+const SCREENING_DECISIONS = {
+  PROCEED: { label: 'Nên mời phỏng vấn', color: 'success' },
+  CONSIDER: { label: 'Cần xem thêm', color: 'warning' },
+  REJECT: { label: 'Chưa phù hợp', color: 'error' },
+};
+
 // Nhãn + màu trạng thái dùng chung toàn app: components/ApplicationStateTag.jsx
 
 /**
- * Chi tiết 1 hồ sơ (ApplicationDetailDto): thông tin ứng viên, file CV gốc, lịch sử audit,
- * ghi chú nội bộ.
+ * Chi tiết 1 hồ sơ (ApplicationDetailDto): thông tin ứng viên, file CV gốc, bản phân tích
+ * CV↔JD do AI sinh, lịch sử audit, ghi chú nội bộ.
  *
- * KHÔNG có điểm số, xếp hạng hay tóm tắt máy sinh: hệ thống không đọc và không đánh giá CV
- * thay người tuyển dụng.
+ * Bản phân tích là THAM KHẢO: không có màn hình nào xếp hạng ứng viên theo điểm phù hợp, và
+ * backend không tự đổi trạng thái hồ sơ theo đề xuất của AI.
  */
 const CandidateDetail = () => {
   const { id: applicationId } = useParams();
@@ -61,16 +73,20 @@ const CandidateDetail = () => {
   // Blind review do BE giữ: chỉ phiếu ĐÃ NỘP mới có trong hai nguồn này.
   const [aggregates, setAggregates] = useState([]);
   const [brief, setBrief] = useState(null);
+  // Lượt AI đối chiếu CV với JD (CvScreeningStatusDto). null = chưa tải xong lần đầu.
+  const [screening, setScreening] = useState(null);
+  const [requestingScreening, setRequestingScreening] = useState(false);
 
   const fetchApplicationDetails = useCallback(async () => {
     try {
       setLoading(true);
-      const [appRes, historyRes, notesRes, aggRes, briefRes] = await Promise.allSettled([
+      const [appRes, historyRes, notesRes, aggRes, briefRes, screenRes] = await Promise.allSettled([
         applicationAPI.getById(applicationId),
         applicationAPI.getHistory(applicationId),
         applicationAPI.getNotes(applicationId),
         interviewAPI.getApplicationAggregate(applicationId),
         interviewAPI.getDecisionBrief(applicationId),
+        cvAPI.getScreening(applicationId),
       ]);
 
       if (appRes.status === 'fulfilled') setApplication(appRes.value.data);
@@ -81,6 +97,7 @@ const CandidateDetail = () => {
       // không chặn phần còn lại của trang.
       setAggregates(aggRes.status === 'fulfilled' ? aggRes.value.data || [] : []);
       setBrief(briefRes.status === 'fulfilled' ? briefRes.value.data || null : null);
+      setScreening(screenRes.status === 'fulfilled' ? screenRes.value.data || null : null);
     } finally {
       setLoading(false);
     }
@@ -89,6 +106,39 @@ const CandidateDetail = () => {
   useEffect(() => {
     if (applicationId) fetchApplicationDetails();
   }, [applicationId, fetchApplicationDetails]);
+
+  // Hỏi lại trạng thái lượt phân tích cho tới khi worker chạy xong. Chỉ phụ thuộc CỜ running
+  // (không phải cả object screening) để mỗi lần hỏi không dựng lại interval — nếu không, nhịp
+  // hỏi bị reset liên tục và có thể không bao giờ tới hạn.
+  const isScreeningRunning = !!screening?.running;
+  useEffect(() => {
+    if (!isScreeningRunning) return undefined;
+
+    const timer = setInterval(async () => {
+      try {
+        const res = await cvAPI.getScreening(applicationId);
+        setScreening(res.data);
+      } catch {
+        // Mạng chập chờn giữa chừng: bỏ qua lượt hỏi này, lượt sau hỏi lại.
+      }
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [isScreeningRunning, applicationId]);
+
+  // Bắt đầu (hoặc chạy lại) một lượt phân tích. Backend trả 202 ngay, worker nền mới gọi AI.
+  const handleRequestScreening = async () => {
+    setRequestingScreening(true);
+    try {
+      const res = await cvAPI.requestScreening(applicationId);
+      setScreening(res.data);
+    } catch (error) {
+      console.error('Error requesting CV screening:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể bắt đầu phân tích CV');
+    } finally {
+      setRequestingScreening(false);
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -146,6 +196,141 @@ const CandidateDetail = () => {
     }
   };
 
+  // ----- Bản phân tích CV ↔ JD do AI sinh (tab CV) -----
+  const screeningResult = screening?.result;
+  const decisionMeta = SCREENING_DECISIONS[screeningResult?.decision] || null;
+
+  const renderScreening = () => {
+    if (!application?.cvId) return null;
+
+    return (
+      <div className="cv-screening">
+        <Divider />
+
+        <Space align="center" wrap style={{ justifyContent: 'space-between', width: '100%' }}>
+          <Space>
+            <RobotOutlined style={{ color: MATCHA_GREEN }} />
+            <Text strong>Đối chiếu CV với tin tuyển dụng</Text>
+          </Space>
+          <Button
+            icon={<RobotOutlined />}
+            onClick={handleRequestScreening}
+            loading={requestingScreening || isScreeningRunning}
+            disabled={isScreeningRunning}
+          >
+            {screeningResult ? 'Phân tích lại' : 'Phân tích bằng AI'}
+          </Button>
+        </Space>
+
+        {isScreeningRunning && (
+          <Alert
+            style={{ marginTop: 12 }}
+            type="info"
+            showIcon
+            icon={<Spin size="small" />}
+            message="AI đang đọc CV và đối chiếu với tin tuyển dụng…"
+            description="Việc này thường mất 30-90 giây. Bạn có thể rời trang và quay lại sau — kết quả được lưu lại."
+          />
+        )}
+
+        {screening?.status === 'FAILED' && (
+          <Alert
+            style={{ marginTop: 12 }}
+            type="warning"
+            showIcon
+            message="Chưa phân tích được CV này"
+            description={screening.errorMessage || 'Vui lòng thử lại sau.'}
+          />
+        )}
+
+        {!isScreeningRunning && !screeningResult && screening?.status !== 'FAILED' && (
+          <Text type="secondary" style={{ display: 'block', marginTop: 12 }}>
+            Chưa phân tích. Bấm nút trên để AI tóm tắt CV và chỉ ra ứng viên đạt / thiếu những
+            yêu cầu nào của vị trí này.
+          </Text>
+        )}
+
+        {screeningResult && (
+          <div style={{ marginTop: 16 }}>
+            <Space size={8} wrap style={{ marginBottom: 12 }}>
+              {decisionMeta && <Tag color={decisionMeta.color}>{decisionMeta.label}</Tag>}
+              {/* Điểm phù hợp: chỉ hiện ở ĐÂY, trong hồ sơ của một người. Cố ý không đưa lên
+                  danh sách/Kanban để không ai xếp hạng ứng viên bằng con số máy chấm. */}
+              <Tooltip title="Mức đáp ứng yêu cầu của tin tuyển dụng theo đánh giá của AI — con số tham khảo, không dùng để xếp hạng ứng viên">
+                <Tag color={MATCHA_GREEN}>Mức phù hợp: {screeningResult.fitScore}/100</Tag>
+              </Tooltip>
+              {screening?.finishedAt && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Phân tích lúc {formatDateTime(screening.finishedAt)}
+                </Text>
+              )}
+            </Space>
+
+            <Text strong style={{ display: 'block' }}>Tóm tắt hồ sơ</Text>
+            <Text style={{ whiteSpace: 'pre-wrap' }}>{screeningResult.summary}</Text>
+
+            {screeningResult.decisionReason && (
+              <div style={{ marginTop: 10 }}>
+                <Text strong style={{ display: 'block' }}>Nhận định</Text>
+                <Text style={{ whiteSpace: 'pre-wrap' }}>{screeningResult.decisionReason}</Text>
+              </div>
+            )}
+
+            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+              <Col xs={24} md={12}>
+                <Text strong>
+                  <CheckCircleOutlined style={{ color: '#52c41a' }} /> Đáp ứng
+                  {` (${screeningResult.matched?.length || 0})`}
+                </Text>
+                {screeningResult.matched?.length ? (
+                  screeningResult.matched.map((m, i) => (
+                    <div key={`${m.requirement}-${i}`} style={{ marginTop: 8 }}>
+                      <Text>{m.requirement}</Text>
+                      {/* Câu trích từ CV — dây neo chống bịa. Người đọc kiểm chứng ngay tại
+                          đây, không phải mở lại file PDF. Đừng bỏ đi cho gọn. */}
+                      <div>
+                        <Text type="secondary" italic style={{ fontSize: 12 }}>“{m.evidence}”</Text>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div><Text type="secondary">Không có yêu cầu nào đối chiếu được với CV.</Text></div>
+                )}
+              </Col>
+
+              <Col xs={24} md={12}>
+                <Text strong>
+                  <MinusCircleOutlined style={{ color: '#faad14' }} /> Chưa thấy trong CV
+                  {` (${screeningResult.missing?.length || 0})`}
+                </Text>
+                {screeningResult.missing?.length ? (
+                  <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                    {screeningResult.missing.map((m, i) => (
+                      <li key={`${m}-${i}`}><Text>{m}</Text></li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div><Text type="secondary">CV đề cập tới mọi yêu cầu của tin tuyển dụng.</Text></div>
+                )}
+              </Col>
+            </Row>
+
+            <Alert
+              style={{ marginTop: 16 }}
+              type="info"
+              showIcon
+              message="Đây là gợi ý của AI, không phải quyết định"
+              description={
+                'Hệ thống không tự loại và không tự chuyển hồ sơ theo kết quả này. AI có thể đọc ' +
+                'sót hoặc hiểu sai CV — hãy mở CV gốc đối chiếu trước khi quyết định.'
+              }
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const tabItems = [
     {
       key: 'resume',
@@ -168,6 +353,8 @@ const CandidateDetail = () => {
               <Text type="secondary">Chưa có CV</Text>
             )}
           </div>
+
+          {renderScreening()}
         </Card>
       ),
     },
