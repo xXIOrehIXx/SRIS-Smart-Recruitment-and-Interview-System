@@ -11,6 +11,7 @@ import {
   Input,
   Row,
   Col,
+  Select,
   Statistic,
   message,
   Alert,
@@ -24,7 +25,7 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { dashboardAPI, applicationAPI, cvAPI } from '../../services/api';
+import { dashboardAPI, applicationAPI, cvAPI, usersAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import '../Dashboard.css';
@@ -39,12 +40,19 @@ const { TextArea } = Input;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+/** Số người phỏng vấn tối đa cho một ứng viên — khớp InterviewPanel.MaxSize ở BE (V045). */
+const MAX_PANEL_SIZE = 5;
+
 /**
  * Duyệt ứng viên vào vòng phỏng vấn — cửa của Trưởng bộ phận (docs 5.8, chốt 15/08/2026).
  *
  * Bộ phận nhân sự sàng lọc hồ sơ và giữ cột Sàng lọc, nhưng CHỌN ai đáng gặp là chuyên môn
  * của trưởng bộ phận; nhân sự chỉ xếp lịch cho người đã duyệt. Vì vậy màn này chỉ có 2 nút:
  * "Duyệt vào phỏng vấn" (SCREENING→INTERVIEW) và "Loại".
+ *
+ * V045 (16/08/2026): duyệt xong phải nói luôn CHO GẶP AI. Cùng một lần bấm, cùng một mạch suy
+ * nghĩ — tách ra màn riêng thì DM quên làm và nhân sự ngồi chờ. Danh sách này chặn ở BE: nhân
+ * sự đặt buổi chỉ chọn được trong đây.
  */
 const ScreeningApproval = () => {
   const { user } = useAuth();
@@ -62,6 +70,10 @@ const ScreeningApproval = () => {
   const [approveNote, setApproveNote] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Người phỏng vấn có thể chỉ định (tài khoản Interviewer đang hoạt động của công ty).
+  const [interviewers, setInterviewers] = useState([]);
+  const [selectedInterviewers, setSelectedInterviewers] = useState([]);
 
   const [searchText, setSearchText] = useState('');
 
@@ -93,8 +105,21 @@ const ScreeningApproval = () => {
     }
   };
 
+  // /users/options mở cho cả DM (UsersController full chỉ Admin vào được). Công ty chưa có
+  // tài khoản Interviewer nào thì BE rơi về Admin — đúng đường công ty nhỏ 1 tài khoản.
+  const fetchInterviewers = async () => {
+    try {
+      const res = await usersAPI.getOptions('Interviewer');
+      setInterviewers(res.data || []);
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách người phỏng vấn:', error);
+      setInterviewers([]);
+    }
+  };
+
   useEffect(() => {
     fetchCandidates();
+    fetchInterviewers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId]);
 
@@ -138,9 +163,15 @@ const ScreeningApproval = () => {
   };
 
   const handleApprove = async () => {
+    if (selectedInterviewers.length === 0) {
+      message.warning('Chọn ít nhất 1 người phỏng vấn — bộ phận nhân sự chỉ xếp lịch được với người bạn chỉ định.');
+      return;
+    }
     try {
       setActionLoading(true);
-      await applicationAPI.transition(selectedRecord.id, 'INTERVIEW');
+      // Duyệt + chỉ định người phỏng vấn trong CÙNG một lệnh: BE kiểm danh sách trước khi đổi
+      // trạng thái, nên id hỏng thì hồ sơ vẫn ở nguyên Sàng lọc, không kẹt lưng chừng.
+      await applicationAPI.transition(selectedRecord.id, 'INTERVIEW', undefined, selectedInterviewers);
       if (approveNote) {
         await applicationAPI.addNote(
           selectedRecord.id,
@@ -152,6 +183,7 @@ const ScreeningApproval = () => {
       );
       setApproveModalOpen(false);
       setApproveNote('');
+      setSelectedInterviewers([]);
       fetchCandidates();
     } catch (error) {
       console.error(error);
@@ -218,6 +250,7 @@ const ScreeningApproval = () => {
             style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
             onClick={() => {
               setSelectedRecord(record);
+              setSelectedInterviewers([]);
               setApproveModalOpen(true);
             }}
           >
@@ -260,8 +293,11 @@ const ScreeningApproval = () => {
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Duyệt xong là xong việc của bạn"
-        description="Ứng viên được duyệt sẽ hiện ở màn Lịch Phỏng Vấn của bộ phận nhân sự để họ xếp lịch và mời. Bạn không cần đặt lịch."
+        message="Bạn chọn người — bộ phận nhân sự chọn giờ"
+        description={
+          'Khi duyệt, bạn chỉ định luôn ai sẽ phỏng vấn ứng viên đó. Bộ phận nhân sự nhận hồ sơ ' +
+          'để gọi chốt giờ và chỉ xếp lịch được với những người bạn đã chọn — bạn không cần đặt lịch.'
+        }
       />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -326,6 +362,7 @@ const ScreeningApproval = () => {
             style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
             onClick={() => {
               setDetailModalOpen(false);
+              setSelectedInterviewers([]);
               setApproveModalOpen(true);
             }}
           >
@@ -383,7 +420,7 @@ const ScreeningApproval = () => {
         open={approveModalOpen}
         onOk={handleApprove}
         confirmLoading={actionLoading}
-        onCancel={() => setApproveModalOpen(false)}
+        onCancel={() => { setApproveModalOpen(false); setSelectedInterviewers([]); }}
         okText="Duyệt"
         cancelText="Hủy"
         okButtonProps={{
@@ -395,6 +432,32 @@ const ScreeningApproval = () => {
           Đưa <strong>{selectedRecord?.candidateName}</strong> vào vòng phỏng vấn? Bộ phận nhân sự
           sẽ nhận được hồ sơ này để xếp lịch.
         </p>
+
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Người phỏng vấn ứng viên này (tối đa {MAX_PANEL_SIZE}):</Text>
+          <Select
+            mode="multiple"
+            maxCount={MAX_PANEL_SIZE}
+            style={{ width: '100%', marginTop: 8 }}
+            placeholder="Chọn người phỏng vấn"
+            showSearch
+            optionFilterProp="label"
+            value={selectedInterviewers}
+            onChange={setSelectedInterviewers}
+            options={interviewers.map((i) => ({
+              value: i.userId,
+              label: i.fullName || i.email,
+            }))}
+            notFoundContent={
+              <Text type="secondary">Chưa có tài khoản người phỏng vấn — nhờ Admin tạo</Text>
+            }
+          />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Bộ phận nhân sự chỉ xếp lịch được với những người bạn chọn ở đây. Cần đổi người cho
+            vòng sau thì cập nhật lại ở màn Lịch Phỏng Vấn.
+          </Text>
+        </div>
+
         <div style={{ marginTop: 16 }}>
           <Text strong>Ghi chú cho bộ phận nhân sự:</Text>
           <TextArea

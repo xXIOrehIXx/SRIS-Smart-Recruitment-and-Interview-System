@@ -214,9 +214,11 @@ export const applicationAPI = {
   getById: (id) =>
     api.get(`/applications/${id}`),
 
-  // reason tùy chọn (kể cả khi toState = 'REJECTED')
-  transition: (id, toState, reason) =>
-    api.post(`/applications/${id}/transition`, { toState, reason }),
+  // reason tùy chọn (kể cả khi toState = 'REJECTED').
+  // interviewerIds: CHỈ dùng khi toState = 'INTERVIEW' — người Trưởng bộ phận cho gặp ứng viên
+  // (V045). Duyệt vào phỏng vấn và chỉ định người phỏng vấn là MỘT quyết định, gửi trong 1 lần.
+  transition: (id, toState, reason, interviewerIds) =>
+    api.post(`/applications/${id}/transition`, { toState, reason, interviewerIds }),
 
   // Loại hồ sơ — reason tùy chọn (bỏ trống thì backend lưu null)
   reject: (id, reason) =>
@@ -257,6 +259,16 @@ export const interviewAPI = {
   // Dropdown người phỏng vấn (user role Interviewer, đang Active)
   getInterviewers: () =>
     api.get('/interviews/interviewers'),
+
+  // Người phỏng vấn Trưởng bộ phận CHỈ ĐỊNH cho 1 ứng viên (V045) — [] nghĩa là chưa chỉ định,
+  // nhân sự chưa đặt lịch được. Nhân sự đọc để đổ dropdown; họ chốt giờ, DM chốt người.
+  getAssignedInterviewers: (applicationId) =>
+    api.get(`/applications/${applicationId}/interviewers`),
+
+  // DM ghi đè danh sách chỉ định (đổi người cho vòng sau, người cũ nghỉ việc...).
+  // Mảng rỗng = gỡ chỉ định.
+  assignInterviewers: (applicationId, interviewerIds) =>
+    api.put(`/applications/${applicationId}/interviewers`, { interviewerIds }),
 
   // Interviewer's schedules
   getMySchedules: () =>

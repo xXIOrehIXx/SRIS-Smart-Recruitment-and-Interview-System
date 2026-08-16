@@ -62,6 +62,17 @@ public static class InterviewTiming
     public static TimeSpan MinGap => TimeSpan.FromHours(MinGapHours);
 }
 
+/// <summary>
+/// Ràng buộc về nhóm người phỏng vấn. Dùng CHUNG cho hai chỗ: Trưởng bộ phận chỉ định người
+/// được gặp ứng viên (V045) và bộ phận nhân sự chọn panel cho từng buổi — hai nơi lệch số thì
+/// DM chỉ định được 6 người mà nhân sự không xếp nổi buổi nào có đủ họ.
+/// </summary>
+public static class InterviewPanel
+{
+    /// <summary>Số người phỏng vấn tối đa cho một ứng viên / một buổi.</summary>
+    public const int MaxSize = 5;
+}
+
 /// <summary>Trạng thái 1 khung giờ (InterviewSlot.status) — docs 15.3.</summary>
 public static class InterviewSlotStatus
 {

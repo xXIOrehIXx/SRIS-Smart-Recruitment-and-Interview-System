@@ -27,6 +27,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     private readonly IJobRepo _jobRepo;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly INotificationService _notify;
+    private readonly IInterviewPanelService _panel;
     private readonly IContextData _contextData;
     private readonly ILogger _logger;
 
@@ -36,13 +37,14 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _notify = serviceProvider.GetRequiredService<INotificationService>();
+        _panel = serviceProvider.GetRequiredService<IInterviewPanelService>();
         _contextData = serviceProvider.GetRequiredService<IContextData>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<ApplicationStateService>();
     }
 
     public async Task<ApplicationStateDto> TransitionAsync(
         long companyId, long userId, long applicationId, string toState, string? reason,
-        bool isCandidateAnswer = false)
+        bool isCandidateAnswer = false, IReadOnlyList<long>? interviewerIds = null)
     {
         toState = (toState ?? "").Trim().ToUpperInvariant();
         if (!ApplicationStateMachine.IsValidState(toState))
@@ -57,6 +59,14 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         // INTERVIEW→OFFER / rời OFFER (quyết tuyển). Xem EnsureCanDecideAsync.
         if (!isCandidateAnswer)
             await EnsureCanDecideAsync(companyId, userId, app.JobId, from, toState);
+
+        // Người phỏng vấn DM chỉ định (V045) — chỉ có nghĩa khi đưa hồ sơ VÀO vòng phỏng vấn.
+        // Kiểm danh sách TRƯỚC khi đổi state: id rác mà phát hiện sau thì hồ sơ đã sang INTERVIEW
+        // trong khi chưa ai được chỉ định, và bộ phận nhân sự lãnh trọn lỗi đó ở màn đặt lịch.
+        var assignPanel = interviewerIds is { Count: > 0 }
+            && string.Equals(toState, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase);
+        if (assignPanel)
+            await _panel.ValidateAsync(companyId, interviewerIds!);
 
         var now = DateTime.UtcNow;
         string? rejectReason = null;
@@ -103,6 +113,11 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
 
         _logger.Information("Pipeline: hồ sơ {AppId} chuyển {From} → {To} (user={UserId}).",
             applicationId, from, toState, userId);
+
+        // Ghi chỉ định người phỏng vấn ngay sau khi hồ sơ vào vòng phỏng vấn. Quyền đã kiểm ở
+        // EnsureCanDecideAsync (cùng một luật: DM phụ trách vị trí) nên không kiểm lại.
+        if (assignPanel)
+            await _panel.AssignAsync(companyId, userId, applicationId, interviewerIds!, alreadyAuthorized: true);
 
         // Email kết quả khi chốt (HIRED/REJECTED). Best-effort — không làm rớt transition.
         await _notify.SendResultAsync(companyId, applicationId, toState);

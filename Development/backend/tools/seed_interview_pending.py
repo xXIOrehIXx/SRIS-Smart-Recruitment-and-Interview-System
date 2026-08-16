@@ -121,13 +121,24 @@ dm = d["accessToken"]
 # Ai bấm bước nào: nhân sự sàng lọc, Trưởng bộ phận duyệt vào vòng phỏng vấn.
 STEP_TOKEN = {"SCREENING": rec, "INTERVIEW": dm}
 
+# V045: duyệt vào vòng phỏng vấn phải kèm người phỏng vấn được chỉ định — nếu không, nhân sự
+# mở màn Lịch phỏng vấn ra sẽ không đặt được buổi nào (đúng luật, nhưng hỏng mục đích seed).
+s_, opts = call("GET", "/users/options?role=Interviewer", token=dm)
+must(s_, opts, "lay danh sach nguoi phong van")
+PANEL = [u["userId"] for u in opts][:2]
+if not PANEL:
+    print("!! Cong ty chua co tai khoan Interviewer nao — tao truoc roi chay lai.")
+    sys.exit(1)
+
 local, domain = INBOX.split("@")
 for name, phone, cv in CANDIDATES:
     email = f"{local}+{name.split()[-1].lower()}.{RUN}@{domain}"
     app_id = upload_cv(rec, name, email, phone, cv)
     for state in ("SCREENING", "INTERVIEW"):
-        must(*call("POST", f"/applications/{app_id}/transition", token=STEP_TOKEN[state],
-                   body={"toState": state}),
+        body = {"toState": state}
+        if state == "INTERVIEW":
+            body["interviewerIds"] = PANEL
+        must(*call("POST", f"/applications/{app_id}/transition", token=STEP_TOKEN[state], body=body),
              f"{name} -> {state}")
     print(f"   + {name:16s} app {app_id} | INTERVIEW, chua co lich")
 

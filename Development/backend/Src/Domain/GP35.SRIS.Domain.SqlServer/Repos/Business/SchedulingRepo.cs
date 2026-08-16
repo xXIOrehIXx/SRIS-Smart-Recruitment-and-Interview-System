@@ -172,6 +172,45 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
         return (max ?? 0) + 1;
     }
 
+    // ---------- Người phỏng vấn DM chỉ định cho hồ sơ (V045) ----------
+
+    public async Task<IReadOnlyList<long>> GetAssignedInterviewersAsync(long companyId, long applicationId)
+    {
+        return await _db.ApplicationInterviewers
+            .AsNoTracking()
+            .Where(x => x.ApplicationId == applicationId)
+            .OrderBy(x => x.InterviewerId)
+            .Select(x => x.InterviewerId)
+            .ToListAsync();
+    }
+
+    public async Task ReplaceAssignedInterviewersAsync(
+        long companyId, long applicationId, IReadOnlyList<long> interviewerIds, long? assignedBy)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        // Ghi đè cả danh sách thay vì so từng dòng: danh sách tối đa 5 người, so lệch nhau
+        // không đáng để đổi lấy một nhánh code khó đọc.
+        await _db.ApplicationInterviewers
+            .Where(x => x.ApplicationId == applicationId)
+            .ExecuteDeleteAsync();
+
+        foreach (var id in interviewerIds.Distinct())
+        {
+            _db.ApplicationInterviewers.Add(new ApplicationInterviewer
+            {
+                CompanyId = companyId,
+                ApplicationId = applicationId,
+                InterviewerId = id,
+                AssignedBy = assignedBy,
+                AssignedAt = DateTime.UtcNow
+            });
+        }
+        await _db.SaveChangesAsync();
+
+        await tx.CommitAsync();
+    }
+
     // ---------- Chống trùng giờ ----------
 
     /// <summary>

@@ -30,6 +30,16 @@ public class BookInterviewDto
     public string? Name { get; set; }
 }
 
+/// <summary>
+/// Trưởng bộ phận chỉ định NGƯỜI ĐƯỢC PHÉP phỏng vấn một ứng viên (V045 — chốt 16/08/2026).
+/// Ghi đè cả danh sách; gửi mảng rỗng = xóa chỉ định (nhân sự sẽ không đặt lịch được nữa).
+/// </summary>
+public class AssignInterviewersDto
+{
+    /// <summary>Tối đa 5 người. Nhân sự đặt buổi chỉ chọn được trong danh sách này.</summary>
+    public List<long> InterviewerIds { get; set; } = new();
+}
+
 /// <summary>Hủy 1 buổi phỏng vấn. Lý do (tùy chọn) ghi nhật ký + email báo ứng viên.</summary>
 public class CancelInterviewDto
 {
