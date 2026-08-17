@@ -19,7 +19,15 @@ import { ROLES } from '../contexts/AuthContext';
  * (giao diện không nắm `job.departmentManagerId` ở mọi màn), nên với vai Trưởng bộ phận nó nới
  * hơn backend một chút: nút hiện, và backend từ chối kèm câu giải thích nếu sai người.
  */
+/** Hồ sơ đã chốt — không còn lối ra nào (state machine forward-only). */
+const CLOSED_STATES = ['HIRED', 'REJECTED'];
+
 export const canRejectAtState = (role, state) => {
+  // KIỂM TRẠNG THÁI TRƯỚC quyền. Admin bypass được người gác, KHÔNG bypass được state machine:
+  // hồ sơ đã HIRED/REJECTED thì backend trả INVALID_TRANSITION cho mọi vai, kể cả Admin.
+  // Đảo hai vế này là Admin thấy nút "Từ chối" sáng trên ứng viên đã bị từ chối rồi.
+  if (!state || CLOSED_STATES.includes(state)) return false;
+
   if (role === ROLES.ADMIN) return true; // superuser: công ty nhỏ chạy trọn luồng 1 tài khoản
 
   switch (state) {
@@ -31,7 +39,6 @@ export const canRejectAtState = (role, state) => {
     case 'OFFER':
       return role === ROLES.DIRECTOR;
     default:
-      // HIRED / REJECTED đã chốt — không ai loại nữa (backend trả INVALID_TRANSITION).
       return false;
   }
 };

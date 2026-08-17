@@ -32,16 +32,26 @@ describe('canRejectAtState — ai được loại hồ sơ ở từng chặng', 
     expect(canRejectAtState(ROLES.DIRECTOR, 'INTERVIEW')).toBe(true);
   });
 
-  test('Admin bypass tất cả — công ty nhỏ chạy trọn luồng bằng 1 tài khoản', () => {
+  test('Admin bypass tất cả các chặng còn mở — công ty nhỏ chạy trọn luồng bằng 1 tài khoản', () => {
     ['NEW', 'SCREENING', 'INTERVIEW', 'OFFER'].forEach((s) => {
       expect(canRejectAtState(ROLES.ADMIN, s)).toBe(true);
     });
   });
 
-  test('hồ sơ đã chốt thì không ai loại nữa', () => {
-    expect(canRejectAtState(ROLES.ADMIN, 'HIRED')).toBe(true); // Admin vẫn qua lớp hiển thị…
-    expect(canRejectAtState(ROLES.DIRECTOR, 'HIRED')).toBe(false);
-    expect(canRejectAtState(ROLES.DIRECTOR, 'REJECTED')).toBe(false);
+  test('hồ sơ đã chốt thì KHÔNG ai loại nữa, Admin cũng không', () => {
+    // Admin bypass NGƯỜI GÁC, không bypass state machine — backend trả INVALID_TRANSITION
+    // cho mọi vai. Bản đầu kiểm quyền trước trạng thái nên Admin thấy nút "Từ chối" sáng
+    // trên ứng viên đã bị từ chối rồi (bắt được khi chạy thật trên màn Tin tuyển dụng).
+    ['HIRED', 'REJECTED'].forEach((s) => {
+      [ROLES.ADMIN, ROLES.DIRECTOR, ROLES.DEPARTMENT_MANAGER, ROLES.HUMAN_RESOURCE].forEach((r) => {
+        expect(canRejectAtState(r, s)).toBe(false);
+      });
+    });
+  });
+
+  test('state rỗng/chưa tải xong -> không hiện nút', () => {
+    expect(canRejectAtState(ROLES.ADMIN, undefined)).toBe(false);
+    expect(canRejectAtState(ROLES.ADMIN, null)).toBe(false);
   });
 
   test('người phỏng vấn không loại được ở bất kỳ đâu — họ chỉ chấm', () => {
