@@ -15,6 +15,8 @@ import {
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { jobsAPI, applicationAPI, cvAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { canRejectAtState, rejectOwnerLabel } from '../../utils/decisionRights';
 import ApplicationStateTag from '../../components/ApplicationStateTag';
 import FitScoreTag from '../../components/FitScoreTag';
 import './css/JobDetail.css';
@@ -26,6 +28,8 @@ const MATCHA_GREEN = '#5D8C3E';
 const JobDetail = () => {
   const { id: jobId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = user?.role;
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
@@ -246,7 +250,10 @@ const JobDetail = () => {
         <Space size={4}>
           <Button size="small" onClick={() => navigate(`/human-resource/candidates/${record.id}`)}>Xem</Button>
           <Button size="small" type="primary" onClick={() => navigate(`/interviews/schedule?jobId=${jobId}`)}>Lịch</Button>
-          {record.state !== 'REJECTED' && record.state !== 'HIRED' && (
+          {/* Loại hồ sơ chỉ hiện cho người thực sự gác cửa ở chặng đó — nhân sự không còn
+              loại được ứng viên đã sang bước sàng lọc (siết 17/08/2026). Ẩn nút thay vì để
+              bấm rồi ăn 403, nhưng nói rõ ai làm được để họ biết đi hỏi ai. */}
+          {canRejectAtState(role, record.state) ? (
             <Button
               size="small"
               danger
@@ -254,7 +261,11 @@ const JobDetail = () => {
             >
               Từ chối
             </Button>
-          )}
+          ) : rejectOwnerLabel(record.state) ? (
+            <Tooltip title={`Ở bước này, chỉ ${rejectOwnerLabel(record.state)} mới được loại ứng viên.`}>
+              <Button size="small" danger disabled>Từ chối</Button>
+            </Tooltip>
+          ) : null}
         </Space>
       ),
     },

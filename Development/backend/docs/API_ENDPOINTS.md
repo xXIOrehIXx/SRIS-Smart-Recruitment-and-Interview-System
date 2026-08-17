@@ -4,14 +4,14 @@
 > ngay trong cùng commit (thêm dòng vào đúng section, đánh dấu **MỚI dd/mm** hoặc **ĐỔI dd/mm**,
 > sửa dòng "Cập nhật:" bên dưới). Đây là nguồn duy nhất FE dựa vào — file lệch code là FE gọi sai API.
 
-> Cập nhật: 2026-08-14. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
+> Cập nhật: 2026-08-17. Base URL mặc định dev: `http://localhost:5xxx` (xem `launchSettings.json`).
 > Tất cả path đã có tiền tố `/api`. **KHÔNG** thêm `/api` lần hai ở FE (bug cũ trong `api.js`).
 >
 > **Auth:** gửi `Authorization: Bearer <accessToken>`. Token hết hạn → gọi `POST /api/Account/refresh-token`.
 > **Multi-tenant:** tenant lấy từ JWT (claim `CompanyId`) — FE không cần gửi companyId ở body/query.
 > **Response lỗi:** `{ errorCode, devMsg, userMsg, traceId, validationFailures }`.
 
-Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM`=DepartmentManager · `Anon`=không cần đăng nhập (magic link / public). Admin luôn bypass `[WithRole]`.
+Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM`=DepartmentManager · `Dir`=Director (Giám đốc) · `Anon`=không cần đăng nhập (magic link / public). Admin luôn bypass `[WithRole]`.
 
 ---
 
@@ -122,7 +122,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/cvs/upload` | Rec | upload CV (PDF) — multipart; tạo Application ở NEW |
-| GET | `/api/cvs/{cvId}/file-url` | Rec/DM | presigned URL xem file CV |
+| GET | `/api/cvs/{cvId}/file-url` | Rec/DM/Dir/**Itv** | presigned URL xem file CV. Interviewer mở được từ 17/08/2026 — trước đó người phỏng vấn không mở nổi CV của ứng viên họ sắp gặp |
 
 ## 7b. Sàng lọc CV theo JD bằng AI — `cv-screening` (Rec/DM/Dir)
 > V044. Chạy NỀN như lượt bóc tiêu chí: POST chỉ xếp hàng rồi trả `202`, `CvScreeningWorker`
@@ -135,7 +135,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir | xếp hàng lượt phân tích 1 hồ sơ → `202` |
 | POST | `/api/jobs/{jobId}/cv-screening?rescreen=` | Rec/DM/Dir | **V046** xếp hàng CẢ vị trí (hồ sơ NEW+SCREENING) → `202` `{queued, skippedDone, skippedRunning, totalCandidates}`; `rescreen=true` chấm lại cả hồ sơ đã có kết quả |
-| GET | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir | trạng thái + kết quả; `status`: NONE/PENDING/RUNNING/DONE/FAILED |
+| GET | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir/**Itv** | trạng thái + kết quả; `status`: NONE/PENDING/RUNNING/DONE/FAILED. Interviewer ĐỌC được (hội đồng: phân tích phải "tạo cơ sở cho người phỏng vấn") nhưng KHÔNG chạy được lượt mới |
 
 `result` khi DONE: `summary` · `matched[{requirement, evidence}]` (evidence = câu trích nguyên
 văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/REJECT · `decisionReason`.
@@ -150,7 +150,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/transition` | Rec/DM/Dir | forward-only; guard G2 ở INTERVIEW→OFFER. **2 cửa có người gác (403 nếu sai vai): `SCREENING→INTERVIEW` chỉ DM của vị trí (job chưa gán DM cũng 403); `INTERVIEW→OFFER` và rời OFFER chỉ GIÁM ĐỐC — đường bình thường là Giám đốc duyệt phiếu Đề xuất tuyển (§11b). Admin bypass.** |
-| POST | `/api/applications/{applicationId}/reject` | Rec/DM | `rejectReason` **TÙY CHỌN** (ép nhập chỉ đẻ lý do rác) — FE cho chip chọn nhanh, bỏ trống vẫn reject được |
+| POST | `/api/applications/{applicationId}/reject` | theo chặng | `rejectReason` **TÙY CHỌN** (ép nhập chỉ đẻ lý do rác) — FE cho chip chọn nhanh, bỏ trống vẫn reject được.<br>**Ai được loại (siết 17/08/2026):** NEW = Rec · SCREENING = **DM của job** · INTERVIEW/OFFER = **Dir** · Admin bypass. Cùng người gác cửa "đồng ý" ở chặng đó — trước đây Rec loại được ở mọi bước |
 
 ## 10. Lịch sử & ghi chú — (Rec/Itv/DM)
 | Method | Path | Role | Ghi chú |

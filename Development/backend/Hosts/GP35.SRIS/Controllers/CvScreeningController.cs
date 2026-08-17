@@ -11,9 +11,11 @@ namespace GP35.SRIS.Controllers;
 /// Sàng lọc CV theo tin tuyển dụng bằng AI (V044): tóm tắt CV, yêu cầu đạt/thiếu, đề xuất.
 ///
 /// <para>
-/// Mở cho cả ba vai đọc hồ sơ ứng viên — bộ phận nhân sự sàng lọc, trưởng bộ phận chọn người
-/// gặp, giám đốc quyết tuyển. Cùng danh sách vai với <c>GET /api/cvs/{id}/file-url</c>: ai mở
-/// được CV thì đọc được bản phân tích của chính CV đó, không có lý do để lệch nhau.
+/// CHẠY một lượt phân tích: bộ phận nhân sự sàng lọc, trưởng bộ phận chọn người gặp, giám đốc
+/// quyết tuyển. ĐỌC kết quả: thêm cả <b>Interviewer</b> — hội đồng bảo vệ yêu cầu bản phân tích
+/// phải "tạo cơ sở cho người phỏng vấn", mà tới 17/08/2026 vai này còn không mở nổi CV.
+/// Người phỏng vấn đọc nhưng không chạy được lượt mới: họ không phải người sàng lọc, và mỗi lượt
+/// chiếm Local LLM hàng chục giây.
 /// </para>
 ///
 /// <para>
@@ -69,6 +71,8 @@ public class CvScreeningController : ControllerBase
     /// <c>NONE</c> -> hồ sơ này chưa phân tích bao giờ.
     /// </summary>
     [HttpGet("api/applications/{applicationId:long}/cv-screening")]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director,
+        RoleConstants.Interviewer)]
     public async Task<IActionResult> GetStatus(long applicationId)
     {
         return Ok(await _screeningService.GetStatusAsync(_contextData.CompanyId, applicationId));

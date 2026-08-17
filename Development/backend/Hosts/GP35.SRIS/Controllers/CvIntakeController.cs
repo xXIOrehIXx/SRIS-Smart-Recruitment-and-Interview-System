@@ -60,12 +60,16 @@ namespace GP35.SRIS.Controllers
         /// Trả URL tạm thời (presigned, ~1h) để xem/tải file CV gốc. URL mở inline trong
         /// trình duyệt (xem PDF); khi lưu sẽ có tên đẹp dạng CV_&lt;tên ứng viên&gt;.pdf.
         /// <para>
-        /// Mở thêm cho DepartmentManager: DM phải ĐỌC ĐƯỢC CV trước khi quyết tuyển ở bước Offer.
+        /// Mở cho MỌI vai tham gia xét hồ sơ. DM phải đọc CV trước khi chọn người vào phỏng vấn,
+        /// Giám đốc trước khi quyết tuyển, và <b>Interviewer trước khi ngồi vào phòng phỏng vấn</b> —
+        /// vai này bị bỏ sót tới 17/08/2026, tức là người phỏng vấn không mở nổi CV của chính ứng
+        /// viên họ sắp gặp, phải hỏi xin qua chat. Không có lý do gì để họ chấm mà chưa đọc hồ sơ.
         /// [WithRole] ở method đè [WithRole] ở controller (AuthMiddleware lấy metadata gần nhất).
         /// </para>
         /// </summary>
         [HttpGet("{cvId:long}/file-url")]
-        [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
+        [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director,
+            RoleConstants.Interviewer)]
         public async Task<IActionResult> GetCvFileUrl(long cvId)
         {
             var url = await _cvIntakeService.GetCvFileUrlAsync(_contextData.CompanyId, cvId);

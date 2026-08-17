@@ -9,6 +9,8 @@ import {
   Typography,
   Spin,
   Divider,
+  Alert,
+  message,
 } from 'antd';
 import {
   UserOutlined,
@@ -17,13 +19,15 @@ import {
   EditOutlined,
   EyeOutlined,
   ArrowRightOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
-import { applicationAPI } from '../../services/api';
+import { applicationAPI, cvAPI } from '../../services/api';
 import ApplicationStateTag from '../../components/ApplicationStateTag';
+import FitScoreTag from '../../components/FitScoreTag';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const MATCHA_GREEN = '#5D8C3E';
 
@@ -53,6 +57,8 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [application, setApplication] = useState(null);
+  const [screening, setScreening] = useState(null);
+  const [openingCv, setOpeningCv] = useState(false);
 
   useEffect(() => {
     if (!open || !schedule?.applicationId) return;
@@ -60,8 +66,15 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
     const fetchApp = async () => {
       try {
         setLoading(true);
-        const res = await applicationAPI.getById(schedule.applicationId);
-        if (!cancelled) setApplication(res.data || null);
+        // Bản phân tích CV chạy song song và ĐỘC LẬP: hồ sơ chưa ai bấm phân tích thì
+        // endpoint trả NONE, không phải lỗi — không được để nó làm hỏng cả popup.
+        const [appRes, screeningRes] = await Promise.allSettled([
+          applicationAPI.getById(schedule.applicationId),
+          cvAPI.getScreening(schedule.applicationId),
+        ]);
+        if (cancelled) return;
+        setApplication(appRes.status === 'fulfilled' ? appRes.value.data || null : null);
+        setScreening(screeningRes.status === 'fulfilled' ? screeningRes.value.data || null : null);
       } catch (err) {
         if (!cancelled) {
           console.warn('Không tải được application:', err);
@@ -74,6 +87,26 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
     fetchApp();
     return () => { cancelled = true; };
   }, [open, schedule?.applicationId]);
+
+  /**
+   * Mở file CV gốc. Tới 17/08/2026 vai Interviewer không được phép gọi endpoint này — người
+   * phỏng vấn ngồi vào phòng mà không mở nổi CV của ứng viên, phải đi xin qua chat.
+   */
+  const handleOpenCv = async () => {
+    if (!application?.cvId) return;
+    setOpeningCv(true);
+    try {
+      const res = await cvAPI.getCvFileUrl(application.cvId);
+      const url = res.data?.url;
+      if (url) window.open(url, '_blank', 'noopener');
+      else message.warning('Hồ sơ này không có file CV gốc.');
+    } catch (err) {
+      console.error('Error opening CV:', err);
+      message.error(err?.response?.data?.userMsg || 'Không mở được file CV');
+    } finally {
+      setOpeningCv(false);
+    }
+  };
 
   if (!schedule) return null;
 
@@ -202,6 +235,57 @@ const InterviewDetailModal = ({ schedule, open, onClose, mode = 'incoming' }) =>
                 </Descriptions.Item>
               )}
             </Descriptions>
+
+            {application.cvId && (
+              <Button
+                icon={<FileTextOutlined />}
+                onClick={handleOpenCv}
+                loading={openingCv}
+                style={{ marginTop: 4 }}
+              >
+                Mở CV ứng viên
+              </Button>
+            )}
+
+            {/* Bản đối chiếu CV↔tin tuyển dụng của AI — "cơ sở" để chuẩn bị câu hỏi, không phải
+                kết luận. Phần đáng đọc nhất là mục THIẾU: đó là chỗ nên hỏi trực tiếp trong buổi.
+                Chỉ hiện khi đã phân tích xong; chưa có thì im lặng bỏ qua. */}
+            {screening?.status === 'DONE' && screening.result && (
+              <>
+                <Divider style={{ margin: '16px 0 12px' }} />
+                <Space align="center" style={{ marginBottom: 8 }}>
+                  <Title level={5} style={{ margin: 0 }}>AI đối chiếu CV với tin tuyển dụng</Title>
+                  <FitScoreTag
+                    status={screening.status}
+                    fitScore={screening.result.fitScore}
+                    decision={screening.result.decision}
+                  />
+                </Space>
+
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  message="Tham khảo trước buổi phỏng vấn"
+                  description="Đây là nhận định của AI đọc CV, không phải đánh giá ứng viên. Điểm chấm của bạn vẫn phải dựa trên những gì bạn nghe được trong buổi."
+                />
+
+                {screening.result.summary && (
+                  <Paragraph style={{ marginBottom: 12 }}>{screening.result.summary}</Paragraph>
+                )}
+
+                {screening.result.missing?.length > 0 && (
+                  <>
+                    <Text strong>Điểm CV chưa thể hiện — nên hỏi trong buổi:</Text>
+                    <ul style={{ margin: '6px 0 0', paddingLeft: 20 }}>
+                      {screening.result.missing.map((m, i) => (
+                        <li key={i}><Text>{m}</Text></li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
+            )}
           </>
         )}
 

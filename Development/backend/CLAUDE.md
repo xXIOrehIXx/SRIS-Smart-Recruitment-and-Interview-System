@@ -226,10 +226,23 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
 
 2. **State machine guard:** INTERVIEW→OFFER cần G2 (≥1 phiếu chấm `status='SUBMITTED'`).
    Check guard trước khi transition. (G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 khớp tài liệu cũ.)
-   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`): SCREENING→INTERVIEW chỉ
-   DM của job; INTERVIEW→OFFER và rời OFFER chỉ Giám đốc. Đường nào tự đẩy state hộ người dùng
-   (`AdvanceToAsync`) phải kiểm quyền CẢ chặng TRƯỚC khi đi bước đầu — nếu không hồ sơ nhảy
-   một nấc rồi mới báo 403.
+   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`). Luật gốc (siết 17/08/2026):
+   **ở mỗi chặng, cửa VÀO và cửa RA do CÙNG một người gác** — cho đi tiếp và loại hẳn là hai nửa
+   của một quyết định, ai không được nói "đồng ý" thì cũng không được nói "thôi".
+   - Chặng NEW (→SCREENING hoặc →REJECTED): **nhân sự**, không gác. Sàng lọc vòng đầu là việc
+     của họ (hồ sơ trùng, nộp nhầm vị trí, thiếu yêu cầu cứng) — siết cả chặng này là bắt DM
+     đọc từng hồ sơ rác.
+   - Chặng SCREENING (→INTERVIEW hoặc →REJECTED): **DM của job**.
+   - Chặng INTERVIEW (→OFFER hoặc →REJECTED) + mọi đường rời OFFER: **Giám đốc**.
+
+   Trước 17/08/2026 MỌI đường sang REJECTED lọt qua guard không kiểm ai bấm — cửa "đồng ý" khoá
+   còn cửa "loại" mở toang, tức nhân sự vẫn lọc được hồ sơ một mình. Đừng mở lại: đó đúng là
+   điều hội đồng phê ("nhân sự không được quyền phê duyệt hồ sơ ứng tuyển").
+   Ứng viên từ chối thư mời đi bằng cờ `isCandidateAnswer`, KHÔNG qua guard — chặn nhầm đường
+   này là ứng viên bấm "từ chối" trong email thì ăn 403.
+   FE có bản sao luật ở `utils/decisionRights.js` (chỉ để ẩn nút, backend mới chặn thật).
+   Đường nào tự đẩy state hộ người dùng (`AdvanceToAsync`) phải kiểm quyền CẢ chặng TRƯỚC khi
+   đi bước đầu — nếu không hồ sơ nhảy một nấc rồi mới báo 403.
    V045: panel của buổi phải nằm TRỌN trong `ApplicationInterviewer` của hồ sơ
    (`EnsureInterviewersAssignedAsync`). Đừng nới thành "gợi ý" — danh sách chỉ chặn được khi nó
    là ràng buộc, và nới ra là trả quyền chọn người về cho nhân sự.
