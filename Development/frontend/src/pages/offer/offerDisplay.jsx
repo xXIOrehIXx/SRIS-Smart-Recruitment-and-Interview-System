@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tag } from 'antd';
 import { SendOutlined, CheckCircleOutlined, CloseCircleOutlined, EditOutlined } from '@ant-design/icons';
+import { APPLICATION_STATE_LABELS } from '../../components/ApplicationStateTag';
 
 /**
  * Cách hiển thị thư mời dùng chung cho danh sách (OfferManagement) và trang chi tiết (OfferDetail).
@@ -21,9 +22,13 @@ export const getStatusTag = (status) => {
   return <Tag color={c.color} icon={c.icon}>{c.label}</Tag>;
 };
 
+// Nhãn pha lấy từ nguồn chung (components/ApplicationStateTag) — bảng riêng ở đây đã trôi
+// khỏi bản gốc một lần rồi. Chỉ ĐÈ hai pha có nghĩa riêng trong ngữ cảnh thư mời: ở màn này
+// OFFER nghĩa là "đã duyệt tuyển, chờ soạn thư" chứ không phải "đang cân nhắc".
 const APP_STATUS_LABEL = {
-  NEW: 'Hồ sơ mới', SCREENING: 'Sàng lọc', INTERVIEW: 'Phỏng vấn',
-  OFFER: 'Chờ gửi thư mời', HIRED: 'Trúng tuyển', REJECTED: 'Từ chối',
+  ...APPLICATION_STATE_LABELS,
+  OFFER: 'Chờ gửi thư mời',
+  HIRED: 'Trúng tuyển',
 };
 
 const APP_STATUS_COLOR = {

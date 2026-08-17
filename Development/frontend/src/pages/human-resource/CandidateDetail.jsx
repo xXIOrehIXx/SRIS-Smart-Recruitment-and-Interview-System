@@ -19,6 +19,8 @@ import {
   MinusCircleOutlined
 } from '@ant-design/icons';
 import { applicationAPI, cvAPI, interviewAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { canRejectAtState, rejectOwnerLabel } from '../../utils/decisionRights';
 import ApplicationStateTag, { stateLabel } from '../../components/ApplicationStateTag';
 import ConsensusTag from '../../components/ConsensusTag';
 import { actionLabel, formatActivityDetail } from '../../services/activityLog';
@@ -64,6 +66,8 @@ const SCREENING_DECISIONS = {
 const CandidateDetail = () => {
   const { id: applicationId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = user?.role;
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState(null);
   const [history, setHistory] = useState([]);
@@ -616,7 +620,10 @@ const CandidateDetail = () => {
               >
                 Lên Lịch Phỏng Vấn
               </Button>
-              {application?.currentState !== 'REJECTED' && application?.currentState !== 'HIRED' && (
+              {/* Cửa loại có người gác riêng từng chặng (siết 17/08/2026): nhân sự loại được ở
+                  bước Hồ sơ mới, Trưởng bộ phận ở bước Sàng lọc, Giám đốc từ Phỏng vấn trở đi.
+                  Không đủ quyền thì vẫn hiện nút nhưng khoá + nói rõ phải hỏi ai. */}
+              {canRejectAtState(role, application?.currentState) ? (
                 <Button
                   block
                   danger
@@ -625,7 +632,13 @@ const CandidateDetail = () => {
                 >
                   Từ chối hồ sơ
                 </Button>
-              )}
+              ) : rejectOwnerLabel(application?.currentState) ? (
+                <Tooltip title={`Ở bước này, chỉ ${rejectOwnerLabel(application.currentState)} mới được loại ứng viên.`}>
+                  <Button block danger disabled icon={<CloseCircleOutlined />}>
+                    Từ chối hồ sơ
+                  </Button>
+                </Tooltip>
+              ) : null}
             </Space>
           </Card>
         </Col>

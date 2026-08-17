@@ -86,6 +86,50 @@ public class CvScreeningService : BaseService<CvScreeningService>, ICvScreeningS
         return MapStatus(entry);
     }
 
+    public async Task<JobScreeningQueueDto> RequestJobScreeningAsync(
+        long companyId, long jobId, long userId, bool rescreenDone = false)
+    {
+        // JD rỗng thì cả lượt chạy là vô ích — kiểm MỘT lần ở đây thay vì để worker phát hiện
+        // lại trên từng hồ sơ rồi ghi cùng một dòng lỗi vào N card.
+        if (string.IsNullOrWhiteSpace(await BuildJdTextAsync(companyId, jobId)))
+            throw Bad("Tin tuyển dụng chưa có mô tả công việc, yêu cầu ứng viên hay kỹ năng nào để đối chiếu.");
+
+        // Chỉ hồ sơ còn ở vòng sàng lọc. Chấm lại người đã phỏng vấn xong hay đã bị loại không
+        // giúp ai xếp thứ tự, chỉ tốn lượt chạy LLM.
+        var rows = (await _applicationRepo.GetBoardByJobAsync(companyId, jobId))
+            .Where(r => r.CurrentState is ApplicationState.New or ApplicationState.Screening)
+            .ToList();
+
+        var result = new JobScreeningQueueDto { JobId = jobId, TotalCandidates = rows.Count };
+
+        foreach (var row in rows)
+        {
+            // Đang xếp hàng/đang chạy -> để yên. EnqueueAsync sẽ reset dòng về PENDING, tức là
+            // cướp lại một lượt worker có khi đang chạy dở giữa chừng.
+            if (row.ScreeningStatus is ScreeningStatus.Pending or ScreeningStatus.Running)
+            {
+                result.SkippedRunning++;
+                continue;
+            }
+
+            if (!rescreenDone && row.ScreeningStatus == ScreeningStatus.Done)
+            {
+                result.SkippedDone++;
+                continue;
+            }
+
+            await _screeningRepo.EnqueueAsync(companyId, row.ApplicationId, jobId, row.CvId, userId);
+            result.Queued++;
+        }
+
+        _logger.Information(
+            "RequestJobScreening: vị trí={JobId} xếp hàng {Queued}/{Total} hồ sơ " +
+            "(bỏ qua {Done} đã có kết quả, {Running} đang chạy).",
+            jobId, result.Queued, result.TotalCandidates, result.SkippedDone, result.SkippedRunning);
+
+        return result;
+    }
+
     public async Task<CvScreeningStatusDto> GetStatusAsync(long companyId, long applicationId)
     {
         var entry = await _screeningRepo.GetByApplicationAsync(companyId, applicationId);

@@ -202,14 +202,24 @@ export const cvAPI = {
   // status: NONE (chưa phân tích bao giờ) | PENDING | RUNNING | DONE | FAILED
   getScreening: (applicationId) =>
     api.get(`/applications/${applicationId}/cv-screening`),
+
+  // XẾP HÀNG sàng lọc cho MỌI hồ sơ đang ở vòng sàng lọc của 1 vị trí (V046) — cần cho việc
+  // xếp ứng viên theo mức phù hợp: không chấm cả danh sách thì không xếp hạng được.
+  // rescreen=true: chấm lại cả hồ sơ đã có kết quả (dùng sau khi sửa tin tuyển dụng).
+  // Trả { jobId, queued, skippedDone, skippedRunning, totalCandidates }.
+  requestJobScreening: (jobId, rescreen = false) =>
+    api.post(`/jobs/${jobId}/cv-screening${rescreen ? '?rescreen=true' : ''}`),
 };
 
 // ==================== APPLICATIONS ====================
 
 export const applicationAPI = {
-  // Trả ApplicationBoardDto: { jobId, applications: [...] }
-  getAll: (jobId) =>
-    api.get(`/jobs/${jobId}/applications`),
+  // Trả ApplicationBoardDto: { jobId, sort, applications: [...] }.
+  // Mỗi card kèm screeningStatus / fitScore / screeningDecision (V046).
+  // sort='fit' -> hồ sơ AI thấy phù hợp nhất lên đầu, hồ sơ chưa phân tích xuống cuối.
+  // Bỏ trống -> 'recent' (mới nộp trước), giữ nguyên hành vi cũ cho các màn khác.
+  getAll: (jobId, sort) =>
+    api.get(`/jobs/${jobId}/applications${sort ? `?sort=${sort}` : ''}`),
 
   getById: (id) =>
     api.get(`/applications/${id}`),

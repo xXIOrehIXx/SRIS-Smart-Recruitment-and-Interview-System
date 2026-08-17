@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Button, Tag, Typography, Descriptions, Tabs, Table, Avatar, Progress, Space, Modal, Select, DatePicker, Spin, message, Input } from 'antd';
+import { Row, Col, Card, Button, Tag, Typography, Descriptions, Tabs, Table, Avatar, Progress, Space, Modal, Select, DatePicker, Spin, message, Input, Segmented, Tooltip } from 'antd';
 import { 
   EditOutlined, 
   ShareAltOutlined, 
@@ -11,10 +11,14 @@ import {
   UserAddOutlined,
   MailOutlined,
   ArrowLeftOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
-import { jobsAPI, applicationAPI } from '../../services/api';
+import { jobsAPI, applicationAPI, cvAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { canRejectAtState, rejectOwnerLabel } from '../../utils/decisionRights';
 import ApplicationStateTag from '../../components/ApplicationStateTag';
+import FitScoreTag from '../../components/FitScoreTag';
 import './css/JobDetail.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -24,9 +28,18 @@ const MATCHA_GREEN = '#5D8C3E';
 const JobDetail = () => {
   const { id: jobId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const role = user?.role;
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
+
+  // Thứ tự danh sách ứng viên. Mặc định 'fit' — màn này là chỗ người tuyển dụng CHỌN đọc
+  // hồ sơ nào trước, nên mở ra đã thấy ngay hồ sơ AI cho là khớp nhất. Vẫn đổi được về
+  // 'recent' cho ai muốn duyệt theo thứ tự nộp.
+  const [sort, setSort] = useState('fit');
+  const [screeningAll, setScreeningAll] = useState(false);
+  const pollTimer = useRef(null);
 
   // Reject per-row từ danh sách ứng viên
   const [rejectTarget, setRejectTarget] = useState(null); // { id, name } | null
@@ -60,9 +73,17 @@ const JobDetail = () => {
   useEffect(() => {
     if (jobId) {
       fetchJobDetails();
-      fetchApplications();
     }
   }, [jobId]);
+
+  useEffect(() => {
+    if (jobId) {
+      fetchApplications();
+    }
+  }, [jobId, sort]);
+
+  // Dừng hẳn vòng hỏi lại khi rời màn — để lại là timer chạy tiếp trên một component đã unmount.
+  useEffect(() => () => clearTimeout(pollTimer.current), []);
 
   const fetchJobDetails = async () => {
     try {
@@ -74,11 +95,11 @@ const JobDetail = () => {
     }
   };
 
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
-      const response = await applicationAPI.getAll(jobId);
-      // Backend trả ApplicationBoardDto: { jobId, applications: [ApplicationCardDto] }
+      if (!silent) setLoading(true);
+      const response = await applicationAPI.getAll(jobId, sort);
+      // Backend trả ApplicationBoardDto: { jobId, sort, applications: [ApplicationCardDto] }
       const cards = response.data?.applications || [];
       setApplications(cards.map(app => ({
         ...app,
@@ -87,11 +108,52 @@ const JobDetail = () => {
         email: app.candidateEmail,
         state: app.currentState,
       })));
+
+      // Còn hồ sơ đang chờ AI thì tải lại sau vài giây để điểm tự hiện dần và danh sách tự
+      // sắp lại — người dùng bấm "Phân tích CV" xong không phải ngồi bấm F5.
+      // silent: không bật spinner, tránh cả bảng nháy mỗi 5 giây.
+      clearTimeout(pollTimer.current);
+      const stillRunning = cards.some(
+        (c) => c.screeningStatus === 'PENDING' || c.screeningStatus === 'RUNNING'
+      );
+      if (stillRunning) {
+        pollTimer.current = setTimeout(() => fetchApplications({ silent: true }), 5000);
+      }
     } catch (error) {
       console.error('Error fetching applications:', error);
-      message.error('Không thể tải danh sách ứng viên');
+      if (!silent) message.error('Không thể tải danh sách ứng viên');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+    }
+  }, [jobId, sort]);
+
+  /**
+   * Chấm mức phù hợp cho toàn bộ hồ sơ đang ở vòng sàng lọc.
+   *
+   * Cố ý là một NÚT người dùng bấm chứ không chạy tự động khi nhận CV: mỗi lượt bắt Local LLM
+   * đọc cả CV lẫn tin tuyển dụng, nổ ra hàng chục lượt sau lưng người dùng là treo máy demo.
+   */
+  const handleScreenAll = async () => {
+    setScreeningAll(true);
+    try {
+      const { data } = await cvAPI.requestJobScreening(jobId);
+      if (data.queued === 0) {
+        message.info(
+          data.totalCandidates === 0
+            ? 'Không có hồ sơ nào đang ở vòng sàng lọc.'
+            : 'Mọi hồ sơ ở vòng sàng lọc đều đã được phân tích.'
+        );
+      } else {
+        message.success(
+          `Đã xếp hàng phân tích ${data.queued} hồ sơ. Điểm sẽ hiện dần, không cần tải lại trang.`
+        );
+      }
+      fetchApplications({ silent: true });
+    } catch (err) {
+      console.error('Error screening job:', err);
+      message.error(err?.response?.data?.userMsg || 'Không thể phân tích CV cho vị trí này');
+    } finally {
+      setScreeningAll(false);
     }
   };
 
@@ -153,6 +215,22 @@ const JobDetail = () => {
       ),
     },
     {
+      title: (
+        <Tooltip title="AI đối chiếu CV với tin tuyển dụng. Là gợi ý để chọn đọc trước, KHÔNG phải quyết định — mở hồ sơ để xem AI dựa vào câu nào trong CV.">
+          <span>Mức Phù Hợp&nbsp;<Text type="secondary">(AI)</Text></span>
+        </Tooltip>
+      ),
+      key: 'fit',
+      width: 170,
+      render: (_, record) => (
+        <FitScoreTag
+          status={record.screeningStatus}
+          fitScore={record.fitScore}
+          decision={record.screeningDecision}
+        />
+      ),
+    },
+    {
       title: 'Trạng Thái',
       dataIndex: 'state',
       key: 'stage',
@@ -172,7 +250,10 @@ const JobDetail = () => {
         <Space size={4}>
           <Button size="small" onClick={() => navigate(`/human-resource/candidates/${record.id}`)}>Xem</Button>
           <Button size="small" type="primary" onClick={() => navigate(`/interviews/schedule?jobId=${jobId}`)}>Lịch</Button>
-          {record.state !== 'REJECTED' && record.state !== 'HIRED' && (
+          {/* Loại hồ sơ chỉ hiện cho người thực sự gác cửa ở chặng đó — nhân sự không còn
+              loại được ứng viên đã sang bước sàng lọc (siết 17/08/2026). Ẩn nút thay vì để
+              bấm rồi ăn 403, nhưng nói rõ ai làm được để họ biết đi hỏi ai. */}
+          {canRejectAtState(role, record.state) ? (
             <Button
               size="small"
               danger
@@ -180,7 +261,11 @@ const JobDetail = () => {
             >
               Từ chối
             </Button>
-          )}
+          ) : rejectOwnerLabel(record.state) ? (
+            <Tooltip title={`Ở bước này, chỉ ${rejectOwnerLabel(record.state)} mới được loại ứng viên.`}>
+              <Button size="small" danger disabled>Từ chối</Button>
+            </Tooltip>
+          ) : null}
         </Space>
       ),
     },
@@ -191,18 +276,46 @@ const JobDetail = () => {
       key: 'candidates',
       label: `Ứng Viên (${applications.length})`,
       children: (
-        <Table 
-          columns={candidatesColumns} 
-          dataSource={applications} 
-          rowKey="id"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} ứng viên`
-          }}
-          className="candidates-table"
-          loading={loading}
-        />
+        <>
+          <Space
+            style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}
+            wrap
+          >
+            <Space wrap>
+              <Text type="secondary">Sắp xếp:</Text>
+              <Segmented
+                value={sort}
+                onChange={setSort}
+                options={[
+                  { label: 'Mức phù hợp', value: 'fit' },
+                  { label: 'Mới nộp trước', value: 'recent' },
+                ]}
+              />
+            </Space>
+            <Tooltip title="Cho AI đọc CV của mọi hồ sơ đang ở vòng sàng lọc và đối chiếu với tin tuyển dụng. Hồ sơ đã có kết quả sẽ được bỏ qua.">
+              <Button
+                icon={<ThunderboltOutlined />}
+                loading={screeningAll}
+                onClick={handleScreenAll}
+              >
+                Phân tích CV toàn bộ
+              </Button>
+            </Tooltip>
+          </Space>
+
+          <Table
+            columns={candidatesColumns}
+            dataSource={applications}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Tổng ${total} ứng viên`
+            }}
+            className="candidates-table"
+            loading={loading}
+          />
+        </>
       ),
     },
     {

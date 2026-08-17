@@ -74,17 +74,47 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
             .FirstOrDefaultAsync();
     }
 
-    public async Task<IReadOnlyList<ApplicationBoardRow>> GetBoardByJobAsync(long companyId, long jobId)
+    public async Task<IReadOnlyList<ApplicationBoardRow>> GetBoardByJobAsync(
+        long companyId, long jobId, BoardSort sort = BoardSort.Recent)
     {
-        // Toàn bộ hồ sơ của job cho Kanban; FE tự nhóm theo current_state. Mới nộp trước.
-        return await (
+        // Toàn bộ hồ sơ của job cho Kanban; FE tự nhóm theo current_state.
+        //
+        // LEFT JOIN sang CvScreening: mỗi hồ sơ nhiều nhất MỘT dòng sàng lọc (UNIQUE
+        // application_id, bấm phân tích lại là ghi đè) nên join này không nhân bản card.
+        // Global Query Filter tự kèm company_id cho cả ba bảng.
+        var joined =
             from a in _db.Applications.AsNoTracking()
             join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join s in _db.CvScreenings.AsNoTracking() on a.ApplicationId equals s.ApplicationId into screenings
+            from s in screenings.DefaultIfEmpty()
             where a.JobId == jobId
-            orderby a.CreatedAt descending
-            select new ApplicationBoardRow(
-                a.ApplicationId, a.CandidateId, c.FullName, c.Email,
-                a.CurrentState, a.CvId, a.CreatedAt))
+            select new { a, c, s };
+
+        // Sắp xếp TRƯỚC khi projection, trên chính cột của bảng: xếp thứ tự theo property của
+        // record vừa dựng thì EF phải lần ngược lại biểu thức để dịch, và câu ORDER BY đó dễ
+        // rơi ra client-side. Ở đây thứ tự phải do SQL Server làm — nó quyết định trang đầu
+        // người tuyển dụng nhìn thấy.
+        //
+        // Hồ sơ chưa có điểm dồn xuống đáy chứ KHÔNG coi như 0 (khoá sắp xếp đầu tiên nói rõ
+        // điều đó, không phó mặc cho quy ước NULL của từng hệ quản trị). Cùng điểm thì mới nộp
+        // trước — giữ thói quen cũ làm tiêu chí phụ.
+        joined = sort == BoardSort.Fit
+            ? joined
+                .OrderByDescending(x => x.s != null && x.s.Status == ScreeningStatus.Done && x.s.FitScore != null)
+                .ThenByDescending(x => x.s != null && x.s.Status == ScreeningStatus.Done ? x.s.FitScore : null)
+                .ThenByDescending(x => x.a.CreatedAt)
+            : joined.OrderByDescending(x => x.a.CreatedAt);
+
+        return await joined
+            .Select(x => new ApplicationBoardRow(
+                x.a.ApplicationId, x.a.CandidateId, x.c.FullName, x.c.Email,
+                x.a.CurrentState, x.a.CvId, x.a.CreatedAt,
+                x.s == null ? null : x.s.Status,
+                // Điểm chỉ có nghĩa khi lượt sàng lọc đã DONE. Dòng đang PENDING/RUNNING vẫn giữ
+                // điểm cũ = null (EnqueueAsync xoá sạch kết quả lúc xếp hàng), nhưng chặn ở đây
+                // cho chắc: FAILED mà lọt điểm ra ngoài thì card hiện điểm của một lượt đã hỏng.
+                x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.FitScore,
+                x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.Decision))
             .ToListAsync();
     }
 

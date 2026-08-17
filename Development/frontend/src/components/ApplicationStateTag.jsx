@@ -11,13 +11,27 @@ import { Tag } from "antd";
  * in thẳng chữ "SCREENING" ra cho người dùng đọc.
  *
  * Thêm/đổi state thì sửa DUY NHẤT ở đây.
+ *
+ * ⚠️ CHỈ DÙNG CHO NGƯỜI TRONG CÔNG TY. Trang trạng thái của ỨNG VIÊN (CandidateStatus) có bộ
+ * nhãn riêng và phải giữ riêng: "Chờ Trưởng bộ phận duyệt" là chuyện cơ cấu nội bộ, ứng viên
+ * không cần và không nên biết hồ sơ mình đang nằm trên bàn ai.
  */
 
+/**
+ * Nhãn ĐỔI 17/08/2026 để tên pha khớp với người sở hữu pha đó.
+ *
+ * Cũ: NEW = "Hồ sơ mới", SCREENING = "Sàng lọc". Đọc lên thì tưởng việc sàng lọc nằm ở pha 2,
+ * trong khi thực tế bộ phận nhân sự đọc CV và loại hồ sơ ở pha 1; pha 2 là lúc hồ sơ ĐÃ qua tay
+ * họ và đang chờ Trưởng bộ phận chọn ai được gặp. Tên cũ khiến chính người trong nhóm đọc bảng
+ * phân quyền cũng thấy vô lý ("sao nhân sự không loại được ở pha Sàng lọc?").
+ *
+ * Tên mới nói thẳng AI đang giữ hồ sơ, nên nhìn Kanban là biết đang chờ ai.
+ */
 export const APPLICATION_STATE_LABELS = {
-  NEW: "Hồ sơ mới",
-  SCREENING: "Sàng lọc",
+  NEW: "Tiếp nhận & sàng lọc",
+  SCREENING: "Chờ Trưởng bộ phận duyệt",
   INTERVIEW: "Phỏng vấn",
-  OFFER: "Offer",
+  OFFER: "Quyết định",
   HIRED: "Đã tuyển",
   REJECTED: "Từ chối",
 };
