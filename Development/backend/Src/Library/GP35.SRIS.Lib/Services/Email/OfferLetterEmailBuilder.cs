@@ -20,6 +20,15 @@ public static class OfferLetterEmailBuilder
 {
     private static readonly CultureInfo Vn = CultureInfo.GetCultureInfo("vi-VN");
 
+    /// <summary>
+    /// Gạch đầu dòng ♦ (U+2666). Bản PDF dùng ❖ (U+2756) được vì Lato nhúng thẳng vào file;
+    /// email thì KHÔNG — nó chạy bằng font máy người nhận, mà Arial/Helvetica không có glyph
+    /// U+2756. Máy Windows còn mượn tạm được Segoe UI Symbol, Gmail Android / Outlook mobile
+    /// thì hết đường lùi và ứng viên thấy ô vuông □ đầu mỗi dòng. U+2666 nằm trong WGL4 nên
+    /// font web-safe nào cũng có, và mặc định vẫn là ký tự chữ chứ không nhảy thành emoji.
+    /// </summary>
+    private const string Bullet = "&#9830;";
+
     public static string BuildSubject(OfferLetterModel m) =>
         Has(m.JobTitle)
             ? $"Thư mời nhận việc — vị trí {m.JobTitle}"
@@ -84,6 +93,12 @@ public static class OfferLetterEmailBuilder
         var position = hasTitle ? $"vị trí <b style=\"color:{p.Frame};\">{E(m.JobTitle!)}</b>"
                                 : "vị trí bạn đã ứng tuyển";
 
+        // Khai báo bảng mã NGAY TRONG thân thư, đừng chỉ trông vào header MIME: hễ đoạn HTML
+        // này bị bóc khỏi phong bì để render riêng (lưu .eml rồi mở lại, vài webmail preview,
+        // relay viết lại thư) là mất charset, và cả lá thư tiếng Việt hiện ra dạng
+        // "THÆ¯ Má»I NHáº¬N VIá»†C".
+        sb.Append("<meta charset=\"utf-8\">");
+
         sb.Append("<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch>")
           .Append("</o:OfficeDocumentSettings></xml><![endif]-->");
 
@@ -144,7 +159,7 @@ public static class OfferLetterEmailBuilder
             ? $" <b style=\"color:{p.Accent};\">trước ngày {d:dd/MM/yyyy}</b>"
             : "";
         var closing = new StringBuilder();
-        if (Has(m.Note)) closing.Append(Text(E(m.Note!))).Append("<div style=\"height:10px;\">&nbsp;</div>");
+        if (Has(m.Note)) closing.Append(Text(EMulti(m.Note!))).Append("<div style=\"height:10px;\">&nbsp;</div>");
         closing.Append(Text(
             $"Vui lòng phản hồi email này để xác nhận bạn đồng ý với lời mời nhận việc{deadline}. " +
             $"Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {HrContact(m, p)}."));
@@ -199,7 +214,7 @@ public static class OfferLetterEmailBuilder
         {
             sb.Append("<tr>")
               .Append($"<td width=\"22\" valign=\"top\" style=\"font-family:Arial,Helvetica,sans-serif;")
-              .Append($"font-size:13px;line-height:1.55;color:{p.Frame};padding-left:6px;\">&#10022;</td>")
+              .Append($"font-size:13px;line-height:1.55;color:{p.Frame};padding-left:6px;\">{Bullet}</td>")
               .Append("<td style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;")
               .Append($"color:{p.Body};padding-bottom:3px;\">{line}</td>")
               .Append("</tr>");
@@ -235,8 +250,10 @@ public static class OfferLetterEmailBuilder
     private static List<string> CompensationLines(OfferLetterModel m)
     {
         var lines = new List<string> { $"<b>Mức lương:</b> {E(FormatSalary(m))}" };
-        AddIf(lines, "Thưởng/Ưu đãi", m.Bonus);
-        AddIf(lines, "Các phúc lợi khác", m.Benefits);
+        // Hai ô này người soạn gõ mỗi mục một dòng (phúc lợi còn được kéo sẵn từ tin tuyển dụng,
+        // nối bằng '\n') -> phải đổi sang <br>, xem EMulti.
+        AddIf(lines, "Thưởng/Ưu đãi", m.Bonus, multiline: true);
+        AddIf(lines, "Các phúc lợi khác", m.Benefits, multiline: true);
         return lines;
     }
 
@@ -283,9 +300,11 @@ public static class OfferLetterEmailBuilder
         };
     }
 
-    private static void AddIf(ICollection<string> lines, string label, string? value)
+    private static void AddIf(ICollection<string> lines, string label, string? value, bool multiline = false)
     {
-        if (Has(value)) lines.Add($"<b>{label}:</b> {E(value!.Trim())}");
+        if (!Has(value)) return;
+        var text = multiline ? EMulti(value!.Trim()) : E(value!.Trim());
+        lines.Add($"<b>{label}:</b> {text}");
     }
 
     // ----- mảnh HTML dùng lại -----
@@ -303,4 +322,13 @@ public static class OfferLetterEmailBuilder
 
     /// <summary>Escape dữ liệu người dùng nhập — tên/địa chỉ có ký tự &amp; hay &lt; là vỡ layout email.</summary>
     private static string E(string s) => WebUtility.HtmlEncode(s);
+
+    /// <summary>
+    /// Như <see cref="E"/> nhưng giữ lại việc xuống dòng. Ô nhiều dòng (phúc lợi, thưởng, lời
+    /// nhắn) mà chỉ escape thì HTML nuốt sạch '\n' và cả danh sách dồn thành một dòng —
+    /// "Bảo hiểm sức khoẻ Du lịch hằng năm" — trong khi bản PDF xuống dòng đúng, tức email và
+    /// PDF của CÙNG một lá thư hiện ra khác nhau.
+    /// </summary>
+    private static string EMulti(string s) =>
+        E(s).Replace("\r\n", "\n").Replace('\r', '\n').Replace("\n", "<br>");
 }
