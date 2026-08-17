@@ -143,7 +143,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 ## 8. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| GET | `/api/jobs/{jobId}/applications?sort=` | Rec/DM | board 4 pha (Hồ sơ mới/Sàng lọc/Phỏng vấn/Quyết định). Mỗi card kèm `screeningStatus`/`fitScore`/`screeningDecision` (V046). `sort=fit` → phù hợp cao lên đầu, **hồ sơ chưa phân tích xuống cuối** (không coi là 0); mặc định `recent` = mới nộp trước |
+| GET | `/api/jobs/{jobId}/applications?sort=` | Rec/DM | board 4 pha (Tiếp nhận & sàng lọc / Chờ Trưởng bộ phận duyệt / Phỏng vấn / Quyết định — nhãn đổi 17/08). Mỗi card kèm `screeningStatus`/`fitScore`/`screeningDecision` (V046). `sort=fit` → phù hợp cao lên đầu, **hồ sơ chưa phân tích xuống cuối** (không coi là 0); mặc định `recent` = mới nộp trước |
 | GET | `/api/applications/{applicationId}` | Rec/DM | chi tiết 1 hồ sơ |
 
 ## 9. Chuyển trạng thái — `ApplicationState` (Rec/DM)

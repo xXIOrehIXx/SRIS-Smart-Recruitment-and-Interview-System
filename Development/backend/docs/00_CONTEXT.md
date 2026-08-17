@@ -90,7 +90,7 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 |---|---|---|---|
 | 1. Phát sinh nhu cầu | Trưởng bộ phận "nói miệng" cần người; tiêu chí trong đầu | Người sàng lọc không biết chính xác cần gì | Yêu cầu tuyển dụng (5.17) |
 | 2. Tìm nguồn | Người quen giới thiệu + đăng Facebook/Zalo | Ưu ái hồ sơ quen → loại nhầm hồ sơ giỏi | Career Site |
-| 3. Nhận CV | Rải email, Zalo/Messenger, bản in | Thất lạc, quên phản hồi | Pha Hồ sơ mới — kho tập trung |
+| 3. Nhận CV | Rải email, Zalo/Messenger, bản in | Thất lạc, quên phản hồi | Pha Tiếp nhận & sàng lọc — kho tập trung |
 | 4. Sàng lọc | Chủ/quản lý tự đọc, cảm tính | Tuyển sai lặp lại (62% — Monster) | Pha Sàng lọc + bộ tiêu chí đã chốt làm khung đọc CV |
 | 5. Kiểm tra năng lực | Hầu như KHÔNG tổ chức test — thử việc mới là vòng đánh giá thật | — | Không có bước test |
 | 6. Phỏng vấn | Thường 1 vòng, không phiếu chấm | So sánh ứng viên bằng trí nhớ | Pha Phỏng vấn — phiếu chấm chung (5.7) |
@@ -242,7 +242,9 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - KHÔNG làm: lịch sử thương lượng, ký số.
 
 ### 5.16 4 pha hiển thị + tối giản mặc định
-- **4 pha người dùng thấy:** Hồ sơ mới → Sàng lọc → Phỏng vấn → Quyết định. (Map nội bộ: NEW → SCREENING → INTERVIEW → OFFER→HIRED/REJECTED.) Kanban 4 cột; 6 state là chuyện bên trong.
+- **4 pha người trong công ty thấy** (đổi nhãn 17/08/2026): **Tiếp nhận & sàng lọc** → **Chờ Trưởng bộ phận duyệt** → **Phỏng vấn** → **Quyết định**. (Map nội bộ: NEW → SCREENING → INTERVIEW → OFFER→HIRED/REJECTED.) Kanban 4 cột; 6 state là chuyện bên trong.
+- **Vì sao đổi tên:** bộ nhãn cũ ("Hồ sơ mới → Sàng lọc") đọc lên thì tưởng việc sàng lọc diễn ra ở pha 2, trong khi thực tế nhân sự đọc CV và loại hồ sơ ở pha 1; pha 2 là lúc hồ sơ ĐÃ qua tay họ và đang chờ Trưởng bộ phận chọn ai được gặp. Tên cũ khiến chính bảng phân quyền ở 5.14 đọc lên thấy vô lý. Tên mới nói thẳng hồ sơ đang chờ AI, nhìn Kanban là biết.
+- **Ứng viên thấy bộ nhãn KHÁC, trung tính:** "Đã nhận hồ sơ → Đang xem xét → Phỏng vấn → Kết quả". Cơ cấu nội bộ của nhà tuyển dụng không phải thứ để phơi ra cho người ứng tuyển.
 - **Bật/tắt theo nhu cầu:**
 
 | Tính năng | Mặc định | Bật khi |

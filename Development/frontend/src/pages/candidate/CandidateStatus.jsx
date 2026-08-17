@@ -81,11 +81,15 @@ const CandidateStatus = () => {
           current={current}
           size="small"
           style={{ marginBottom: 28 }}
+          // CỐ Ý KHÁC nhãn dùng trong Portal (components/ApplicationStateTag). Từ 17/08/2026
+          // nhãn nội bộ của pha 2 là "Chờ Trưởng bộ phận duyệt" — nói rõ hồ sơ đang nằm trên
+          // bàn ai, tiện cho người trong công ty. Ứng viên thì KHÔNG nên biết cơ cấu nội bộ của
+          // nhà tuyển dụng, nên ở đây giữ chữ trung tính. Đừng "dọn dẹp" cho hai bên giống nhau.
           items={[
-            { title: 'Hồ sơ mới', icon: <FileTextOutlined /> },
-            { title: 'Sàng lọc', icon: <SearchOutlined /> },
+            { title: 'Đã nhận hồ sơ', icon: <FileTextOutlined /> },
+            { title: 'Đang xem xét', icon: <SearchOutlined /> },
             { title: 'Phỏng vấn', icon: <TeamOutlined /> },
-            { title: 'Quyết định', icon: <TrophyOutlined /> },
+            { title: 'Kết quả', icon: <TrophyOutlined /> },
           ]}
         />
 

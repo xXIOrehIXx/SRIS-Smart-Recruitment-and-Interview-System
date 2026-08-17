@@ -138,7 +138,11 @@ Nguyên tắc thiết kế: **đơn giản là mặc định, phức tạp là t
 ### Pipeline: 6 state nội bộ, hiển thị 4 PHA
 NEW → SCREENING → INTERVIEW → OFFER → HIRED / REJECTED (8 transition)  
 Forward-only. Reject từ bất kỳ state nào → REJECTED (`reject_reason` TÙY CHỌN — chốt 02/08/2026, không ép nhập nữa).  
-Người dùng thấy **4 pha**: Hồ sơ mới (NEW) · Sàng lọc (SCREENING) · Phỏng vấn (INTERVIEW) · Quyết định (OFFER→HIRED/REJECTED). 6 state là chuyện nội bộ, không phơi ra UI/tài liệu.
+Người dùng trong công ty thấy **4 pha** (nhãn đổi 17/08/2026 để tên pha khớp NGƯỜI SỞ HỮU pha đó):
+**Tiếp nhận & sàng lọc** (NEW — nhân sự đọc CV, loại hồ sơ không đạt) · **Chờ Trưởng bộ phận duyệt** (SCREENING — DM chọn ai đi phỏng vấn) · **Phỏng vấn** (INTERVIEW) · **Quyết định** (OFFER→HIRED/REJECTED).
+Tên cũ "Hồ sơ mới / Sàng lọc" gây hiểu nhầm rằng việc sàng lọc nằm ở pha 2, trong khi pha 2 là lúc hồ sơ ĐÃ qua tay nhân sự.
+Nhãn dùng chung ở FE `components/ApplicationStateTag.jsx` — **đừng khai lại bảng nhãn trong từng màn** (đã có 3 bản sao trôi khỏi bản gốc).
+Trang trạng thái của ỨNG VIÊN giữ bộ nhãn RIÊNG, trung tính ("Đã nhận hồ sơ / Đang xem xét / Phỏng vấn / Kết quả") — ứng viên không cần biết hồ sơ đang nằm trên bàn ai. 6 state vẫn là chuyện nội bộ.
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)
 DM tạo Yêu cầu tuyển dụng (tùy chọn) → Human Resource tạo Job → AI bóc tiêu chí `DRAFT` →
