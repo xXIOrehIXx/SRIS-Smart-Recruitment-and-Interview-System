@@ -26,6 +26,10 @@ public static class EmailLayout
     /// Bọc ruột thư vào khung có thương hiệu. Chuỗi trả về vẫn còn placeholder
     /// ({{companyLogoImg}}, {{brandColor}}, {{companyName}}) — thay giá trị ở bước render.
     ///
+    /// <para>Vỏ mở đầu bằng <c>&lt;meta charset="utf-8"&gt;</c>: header MIME đã khai utf-8 rồi,
+    /// nhưng hễ đoạn HTML bị bóc khỏi phong bì để render riêng là mất khai báo đó, và cả lá thư
+    /// tiếng Việt hiện ra dạng "THÆ¯ Má»I NHáº¬N VIá»†C".</para>
+    ///
     /// <para><b>Hàng logo tự nhường chỗ:</b> mẫu nào người tuyển dụng đã tự chèn ảnh (banner
     /// riêng cho thư mời, ảnh chào mừng onboarding…) thì vỏ bỏ hàng logo đi. Chèn thêm logo
     /// công ty lên trên ảnh họ vừa đặt là ra hai ảnh chồng nhau ở đầu thư — chưa ai muốn thế,
@@ -44,6 +48,7 @@ public static class EmailLayout
 """;
 
         return """
+<meta charset="utf-8">
 <!--[if mso]>
 <xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
 <![endif]-->
