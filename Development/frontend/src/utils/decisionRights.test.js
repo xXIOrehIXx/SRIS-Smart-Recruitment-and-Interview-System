@@ -17,14 +17,19 @@ describe('canRejectAtState — ai được loại hồ sơ ở từng chặng', 
     expect(canRejectAtState(ROLES.HUMAN_RESOURCE, 'OFFER')).toBe(false);
   });
 
-  test('Trưởng bộ phận gác bước Sàng lọc, nhưng không quyết sau phỏng vấn', () => {
+  test('Trưởng bộ phận đóng được hồ sơ ở Sàng lọc VÀ sau Phỏng vấn (họ ngồi phỏng vấn)', () => {
     expect(canRejectAtState(ROLES.DEPARTMENT_MANAGER, 'SCREENING')).toBe(true);
-    expect(canRejectAtState(ROLES.DEPARTMENT_MANAGER, 'INTERVIEW')).toBe(false);
+    expect(canRejectAtState(ROLES.DEPARTMENT_MANAGER, 'INTERVIEW')).toBe(true);
   });
 
-  test('Giám đốc quyết từ vòng phỏng vấn trở đi', () => {
-    expect(canRejectAtState(ROLES.DIRECTOR, 'INTERVIEW')).toBe(true);
+  test('nhưng thu hồi thư mời đã phát đi thì không — đó là quyết định của công ty', () => {
+    expect(canRejectAtState(ROLES.DEPARTMENT_MANAGER, 'OFFER')).toBe(false);
     expect(canRejectAtState(ROLES.DIRECTOR, 'OFFER')).toBe(true);
+  });
+
+  test('Giám đốc qua được mọi cửa — cấp trên, phạm vi toàn công ty', () => {
+    expect(canRejectAtState(ROLES.DIRECTOR, 'SCREENING')).toBe(true);
+    expect(canRejectAtState(ROLES.DIRECTOR, 'INTERVIEW')).toBe(true);
   });
 
   test('Admin bypass tất cả — công ty nhỏ chạy trọn luồng bằng 1 tài khoản', () => {
@@ -49,7 +54,7 @@ describe('canRejectAtState — ai được loại hồ sơ ở từng chặng', 
 describe('rejectOwnerLabel — nói ra ai làm được thay vì để người dùng đoán', () => {
   test('mỗi chặng mở có một chủ rõ ràng', () => {
     expect(rejectOwnerLabel('SCREENING')).toContain('Trưởng bộ phận');
-    expect(rejectOwnerLabel('INTERVIEW')).toBe('Giám đốc');
+    expect(rejectOwnerLabel('INTERVIEW')).toContain('Trưởng bộ phận');
     expect(rejectOwnerLabel('OFFER')).toBe('Giám đốc');
     expect(rejectOwnerLabel('NEW')).toContain('nhân sự');
   });

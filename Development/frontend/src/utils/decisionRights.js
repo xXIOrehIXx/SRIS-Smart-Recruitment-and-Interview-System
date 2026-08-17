@@ -4,13 +4,15 @@ import { ROLES } from '../contexts/AuthContext';
  * Ai được LOẠI hồ sơ ở từng chặng — bản sao phía giao diện của `EnsureCanDecideAsync`
  * (backend, siết 17/08/2026).
  *
- * Luật: ở mỗi chặng, cửa VÀO và cửa RA do CÙNG một người gác. Cho đi tiếp và loại hẳn là hai
- * nửa của một quyết định, nên ai không được nói "đồng ý" thì cũng không được nói "thôi".
+ * Ranh giới là chữ TUYỂN: "đồng ý tuyển" là của Giám đốc, còn "đóng hồ sơ không tuyển" thuộc về
+ * người đã trực tiếp xét ứng viên ở chặng đó.
  *
  *   NEW        → nhân sự (sàng lọc vòng đầu: hồ sơ trùng, nộp nhầm vị trí, thiếu yêu cầu cứng)
  *   SCREENING  → Trưởng bộ phận phụ trách vị trí
- *   INTERVIEW  → Giám đốc (đã phỏng vấn thì loại cũng là quyết định tuyển dụng)
- *   OFFER      → Giám đốc
+ *   INTERVIEW  → Trưởng bộ phận (người đã ngồi phỏng vấn thì đóng được hồ sơ trượt)
+ *   OFFER      → Giám đốc (thu hồi thư mời đã phát đi là quyết định của công ty)
+ *
+ * Giám đốc qua được mọi cửa (cấp trên, phạm vi toàn công ty).
  *
  * ĐÂY CHỈ LÀ LỚP HIỂN THỊ. Backend mới là chỗ chặn thật — hàm này chỉ để người dùng không thấy
  * một cái nút bấm vào là ăn 403. Nó cũng KHÔNG biết user có phải DM của đúng vị trí đó không
@@ -24,8 +26,8 @@ export const canRejectAtState = (role, state) => {
     case 'NEW':
       return role === ROLES.HUMAN_RESOURCE;
     case 'SCREENING':
-      return role === ROLES.DEPARTMENT_MANAGER;
     case 'INTERVIEW':
+      return role === ROLES.DEPARTMENT_MANAGER || role === ROLES.DIRECTOR;
     case 'OFFER':
       return role === ROLES.DIRECTOR;
     default:
@@ -38,8 +40,8 @@ export const canRejectAtState = (role, state) => {
 export const rejectOwnerLabel = (state) => {
   switch (state) {
     case 'SCREENING':
-      return 'Trưởng bộ phận phụ trách vị trí';
     case 'INTERVIEW':
+      return 'Trưởng bộ phận phụ trách vị trí';
     case 'OFFER':
       return 'Giám đốc';
     case 'NEW':

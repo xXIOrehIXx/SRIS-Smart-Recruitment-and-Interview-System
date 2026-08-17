@@ -150,7 +150,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/transition` | Rec/DM/Dir | forward-only; guard G2 ở INTERVIEW→OFFER. **2 cửa có người gác (403 nếu sai vai): `SCREENING→INTERVIEW` chỉ DM của vị trí (job chưa gán DM cũng 403); `INTERVIEW→OFFER` và rời OFFER chỉ GIÁM ĐỐC — đường bình thường là Giám đốc duyệt phiếu Đề xuất tuyển (§11b). Admin bypass.** |
-| POST | `/api/applications/{applicationId}/reject` | theo chặng | `rejectReason` **TÙY CHỌN** (ép nhập chỉ đẻ lý do rác) — FE cho chip chọn nhanh, bỏ trống vẫn reject được.<br>**Ai được loại (siết 17/08/2026):** NEW = Rec · SCREENING = **DM của job** · INTERVIEW/OFFER = **Dir** · Admin bypass. Cùng người gác cửa "đồng ý" ở chặng đó — trước đây Rec loại được ở mọi bước |
+| POST | `/api/applications/{applicationId}/reject` | theo chặng | `rejectReason` **TÙY CHỌN** (ép nhập chỉ đẻ lý do rác) — FE cho chip chọn nhanh, bỏ trống vẫn reject được.<br>**Ai được loại (siết 17/08/2026):** NEW = Rec · SCREENING và INTERVIEW = **DM của job** · OFFER = **Dir** · Dir qua được mọi cửa · Admin bypass.<br>Ranh giới là chữ TUYỂN: "đồng ý tuyển" (→OFFER) chỉ Dir, còn "đóng hồ sơ không tuyển" là của người đã xét ứng viên. Trước đây Rec loại được ở mọi bước |
 
 ## 10. Lịch sử & ghi chú — (Rec/Itv/DM)
 | Method | Path | Role | Ghi chú |

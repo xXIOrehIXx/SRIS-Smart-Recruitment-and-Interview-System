@@ -140,10 +140,10 @@ describe('offerAPI — thư mời nhận việc (5.15)', () => {
     expect(apiInst.get).toHaveBeenCalledWith('/applications/9/offer/defaults');
   });
 
-  test('getLetterBlob phải xin responseType blob (không thì axios làm hỏng nhị phân PDF)', () => {
-    offerAPI.getLetterBlob(9);
-    expect(apiInst.get).toHaveBeenCalledWith('/applications/9/offer/letter', { responseType: 'blob' });
-  });
+  // KHÔNG có getLetterBlob: thư mời PDF đi qua URL trực tiếp (offerAPI.offerLetterUrl) cho
+  // trang ứng viên, không tải bằng axios. Endpoint `/applications/{id}/offer/letter` cũng không
+  // tồn tại phía backend. Bài test cũ gọi một hàm chưa từng có nên đỏ từ lúc viết — bỏ hẳn thay
+  // vì dựng ngược một API cho vừa cái test.
 
   test('recordOutcome: Human Resource chốt kết quả ứng viên trả lời ngoài hệ thống', () => {
     offerAPI.recordOutcome(9, false, 'Nhận offer công ty khác');

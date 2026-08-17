@@ -11,7 +11,9 @@ Kim chỉ nam (single source of truth) cho mọi chat trong Project SRIS. Chat m
 
 - Đã bảo vệ hội đồng lần 1 (07/2026), nhận 4 feedback → 3 vấn đề gốc (Section 12). Đang giai đoạn sửa theo feedback.
 - **Định vị đã chốt:** "Quy trình tuyển dụng tối giản đúng chuẩn cho công ty chưa có phòng HR" — target công ty ≤200 nhân sự + công ty gia đình. Nguyên tắc: **đơn giản là mặc định, phức tạp là tùy chọn**.
-- **AI làm ĐÚNG MỘT việc: bóc tiêu chí từ JD** → người duyệt chốt → cả hội đồng phỏng vấn chấm trên cùng bộ tiêu chí đó. Hệ thống **KHÔNG chấm điểm, KHÔNG xếp hạng ứng viên**.
+- **AI làm HAI việc, cả hai đều chỉ ĐỀ XUẤT:** (1) bóc tiêu chí từ JD → người duyệt chốt → cả hội đồng phỏng vấn chấm trên cùng bộ tiêu chí đó; (2) **sàng lọc CV theo tin tuyển dụng** (V044, 16/08/2026) — tóm tắt CV, liệt kê yêu cầu đạt/thiếu kèm câu trích nguyên văn, mức phù hợp 0-100 và đề xuất `PROCEED`/`CONSIDER`/`REJECT`.
+- **Mức phù hợp ĐƯỢC dùng xếp thứ tự đọc** trong một tin tuyển dụng (V046, 17/08/2026) — người tuyển dụng xem trước hồ sơ AI thấy khớp nhất. Nhưng **AI không quyết ai đi tiếp**: không đường code nào đọc điểm/đề xuất rồi tự đổi trạng thái hồ sơ, và điểm chỉ so được trong CÙNG một vị trí.
+  > Đây là điểm ĐẢO so với bản 08/08/2026 ("hệ thống không chấm điểm, không xếp hạng"), theo yêu cầu hội đồng: *"điều chỉnh AI vẫn duy trì tính năng phân loại hồ sơ, chấm điểm hồ sơ tạo cơ sở cho người phỏng vấn"*. Cách làm cũng khác bản đã cắt: LLM đọc hiểu và phải trích được câu trong CV mới tính là đạt, chạy khi người dùng bấm — KHÔNG phải so vector tự động toàn bộ.
 - AI chạy Local (Ollama), không OpenAI/Gemini.
 - Đã code end-to-end: Auth/RBAC, multi-tenant RLS, Career Site, pipeline 4 pha, Yêu cầu tuyển dụng, bóc tiêu chí + duyệt, phiếu chấm phỏng vấn + verdict, đặt lịch phỏng vấn, đề xuất tuyển + duyệt của Giám đốc, thư mời nhận việc, email automation, dashboard.
 - Việc còn lại: minh chứng sơ cấp (B2), vẽ lại ERD (B3), tài liệu + slide (B5).
@@ -25,7 +27,7 @@ Kim chỉ nam (single source of truth) cho mọi chat trong Project SRIS. Chat m
 - **Đối tượng:** công ty nhỏ ≤200 nhân sự + công ty gia đình — nhóm chưa có phòng HR chuyên trách hoặc HR kiêm nhiệm. (Mốc ≤200 lao động khớp định nghĩa DNNVV theo Luật Hỗ trợ DNNVV 04/2017/QH14 — căn cứ pháp lý khi bảo vệ.)
 - **Luận điểm PDPD:** Luật Bảo vệ dữ liệu cá nhân hiệu lực 01/01/2026 → doanh nghiệp tuyển dụng phải tuân thủ nghiêm về dữ liệu ứng viên. Local AI + cô lập dữ liệu = **lợi thế tuân thủ pháp luật**, không chỉ là điểm kỹ thuật.
 - Team 5: 1 BA Lead/PM (kiêm Backend, là tôi) · 2 Backend (.NET) · 2 Frontend (React).
-- Stack: **.NET 10 + EF Core** (orchestration & DB) · **Python FastAPI** (AI) · **React** · **SQL Server 2025** (kiểu VECTOR) · **MinIO** (lưu file CV) · **Redis** (cache) · **Ollama** (local LLM).
+- Stack: **.NET 10 + EF Core** (orchestration & DB) · **Python FastAPI** (AI) · **React** · **SQL Server 2025** (không dùng kiểu VECTOR — hạ tầng vector đã xoá ở V036) · **MinIO** (lưu file CV) · **Redis** (cache) · **Ollama** (local LLM).
 - 2 mảng chủ đạo: Recruitment (tuyển dụng) · Interview (phỏng vấn).
 - Tuyển cho MỌI vị trí, không chỉ IT.
 
@@ -61,8 +63,10 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 - **"Wow" phụ:** phiếu chấm ẩn cho tới khi nộp (chống hùa theo) · đặt lịch self-service kiểu Calendly thu nhỏ · trang trạng thái cho ứng viên.
 
 ### OUT-OF-SCOPE
-- **Máy chấm điểm / xếp hạng ứng viên (mọi hình thức)** — cả điểm tổng JD↔CV lẫn chấm theo từng tiêu chí. Sàng lọc hồ sơ là việc của người tuyển dụng; hệ thống lo nhận hồ sơ, lưu trữ, pipeline, phiếu chấm.
-- **Talent Pool / gợi ý CV cũ** — phụ thuộc chính cơ chế chấm đã bỏ.
+- **Máy chấm điểm CV bằng VECTOR, chạy tự động cho mọi hồ sơ** — đã cắt 08/08/2026 và không dựng lại. (Đừng nhầm với sàng lọc CV bằng LLM ở V044: việc đó IN-SCOPE, chạy khi người dùng bấm, và bắt buộc trích dẫn được câu trong CV — xem 5.19.)
+- **Chấm điểm CV theo từng tiêu chí** (`cv_matchable`, `keywords`) — cắt cùng đợt, cột đã xoá ở V038. Tiêu chí giờ chỉ phục vụ phiếu chấm phỏng vấn.
+- **Xếp hạng ứng viên xuyên tin tuyển dụng** — mỗi lượt sàng lọc đối chiếu với đúng một JD nên điểm không so được giữa hai vị trí khác nhau.
+- **Talent Pool / gợi ý CV cũ** — vẫn OUT (08/08/2026), không thiết kế lại.
 - **Bài test online** — công ty ≤200 người hầu như không tổ chức test (4.2 bước 5); cần kiểm tra năng lực thì làm offline, ghi vào Internal Notes.
 - Khác: dynamic subdomain · Super Admin portal · đồng bộ 2 chiều Google/Outlook Calendar (đặt lịch nội bộ CÓ làm; .ics in-scope) · tự dò lịch rảnh interviewer · coding challenge · Core HR · chatbot real-time · chat tự do HR↔AI · LDAP/SSO · mobile native · webcam proctoring · OCR cho PDF scan · **AI tham gia quyết định tuyển** (đã cân nhắc và loại — AI là decision support, người quyết).
 
@@ -206,11 +210,24 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Người quyết = DM sở hữu job (`Job.department_manager_id` → User). **Bắt buộc khi đăng tin** (Status=Open); bản nháp thì chưa cần.
 - **Hai cửa, hai người:**
   1. `SCREENING→INTERVIEW` — chọn ai được vào vòng phỏng vấn **và ai sẽ phỏng vấn người đó** (màn *Duyệt Vào Phỏng Vấn*, `/dept/screening`).
-  2. `INTERVIEW→OFFER` và rời OFFER — quyết tuyển (màn *Quyết Định Tuyển Dụng*, `/dept/hiring-decision`).
+  2. `INTERVIEW→OFFER` và rời OFFER — quyết tuyển: **CHỈ Giám đốc** (V043). DM gửi phiếu Đề xuất tuyển ở màn *Quyết Định Tuyển Dụng* (`/dept/hiring-decision`), Giám đốc duyệt — chính hành động duyệt đó đẩy hồ sơ sang OFFER.
+
+- **Cửa LOẠI hồ sơ cũng có người gác (siết 17/08/2026 — feedback hội đồng lần 2).** Trước đó mọi đường sang `REJECTED` không kiểm ai bấm, nên bộ phận nhân sự loại được ứng viên một mình ở bất kỳ bước nào: cửa "đồng ý" khoá còn cửa "loại" mở toang, mà về nghiệp vụ **loại hồ sơ chính là phê duyệt hồ sơ** — đúng điểm hội đồng phê *"nhân sự không được quyền phê duyệt hồ sơ ứng tuyển"*.
+
+  | Chặng | Cho đi tiếp | Loại hồ sơ |
+  |---|---|---|
+  | `NEW` | Human Resource | **Human Resource** |
+  | `SCREENING` | DM của job | **DM của job** |
+  | `INTERVIEW` | **Giám đốc** (qua đề xuất) | **DM của job** |
+  | `OFFER` | Giám đốc | **Giám đốc** |
+
+  Ranh giới là chữ **TUYỂN**: "đồng ý tuyển" là của Giám đốc, "đóng hồ sơ không tuyển" thuộc về người đã trực tiếp xét ứng viên. Giám đốc qua được mọi cửa (cấp trên); Admin bypass tất cả.
+  Cố ý KHÔNG bắt Giám đốc gác `INTERVIEW→REJECTED`: tuyển 1 người trong 20 thì họ phải bấm đóng 19 hồ sơ, mà chẳng kiểm soát thêm gì — DM vốn đã phủ quyết được bằng cách không gửi đề xuất.
+  Ứng viên từ chối thư mời (`OFFER→REJECTED`) đi bằng cờ `isCandidateAnswer`, KHÔNG qua guard — nếu chặn nhầm thì ứng viên bấm link trong email sẽ ăn 403.
 - **Người phỏng vấn do DM chỉ định (V045 — 16/08/2026).** Duyệt vào vòng phỏng vấn và chỉ định người phỏng vấn là MỘT quyết định, gửi trong một lệnh (`POST .../transition` kèm `interviewerIds`) — tách ra màn riêng thì DM quên làm và nhân sự ngồi chờ. Sửa sau đó: `PUT /api/applications/{id}/interviewers` (màn *Lịch Phỏng Vấn* của DM), dùng khi vòng sau cần người khác hoặc người được chỉ định nghỉ việc. Bảng `ApplicationInterviewer` (không có `round_number`: đây là "ai ĐƯỢC PHÉP gặp người này", mỗi buổi nhân sự lấy một tập con).
 - **Human Resource lái vận hành, không chọn người:** sàng lọc hồ sơ, ĐẶT LỊCH phỏng vấn cho người đã duyệt, soạn thư mời theo điều khoản Giám đốc chốt. Đặt lịch đòi hồ sơ đã ở INTERVIEW — trước 15/08/2026 thao tác mời TỰ đẩy state, tức mời ai là mặc nhiên chọn người đó. Từ V045, dropdown người phỏng vấn của nhân sự chỉ hiện nhóm DM đã chỉ định; id ngoài danh sách bị BE trả 409.
 - Cộng với 5.17, DM đứng **ba chốt**: ra đề (Yêu cầu tuyển dụng) → chọn người gặp → **đề xuất tuyển**. Vẫn KHÔNG đụng vận hành (không đặt lịch, không gửi email) và KHÔNG quyết tuyển.
-- Job cũ chưa gán DM: cửa OFFER rơi về Human Resource như trước, nhưng cửa vào phỏng vấn thì BE chặn và báo "chưa gán Trưởng bộ phận phụ trách" — gán DM cho tin là xong.
+- Job cũ chưa gán DM: cửa vào phỏng vấn (và cửa loại ở SCREENING/INTERVIEW) bị BE chặn với thông báo "chưa gán Trưởng bộ phận phụ trách" — gán DM cho tin là xong. Cửa quyết tuyển KHÔNG rơi về Human Resource: từ V043 nó là của Giám đốc bất kể job có DM hay không.
 - Một người vừa là DM vừa chấm phỏng vấn: gán họ làm interviewer của khung. Không cần cơ chế riêng.
 
 ### 5.15 Thư mời nhận việc (Offer Letter)
@@ -264,11 +281,36 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 **Câu chốt bảo vệ:** "Tiêu chí không do AI nghĩ ra — nó nằm trong yêu cầu tuyển dụng do người có chuyên môn viết. AI chỉ bóc thành danh sách cho người duyệt, và cả hội đồng phỏng vấn chấm trên đúng bộ tiêu chí đó. AI đỡ việc tay; con người đặt chuẩn và ra quyết định."
 
+### 5.19 Sàng lọc CV bằng AI + xếp thứ tự đọc (V044 16/08/2026, V046 17/08/2026) — ĐÃ CODE
+
+Đáp thẳng feedback hội đồng lần 1: *"điều chỉnh AI vẫn duy trì tính năng phân loại hồ sơ, chấm điểm hồ sơ tạo cơ sở cho người phỏng vấn"*.
+
+**Làm gì:** người dùng bấm → AI đọc CV, đối chiếu với tin tuyển dụng (JD + Yêu cầu ứng viên + Kỹ năng), trả về:
+- `summary` — 3-5 câu chân dung nghề nghiệp
+- `matched[]` — yêu cầu ĐẠT, **mỗi mục bắt buộc kèm `evidence` trích nguyên văn từ CV**
+- `missing[]` — yêu cầu CV không nhắc tới
+- `fitScore` 0-100 · `decision` `PROCEED`/`CONSIDER`/`REJECT` + lý do
+
+**Chạy nền:** `POST /api/applications/{id}/cv-screening` (1 hồ sơ) hoặc `POST /api/jobs/{id}/cv-screening` (cả vị trí) → `202` → `CvScreeningWorker` → FE hỏi lại tới khi xong. Local LLM trên CPU mất hàng chục giây nên gọi đồng bộ là trình duyệt bỏ cuộc trước.
+
+**Xếp thứ tự (V046):** `GET /api/jobs/{id}/applications?sort=fit` đưa hồ sơ khớp nhất lên đầu. **Hồ sơ chưa phân tích xếp CUỐI, không phải điểm 0** — "chưa ai đọc" khác hẳn "đọc rồi thấy không hợp".
+
+**Ba lằn ranh phải giữ (câu trả lời cho "vậy máy tuyển người à?"):**
+1. `CvScreeningService` KHÔNG gọi `IApplicationStateService`, không đụng `current_state`. Không có đường nào để `REJECT` của model thành `REJECTED` của hồ sơ.
+2. Không trích được câu trong CV thì **không được tính là đạt** — mọi kết luận "có" đều kiểm chứng được ngay trên màn hình, đây là dây neo chống model bịa.
+3. Điểm chỉ so trong CÙNG một vị trí; giao diện luôn hiện kèm chữ (`Nên mời`/`Cân nhắc`/`Ít phù hợp`) chứ không để con số đứng trần như điểm thi, và `REJECT` để màu xám — đỏ đọc như "đã loại", mà AI không loại được ai.
+
+**Khác gì bản đã cắt 08/08/2026:** bản cũ so **vector**, chấm **tự động mọi hồ sơ**, và điểm là con số không giải thích được. Bản này là **LLM đọc hiểu**, **chạy khi người dùng bấm**, và **phải trích dẫn**. Hạ tầng vector vẫn xoá hẳn (V036) — không thêm lại.
+
+> Chất lượng phụ thuộc `PdfTextExtractor` bóc text đúng THỨ TỰ ĐỌC (Docstrum + reading-order của PdfPig). Bản trước cố ý vứt thứ tự vì text chỉ dùng cho embedding — đó chính là lý do tính năng tóm tắt CV ở V033 chết ngay ở V034.
+
+**Người phỏng vấn ĐỌC được bản phân tích này** (mở từ popup buổi phỏng vấn) nhưng không chạy được lượt mới — đúng chữ "tạo cơ sở cho người phỏng vấn". Phần đẩy lên trước là mục **thiếu**: đó là danh sách câu nên hỏi trong buổi, chứ không phải bản án đọc trước.
+
 ---
 
 ## 6. QUY TRÌNH NGHIỆP VỤ
 
-**MẢNG 1 — RECRUITMENT:** [nếu bật phiếu] DM tạo Yêu cầu tuyển dụng → HR duyệt và tạo Tin tuyển dụng / [mặc định công ty nhỏ] chủ tạo job trực tiếp → AI bóc tiêu chí DRAFT → người duyệt chốt bộ tiêu chí (5.18) → ứng viên nộp CV qua Career Site hoặc HR nộp hộ → hệ thống parse PDF + lưu hồ sơ ở NEW → HR tự sàng lọc trên Kanban 4 pha (không điểm, không xếp hạng).
+**MẢNG 1 — RECRUITMENT:** [nếu bật phiếu] DM tạo Yêu cầu tuyển dụng → HR duyệt và tạo Tin tuyển dụng / [mặc định công ty nhỏ] chủ tạo job trực tiếp → AI bóc tiêu chí DRAFT → người duyệt chốt bộ tiêu chí (5.18) → ứng viên nộp CV qua Career Site hoặc HR nộp hộ → hệ thống parse PDF + lưu hồ sơ ở NEW → HR bấm **Phân tích CV toàn bộ** cho AI đối chiếu từng CV với tin tuyển dụng (V044) → Kanban 4 pha xếp hồ sơ phù hợp nhất lên đầu (V046) để HR đọc trước, rồi HR tự quyết.
 
 **MẢNG 2 — INTERVIEW & OFFER:** DM duyệt ứng viên vào vòng phỏng vấn → HR gọi chốt giờ rồi đặt buổi, hệ thống gửi xác nhận + .ics (5.9, Section 15) → phỏng vấn + chấm theo CÙNG bộ tiêu chí, mỗi interviewer nêu đề xuất tuyển/không (5.7) → DM đọc bản tóm đề xuất rồi **gửi đề xuất tuyển**; **GIÁM ĐỐC duyệt** = hồ sơ sang Quyết định kèm lương + ngày vào làm đã chốt (5.14) → HR soạn thư mời theo đúng điều khoản đó (5.15) → ứng viên trả lời ngoài hệ thống → HR ghi nhận → HIRED/REJECTED + Dashboard.
 
@@ -352,7 +394,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 ## 12. FEEDBACK
 
 ### 12.1 Thầy hướng dẫn (20/05/2026)
-- Kỹ thuật: Local AI (không OpenAI/Gemini) · Python tính AI, .NET quản trị · SQL Server 2025 Vector · cần Cost Analysis.
+- Kỹ thuật: Local AI (không OpenAI/Gemini) · Python tính AI, .NET quản trị · SQL Server 2025 (KHÔNG dùng kiểu VECTOR — xoá ở V036) · cần Cost Analysis.
 - Nghiệp vụ: gộp phase sàng lọc · khách tự chọn tiêu chí (CRUD) · 2 mảng Recruitment + Interview.
 - Trình bày: KHÔNG "web của chúng em" · existing solution lấy khoảng trống.
 - Tài liệu: fishbone · class diagram theo giáo trình · Limitations & Exclusions · Report 2 Resource + kế hoạch test · không khách thật → không Acceptance Test.
@@ -367,6 +409,19 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 | 4 | Tính năng chưa thông minh, ai cũng nghĩ đến rồi | C. Định vị "smart" | AI bóc tiêu chí → người duyệt → cả hội đồng chấm cùng khung; chất lượng bóc tiêu chí đo có số (§16); "thông minh nghiệp vụ, không khoe model" |
 | 5 | Làm sao thuyết phục giá trị cho người dùng | A | Value = pain đo được (B2 + 4.1) → tính năng → kết quả; PDPD compliance angle |
 
+### 12.3 Hội đồng (Bảo vệ 1 — vòng góp ý nghiệp vụ) → trạng thái xử lý tính tới 17/08/2026
+
+| # | Hội đồng nêu | Trạng thái | Ở đâu |
+|---|---|---|---|
+| 1 | Nhân sự không được quyền phê duyệt hồ sơ ứng tuyển | ✅ ĐÃ SỬA | Cửa duyệt: DM (V044, 15/08). Cửa **loại** siết 17/08 — trước đó vẫn hở, nhân sự loại được ở mọi bước. Bảng phân quyền ở 5.14 |
+| 2 | Hệ thống thiếu Giám đốc quyết định hồ sơ ứng tuyển | ✅ ĐÃ SỬA | Actor `Director` + phiếu `HiringProposal` (V043, 15/08). Duyệt đề xuất là đường DUY NHẤT đẩy hồ sơ sang OFFER |
+| 3 | Lọc hồ sơ ứng tuyển phải do Quản lý bộ phận | ✅ ĐÃ SỬA | `SCREENING→INTERVIEW` và `SCREENING→REJECTED` đều chỉ DM của job. Nhân sự giữ sàng lọc vòng đầu ở `NEW` — đó là công việc chuẩn ngành của recruiter, không phải phê duyệt |
+| 4 | AI vẫn duy trì phân loại / chấm điểm hồ sơ, tạo cơ sở cho người phỏng vấn | ✅ ĐÃ SỬA | Sàng lọc CV bằng LLM (V044) + xếp thứ tự đọc theo mức phù hợp (V046) — mục 5.19. Người phỏng vấn đọc được CV lẫn bản phân tích (mở được từ 17/08; trước đó vai này không mở nổi CV) |
+| 5 | Offer letter cần tạo form cho phép điều chỉnh | ⚠️ HIỂU NHẦM | Form đã sửa được **từ 07/08/2026**, 21 trường gồm lương/tiền tệ/kỳ lương/ngày vào làm (`MakeOfferDto`). Buổi bảo vệ nhóm trả lời nhầm là "lương lấy từ JD" nên hội đồng ghi nhận sai. Buổi 2: MỞ FORM, XOÁ SỐ, GÕ SỐ KHÁC, XUẤT PDF tại chỗ — đừng giải thích bằng lời |
+| 6 | Không thể dựa trên JD để đưa ra mức lương | ✅ ĐÚNG VÀ ĐÃ ĐÚNG | Lương gợi ý lấy từ **quyết định của Giám đốc** khi duyệt đề xuất (`OfferLetterDefaultsDto.TermsFromDirector`), chỉ khi chưa có đề xuất mới rơi về khoảng lương của tin |
+| 7 | Rà soát tài liệu cho khớp chương trình | 🔄 ĐANG LÀM | File này: 17/08 đã gỡ các câu "hệ thống KHÔNG chấm điểm / KHÔNG xếp hạng" (sai từ khi có V044/V046) và các chỗ còn ghi stack dùng kiểu VECTOR |
+| 8 | Nhầm khái niệm IT và ST, điều chỉnh lại TC | ❓ CẦN HỎI LẠI | Suy đoán: Integration Test vs System Test, TC = Test Case. Nằm ở tài liệu báo cáo, KHÔNG có trong repo. **Hỏi GVHD xác nhận trước khi sửa** — đoán sai thì viết lại cả bộ TC vô ích |
+
 ---
 
 ## 13. CHO CHAT MỚI — CÁCH DÙNG FILE NÀY
@@ -376,7 +431,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
 - Lưu ý cốt lõi:
   - **Định vị: quy trình tối giản đúng chuẩn cho công ty chưa có phòng HR (≤200 người + gia đình). Đơn giản mặc định, phức tạp tùy chọn. AI = trợ lý thầm lặng. Hệ thống KHÔNG thêm quy trình — nó cấu trúc hóa cái công ty nhỏ đang làm rời rạc (4.2).**
   - **Hội đồng chú trọng NGHIỆP VỤ. Tâm thế BẢO VỆ. Kỹ thuật là đạn Q&A dự phòng, không chủ động khoe.**
-  - **Hệ thống KHÔNG chấm điểm / xếp hạng ứng viên.** AI làm đúng một việc: bóc tiêu chí từ JD (5.18).
+  - **AI chấm mức phù hợp CV↔JD và xếp thứ tự đọc, nhưng KHÔNG quyết tuyển.** Hai việc của AI: bóc tiêu chí từ JD (5.18) và sàng lọc CV (5.19). Mọi quyết định pipeline vẫn do người bấm.
   - **Luồng tiêu chí:** DM tạo Yêu cầu tuyển dụng (tùy chọn) → HR tạo Job → AI bóc tiêu chí DRAFT → người duyệt chốt → bộ tiêu chí đó LÀ phiếu chấm phỏng vấn. **Đã code — đừng thiết kế lại.**
   - Pipeline: hiển thị **4 pha**; **6 state nội bộ, 8 transition**, forward-only, guard G2 (5.8, 5.16).
   - Chấm vs đề xuất vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**, duyệt ai vào phỏng vấn (SCREENING→INTERVIEW) rồi **gửi Đề xuất tuyển**; **GIÁM ĐỐC quyết tuyển** (INTERVIEW→OFFER) và chốt lương/ngày vào làm; HR sàng lọc + đặt lịch + soạn thư. `reject_reason` tùy chọn.

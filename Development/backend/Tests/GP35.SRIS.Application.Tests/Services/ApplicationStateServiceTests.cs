@@ -190,14 +190,14 @@ public class ApplicationStateServiceTests
     {
         var service = CreateService(from);
 
-        // Ở mỗi chặng, người được LOẠI là đúng người được cho ĐI TIẾP (siết 17/08/2026):
-        // NEW = nhân sự · SCREENING = Trưởng bộ phận của vị trí · INTERVIEW/OFFER = Giám đốc.
+        // Ai được LOẠI ở từng chặng (siết 17/08/2026): NEW = nhân sự · SCREENING và INTERVIEW =
+        // Trưởng bộ phận của vị trí · OFFER = Giám đốc.
         // Bài test này chỉ kiểm reason được lưu, nên mỗi ca vào vai đúng người rồi mới bấm.
-        if (from is "INTERVIEW" or "OFFER")
+        if (from == "OFFER")
         {
             _context.Role = RoleConstants.Director;
         }
-        else if (from == "SCREENING")
+        else if (from is "SCREENING" or "INTERVIEW")
         {
             _context.Role = RoleConstants.DepartmentManager;
             _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
@@ -446,20 +446,37 @@ public class ApplicationStateServiceTests
         Assert.Equal("REJECTED", result.ToState);
     }
 
-    /// <summary>Đã phỏng vấn xong thì loại cũng là quyết định tuyển dụng — của Giám đốc, không phải DM.</summary>
+    /// <summary>
+    /// ĐÓNG hồ sơ sau phỏng vấn là việc của người đã ngồi phỏng vấn (DM phụ trách vị trí),
+    /// KHÔNG phải của Giám đốc. Bắt Giám đốc tự tay đóng từng hồ sơ trượt là tuyển 1 người trong
+    /// 20 thì họ bấm 19 lần — và chẳng bảo vệ điều gì, vì DM vốn đã phủ quyết được bằng cách
+    /// không gửi đề xuất. Ranh giới thật là TUYỂN, không phải LOẠI.
+    /// </summary>
     [Fact]
-    public async Task RejectFromInterview_ByDepartmentManager_Throws403()
+    public async Task RejectFromInterview_ByAssignedDepartmentManager_Succeeds()
     {
         var service = CreateService("INTERVIEW");
         _context.Role = RoleConstants.DepartmentManager;
         _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
             .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = UserId });
 
+        var result = await service.RejectAsync(CompanyId, UserId, AppId, "Phỏng vấn không đạt");
+
+        Assert.Equal("REJECTED", result.ToState);
+    }
+
+    /// <summary>Nhưng nhân sự thì vẫn không — đó là điểm hội đồng nêu.</summary>
+    [Fact]
+    public async Task RejectFromInterview_ByHumanResource_Throws403()
+    {
+        var service = CreateService("INTERVIEW");
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
+
         var ex = await Assert.ThrowsAsync<BaseException>(
             () => service.RejectAsync(CompanyId, UserId, AppId, "Phỏng vấn không đạt"));
 
         Assert.Equal("FORBIDDEN", ex.ErrorCode);
-        Assert.Contains("Giám đốc", ex.ErrorMessage);
     }
 
     [Fact]
@@ -471,6 +488,39 @@ public class ApplicationStateServiceTests
         var result = await service.RejectAsync(CompanyId, UserId, AppId, "Phỏng vấn không đạt");
 
         Assert.Equal("REJECTED", result.ToState);
+    }
+
+    /// <summary>
+    /// Giám đốc đi qua được cửa của Trưởng bộ phận (cấp trên, phạm vi toàn công ty) — kể cả trên
+    /// vị trí do người khác phụ trách. Chặn họ ở đây chỉ tạo thế bí khi job đổi người giữa chừng.
+    /// </summary>
+    [Fact]
+    public async Task RejectFromScreening_ByDirector_Succeeds()
+    {
+        var service = CreateService("SCREENING");
+        _context.Role = RoleConstants.Director;
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = 999 });
+
+        var result = await service.RejectAsync(CompanyId, UserId, AppId, null);
+
+        Assert.Equal("REJECTED", result.ToState);
+    }
+
+    /// <summary>Quyết TUYỂN vẫn chỉ của Giám đốc — DM đề xuất, không tự đẩy sang bước Quyết định.</summary>
+    [Fact]
+    public async Task InterviewToOffer_StillDirectorOnly()
+    {
+        var service = CreateService("INTERVIEW", submittedScores: 1);
+        _context.Role = RoleConstants.DepartmentManager;
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = UserId });
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => service.TransitionAsync(CompanyId, UserId, AppId, "OFFER", null));
+
+        Assert.Equal("FORBIDDEN", ex.ErrorCode);
+        Assert.Contains("ĐỀ XUẤT TUYỂN", ex.ErrorMessage);
     }
 
     /// <summary>Admin là superuser — công ty nhỏ chạy trọn luồng bằng một tài khoản.</summary>

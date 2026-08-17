@@ -190,14 +190,26 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     /// <item>Chặng NEW (→SCREENING hoặc →REJECTED) — <b>Human Resource</b>. Sàng lọc vòng đầu là
     /// việc của họ: loại hồ sơ trùng, hồ sơ nộp nhầm vị trí, hồ sơ thiếu yêu cầu cứng. Không gác
     /// cửa này.</item>
-    /// <item>Chặng SCREENING (→INTERVIEW hoặc →REJECTED) — <b>Trưởng bộ phận phụ trách vị trí</b>.
-    /// Chuyên môn ai đáng gặp là của họ; Human Resource chỉ LÊN LỊCH cho người đã duyệt. Cửa này
-    /// BẮT BUỘC job phải có DM — không gán thì không ai qua được, chặn ngay và nói rõ.</item>
-    /// <item>Chặng INTERVIEW (→OFFER hoặc →REJECTED) và mọi đường rời OFFER — <b>Giám đốc</b>.
-    /// Trưởng bộ phận không đủ thẩm quyền tuyển, họ chỉ ĐỀ XUẤT (<c>HiringProposal</c>) và Giám đốc
-    /// duyệt đề xuất đó — chính đường duyệt gọi vào đây. Giám đốc có phạm vi TOÀN CÔNG TY nên không
-    /// đối chiếu với vị trí nào cả.</item>
+    /// <item>Chặng SCREENING (→INTERVIEW hoặc →REJECTED) — <b>Trưởng bộ phận phụ trách vị trí</b>
+    /// (Giám đốc cũng qua được — cấp trên). Chuyên môn ai đáng gặp là của họ; Human Resource chỉ
+    /// LÊN LỊCH cho người đã duyệt. Cửa này BẮT BUỘC job phải có DM — không gán thì không ai qua
+    /// được, chặn ngay và nói rõ.</item>
+    /// <item>INTERVIEW→REJECTED (đóng hồ sơ sau phỏng vấn) — <b>cũng là DM phụ trách vị trí</b>.</item>
+    /// <item>INTERVIEW→OFFER và mọi đường rời OFFER — <b>CHỈ Giám đốc</b>. Trưởng bộ phận không đủ
+    /// thẩm quyền tuyển, họ chỉ ĐỀ XUẤT (<c>HiringProposal</c>) và Giám đốc duyệt đề xuất đó —
+    /// chính đường duyệt gọi vào đây. Giám đốc phạm vi TOÀN CÔNG TY nên không đối chiếu vị trí.</item>
     /// </list>
+    ///
+    /// <para>
+    /// VÌ SAO INTERVIEW→REJECTED KHÔNG phải của Giám đốc (sửa lại trong ngày 17/08/2026): bản đầu
+    /// áp máy móc "cửa vào và cửa ra cùng một người" cho mọi chặng, nên bắt Giám đốc tự tay đóng
+    /// từng hồ sơ trượt. Tuyển 1 người trong 20 là Giám đốc bấm 19 lần — thủ tục mà công ty ≤200
+    /// người không bao giờ làm, trái luôn nguyên tắc "đơn giản là mặc định".
+    /// Và nó KHÔNG bảo vệ được gì: DM đã nắm quyền phủ quyết trên thực tế bằng cách không gửi đề
+    /// xuất, nên chặn thêm cửa loại chỉ thêm thao tác chứ không thêm quyền kiểm soát nào.
+    /// Ranh giới thật là <b>TUYỂN</b>: "đồng ý tuyển" là của Giám đốc, "đóng hồ sơ không tuyển"
+    /// là việc của người đã ngồi phỏng vấn. Đúng chữ trong tài liệu — <i>Giám đốc quyết TUYỂN</i>.
+    /// </para>
     ///
     /// Admin là superuser -> bỏ qua tất cả (công ty nhỏ 1 tài khoản chạy trọn luồng).
     /// Ứng viên trả lời thư mời đi bằng cờ <c>isCandidateAnswer</c>, không vào đây.
@@ -205,24 +217,24 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     private async Task EnsureCanDecideAsync(long companyId, long userId, long jobId, string from, string to)
     {
         bool isRejecting = string.Equals(to, ApplicationState.Rejected, StringComparison.OrdinalIgnoreCase);
+        bool fromScreening = string.Equals(from, ApplicationState.Screening, StringComparison.OrdinalIgnoreCase);
+        bool fromInterview = string.Equals(from, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase);
 
-        // Cửa của Trưởng bộ phận: cả hai lối ra của chặng SCREENING.
-        bool isScreeningGate =
-            string.Equals(from, ApplicationState.Screening, StringComparison.OrdinalIgnoreCase) &&
-            (string.Equals(to, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase) || isRejecting);
-
-        // Cửa của Giám đốc: cả hai lối ra của chặng INTERVIEW, cộng mọi đường rời OFFER
-        // (OFFER→HIRED và OFFER→REJECTED).
-        bool isInterviewToOffer =
-            string.Equals(from, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase) &&
+        // ----- Cửa CHỈ Giám đốc: quyết TUYỂN -----
+        bool isInterviewToOffer = fromInterview &&
             string.Equals(to, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase);
-        bool isRejectingAfterInterview =
-            string.Equals(from, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase) && isRejecting;
         bool isLeavingOffer = string.Equals(from, ApplicationState.Offer, StringComparison.OrdinalIgnoreCase);
-        bool isDirectorGate = isInterviewToOffer || isRejectingAfterInterview || isLeavingOffer;
+        bool isDirectorGate = isInterviewToOffer || isLeavingOffer;
+
+        // ----- Cửa của Trưởng bộ phận phụ trách vị trí -----
+        // Cả hai lối ra của chặng SCREENING, cộng việc đóng hồ sơ sau phỏng vấn. Đóng hồ sơ
+        // trượt là việc của người đã ngồi phỏng vấn, không phải của Giám đốc (xem doc ở trên).
+        bool isManagerGate = (fromScreening &&
+                (string.Equals(to, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase) || isRejecting))
+            || (fromInterview && isRejecting);
 
         // Chặng NEW (gồm cả NEW→REJECTED) không gác: sàng lọc vòng đầu là việc của nhân sự.
-        if (!isScreeningGate && !isDirectorGate)
+        if (!isManagerGate && !isDirectorGate)
             return;
 
         // userId = 0 -> hành động không đến từ một người dùng Portal cụ thể (job nền, seed…).
@@ -234,32 +246,36 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
         if (string.Equals(_contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase))
             return;
 
-        // ----- Cửa quyết tuyển: của Giám đốc, không phụ thuộc vị trí -----
+        bool isDirector = string.Equals(_contextData.Role, RoleConstants.Director, StringComparison.OrdinalIgnoreCase);
+
+        // ----- Cửa quyết TUYỂN: của Giám đốc, không phụ thuộc vị trí -----
         if (isDirectorGate)
         {
-            if (!string.Equals(_contextData.Role, RoleConstants.Director, StringComparison.OrdinalIgnoreCase))
+            if (!isDirector)
                 throw Forbidden(isInterviewToOffer
                     ? "Chỉ Giám đốc mới quyết tuyển. Trưởng bộ phận hãy gửi ĐỀ XUẤT TUYỂN để Giám đốc duyệt."
-                    : isRejectingAfterInterview
-                        ? "Ứng viên đã qua vòng phỏng vấn nên chỉ Giám đốc mới được loại. Trưởng bộ phận " +
-                          "hãy nêu ý kiến trong phiếu chấm hoặc ghi chú nội bộ để Giám đốc quyết."
-                        : "Chỉ Giám đốc mới chốt kết quả ở bước Quyết định.");
+                    : "Chỉ Giám đốc mới chốt kết quả ở bước Quyết định.");
             return;
         }
 
-        // ----- Cửa của chặng sàng lọc: Trưởng bộ phận phụ trách vị trí -----
+        // ----- Cửa của Trưởng bộ phận phụ trách vị trí -----
+        // Giám đốc đi qua luôn: phạm vi toàn công ty, cấp trên của DM. Chặn họ ở đây chỉ tạo ra
+        // thế bí khi vị trí đổi người phụ trách giữa chừng.
+        if (isDirector)
+            return;
+
         var job = await _jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy vị trí (job) của hồ sơ (job_id={jobId}).");
 
         if (job.DepartmentManagerId is not long dmId)
             throw Forbidden(
                 "Vị trí này chưa gán Trưởng bộ phận phụ trách nên chưa ai quyết được ứng viên ở bước " +
-                "sàng lọc. Hãy gán người phụ trách cho tin tuyển dụng trước.");
+                "này. Hãy gán người phụ trách cho tin tuyển dụng trước.");
 
         if (dmId != userId)
             throw Forbidden(isRejecting
-                ? "Chỉ Trưởng bộ phận phụ trách vị trí này mới được loại ứng viên ở bước sàng lọc. " +
-                  "Bộ phận nhân sự loại hồ sơ được ở bước Hồ sơ mới, trước khi chuyển sang sàng lọc."
+                ? "Chỉ Trưởng bộ phận phụ trách vị trí này mới được loại ứng viên từ bước sàng lọc trở " +
+                  "đi. Bộ phận nhân sự loại hồ sơ được ở bước Hồ sơ mới, trước khi chuyển sang sàng lọc."
                 : "Chỉ Trưởng bộ phận phụ trách vị trí này mới được duyệt ứng viên vào vòng phỏng vấn.");
     }
 
