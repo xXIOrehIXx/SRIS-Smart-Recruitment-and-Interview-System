@@ -58,7 +58,12 @@ public class CvScreening : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHa
     [Column("missing_json")]
     public string? MissingJson { get; set; }
 
-    /// <summary>0-100. Tham khảo, KHÔNG dùng để xếp hạng ứng viên với nhau.</summary>
+    /// <summary>
+    /// 0-100. Dùng để xếp THỨ TỰ ĐỌC trong một vị trí (V046) — đưa hồ sơ khớp nhất lên đầu cho
+    /// người tuyển dụng xem trước. Vẫn KHÔNG phải quyết định: không có đường code nào đọc số này
+    /// rồi đổi <c>current_state</c>, và nó không so được giữa hai vị trí khác nhau (mỗi lượt chấm
+    /// đối chiếu với đúng một JD).
+    /// </summary>
     [Column("fit_score")]
     public int? FitScore { get; set; }
 

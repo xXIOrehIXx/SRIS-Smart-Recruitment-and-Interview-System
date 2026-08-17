@@ -48,6 +48,22 @@ public class CvScreeningController : ControllerBase
     }
 
     /// <summary>
+    /// XẾP HÀNG sàng lọc cho MỌI hồ sơ đang ở vòng sàng lọc của một vị trí (V046) — điều kiện cần
+    /// để màn Kanban xếp được ứng viên theo mức phù hợp. Trả 202 kèm số lượng đã xếp hàng.
+    /// <para>
+    /// <c>rescreen=true</c> để chấm lại cả những hồ sơ đã có kết quả (dùng khi vừa sửa tin tuyển
+    /// dụng — điểm cũ đối chiếu với một JD khác thì so với nhau không còn công bằng).
+    /// </para>
+    /// </summary>
+    [HttpPost("api/jobs/{jobId:long}/cv-screening")]
+    public async Task<IActionResult> RequestForJob(long jobId, [FromQuery] bool rescreen = false)
+    {
+        var result = await _screeningService.RequestJobScreeningAsync(
+            _contextData.CompanyId, jobId, _contextData.UserId, rescreen);
+        return Accepted(result);
+    }
+
+    /// <summary>
     /// Trạng thái + kết quả lượt sàng lọc gần nhất. <c>running=true</c> -> FE hỏi lại sau vài
     /// giây; <c>DONE</c> -> đọc <c>result</c>; <c>FAILED</c> -> hiện <c>errorMessage</c>;
     /// <c>NONE</c> -> hồ sơ này chưa phân tích bao giờ.

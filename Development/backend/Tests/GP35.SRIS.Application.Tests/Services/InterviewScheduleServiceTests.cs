@@ -47,6 +47,11 @@ public class InterviewScheduleServiceTests
                 ApplicationId = AppId, CompanyId = CompanyId, JobId = JobId, CurrentState = appState
             });
         _schedulingRepo.Setup(r => r.GetNextRoundNumberAsync(CompanyId, AppId)).ReturnsAsync(1);
+
+        // V045: buổi phỏng vấn chỉ đặt được với người Trưởng bộ phận đã chỉ định cho hồ sơ này.
+        // Mặc định cho phép đúng người mà Dto() dùng — ca "chọn người ngoài danh sách" tự setup lại.
+        _schedulingRepo.Setup(r => r.GetAssignedInterviewersAsync(CompanyId, AppId))
+            .ReturnsAsync(new List<long> { 7 });
         _schedulingRepo.Setup(r => r.ManualConfirmAsync(
                 It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<IReadOnlyList<long>>(),
                 It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<long?>()))

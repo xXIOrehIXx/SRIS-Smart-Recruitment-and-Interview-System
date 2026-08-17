@@ -128,12 +128,13 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 > V044. Chạy NỀN như lượt bóc tiêu chí: POST chỉ xếp hàng rồi trả `202`, `CvScreeningWorker`
 > mới gọi AI. FE hỏi lại GET tới khi `running=false`. Bấm lại = chạy lượt mới đè kết quả cũ.
 >
-> Kết quả **THAM KHẢO**: không endpoint nào ở đây đổi trạng thái hồ sơ. `fitScore` chỉ hiện
-> trong màn chi tiết một ứng viên, không lên board.
+> Kết quả **THAM KHẢO**: không endpoint nào ở đây đổi trạng thái hồ sơ. V046: `fitScore` lên
+> board và xếp được thứ tự đọc (mục 8), nhưng vẫn không quyết ai đi tiếp.
 
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| POST | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir | xếp hàng lượt phân tích → `202` |
+| POST | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir | xếp hàng lượt phân tích 1 hồ sơ → `202` |
+| POST | `/api/jobs/{jobId}/cv-screening?rescreen=` | Rec/DM/Dir | **V046** xếp hàng CẢ vị trí (hồ sơ NEW+SCREENING) → `202` `{queued, skippedDone, skippedRunning, totalCandidates}`; `rescreen=true` chấm lại cả hồ sơ đã có kết quả |
 | GET | `/api/applications/{applicationId}/cv-screening` | Rec/DM/Dir | trạng thái + kết quả; `status`: NONE/PENDING/RUNNING/DONE/FAILED |
 
 `result` khi DONE: `summary` · `matched[{requirement, evidence}]` (evidence = câu trích nguyên
@@ -142,7 +143,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 ## 8. Hồ sơ ứng tuyển (đọc) — `ApplicationQuery` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| GET | `/api/jobs/{jobId}/applications` | Rec/DM | board 4 pha (Hồ sơ mới/Sàng lọc/Phỏng vấn/Quyết định) |
+| GET | `/api/jobs/{jobId}/applications?sort=` | Rec/DM | board 4 pha (Hồ sơ mới/Sàng lọc/Phỏng vấn/Quyết định). Mỗi card kèm `screeningStatus`/`fitScore`/`screeningDecision` (V046). `sort=fit` → phù hợp cao lên đầu, **hồ sơ chưa phân tích xuống cuối** (không coi là 0); mặc định `recent` = mới nộp trước |
 | GET | `/api/applications/{applicationId}` | Rec/DM | chi tiết 1 hồ sơ |
 
 ## 9. Chuyển trạng thái — `ApplicationState` (Rec/DM)

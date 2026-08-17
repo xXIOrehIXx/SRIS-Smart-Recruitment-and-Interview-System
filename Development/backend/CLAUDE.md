@@ -150,8 +150,11 @@ người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng v�
 > hợp 0-100 và đề xuất `PROCEED`/`CONSIDER`/`REJECT`.
 >
 > Ranh giới phải giữ: đề xuất là **THAM KHẢO**. Không đường code nào đọc `decision` rồi
-> tự đổi `current_state`, và điểm phù hợp **không** lên danh sách/Kanban — hệ thống vẫn
-> không xếp hạng ứng viên với nhau, chỉ phân tích trong hồ sơ của một người.
+> tự đổi `current_state`.
+>
+> **Cập nhật V046 (17/08/2026):** điểm phù hợp GIỜ lên danh sách và xếp được thứ tự
+> (`?sort=fit`) — hội đồng yêu cầu giữ tính năng "phân loại/chấm điểm hồ sơ". Nó quyết định
+> THỨ TỰ ĐỌC của người tuyển dụng, không quyết định ai đi tiếp. Xem mục 7 "Coding Rules".
 > Cách làm mới KHÔNG phải cách cũ đã cắt 08/08/2026: bản cũ chấm điểm bằng vector cho
 > mọi hồ sơ tự động; bản này là LLM đọc hiểu, chạy theo yêu cầu của người dùng, và luôn
 > phải trích dẫn được câu trong CV thì mới được tính là đạt.
@@ -249,12 +252,24 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
 
 6. **OfferDetail:** 0..1 per Application (UNIQUE `application_id`). Một offer / một application.
 
-7. **Sàng lọc CV (CvScreening, V044):** AI đề xuất, KHÔNG quyết. `CvScreeningService` không
-   được gọi `IApplicationStateService` và không được đụng `current_state` — ai định nối
-   "REJECT → tự chuyển hồ sơ sang REJECTED" là đang biến gợi ý của model thành quyết định
-   nghiệp vụ. Mỗi mục "đạt" phải kèm `evidence` trích từ CV; không trích được thì xếp xuống
-   "thiếu". `fit_score` chỉ hiện trong hồ sơ MỘT người, không lên danh sách/Kanban để không
-   ai xếp hạng ứng viên bằng con số máy chấm.
+7. **Sàng lọc CV (CvScreening, V044 + xếp hạng V046):** AI đề xuất, KHÔNG quyết.
+   `CvScreeningService` không được gọi `IApplicationStateService` và không được đụng
+   `current_state` — ai định nối "REJECT → tự chuyển hồ sơ sang REJECTED" là đang biến gợi ý
+   của model thành quyết định nghiệp vụ. Mỗi mục "đạt" phải kèm `evidence` trích từ CV; không
+   trích được thì xếp xuống "thiếu".
+   **V046 (17/08/2026) — `fit_score` ĐƯỢC lên danh sách và ĐƯỢC dùng xếp thứ tự.** Đảo lại luật
+   cũ ("chỉ hiện trong hồ sơ một người"), theo yêu cầu hội đồng: *"AI vẫn duy trì tính năng phân
+   loại hồ sơ, chấm điểm hồ sơ"*. `GET /api/jobs/{id}/applications?sort=fit` đưa hồ sơ khớp nhất
+   lên đầu; hồ sơ **chưa phân tích xếp CUỐI, không phải điểm 0** — gộp "chưa chấm" với "chấm
+   thấp" là đổ oan cho hồ sơ chưa ai đọc.
+   Ranh giới còn lại phải giữ: điểm quyết định **THỨ TỰ ĐỌC**, không quyết định ai đi tiếp.
+   Trên UI luôn hiện kèm chữ (`Nên mời`/`Cân nhắc`/`Ít phù hợp`), không để con số đứng trần như
+   điểm thi, và `REJECT` để màu xám chứ không phải đỏ — đỏ đọc như "đã loại", mà AI không loại
+   được ai.
+   Chấm hàng loạt (`POST /api/jobs/{id}/cv-screening`) là **nút người dùng bấm**, KHÔNG chạy tự
+   động khi nhận CV: mỗi lượt bắt Local LLM đọc hai văn bản dài, nổ hàng chục lượt sau lưng người
+   dùng là treo máy demo. Đây cũng là chỗ khác bản đã cắt 08/08/2026 (vector, tự chấm mọi hồ sơ).
+   Điểm chỉ so được TRONG một vị trí — mỗi lượt đối chiếu với đúng một JD, đừng xếp hạng xuyên job.
    Chất lượng phụ thuộc `PdfTextExtractor`: nó phải bóc text theo ĐÚNG THỨ TỰ ĐỌC
    (Docstrum + reading-order của PdfPig). Bản trước cố ý vứt thứ tự vì text chỉ dùng cho
    embedding — đó chính là lý do tính năng tóm tắt CV ở V033 chết ngay ở V034. Đừng "tối ưu"

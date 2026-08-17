@@ -27,6 +27,12 @@ public class ApplicationStateServiceTests
     private readonly Mock<IJobRepo> _jobRepo = new();
 
     /// <summary>
+    /// V045: duyệt vào vòng phỏng vấn có thể kèm danh sách người phỏng vấn DM chỉ định. Các test ở
+    /// đây không truyền danh sách nào nên service không gọi tới — chỉ cần có mặt để dựng được service.
+    /// </summary>
+    private readonly Mock<IInterviewPanelService> _panel = new();
+
+    /// <summary>
     /// Người đang thao tác. Mặc định Human Resource trên job KHÔNG gán DM -> guard "chỉ DM của job
     /// mới quyết tuyển" (cửa OFFER→HIRED/REJECTED) không chặn, các test cũ giữ nguyên hành vi.
     /// </summary>
@@ -65,6 +71,7 @@ public class ApplicationStateServiceTests
             s.AddSingleton(_logRepo.Object);
             s.AddSingleton(_notify.Object);
             s.AddSingleton(_jobRepo.Object);
+            s.AddSingleton(_panel.Object);
             s.AddSingleton<IContextData>(_context);
         });
         return new ApplicationStateService(provider);

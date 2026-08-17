@@ -23,13 +23,41 @@ public class CvScreeningResultDto
     /// <summary>Yêu cầu của tin tuyển dụng mà CV không nhắc tới.</summary>
     public List<string> Missing { get; set; } = [];
 
-    /// <summary>0-100. THAM KHẢO — không dùng để xếp hạng ứng viên với nhau.</summary>
+    /// <summary>
+    /// 0-100. Dùng xếp thứ tự đọc trong một vị trí (V046), KHÔNG phải quyết định tuyển.
+    /// Người xem vẫn phải đọc <see cref="Matched"/> / <see cref="Missing"/> để tự kiểm chứng.
+    /// </summary>
     public int FitScore { get; set; }
 
     /// <summary>PROCEED | CONSIDER | REJECT — ĐỀ XUẤT, không phải quyết định.</summary>
     public string Decision { get; set; } = null!;
 
     public string DecisionReason { get; set; } = null!;
+}
+
+/// <summary>
+/// Kết quả xếp hàng sàng lọc HÀNG LOẠT cho 1 vị trí (V046) — để xếp hạng được cả danh sách thì
+/// phải có điểm cho cả danh sách, mà bấm từng hồ sơ một thì không ai làm.
+/// <para>
+/// Vẫn là một hành động do người dùng bấm, KHÔNG phải chấm tự động khi nhận CV: mỗi lượt bắt
+/// Local LLM đọc hai văn bản dài, nổ ra hàng chục lượt sau lưng người dùng là đốt CPU máy demo.
+/// </para>
+/// </summary>
+public class JobScreeningQueueDto
+{
+    public long JobId { get; set; }
+
+    /// <summary>Số hồ sơ vừa được xếp vào hàng đợi.</summary>
+    public int Queued { get; set; }
+
+    /// <summary>Đã có kết quả từ trước nên bỏ qua (chỉ khi không yêu cầu chấm lại).</summary>
+    public int SkippedDone { get; set; }
+
+    /// <summary>Đang xếp hàng/đang chạy dở từ lượt trước nên không xếp chồng.</summary>
+    public int SkippedRunning { get; set; }
+
+    /// <summary>Tổng số hồ sơ ở vòng sàng lọc (NEW + SCREENING) của vị trí này.</summary>
+    public int TotalCandidates { get; set; }
 }
 
 /// <summary>

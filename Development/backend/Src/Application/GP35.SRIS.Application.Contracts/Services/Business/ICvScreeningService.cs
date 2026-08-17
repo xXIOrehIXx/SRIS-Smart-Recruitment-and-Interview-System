@@ -22,6 +22,18 @@ public interface ICvScreeningService
     /// </summary>
     Task<CvScreeningStatusDto> RequestScreeningAsync(long companyId, long applicationId, long userId);
 
+    /// <summary>
+    /// Xếp hàng sàng lọc cho MỌI hồ sơ đang ở vòng sàng lọc (NEW + SCREENING) của 1 vị trí (V046).
+    /// Bỏ qua hồ sơ đang chạy dở, và bỏ qua hồ sơ đã có kết quả trừ khi
+    /// <paramref name="rescreenDone"/> = true.
+    /// <para>
+    /// Không kiểm từng CV có text hay không ở đây: đó là việc của worker, và hồ sơ hỏng hiện
+    /// FAILED ngay trên card — người dùng thấy được hồ sơ nào cần nộp lại CV.
+    /// </para>
+    /// </summary>
+    Task<JobScreeningQueueDto> RequestJobScreeningAsync(
+        long companyId, long jobId, long userId, bool rescreenDone = false);
+
     /// <summary>Trạng thái + kết quả lượt gần nhất. Chưa bao giờ phân tích -> Status = NONE.</summary>
     Task<CvScreeningStatusDto> GetStatusAsync(long companyId, long applicationId);
 

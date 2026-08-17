@@ -13,12 +13,29 @@ public class ApplicationCardDto
     public string CurrentState { get; set; } = null!;
     public long CvId { get; set; }
     public DateTime? AppliedAt { get; set; }
+
+    // --- Sàng lọc CV bằng AI (V046) -----------------------------------------
+    // Đưa lên card để người tuyển dụng biết nên đọc hồ sơ nào trước. Vẫn là THAM KHẢO:
+    // không đường code nào đọc mấy trường này rồi tự đổi trạng thái hồ sơ.
+
+    /// <summary>null = chưa phân tích bao giờ. Ngoài ra: PENDING | RUNNING | DONE | FAILED.</summary>
+    public string? ScreeningStatus { get; set; }
+
+    /// <summary>0-100, chỉ có khi lượt sàng lọc đã DONE. null = chưa có điểm, KHÔNG phải điểm 0.</summary>
+    public int? FitScore { get; set; }
+
+    /// <summary>PROCEED | CONSIDER | REJECT — đề xuất của AI, chỉ có khi DONE.</summary>
+    public string? ScreeningDecision { get; set; }
 }
 
 /// <summary>Toàn bộ hồ sơ của 1 job cho màn Kanban.</summary>
 public class ApplicationBoardDto
 {
     public long JobId { get; set; }
+
+    /// <summary>Thứ tự đã áp dụng: "recent" (mới nộp trước) | "fit" (phù hợp cao trước).</summary>
+    public string Sort { get; set; } = "recent";
+
     public List<ApplicationCardDto> Applications { get; set; } = new();
 }
 
