@@ -123,6 +123,54 @@ const InterviewScheduleRecruit = () => {
 
   const roundLabel = (s) => `Vòng ${s.roundNumber}${s.roundName ? ` · ${s.roundName}` : ''}`;
 
+  // --- Lịch bận của người phỏng vấn (V047) --------------------------------
+  // Nguồn lực người phỏng vấn khan hiếm hơn ứng viên, nên giờ của họ mới là ràng buộc thật.
+  // Hiện luôn các buổi đã chốt của những người đang chọn để nhân sự cầm sẵn khi gọi điện —
+  // trước đây chỉ biết trùng SAU khi bấm lưu, tức là đã hẹn xong với ứng viên rồi.
+  const watchedInterviewerIds = Form.useWatch('interviewerIds', bookForm);
+  const watchedStartTime = Form.useWatch('startTime', bookForm);
+  const [busySlots, setBusySlots] = useState([]);
+  const [busyLoading, setBusyLoading] = useState(false);
+
+  // Cửa sổ 14 ngày quanh ngày đang chọn (chưa chọn thì từ hôm nay) — đủ cho một lần hẹn.
+  const busyWindowStart = (watchedStartTime || dayjs()).startOf('day');
+  const busyWindowKey = busyWindowStart.format('YYYY-MM-DD');
+  const selectedInterviewerKey = (watchedInterviewerIds || []).join(',');
+
+  useEffect(() => {
+    if (!bookModalOpen || !selectedInterviewerKey) {
+      setBusySlots([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      setBusyLoading(true);
+      try {
+        const start = dayjs(busyWindowKey).startOf('day');
+        const res = await interviewAPI.getInterviewerBusy(
+          selectedInterviewerKey.split(','),
+          start.format('YYYY-MM-DDTHH:mm:ss'),
+          start.add(14, 'day').format('YYYY-MM-DDTHH:mm:ss'),
+        );
+        if (!cancelled) setBusySlots(res.data || []);
+      } catch (error) {
+        // Lịch bận chỉ để tham khảo — hỏng thì im lặng, đừng chặn việc đặt buổi.
+        console.error('Error fetching interviewer busy slots:', error);
+        if (!cancelled) setBusySlots([]);
+      } finally {
+        if (!cancelled) setBusyLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [bookModalOpen, selectedInterviewerKey, busyWindowKey]);
+
+  // Giờ đang chọn có đụng buổi nào của nhóm không (cùng luật 1 tiếng như BE — BE vẫn là chốt
+  // chặn thật, đây chỉ để người dùng thấy trước khi bấm lưu).
+  const clashingSlots = watchedStartTime
+    ? busySlots.filter((b) => Math.abs(dayjs(b.startTime).diff(watchedStartTime, 'minute')) < 60)
+    : [];
+
   const handleJobChange = (jobId) => {
     setSelectedJobId(jobId);
     // Giữ vị trí đang xem trên URL để F5 / chia sẻ link không nhảy về job đầu danh sách.
@@ -389,6 +437,52 @@ const InterviewScheduleRecruit = () => {
               disabledDate={(d) => d && d < dayjs().startOf('day')}
             />
           </Form.Item>
+
+          {/* Lịch bận của nhóm đang chọn (V047) — đọc trước khi chốt giờ qua điện thoại. */}
+          {(busyLoading || busySlots.length > 0 || clashingSlots.length > 0) && (
+            <div style={{ marginBottom: 16 }}>
+              {clashingSlots.length > 0 && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 8 }}
+                  message="Giờ này đụng buổi đã hẹn"
+                  description={clashingSlots
+                    .map((b) => `${b.interviewerName} đã có buổi lúc ${dayjs(b.startTime).format('HH:mm DD/MM')}`)
+                    .join(' · ')}
+                />
+              )}
+              <Card
+                size="small"
+                title={
+                  <Space size={6}>
+                    <CalendarOutlined />
+                    <Text style={{ fontSize: 13 }}>
+                      Lịch đã kín của người phỏng vấn — 14 ngày từ {busyWindowStart.format('DD/MM')}
+                    </Text>
+                  </Space>
+                }
+                loading={busyLoading}
+                styles={{ body: { maxHeight: 160, overflowY: 'auto', padding: 12 } }}
+              >
+                {busySlots.length === 0 ? (
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Cả nhóm đang trống trong 14 ngày tới.
+                  </Text>
+                ) : (
+                  <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                    {busySlots.map((b, idx) => (
+                      <Text key={`${b.interviewerId}-${b.startTime}-${idx}`} style={{ fontSize: 13 }}>
+                        <Tag>{dayjs(b.startTime).format('HH:mm DD/MM')}</Tag>
+                        {b.interviewerName}
+                        {b.candidateName ? ` — ${b.candidateName}` : ''}
+                      </Text>
+                    ))}
+                  </Space>
+                )}
+              </Card>
+            </div>
+          )}
 
           <Form.Item
             name="name"

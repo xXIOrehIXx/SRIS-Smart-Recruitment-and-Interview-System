@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
@@ -7,6 +7,13 @@ public record PoolWithSlots(InterviewSlotPool Pool, IReadOnlyList<InterviewSlot>
 
 /// <summary>1 interviewer đang bận kèm giờ buổi đã chốt — để báo lỗi có ngữ cảnh.</summary>
 public record BusyInterviewer(long InterviewerId, DateTime StartTime);
+
+/// <summary>
+/// 1 buổi đã chốt của 1 interviewer trong khoảng đang xem (V047) — nhân sự nhìn trước khi
+/// nhấc máy hẹn giờ, thay vì chỉ bị báo trùng SAU khi đã hẹn xong với ứng viên.
+/// </summary>
+public record InterviewerBusySlot(
+    long InterviewerId, DateTime StartTime, DateTime? EndTime, string? CandidateName);
 
 /// <summary>
 /// 1 buổi phỏng vấn của một vị trí, đủ để hiện thẳng lên bảng của bộ phận nhân sự
@@ -96,6 +103,14 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     Task<BusyInterviewer?> FindBusyInterviewerAsync(
         long companyId, IReadOnlyList<long> interviewerIds, DateTime startTime,
         TimeSpan minGap, long excludeSlotId);
+
+    /// <summary>
+    /// Mọi buổi đã CHỐT (slot BOOKED) của một nhóm interviewer trong khoảng [from, to) — lịch bận
+    /// để hiện lên form đặt lịch. Khác <see cref="FindBusyInterviewerAsync"/>: cái kia trả 1 va
+    /// chạm để CHẶN, cái này trả cả khoảng để NHÌN.
+    /// </summary>
+    Task<IReadOnlyList<InterviewerBusySlot>> GetInterviewerBusySlotsAsync(
+        long companyId, IReadOnlyList<long> interviewerIds, DateTime fromUtc, DateTime toUtc);
 
     /// <summary>
     /// Giờ buổi đã CHỐT của CHÍNH ứng viên nằm trong cửa sổ ±<paramref name="minGap"/> quanh

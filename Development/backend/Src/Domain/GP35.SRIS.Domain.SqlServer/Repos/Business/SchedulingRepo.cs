@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.SqlServer.Persistence;
@@ -240,6 +240,35 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
             orderby s.StartTime
             select new BusyInterviewer(si.InterviewerId, s.StartTime)
         ).FirstOrDefaultAsync();
+    }
+
+    /// <summary>
+    /// Lịch bận của cả nhóm interviewer trong khoảng [from, to) — chỉ khung ĐÃ ĐẶT (BOOKED).
+    /// Tên ứng viên đi kèm để nhân sự biết buổi đó là của ai khi gọi điện đổi giờ; buổi mồ côi
+    /// (khung không gắn hồ sơ) vẫn trả về với tên null vì nó vẫn CHIẾM giờ của người phỏng vấn.
+    /// </summary>
+    public async Task<IReadOnlyList<InterviewerBusySlot>> GetInterviewerBusySlotsAsync(
+        long companyId, IReadOnlyList<long> interviewerIds, DateTime fromUtc, DateTime toUtc)
+    {
+        if (interviewerIds.Count == 0) return Array.Empty<InterviewerBusySlot>();
+
+        var query =
+            from si in _db.InterviewSlotInterviewers.AsNoTracking()
+            join sl in _db.InterviewSlots.AsNoTracking() on si.SlotId equals sl.SlotId
+            join a in _db.Applications.AsNoTracking() on sl.BookedApplicationId equals a.ApplicationId
+                into apps
+            from a in apps.DefaultIfEmpty()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+                into cands
+            from c in cands.DefaultIfEmpty()
+            where interviewerIds.Contains(si.InterviewerId)
+                && sl.Status == InterviewSlotStatus.Booked
+                && sl.StartTime >= fromUtc && sl.StartTime < toUtc
+            orderby sl.StartTime
+            select new InterviewerBusySlot(
+                si.InterviewerId, sl.StartTime, sl.EndTime, c != null ? c.FullName : null);
+
+        return await query.ToListAsync();
     }
 
     public async Task<DateTime?> FindCandidateBusyAtAsync(

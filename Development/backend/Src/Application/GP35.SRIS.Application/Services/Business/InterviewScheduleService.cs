@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -25,6 +25,9 @@ public class InterviewScheduleService : BaseService<InterviewScheduleService>, I
 {
     /// <summary>Độ dài tối đa tên vòng — khớp cột NVARCHAR(120) ở V041.</summary>
     private const int MaxRoundNameLength = 120;
+
+    /// <summary>Trần khoảng xem lịch bận của người phỏng vấn (V047) — form chỉ cần vài tuần.</summary>
+    private static readonly TimeSpan MaxBusyWindow = TimeSpan.FromDays(31);
 
     private readonly IApplicationRepo _appRepo;
     private readonly ISchedulingRepo _schedulingRepo;
@@ -167,6 +170,34 @@ public class InterviewScheduleService : BaseService<InterviewScheduleService>, I
                     Email = userMap.TryGetValue(id, out var u2) ? u2.Email : null
                 })
                 .ToList()
+        }).ToList();
+    }
+
+    public async Task<IReadOnlyList<InterviewerBusySlotDto>> GetInterviewerBusyAsync(
+        long companyId, IReadOnlyList<long> interviewerIds, DateTime fromUtc, DateTime toUtc)
+    {
+        var ids = interviewerIds.Distinct().Where(id => id > 0).ToList();
+        if (ids.Count == 0 || toUtc <= fromUtc) return Array.Empty<InterviewerBusySlotDto>();
+
+        // Trần cửa sổ: form đặt lịch chỉ nhìn quanh ngày đang chọn, mở rộng vô hạn thì một
+        // lần bấm kéo về cả lịch sử phỏng vấn của công ty.
+        if (toUtc - fromUtc > MaxBusyWindow) toUtc = fromUtc + MaxBusyWindow;
+
+        var rows = await _schedulingRepo.GetInterviewerBusySlotsAsync(companyId, ids, fromUtc, toUtc);
+        if (rows.Count == 0) return Array.Empty<InterviewerBusySlotDto>();
+
+        var userMap = (await _userRepo.GetNamesByIdsAsync(companyId, ids))
+            .ToDictionary(u => u.UserId, u => u);
+
+        return rows.Select(r => new InterviewerBusySlotDto
+        {
+            InterviewerId = r.InterviewerId,
+            InterviewerName = userMap.TryGetValue(r.InterviewerId, out var u)
+                ? (u.FullName ?? u.Email ?? $"#{r.InterviewerId}")
+                : $"#{r.InterviewerId}",
+            StartTime = r.StartTime,
+            EndTime = r.EndTime,
+            CandidateName = r.CandidateName
         }).ToList();
     }
 

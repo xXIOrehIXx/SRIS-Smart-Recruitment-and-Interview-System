@@ -270,6 +270,13 @@ export const interviewAPI = {
   getInterviewers: () =>
     api.get('/interviews/interviewers'),
 
+  // Lịch bận của những người phỏng vấn đang chọn (V047) — nhân sự nhìn giờ đã kín TRƯỚC khi
+  // gọi điện hẹn. `from`/`to` gửi dạng giờ ĐỊA PHƯƠNG không có 'Z', giống lúc đặt buổi.
+  getInterviewerBusy: (interviewerIds, from, to) =>
+    api.get('/interviews/interviewer-busy', {
+      params: { interviewerIds: (interviewerIds || []).join(','), from, to },
+    }),
+
   // Người phỏng vấn Trưởng bộ phận CHỈ ĐỊNH cho 1 ứng viên (V045) — [] nghĩa là chưa chỉ định,
   // nhân sự chưa đặt lịch được. Nhân sự đọc để đổ dropdown; họ chốt giờ, DM chốt người.
   getAssignedInterviewers: (applicationId) =>

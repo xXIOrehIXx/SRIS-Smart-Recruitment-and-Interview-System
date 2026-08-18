@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
@@ -51,6 +51,32 @@ public class InterviewScheduleController : ControllerBase
     public async Task<IActionResult> GetByJob(long jobId)
     {
         return Ok(await _scheduleService.GetByJobAsync(_contextData.CompanyId, jobId));
+    }
+
+    /// <summary>
+    /// Lịch bận của những người phỏng vấn đang chọn — <c>?interviewerIds=1,2</c> +
+    /// <c>from</c>/<c>to</c> (ISO). Mặc định 14 ngày kể từ <c>from</c>, từ hôm nay nếu bỏ trống.
+    /// Chỉ ĐỌC: nhân sự nhìn giờ đã kín TRƯỚC khi gọi điện hẹn; luật chống trùng lúc lưu buổi
+    /// giữ nguyên, đây không thay thế nó.
+    /// <para>
+    /// Nhận chuỗi ngăn bằng dấu phẩy chứ không phải <c>List&lt;long&gt;</c>: axios serialize mảng
+    /// thành <c>interviewerIds[]=1</c>, dạng đó model binder của ASP.NET không ghép lại được.
+    /// </para>
+    /// </summary>
+    [HttpGet("api/interviews/interviewer-busy")]
+    public async Task<IActionResult> GetInterviewerBusy(
+        [FromQuery] string? interviewerIds, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
+    {
+        var ids = (interviewerIds ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(x => long.TryParse(x, out var id) ? id : 0)
+            .Where(id => id > 0)
+            .ToList();
+        var fromUtc = from ?? DateTime.UtcNow.Date;
+        var toUtc = to ?? fromUtc.AddDays(14);
+
+        return Ok(await _scheduleService.GetInterviewerBusyAsync(
+            _contextData.CompanyId, ids, fromUtc, toUtc));
     }
 
     /// <summary>Hủy 1 buổi phỏng vấn — body <c>{ reason? }</c>; hệ thống email báo ứng viên.</summary>
