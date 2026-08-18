@@ -122,6 +122,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/cvs/upload` | Rec | upload CV (PDF) — multipart; tạo Application ở NEW |
+| POST | `/api/cvs/parse-preview` | Rec | **V047** đọc thử file PDF → `{ candidateName, candidateEmail, candidatePhone, hasText }` để ĐIỀN SẴN form nộp hộ. Không lưu gì; bóc bằng regex (email/điện thoại) + luật đơn giản cho tên, KHÔNG gọi LLM — sai một chữ số thì không ai phát hiện |
 | GET | `/api/cvs/{cvId}/file-url` | Rec/DM/Dir/**Itv** | presigned URL xem file CV. Interviewer mở được từ 17/08/2026 — trước đó người phỏng vấn không mở nổi CV của ứng viên họ sắp gặp |
 
 ## 7b. Sàng lọc CV theo JD bằng AI — `cv-screening` (Rec/DM/Dir)

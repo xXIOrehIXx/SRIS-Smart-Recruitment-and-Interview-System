@@ -178,6 +178,16 @@ export const jobsAPI = {
 // Bản phân tích là THAM KHẢO: backend không đổi trạng thái hồ sơ theo nó, không xếp hạng
 // ứng viên với nhau. Quyết định vẫn là của người tuyển dụng.
 export const cvAPI = {
+  // Đọc thử CV để ĐIỀN SẴN form nộp hộ (V047): trả { candidateName, candidateEmail,
+  // candidatePhone, hasText }. Không lưu gì ở backend — người dùng vẫn sửa rồi mới bấm nộp.
+  parseCvPreview: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/cvs/parse-preview', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   uploadCV: async (formData, onProgress) => {
     const response = await api.post('/cvs/upload', formData, {
       headers: {

@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Services.Business;
+﻿using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.HostBase.Authorization;
@@ -24,6 +24,28 @@ namespace GP35.SRIS.Controllers
         {
             _contextData = contextData;
             _cvIntakeService = cvIntakeService;
+        }
+
+        /// <summary>
+        /// Đọc thử file PDF và trả tên/email/điện thoại bóc được, để FE ĐIỀN SẴN form nộp hộ
+        /// (V047). KHÔNG lưu gì: chưa có CvDocument, chưa có hồ sơ — người dùng còn sửa rồi mới
+        /// bấm nộp. Không bóc được thì trả <c>hasText=false</c> và các trường null, form để trống
+        /// như trước.
+        /// </summary>
+        [HttpPost("parse-preview")]
+        [RequestSizeLimit(20 * 1024 * 1024)] // 20MB — cùng trần với upload
+        public async Task<IActionResult> ParsePreview(IFormFile file)
+        {
+            if (file is null || file.Length == 0)
+                return BadRequest(new { error = "Thiếu file PDF (trường 'file')." });
+
+            if (!file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { error = "File phải có đuôi .pdf" });
+
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+
+            return Ok(_cvIntakeService.PreviewContact(ms.ToArray()));
         }
 
         /// <summary>Nộp CV dạng FILE PDF (multipart/form-data) cho một job.</summary>
