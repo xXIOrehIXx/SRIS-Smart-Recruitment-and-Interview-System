@@ -178,6 +178,16 @@ export const jobsAPI = {
 // Bản phân tích là THAM KHẢO: backend không đổi trạng thái hồ sơ theo nó, không xếp hạng
 // ứng viên với nhau. Quyết định vẫn là của người tuyển dụng.
 export const cvAPI = {
+  // Đọc thử CV để ĐIỀN SẴN form nộp hộ (V047): trả { candidateName, candidateEmail,
+  // candidatePhone, hasText }. Không lưu gì ở backend — người dùng vẫn sửa rồi mới bấm nộp.
+  parseCvPreview: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/cvs/parse-preview', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   uploadCV: async (formData, onProgress) => {
     const response = await api.post('/cvs/upload', formData, {
       headers: {
@@ -223,6 +233,11 @@ export const applicationAPI = {
 
   getById: (id) =>
     api.get(`/applications/${id}`),
+
+  // Tải danh sách ứng viên của 1 vị trí dạng Excel (V047). responseType 'blob' là bắt buộc:
+  // để mặc định thì axios cố parse file nhị phân thành chuỗi và file tải về sẽ hỏng.
+  exportByJob: (jobId) =>
+    api.get(`/jobs/${jobId}/applications/export`, { responseType: 'blob' }),
 
   // reason tùy chọn (kể cả khi toState = 'REJECTED').
   // interviewerIds: CHỈ dùng khi toState = 'INTERVIEW' — người Trưởng bộ phận cho gặp ứng viên
@@ -270,6 +285,13 @@ export const interviewAPI = {
   getInterviewers: () =>
     api.get('/interviews/interviewers'),
 
+  // Lịch bận của những người phỏng vấn đang chọn (V047) — nhân sự nhìn giờ đã kín TRƯỚC khi
+  // gọi điện hẹn. `from`/`to` gửi dạng giờ ĐỊA PHƯƠNG không có 'Z', giống lúc đặt buổi.
+  getInterviewerBusy: (interviewerIds, from, to) =>
+    api.get('/interviews/interviewer-busy', {
+      params: { interviewerIds: (interviewerIds || []).join(','), from, to },
+    }),
+
   // Người phỏng vấn Trưởng bộ phận CHỈ ĐỊNH cho 1 ứng viên (V045) — [] nghĩa là chưa chỉ định,
   // nhân sự chưa đặt lịch được. Nhân sự đọc để đổ dropdown; họ chốt giờ, DM chốt người.
   getAssignedInterviewers: (applicationId) =>
@@ -312,6 +334,14 @@ export const interviewAPI = {
   //       internalNotes: [{ authorName, content, createdAt }] }
   getDecisionBrief: (applicationId) =>
     api.get(`/applications/${applicationId}/decision-brief`),
+
+  // AI tổng hợp ý kiến hội đồng phỏng vấn (V047). POST chỉ XẾP HÀNG (202) — FE hỏi lại
+  // getPanelSummary tới khi running=false, giống hệt khuôn của sàng lọc CV.
+  requestPanelSummary: (applicationId) =>
+    api.post(`/applications/${applicationId}/panel-summary`),
+
+  getPanelSummary: (applicationId) =>
+    api.get(`/applications/${applicationId}/panel-summary`),
 };
 
 // ==================== ĐỀ XUẤT TUYỂN (DM đề xuất → Giám đốc quyết) ====================

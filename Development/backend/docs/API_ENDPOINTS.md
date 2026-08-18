@@ -86,12 +86,12 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/recruitment-requests` | DM | tạo yêu cầu (PENDING) — vị trí, số lượng, tiêu chí cần thiết, mức lương, ngày cần người |
-| GET | `/api/recruitment-requests` | DM/Rec | danh sách, `?status=PENDING/APPROVED/...` để lọc |
-| GET | `/api/recruitment-requests/{requestId}` | DM/Rec | chi tiết |
+| GET | `/api/recruitment-requests` | DM/**Dir**/Rec | danh sách, `?status=PENDING/APPROVED/...` để lọc |
+| GET | `/api/recruitment-requests/{requestId}` | DM/**Dir**/Rec | chi tiết |
 | PUT | `/api/recruitment-requests/{requestId}` | DM | sửa — **chỉ khi còn PENDING** (giữ audit đề bài sau khi đã duyệt) |
 | DELETE | `/api/recruitment-requests/{requestId}` | DM | hủy (soft → CANCELLED) — chỉ khi còn PENDING |
-| POST | `/api/recruitment-requests/{requestId}/review` | Rec | duyệt — body `{ approve, note? }` → APPROVED / REJECTED |
-| POST | `/api/recruitment-requests/{requestId}/convert` | Rec | gắn Job đã tạo từ yêu cầu — body `{ jobId }` → CONVERTED (truy vết đề bài → job) |
+| POST | `/api/recruitment-requests/{requestId}/review` | **Dir** | **V047 (18/08)** duyệt — body `{ approve, note? }` → APPROVED / REJECTED. Trước đây là Rec; mở một vị trí là cam kết chi tiền nên thuộc Giám đốc |
+| POST | `/api/recruitment-requests/{requestId}/convert` | Rec | gắn Job đã tạo từ yêu cầu — body `{ jobId }` → CONVERTED (truy vết đề bài → job). **V047:** chỉ nhận yêu cầu đã APPROVED (Admin vẫn được đi tắt từ PENDING) |
 
 ## 5. Tiêu chí đánh giá — `EvaluationCriteria` (Rec)
 | Method | Path | Role | Ghi chú |
@@ -122,6 +122,7 @@ Ký hiệu role: `Adm`=Admin · `Rec`=Human Resource · `Itv`=Interviewer · `DM
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/cvs/upload` | Rec | upload CV (PDF) — multipart; tạo Application ở NEW |
+| POST | `/api/cvs/parse-preview` | Rec | **V047** đọc thử file PDF → `{ candidateName, candidateEmail, candidatePhone, hasText }` để ĐIỀN SẴN form nộp hộ. Không lưu gì; bóc bằng regex (email/điện thoại) + luật đơn giản cho tên, KHÔNG gọi LLM — sai một chữ số thì không ai phát hiện |
 | GET | `/api/cvs/{cvId}/file-url` | Rec/DM/Dir/**Itv** | presigned URL xem file CV. Interviewer mở được từ 17/08/2026 — trước đó người phỏng vấn không mở nổi CV của ứng viên họ sắp gặp |
 
 ## 7b. Sàng lọc CV theo JD bằng AI — `cv-screening` (Rec/DM/Dir)
@@ -145,6 +146,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 |---|---|---|---|
 | GET | `/api/jobs/{jobId}/applications?sort=` | Rec/DM | board 4 pha (Tiếp nhận & sàng lọc / Chờ Trưởng bộ phận duyệt / Phỏng vấn / Quyết định — nhãn đổi 17/08). Mỗi card kèm `screeningStatus`/`fitScore`/`screeningDecision` (V046). `sort=fit` → phù hợp cao lên đầu, **hồ sơ chưa phân tích xuống cuối** (không coi là 0); mặc định `recent` = mới nộp trước |
 | GET | `/api/applications/{applicationId}` | Rec/DM | chi tiết 1 hồ sơ |
+| GET | `/api/jobs/{jobId}/applications/export` | Rec/DM/Dir | **V047** tải file `.xlsx` danh sách ứng viên: liên hệ + trạng thái 4 pha + phần AI đọc CV (tóm tắt, yêu cầu đạt kèm trích dẫn, yêu cầu thiếu, điểm phù hợp). Xếp phù hợp cao trước; hồ sơ chưa phân tích để TRỐNG ô điểm |
 
 ## 9. Chuyển trạng thái — `ApplicationState` (Rec/DM)
 | Method | Path | Role | Ghi chú |
@@ -162,13 +164,14 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 ## 11. Đặt lịch phỏng vấn (Rec)
 > **VIẾT LẠI 15/08/2026 — bỏ pool khung + magic link SCHEDULE.** Bộ phận nhân sự gọi cho người
 > phỏng vấn hỏi lịch rảnh, gọi ứng viên chốt giờ, rồi NHẬP buổi. Hệ thống chống trùng giờ
-> (ứng viên + cả panel, cách nhau ≥1 tiếng), gửi email xác nhận + .ics, tạo phiếu chấm.
+> (ứng viên + cả panel — chỉ chặn TRÙNG ĐÚNG GIỜ, xem `InterviewTiming`), gửi email xác nhận + .ics, tạo phiếu chấm.
 > Điều kiện: hồ sơ đã được **Trưởng bộ phận duyệt** vào pha Phỏng vấn — chưa duyệt thì trả 409.
 
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
 | POST | `/api/applications/{applicationId}/interviews` | Rec | đặt buổi — body `{ interviewerIds: [1..5], startTime, roundNumber?, name? }` → `{ scheduleId }`. `startTime` là giờ ĐỊA PHƯƠNG (không 'Z') |
 | GET | `/api/jobs/{jobId}/interviews` | Rec/DM/Dir | mọi buổi của vị trí kèm ứng viên + panel + giờ + trạng thái |
+| GET | `/api/interviews/interviewer-busy?interviewerIds=1,2&from=&to=` | Rec | **V047** lịch bận (buổi đã chốt) của những người phỏng vấn đang chọn — đổ lên form đặt lịch để nhìn trước khi gọi điện hẹn. Chỉ ĐỌC, mặc định 14 ngày kể từ `from` |
 | POST | `/api/interview-schedules/{scheduleId}/cancel` | Rec | hủy buổi — body `{ reason? }`; khóa khung + email báo ứng viên. Đổi giờ = hủy rồi đặt lại |
 | GET | `/api/interviews/interviewers` | Rec | dropdown người phỏng vấn (role Interviewer, Active) |
 
@@ -194,6 +197,8 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 | GET | `/api/interview-schedules/{scheduleId}/aggregate` | Rec/DM | tổng hợp điểm các interviewer của 1 buổi |
 | GET | `/api/applications/{applicationId}/interview-aggregate` | Rec/DM | **MỚI 09/08** — tổng hợp điểm gộp mọi buổi/vòng của 1 hồ sơ |
 | GET | `/api/applications/{applicationId}/decision-brief` | Rec/DM | **MỚI 09/08** — bản tóm cho người quyết: đề xuất của từng interviewer + note theo tiêu chí + ghi chú nội bộ, **KHÔNG có điểm số**; ý kiến trái chiều xếp trước. Màn "Quyết định tuyển dụng" dùng cái này, không dùng `aggregate` |
+| POST | `/api/applications/{applicationId}/panel-summary` | DM/Dir/Rec | **V047** xếp hàng lượt AI gom các phiếu chấm → `202`. Chạy nền (worker riêng), bấm lại = ghi đè |
+| GET | `/api/applications/{applicationId}/panel-summary` | DM/Dir/Rec | trạng thái + kết quả: `consensus` · `agreements[]` · `disagreements[]` · `openQuestions[]` · `sourceVerdictCount` (so với `currentVerdictCount` để biết bản tóm tắt đã cũ). **KHÔNG có kết luận tuyển/không tuyển**; Interviewer không đọc được (gộp ý kiến cả panel = phá blind vòng sau) |
 
 ## 13. Thư mời nhận việc — `applications/{applicationId}/offer` (Rec/DM)
 | Method | Path | Role | Ghi chú |

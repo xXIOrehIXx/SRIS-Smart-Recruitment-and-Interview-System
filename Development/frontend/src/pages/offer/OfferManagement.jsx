@@ -646,12 +646,18 @@ const OfferManagement = () => {
             </Form.Item>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <Form.Item label="Người ký" name="signerName">
+              {/* Mặc định là Giám đốc đã duyệt tuyển (V047) — người chốt lương/ngày vào làm
+                  đứng tên thư, nhân sự chỉ soạn hộ. Vẫn sửa tay được. */}
+              <Form.Item
+                label="Người ký"
+                name="signerName"
+                extra="Mặc định là Giám đốc đã duyệt tuyển hồ sơ này."
+              >
                 <Input placeholder="VD: Trần Thị C" maxLength={200} />
               </Form.Item>
 
               <Form.Item label="Chức danh người ký" name="signerTitle">
-                <Input placeholder="VD: Trưởng phòng Nhân sự" maxLength={200} />
+                <Input placeholder="VD: Giám đốc" maxLength={200} />
               </Form.Item>
 
               <Form.Item label="HR liên hệ" name="hrContactName">

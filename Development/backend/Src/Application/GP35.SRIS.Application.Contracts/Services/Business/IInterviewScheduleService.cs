@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
@@ -19,6 +19,13 @@ public interface IInterviewScheduleService : IBaseService
 
     /// <summary>Mọi buổi phỏng vấn của 1 vị trí (mới nhất trước).</summary>
     Task<IReadOnlyList<InterviewSessionDto>> GetByJobAsync(long companyId, long jobId);
+
+    /// <summary>
+    /// Lịch bận của một nhóm người phỏng vấn trong khoảng [from, to) — đổ lên form đặt lịch để
+    /// nhân sự chọn giờ không đụng buổi có sẵn (V047). Chỉ ĐỌC, không ảnh hưởng luật chống trùng.
+    /// </summary>
+    Task<IReadOnlyList<InterviewerBusySlotDto>> GetInterviewerBusyAsync(
+        long companyId, IReadOnlyList<long> interviewerIds, DateTime fromUtc, DateTime toUtc);
 
     /// <summary>Hủy 1 buổi: khóa khung + lịch CANCELLED + email báo ứng viên (best-effort).</summary>
     Task CancelAsync(long companyId, long userId, long scheduleId, CancelInterviewDto dto);

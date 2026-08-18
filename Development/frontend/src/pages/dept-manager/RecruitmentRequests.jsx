@@ -56,11 +56,14 @@ const DeptRecruitmentRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   const { user } = useAuth();
-  // Admin là superuser (khớp AuthMiddleware: [WithRole] luôn cho Admin qua) nên đứng CẢ HAI
-  // đầu của luồng 5.17: ra đề như DM và duyệt như Human Resource. Trước đây Admin chỉ được
-  // gộp vào isRecruiter, mà các nút phía DM lại gác bằng `!isRecruiter` -> công ty 1 tài
-  // khoản Admin không có chỗ nào bấm "Tạo Yêu Cầu Mới".
+  // Admin là superuser (khớp AuthMiddleware: [WithRole] luôn cho Admin qua) nên đứng CẢ BA
+  // vai của luồng 5.17: ra đề như DM, duyệt như Giám đốc, tạo tin như nhân sự. Trước đây Admin
+  // chỉ được gộp vào isRecruiter, mà các nút phía DM lại gác bằng `!isRecruiter` -> công ty 1
+  // tài khoản Admin không có chỗ nào bấm "Tạo Yêu Cầu Mới".
   const isAdmin = user?.role === ROLES.ADMIN;
+  // V047: NGƯỜI DUYỆT là Giám đốc, không còn là nhân sự. Nhân sự chỉ tạo tin từ yêu cầu ĐÃ duyệt
+  // (backend cũng chặn — đây chỉ để ẩn nút).
+  const isApprover = user?.role === ROLES.DIRECTOR || isAdmin;
   const isRecruiter = user?.role === ROLES.HUMAN_RESOURCE || isAdmin;
   const isRequester = user?.role === ROLES.DEPARTMENT_MANAGER || isAdmin;
   const [requests, setRequests] = useState([]);
@@ -117,7 +120,7 @@ const DeptRecruitmentRequests = () => {
     }
   }, [requestIdFromUrl, requests]);
 
-  // Human Resource duyệt / từ chối (lý do từ chối tùy chọn)
+  // Giám đốc duyệt / từ chối (lý do từ chối tùy chọn)
   const handleReview = async (record, approve) => {
     if (!approve) {
       let note = '';
@@ -259,8 +262,8 @@ const DeptRecruitmentRequests = () => {
               setDetailModal(true);
             }}
           />
-          {/* Human Resource/Admin: duyệt / từ chối khi PENDING; tạo tin khi đã duyệt */}
-          {isRecruiter && record.status === 'PENDING' && (
+          {/* Giám đốc/Admin: duyệt / từ chối khi PENDING */}
+          {isApprover && record.status === 'PENDING' && (
             <>
               <Popconfirm
                 title="Phê duyệt yêu cầu này?"
@@ -284,6 +287,7 @@ const DeptRecruitmentRequests = () => {
               />
             </>
           )}
+          {/* Nhân sự/Admin: tạo tin tuyển dụng từ yêu cầu ĐÃ được Giám đốc duyệt */}
           {isRecruiter && record.status === 'APPROVED' && (
             <Button
               type="primary"
@@ -295,7 +299,7 @@ const DeptRecruitmentRequests = () => {
               Tạo tin
             </Button>
           )}
-          {/* DM (và Admin): sửa lại đề bài khi Human Resource chưa duyệt (duyệt xong BE khóa để giữ audit) */}
+          {/* DM (và Admin): sửa lại đề bài khi Giám đốc chưa duyệt (duyệt xong BE khóa để giữ audit) */}
           {isRequester && record.status === 'PENDING' && (
             <Button
               type="text"

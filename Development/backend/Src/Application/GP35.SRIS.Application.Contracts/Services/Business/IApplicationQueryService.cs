@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Pipeline;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Pipeline;
 using GP35.SRIS.Domain.Repos;
 
 namespace GP35.SRIS.Application.Contracts.Services.Business;
@@ -15,4 +15,10 @@ public interface IApplicationQueryService : IBaseService
 
     /// <summary>Chi tiết 1 hồ sơ (404 nếu không thuộc company).</summary>
     Task<ApplicationDetailDto> GetDetailAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// File Excel danh sách ứng viên của 1 vị trí (V047): liên hệ + trạng thái + kết quả AI đọc
+    /// CV, xếp phù hợp cao trước. Trả nội dung file + tên file gợi ý.
+    /// </summary>
+    Task<(byte[] Content, string FileName)> ExportByJobAsync(long companyId, long jobId);
 }

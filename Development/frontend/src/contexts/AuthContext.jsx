@@ -93,8 +93,9 @@ export const ROLE_MENUS = {
     { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Đề Xuất Tuyển' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],
-  // Giám đốc chỉ có đúng việc của mình: duyệt đề xuất tuyển + nhìn số liệu tuyển dụng.
+  // Giám đốc chỉ có đúng việc của mình: duyệt hai cửa (mở vị trí, tuyển người) + nhìn số liệu.
   [ROLES.DIRECTOR]: [
+    { key: '/director/requests', icon: 'FileAddOutlined', label: 'Duyệt Yêu Cầu Tuyển Dụng' },
     { key: '/director/proposals', icon: 'AuditOutlined', label: 'Duyệt Đề Xuất Tuyển' },
     { key: '/director/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
   ],

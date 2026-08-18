@@ -23,6 +23,7 @@ import {
   InboxOutlined,
   SolutionOutlined,
   AuditOutlined,
+  FileAddOutlined,
 } from "@ant-design/icons";
 import { useAuth, ROLES } from "../contexts/AuthContext";
 import { useCompany } from "../contexts/CompanyContext";
@@ -51,6 +52,9 @@ const ICON_MAP = {
   // nên mục "Quyết Định Tuyển Dụng" xưa nay hiện trống chỗ icon.
   SolutionOutlined: <SolutionOutlined />,
   AuditOutlined: <AuditOutlined />,
+  // "Yêu Cầu Tuyển Dụng" (nhân sự/Admin) và "Duyệt Yêu Cầu Tuyển Dụng" (Giám đốc, V047) —
+  // cùng một cái thiếu như trên: có trong ROLE_MENUS mà không có ở đây thì icon hiện trống.
+  FileAddOutlined: <FileAddOutlined />,
 };
 
 const AdminLayout = () => {

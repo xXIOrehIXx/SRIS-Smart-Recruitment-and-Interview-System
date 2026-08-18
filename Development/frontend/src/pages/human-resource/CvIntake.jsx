@@ -32,6 +32,9 @@ const CvIntake = () => {
 
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [file, setFile] = useState(null);
+  const [parsing, setParsing] = useState(false);
+  // Ô nào do máy điền -> hiện nhãn "đã điền từ CV" để người dùng biết chỗ cần soát lại.
+  const [prefilled, setPrefilled] = useState({});
   const [candidateName, setCandidateName] = useState('');
   const [candidateEmail, setCandidateEmail] = useState('');
   const [candidatePhone, setCandidatePhone] = useState('');
@@ -73,6 +76,44 @@ const CvIntake = () => {
     setCandidateName('');
     setCandidateEmail('');
     setCandidatePhone('');
+    setPrefilled({});
+  };
+
+  /**
+   * Chọn file xong thì đọc thử CV và điền sẵn họ tên / email / điện thoại (V047).
+   *
+   * Chỉ điền vào ô đang TRỐNG — người dùng gõ tay trước rồi mới chọn file thì cái họ gõ
+   * mới đúng, máy không được đè lên. Bóc hụt trường nào thì để trống trường đó; đây là gợi ý
+   * để đỡ gõ, không phải nguồn dữ liệu.
+   */
+  const prefillFromCv = async (f) => {
+    setParsing(true);
+    try {
+      const { data } = await cvAPI.parseCvPreview(f);
+      const filled = {};
+      if (data?.candidateName && !candidateName) {
+        setCandidateName(data.candidateName);
+        filled.name = true;
+      }
+      if (data?.candidateEmail && !candidateEmail) {
+        setCandidateEmail(data.candidateEmail);
+        filled.email = true;
+      }
+      if (data?.candidatePhone && !candidatePhone) {
+        setCandidatePhone(data.candidatePhone);
+        filled.phone = true;
+      }
+      setPrefilled(filled);
+
+      if (data && data.hasText === false) {
+        message.info('CV này không có lớp chữ (PDF scan ảnh) — nhập thông tin bằng tay.');
+      }
+    } catch (error) {
+      // Điền sẵn hỏng thì cứ để form trống như trước, đừng chặn việc nộp hồ sơ.
+      console.error('Error parsing CV for prefill:', error);
+    } finally {
+      setParsing(false);
+    }
   };
 
   const handleUploadCV = async () => {
@@ -229,17 +270,20 @@ const CvIntake = () => {
           <Input
             placeholder="Họ tên ứng viên *"
             value={candidateName}
-            onChange={(e) => setCandidateName(e.target.value)}
+            onChange={(e) => { setCandidateName(e.target.value); setPrefilled((p) => ({ ...p, name: false })); }}
+            suffix={prefilled.name ? <Text type="secondary" style={{ fontSize: 11 }}>từ CV</Text> : null}
           />
           <Input
             placeholder="Email ứng viên *"
             value={candidateEmail}
-            onChange={(e) => setCandidateEmail(e.target.value)}
+            onChange={(e) => { setCandidateEmail(e.target.value); setPrefilled((p) => ({ ...p, email: false })); }}
+            suffix={prefilled.email ? <Text type="secondary" style={{ fontSize: 11 }}>từ CV</Text> : null}
           />
           <Input
             placeholder="Số điện thoại"
             value={candidatePhone}
-            onChange={(e) => setCandidatePhone(e.target.value)}
+            onChange={(e) => { setCandidatePhone(e.target.value); setPrefilled((p) => ({ ...p, phone: false })); }}
+            suffix={prefilled.phone ? <Text type="secondary" style={{ fontSize: 11 }}>từ CV</Text> : null}
           />
 
           <Dragger
@@ -247,15 +291,18 @@ const CvIntake = () => {
             maxCount={1}
             beforeUpload={(f) => {
               setFile(f);
+              prefillFromCv(f);
               return false; // chặn upload tự động của antd — gửi kèm form bên trên
             }}
-            onRemove={() => setFile(null)}
+            onRemove={() => { setFile(null); setPrefilled({}); }}
             fileList={file ? [file] : []}
           >
             <p className="ant-upload-drag-icon"><InboxOutlined /></p>
             <p className="ant-upload-text">Kéo thả hoặc bấm để chọn file CV</p>
             <p className="ant-upload-hint">
-              Chỉ nhận PDF có lớp chữ. PDF scan ảnh sẽ không đọc được nội dung.
+              {parsing
+                ? 'Đang đọc CV để điền sẵn thông tin...'
+                : 'Chỉ nhận PDF có lớp chữ. Chọn file xong, hệ thống tự điền họ tên / email / điện thoại — bạn soát lại rồi nộp.'}
             </p>
           </Dragger>
 

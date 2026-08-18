@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Request;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Request;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
@@ -9,8 +9,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Yêu cầu tuyển dụng (docs 5.17 — TÙY CHỌN): DM "ra đề" → Human Resource duyệt → tạo Job từ yêu cầu.
-/// DM tạo/sửa/hủy (khi PENDING); Human Resource xem + duyệt + gắn job (Admin bypass qua WithRole).
+/// Yêu cầu tuyển dụng (docs 5.17 — TÙY CHỌN): DM "ra đề" → GIÁM ĐỐC duyệt → Human Resource tạo Job
+/// từ yêu cầu đã duyệt.
+///
+/// <para>
+/// V047 (18/08/2026 — sau phản hồi hội đồng): người duyệt đổi từ Human Resource sang GIÁM ĐỐC.
+/// Mở một vị trí là cam kết chi tiền của công ty, nên nó thuộc người chịu trách nhiệm — cùng
+/// một lý do đã đưa quyết định tuyển về tay Giám đốc ở V043. Để nhân sự gác cửa này là tái lập
+/// đúng điều hội đồng phê ("nhân sự không được quyền phê duyệt"), chỉ khác là ở ĐẦU quy trình.
+/// </para>
+///
+/// DM tạo/sửa/hủy (khi PENDING); Giám đốc duyệt; Human Resource xem + gắn job.
+/// Admin bypass toàn bộ (công ty nhỏ dùng 1 tài khoản).
 /// </summary>
 [ApiController]
 [Authorize]
@@ -34,9 +44,9 @@ public class RecruitmentRequestController : ControllerBase
         return Ok(await _requestService.CreateAsync(_contextData.CompanyId, _contextData.UserId, dto));
     }
 
-    /// <summary>Danh sách yêu cầu của công ty (?status=PENDING/... để lọc). DM + Human Resource cùng xem.</summary>
+    /// <summary>Danh sách yêu cầu của công ty (?status=PENDING/... để lọc). DM + Giám đốc + Human Resource cùng xem.</summary>
     [HttpGet]
-    [WithRole(RoleConstants.DepartmentManager, RoleConstants.HumanResource)]
+    [WithRole(RoleConstants.DepartmentManager, RoleConstants.Director, RoleConstants.HumanResource)]
     public async Task<IActionResult> GetList([FromQuery] string? status = null)
     {
         return Ok(await _requestService.GetListAsync(_contextData.CompanyId, status));
@@ -44,7 +54,7 @@ public class RecruitmentRequestController : ControllerBase
 
     /// <summary>Chi tiết 1 yêu cầu.</summary>
     [HttpGet("{requestId:long}")]
-    [WithRole(RoleConstants.DepartmentManager, RoleConstants.HumanResource)]
+    [WithRole(RoleConstants.DepartmentManager, RoleConstants.Director, RoleConstants.HumanResource)]
     public async Task<IActionResult> GetById(long requestId)
     {
         return Ok(await _requestService.GetByIdAsync(_contextData.CompanyId, requestId));
@@ -67,15 +77,18 @@ public class RecruitmentRequestController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Human Resource duyệt: { approve, note } → APPROVED / REJECTED (note tùy chọn).</summary>
+    /// <summary>Giám đốc duyệt: { approve, note } → APPROVED / REJECTED (note tùy chọn).</summary>
     [HttpPost("{requestId:long}/review")]
-    [WithRole(RoleConstants.HumanResource)]
+    [WithRole(RoleConstants.Director)]
     public async Task<IActionResult> Review(long requestId, [FromBody] ReviewRequestDto dto)
     {
         return Ok(await _requestService.ReviewAsync(_contextData.CompanyId, _contextData.UserId, requestId, dto));
     }
 
-    /// <summary>Human Resource gắn Job đã tạo từ yêu cầu: { jobId } → CONVERTED (truy vết đề bài → job).</summary>
+    /// <summary>
+    /// Human Resource gắn Job đã tạo từ yêu cầu: { jobId } → CONVERTED (truy vết đề bài → job).
+    /// Chỉ gắn được cho yêu cầu ĐÃ ĐƯỢC GIÁM ĐỐC DUYỆT (xem <c>ConvertAsync</c>).
+    /// </summary>
     [HttpPost("{requestId:long}/convert")]
     [WithRole(RoleConstants.HumanResource)]
     public async Task<IActionResult> Convert(long requestId, [FromBody] ConvertRequestDto dto)

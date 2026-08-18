@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
+﻿namespace GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 
 /// <summary>1 interviewer rút gọn (id + tên) — để bộ phận nhân sự thấy panel của buổi.</summary>
 public class InterviewerMiniDto
@@ -67,4 +67,23 @@ public class InterviewSessionDto
     public string ApplicationState { get; set; } = null!;
 
     public List<InterviewerMiniDto> Interviewers { get; set; } = new();
+}
+
+/// <summary>
+/// 1 buổi đã chốt CHIẾM giờ của một người phỏng vấn (V047). Nhân sự xem trước khi gọi điện hẹn:
+/// nguồn lực người phỏng vấn khan hiếm hơn ứng viên nên giờ của họ là ràng buộc thật, và biết
+/// TRƯỚC vẫn hơn bị hệ thống báo trùng SAU khi đã hẹn xong với ứng viên.
+/// </summary>
+public class InterviewerBusySlotDto
+{
+    public long InterviewerId { get; set; }
+
+    public string? InterviewerName { get; set; }
+
+    public DateTime StartTime { get; set; }
+
+    public DateTime? EndTime { get; set; }
+
+    /// <summary>Ứng viên của buổi đó — null nếu khung không gắn hồ sơ nào (vẫn chiếm giờ).</summary>
+    public string? CandidateName { get; set; }
 }

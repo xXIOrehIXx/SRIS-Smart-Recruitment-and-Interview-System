@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.SqlServer.Persistence;
@@ -115,6 +115,39 @@ public class ApplicationRepo : BaseRepo<long, Application>, IApplicationRepo
                 // cho chắc: FAILED mà lọt điểm ra ngoài thì card hiện điểm của một lượt đã hỏng.
                 x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.FitScore,
                 x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.Decision))
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<ApplicationExportRow>> GetExportRowsByJobAsync(
+        long companyId, long jobId)
+    {
+        // Cùng khuôn join với Kanban (LEFT JOIN CvScreening, 1 dòng/hồ sơ) + thêm CvDocument để
+        // biết tên file CV gốc. Global Query Filter tự kèm company_id cho mọi bảng.
+        var joined =
+            from a in _db.Applications.AsNoTracking()
+            join c in _db.Candidates.AsNoTracking() on a.CandidateId equals c.CandidateId
+            join cv in _db.CvDocuments.AsNoTracking() on a.CvId equals cv.CvId into cvs
+            from cv in cvs.DefaultIfEmpty()
+            join s in _db.CvScreenings.AsNoTracking() on a.ApplicationId equals s.ApplicationId into screenings
+            from s in screenings.DefaultIfEmpty()
+            where a.JobId == jobId
+            select new { a, c, cv, s };
+
+        return await joined
+            .OrderByDescending(x => x.s != null && x.s.Status == ScreeningStatus.Done && x.s.FitScore != null)
+            .ThenByDescending(x => x.s != null && x.s.Status == ScreeningStatus.Done ? x.s.FitScore : null)
+            .ThenByDescending(x => x.a.CreatedAt)
+            .Select(x => new ApplicationExportRow(
+                x.a.ApplicationId, x.c.FullName, x.c.Email, x.c.Phone, x.c.Source,
+                x.a.CurrentState, x.a.RejectReason, x.a.CreatedAt,
+                x.cv == null ? null : x.cv.FileName,
+                x.s == null ? null : x.s.Status,
+                // Giống Kanban: điểm/đề xuất/tóm tắt chỉ có nghĩa khi lượt sàng lọc đã DONE.
+                x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.FitScore,
+                x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.Decision,
+                x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.Summary,
+                x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.MatchedJson,
+                x.s == null || x.s.Status != ScreeningStatus.Done ? null : x.s.MissingJson))
             .ToListAsync();
     }
 
