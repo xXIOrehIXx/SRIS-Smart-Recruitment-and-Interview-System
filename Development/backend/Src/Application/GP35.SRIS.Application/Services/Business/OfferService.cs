@@ -67,8 +67,8 @@ public class OfferService : BaseService<OfferService>, IOfferService
         var job = await _jobRepo.GetByIdAsync(companyId, app.JobId);
         var company = await _companyRepo.GetByCompanyId(companyId);
 
-        // Người ký mặc định = người đang soạn thư; "Báo cáo cho" = DM sở hữu job (nếu có).
-        var signer = _contextData.UserId > 0
+        // Người soạn thư (nhân sự) — dùng làm đầu mối liên hệ in dưới thư.
+        var drafter = _contextData.UserId > 0
             ? await _userRepo.GetByIdAsync(companyId, _contextData.UserId)
             : null;
         var manager = job?.DepartmentManagerId is long dmId
@@ -89,6 +89,16 @@ public class OfferService : BaseService<OfferService>, IOfferService
         // của lá thư. Lấy khoảng lương của tin tuyển dụng làm mặc định là mời sai mức người
         // đã duyệt, và nhân sự phải quay lại hỏi Giám đốc "rốt cuộc chốt bao nhiêu".
         var approved = await _proposalRepo.GetApprovedByApplicationAsync(companyId, applicationId);
+
+        // Người KÝ mặc định = GIÁM ĐỐC đã duyệt tuyển, không phải nhân sự đang gõ thư (V047,
+        // 18/08/2026). Thư mời là cam kết của công ty với ứng viên về lương và ngày vào làm —
+        // ai chốt điều khoản thì người đó đứng tên; nhân sự soạn hộ. Chưa truy được người duyệt
+        // (dữ liệu cũ, hoặc Admin tự đẩy hồ sơ sang OFFER) thì quay về người soạn như trước,
+        // và ô này vẫn sửa tay được ở form.
+        var decider = approved?.DecidedBy is long deciderId
+            ? await _userRepo.GetByIdAsync(companyId, deciderId)
+            : null;
+        var signer = decider ?? drafter;
 
         return new OfferLetterDefaultsDto
         {
@@ -114,8 +124,8 @@ public class OfferService : BaseService<OfferService>, IOfferService
             Terms = OfferLetterPdfGenerator.DefaultTerms,
             SignerName = NameOrEmail(signer),
             SignerTitle = signer is null ? null : RoleTitle(signer.Role),
-            HrContactName = NameOrEmail(signer),
-            HrContactEmail = signer?.Email ?? company?.ContactEmail,
+            HrContactName = NameOrEmail(drafter),
+            HrContactEmail = drafter?.Email ?? company?.ContactEmail,
             ExpiresInDays = DefaultOfferTtlDays
         };
     }
