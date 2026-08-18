@@ -53,6 +53,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
             services.AddScoped<ICriteriaExtractionClient, CriteriaExtractionClient>();
             services.AddScoped<ICvScreeningClient, CvScreeningClient>();
+            services.AddScoped<IPanelSummaryClient, PanelSummaryClient>();
 
             // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
             // Đổi sang EmailService nếu muốn gửi qua NotificationCenter (HTTP).
@@ -107,6 +108,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
             services.AddScoped<ICriteriaExtractionRepo, CriteriaExtractionRepo>();
             services.AddScoped<ICvScreeningRepo, CvScreeningRepo>();
+            services.AddScoped<IPanelSummaryRepo, PanelSummaryRepo>();
             services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
 
@@ -148,6 +150,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvIntakeService, CvIntakeService>();
             services.AddScoped<ICvScreeningService, CvScreeningService>();
+            services.AddScoped<IPanelSummaryService, PanelSummaryService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();

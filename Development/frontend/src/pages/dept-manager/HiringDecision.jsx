@@ -43,6 +43,7 @@ import {
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
+import PanelSummaryCard from '../../components/PanelSummaryCard';
 import '../Dashboard.css';
 
 // Thông báo lỗi từ BE (ErrorObjectCommon) — hiện đúng câu BE trả về, ví dụ 403 khi
@@ -552,6 +553,13 @@ const HiringDecision = () => {
                 đứng trước, điểm chỉ là phần bổ trợ. Điểm hiện gọn: % trung bình có trọng số của
                 cả hội đồng + của từng người chấm; bảng điểm từng tiêu chí ở link bên cạnh. */}
             <Title level={5} style={{ marginTop: 24 }}>Kết luận của hội đồng phỏng vấn</Title>
+
+            {/* Bản đọc nhanh do AI gom các phiếu (V047) — đứng TRƯỚC phiếu gốc vì nó là mục lục,
+                không phải kết luận. Nó không nói nên tuyển hay không; phiếu gốc bên dưới mới là
+                căn cứ chính thức. */}
+            {!detailLoading && brief && brief.totalSubmitted > 0 && (
+              <PanelSummaryCard applicationId={selectedRecord?.id} />
+            )}
 
             {detailLoading ? (
               <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>

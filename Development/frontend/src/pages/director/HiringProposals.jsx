@@ -13,6 +13,7 @@ import {
   hiringProposalAPI, interviewAPI, applicationAPI, cvAPI,
 } from '../../services/api';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
+import PanelSummaryCard from '../../components/PanelSummaryCard';
 import '../Dashboard.css';
 
 const apiMessage = (error, fallback) =>
@@ -394,6 +395,12 @@ const HiringProposals = () => {
             )}
 
             <Title level={5} style={{ marginTop: 24 }}>Kết luận của hội đồng phỏng vấn</Title>
+
+            {/* Bản đọc nhanh do AI gom các phiếu (V047). Không kết luận tuyển/không tuyển —
+                Giám đốc vẫn đọc phiếu gốc bên dưới rồi mới duyệt. */}
+            {!detailLoading && brief && brief.totalSubmitted > 0 && (
+              <PanelSummaryCard applicationId={selected?.applicationId} />
+            )}
             {detailLoading ? (
               <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
             ) : !brief || brief.totalSubmitted === 0 ? (

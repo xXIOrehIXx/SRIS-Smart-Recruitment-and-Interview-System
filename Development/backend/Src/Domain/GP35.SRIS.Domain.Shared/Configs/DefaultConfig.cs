@@ -60,6 +60,12 @@ namespace GP35.SRIS.Domain.Shared.Configs
         /// dùng không ngồi đợi con số này.
         /// </summary>
         public int ScreenCvTimeoutSeconds { get; set; } = 420;
+
+        /// <summary>
+        /// Trần thời gian chờ AI tổng hợp ý kiến hội đồng (V047). Ngắn hơn hai việc kia: đầu vào
+        /// là vài đoạn nhận xét ngắn, không có văn bản dài nào.
+        /// </summary>
+        public int PanelSummaryTimeoutSeconds { get; set; } = 240;
     }
 
     public class AuthOptions

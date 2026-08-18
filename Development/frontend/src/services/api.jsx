@@ -324,6 +324,14 @@ export const interviewAPI = {
   //       internalNotes: [{ authorName, content, createdAt }] }
   getDecisionBrief: (applicationId) =>
     api.get(`/applications/${applicationId}/decision-brief`),
+
+  // AI tổng hợp ý kiến hội đồng phỏng vấn (V047). POST chỉ XẾP HÀNG (202) — FE hỏi lại
+  // getPanelSummary tới khi running=false, giống hệt khuôn của sàng lọc CV.
+  requestPanelSummary: (applicationId) =>
+    api.post(`/applications/${applicationId}/panel-summary`),
+
+  getPanelSummary: (applicationId) =>
+    api.get(`/applications/${applicationId}/panel-summary`),
 };
 
 // ==================== ĐỀ XUẤT TUYỂN (DM đề xuất → Giám đốc quyết) ====================

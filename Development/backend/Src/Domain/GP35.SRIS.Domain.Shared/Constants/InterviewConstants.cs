@@ -117,3 +117,25 @@ public static class SchedulingFlag
     public static string From(int noSlotFitsCount) =>
         noSlotFitsCount <= 0 ? None : noSlotFitsCount >= RedThreshold ? Red : Yellow;
 }
+
+/// <summary>
+/// Trạng thái một lượt AI tổng hợp ý kiến hội đồng phỏng vấn (V047) — cùng bộ chữ với
+/// <c>ScreeningStatus</c>/<c>ExtractionStatus</c> vì cùng kiểu hàng đợi chạy nền.
+/// </summary>
+public static class PanelSummaryStatus
+{
+    public const string Pending = "PENDING";
+    public const string Running = "RUNNING";
+    public const string Done = "DONE";
+    public const string Failed = "FAILED";
+}
+
+/// <summary>Mã lỗi của lượt tổng hợp — FE hiện thông điệp khác nhau cho từng ca.</summary>
+public static class PanelSummaryErrorCode
+{
+    /// <summary>AI service / Ollama hỏng -> mời thử lại sau.</summary>
+    public const string AiFailed = "AI_SUMMARY_FAILED";
+
+    /// <summary>Chưa có phiếu chấm nào được nộp -> chưa có gì để tổng hợp.</summary>
+    public const string NoVerdicts = "NO_VERDICTS";
+}

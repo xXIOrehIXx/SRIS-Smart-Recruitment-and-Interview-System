@@ -14,6 +14,8 @@ Endpoint:
                         (Ollama — docs 5.18, Việc B4; DRAFT cho người duyệt)
   - /screen-cv        : đối chiếu CV với JD -> tóm tắt + đạt/thiếu + đề xuất
                         (tham khảo cho người sàng lọc, không tự quyết thay ai)
+  - /summarize-panel  : gom các phiếu chấm phỏng vấn -> đồng thuận / mâu thuẫn
+                        (KHÔNG kết luận tuyển hay không — người quyết vẫn là người)
 
 Vì sao chạy Local LLM (không gọi OpenAI)?
   - Dữ liệu tuyển dụng không rời hạ tầng của khách hàng.
@@ -34,6 +36,9 @@ from criteria_extract import MODEL, NUM_CTX, CriteriaList, extract_criteria
 from cv_screening import MODEL as CV_MODEL
 from cv_screening import NUM_CTX as CV_NUM_CTX
 from cv_screening import CvScreeningResult, screen_cv
+from panel_summary import MODEL as PANEL_MODEL
+from panel_summary import NUM_CTX as PANEL_NUM_CTX
+from panel_summary import PanelSummaryResult, Verdict, summarize_panel
 
 app = FastAPI(title="SRIS AI Service")
 
@@ -51,6 +56,8 @@ def health():
         "num_ctx": NUM_CTX,
         "cv_model": CV_MODEL,
         "cv_num_ctx": CV_NUM_CTX,
+        "panel_model": PANEL_MODEL,
+        "panel_num_ctx": PANEL_NUM_CTX,
     }
 
 
@@ -95,6 +102,28 @@ def screen_cv_endpoint(req: ScreenCvRequest):
         return screen_cv(req.cv_text, req.jd_text)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Sang loc CV that bai: {e}")
+
+
+# ============================================================
+#  SUMMARIZE-PANEL — gom ý kiến hội đồng phỏng vấn của MỘT ứng viên
+#  Chỉ tóm tắt: đồng thuận / mâu thuẫn / còn bỏ ngỏ. KHÔNG kết luận tuyển.
+# ============================================================
+class SummarizePanelRequest(BaseModel):
+    candidate: str = ""
+    verdicts: list[Verdict]
+
+
+@app.post("/summarize-panel", response_model=PanelSummaryResult)
+def summarize_panel_endpoint(req: SummarizePanelRequest):
+    """
+    Nhận các phiếu chấm đã nộp -> đoạn tổng hợp + điểm đồng ý + điểm mâu thuẫn + câu hỏi còn
+    bỏ ngỏ. Lỗi (Ollama chưa chạy / LLM không ra JSON hợp lệ) -> HTTP 502 để .NET đánh dấu
+    lượt tổng hợp là FAILED; màn quyết định vẫn đọc được phiếu gốc như trước.
+    """
+    try:
+        return summarize_panel(req.candidate, req.verdicts)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Tong hop y kien that bai: {e}")
 
 
 # Chạy:   uvicorn main:app --port 8000
