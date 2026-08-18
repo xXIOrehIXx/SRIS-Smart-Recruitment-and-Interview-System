@@ -40,7 +40,7 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 | Role | Mô tả | Cách vào | Quyền chính |
 |---|---|---|---|
 | Admin (per tenant) | Quản trị viên công ty | Đăng nhập Portal | Quản lý user, phòng ban, brand, email; **superuser — bypass mọi cổng quyền** |
-| Human Resource | Vận hành toàn bộ pipeline | Đăng nhập Portal | Duyệt Yêu cầu tuyển dụng → tạo Tin tuyển dụng; duyệt bộ tiêu chí AI bóc; Kanban, sàng lọc, ĐẶT LỊCH phỏng vấn, soạn thư mời theo điều khoản Giám đốc chốt |
+| Human Resource | Vận hành toàn bộ pipeline | Đăng nhập Portal | Tạo Tin tuyển dụng từ Yêu cầu **Giám đốc đã duyệt** (V047); duyệt bộ tiêu chí AI bóc; Kanban, sàng lọc, ĐẶT LỊCH phỏng vấn, soạn thư mời theo điều khoản Giám đốc chốt |
 | Interviewer | Người chấm phỏng vấn | Đăng nhập Portal | Xem buổi được giao, chấm theo tiêu chí + nêu **đề xuất tuyển/không**, sửa tới khi hồ sơ khóa |
 | Department Manager | Trưởng bộ phận — ra đề và ĐỀ XUẤT | Đăng nhập Portal | Tạo Yêu cầu tuyển dụng (5.17); duyệt ứng viên vào vòng phỏng vấn; đọc đề xuất của panel rồi **gửi Đề xuất tuyển** lên Giám đốc |
 | **Giám đốc** (V043) | Người quyết tuyển | Đăng nhập Portal | Duyệt/không duyệt Đề xuất tuyển của DM + **chốt mức lương và ngày vào làm**; phạm vi toàn công ty |
@@ -258,7 +258,8 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - Trình bày demo: mở đầu bằng đường ĐƠN GIẢN NHẤT (đăng tin → AI bóc tiêu chí, người duyệt → CV vào → phỏng vấn chấm theo tiêu chí → tuyển), sau đó mới bật dần tùy chọn.
 
 ### 5.17 Yêu cầu tuyển dụng (Hiring Requisition) — ĐÃ CODE
-- **Luồng:** DM tạo **Yêu cầu tuyển dụng** — không phải JD chi tiết, chỉ cần vị trí, số lượng, và **các tiêu chí cần thiết** (gõ tự nhiên) → HR duyệt → HR tạo **Tin tuyển dụng** công khai từ yêu cầu đó.
+- **Luồng:** DM tạo **Yêu cầu tuyển dụng** — không phải JD chi tiết, chỉ cần vị trí, số lượng, và **các tiêu chí cần thiết** (gõ tự nhiên) → **GIÁM ĐỐC duyệt** → HR tạo **Tin tuyển dụng** công khai từ yêu cầu đã duyệt.
+- **Người duyệt đổi từ HR sang GIÁM ĐỐC (V047, 18/08/2026 — phản hồi hội đồng):** mở một vị trí là cam kết chi tiền, nên nó thuộc người chịu trách nhiệm — cùng lý do đã đưa quyết định tuyển về tay Giám đốc ở V043. Để nhân sự gác cửa này là tái lập đúng điều hội đồng phê ("nhân sự không được quyền phê duyệt"), chỉ khác là ở ĐẦU quy trình. Đường tắt cũ "tạo job từ yêu cầu PENDING = ngầm chấp thuận" nay chỉ còn cho Admin (công ty 1 tài khoản).
 - **Mô hình hóa (đã chốt): entity RIÊNG `RecruitmentRequest`** (V019), không phải giai đoạn của Job — phiếu và tin là 2 vật thể của 2 chủ, và tính năng phải tắt được. Trạng thái: `PENDING → APPROVED → CONVERTED` / `REJECTED`; DM tự hủy khi còn PENDING → `CANCELLED`. Khi CONVERTED lưu `job_id` để truy vết "job này từ đề bài nào". Có `review_note` + `reviewed_by/at`.
 - **Vì sao:** (1) đúng thực tế doanh nghiệp — trưởng bộ phận biết cần người thế nào, HR biết cách đăng tin (khớp As-Is 4.2 bước 1); (2) trả lời gốc câu hội đồng "tiêu chí từ đâu ra" — tri thức chuyên môn đến từ DM, không phải HR bịa, không phải AI bịa; (3) cho DM vai trò đầu-cuối tròn trịa (ra đề → chốt).
 - **Tùy chọn theo quy mô:** công ty nhỏ dùng 1 tài khoản Admin → bỏ qua phiếu, tạo job + gõ tiêu chí trực tiếp.
@@ -312,7 +313,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 ## 6. QUY TRÌNH NGHIỆP VỤ
 
-**MẢNG 1 — RECRUITMENT:** [nếu bật phiếu] DM tạo Yêu cầu tuyển dụng → HR duyệt và tạo Tin tuyển dụng / [mặc định công ty nhỏ] chủ tạo job trực tiếp → AI bóc tiêu chí DRAFT → người duyệt chốt bộ tiêu chí (5.18) → ứng viên nộp CV qua Career Site hoặc HR nộp hộ → hệ thống parse PDF + lưu hồ sơ ở NEW → HR bấm **Phân tích CV toàn bộ** cho AI đối chiếu từng CV với tin tuyển dụng (V044) → Kanban 4 pha xếp hồ sơ phù hợp nhất lên đầu (V046) để HR đọc trước, rồi HR tự quyết.
+**MẢNG 1 — RECRUITMENT:** [nếu bật phiếu] DM tạo Yêu cầu tuyển dụng → Giám đốc duyệt → HR tạo Tin tuyển dụng / [mặc định công ty nhỏ] chủ tạo job trực tiếp → AI bóc tiêu chí DRAFT → người duyệt chốt bộ tiêu chí (5.18) → ứng viên nộp CV qua Career Site hoặc HR nộp hộ → hệ thống parse PDF + lưu hồ sơ ở NEW → HR bấm **Phân tích CV toàn bộ** cho AI đối chiếu từng CV với tin tuyển dụng (V044) → Kanban 4 pha xếp hồ sơ phù hợp nhất lên đầu (V046) để HR đọc trước, rồi HR tự quyết.
 
 **MẢNG 2 — INTERVIEW & OFFER:** DM duyệt ứng viên vào vòng phỏng vấn → HR gọi chốt giờ rồi đặt buổi, hệ thống gửi xác nhận + .ics (5.9, Section 15) → phỏng vấn + chấm theo CÙNG bộ tiêu chí, mỗi interviewer nêu đề xuất tuyển/không (5.7) → DM đọc bản tóm đề xuất rồi **gửi đề xuất tuyển**; **GIÁM ĐỐC duyệt** = hồ sơ sang Quyết định kèm lương + ngày vào làm đã chốt (5.14) → HR soạn thư mời theo đúng điều khoản đó (5.15) → ứng viên trả lời ngoài hệ thống → HR ghi nhận → HIRED/REJECTED + Dashboard.
 

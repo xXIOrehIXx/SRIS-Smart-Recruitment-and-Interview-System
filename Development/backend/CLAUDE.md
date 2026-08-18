@@ -145,8 +145,9 @@ Nhãn dùng chung ở FE `components/ApplicationStateTag.jsx` — **đừng khai
 Trang trạng thái của ỨNG VIÊN giữ bộ nhãn RIÊNG, trung tính ("Đã nhận hồ sơ / Đang xem xét / Phỏng vấn / Kết quả") — ứng viên không cần biết hồ sơ đang nằm trên bàn ai. 6 state vẫn là chuyện nội bộ.
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)
-DM tạo Yêu cầu tuyển dụng (tùy chọn) → Human Resource tạo Job → AI bóc tiêu chí `DRAFT` →
-người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng vấn** (interviewer chấm, 5.7).
+DM tạo Yêu cầu tuyển dụng (tùy chọn) → **Giám đốc duyệt yêu cầu** (V047) → Human Resource tạo Job
+→ AI bóc tiêu chí `DRAFT` → người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng vấn**
+(interviewer chấm, 5.7).
 
 > **SÀNG LỌC CV BẰNG AI QUAY LẠI SCOPE (chốt 16/08/2026 — V044).** Ở màn chi tiết ứng
 > viên, người tuyển dụng bấm một nút để AI đọc CV và đối chiếu với tin tuyển dụng: tóm
@@ -172,20 +173,25 @@ người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng v�
 ### AI Service (Python FastAPI — port riêng)
 - .NET **không gọi AI trực tiếp** — chỉ gọi qua HTTP nội bộ đến Python service
 - Python stateless, không đụng DB, không biết tenant
-- Hai endpoint, hai model riêng (đổi độc lập qua env), `temperature=0`, output ràng buộc bằng
+- Ba endpoint, model đổi độc lập qua env, `temperature=0`, output ràng buộc bằng
   JSON schema + validate Pydantic + retry 3 lượt. Lỗi → HTTP 502.
   - **`/extract-criteria`** — bóc tiêu chí từ JD. Model `SRIS_LLM_MODEL` (mặc định `qwen2.5`).
   - **`/screen-cv`** — đối chiếu CV với JD. Model `SRIS_CV_MODEL` (mặc định `qwen3:8b`);
     bài này bắt model đọc hai văn bản dài rồi kết luận nên cần model khá hơn hẳn việc kia.
-- **Cả hai chạy NỀN,** cùng một khuôn (xếp hàng → `202` → worker → FE hỏi lại tới khi
+  - **`/summarize-panel`** (V047) — gom các phiếu chấm phỏng vấn của một ứng viên thành
+    đồng thuận / mâu thuẫn / câu hỏi còn bỏ ngỏ. Model `SRIS_PANEL_MODEL` (mặc định = model
+    bóc tiêu chí: đầu vào là vài đoạn nhận xét ngắn). **KHÔNG kết luận tuyển/không tuyển.**
+- **Cả ba chạy NỀN,** cùng một khuôn (xếp hàng → `202` → worker → FE hỏi lại tới khi
   `running=false`). Lý do: Local LLM trên CPU mất hàng chục giây — gọi đồng bộ là axios (30s)
   cắt ngang trong khi backend vẫn đang chạy.
   - V037: `POST /api/jobs/{id}/criteria/extract` → bảng `CriteriaExtraction` → `CriteriaExtractionWorker`
     → `GET .../criteria/extract-status`.
   - V044: `POST /api/applications/{id}/cv-screening` → bảng `CvScreening` → `CvScreeningWorker`
     → `GET .../cv-screening`.
-  - Hai worker TÁCH RIÊNG, không gộp: hai việc dùng hai model, xen kẽ trong một vòng lặp là
-    bắt Ollama nạp/đuổi model liên tục.
+  - V047: `POST /api/applications/{id}/panel-summary` → bảng `PanelSummary` → `PanelSummaryWorker`
+    → `GET .../panel-summary`.
+  - Ba worker TÁCH RIÊNG, không gộp: mỗi hàng đợi chạy hết một mạch với đúng một model, xen kẽ
+    trong một vòng lặp là bắt Ollama nạp/đuổi model liên tục.
 
 ### Magic link purposes (chỉ của Candidate)
 `STATUS` · `OFFER_RESPONSE` (2 purpose — QUIZ loại 07/2026, **SCHEDULE loại 15/08/2026**)  
@@ -296,6 +302,20 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
    (Docstrum + reading-order của PdfPig). Bản trước cố ý vứt thứ tự vì text chỉ dùng cho
    embedding — đó chính là lý do tính năng tóm tắt CV ở V033 chết ngay ở V034. Đừng "tối ưu"
    nó về lại `page.GetWords()` nối bằng dấu cách.
+
+8. **Tổng hợp ý kiến hội đồng (PanelSummary, V047):** AI đọc các phiếu chấm ĐÃ NỘP rồi trả
+   đồng thuận / mâu thuẫn / câu hỏi còn bỏ ngỏ — **không có trường kết luận tuyển**, và
+   `PanelSummaryService` không đụng `current_state`. Đừng thêm "AI đề xuất tuyển" vào đây:
+   người quyết là DM (đề xuất) và Giám đốc (quyết) — V043.
+   Nguồn dữ liệu là `GetDecisionBriefAsync`, tức chỉ phiếu `SUBMITTED` — giữ nguyên đường này
+   để BLIND REVIEW không bị phá (nháp của người khác không được lọt vào prompt).
+   Interviewer KHÔNG đọc bản tổng hợp: nó gộp ý kiến cả panel, cho họ xem là phá blind ở vòng sau.
+
+9. **Xuất Excel danh sách ứng viên (V047):** `GET /api/jobs/{id}/applications/export` (ClosedXML).
+   Hồ sơ CHƯA phân tích để TRỐNG ô điểm, không ghi 0 — cùng luật với xếp hạng ở mục 7.
+   Bảng nhãn 4 pha trong `ApplicationQueryService.StateLabel` là BẢN SAO của
+   FE `components/ApplicationStateTag.jsx` (file do backend sinh nên không dùng lại được).
+   Sửa nhãn thì sửa cả hai chỗ.
 
 > Khi đụng feature lớn (tiêu chí, chấm phỏng vấn, scheduling), đọc section tương ứng
 > trong `docs/00_CONTEXT.md` (tiêu chí → 5.17/5.18, chấm phỏng vấn → 5.7, scheduling → Section 15).
