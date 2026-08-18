@@ -18,7 +18,7 @@ import {
 import { jobsAPI, applicationAPI, cvAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { canRejectAtState, rejectOwnerLabel } from '../../utils/decisionRights';
-import ApplicationStateTag from '../../components/ApplicationStateTag';
+import ApplicationStateTag, { APPLICATION_STATE_LABELS } from '../../components/ApplicationStateTag';
 import FitScoreTag from '../../components/FitScoreTag';
 import './css/JobDetail.css';
 
@@ -39,6 +39,12 @@ const JobDetail = () => {
   // hồ sơ nào trước, nên mở ra đã thấy ngay hồ sơ AI cho là khớp nhất. Vẫn đổi được về
   // 'recent' cho ai muốn duyệt theo thứ tự nộp.
   const [sort, setSort] = useState('fit');
+  // Bộ lọc danh sách ứng viên (V047 — hội đồng muốn "lọc, tách lọc để kiểm soát").
+  // Lọc ở FE: một vị trí thường vài chục tới vài trăm hồ sơ và đã tải sẵn cả danh sách,
+  // đẩy xuống API chỉ thêm một vòng mạng cho mỗi lần gõ phím.
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [stateFilter, setStateFilter] = useState('all');
+  const [fitFilter, setFitFilter] = useState('all');
   const [screeningAll, setScreeningAll] = useState(false);
   const [exporting, setExporting] = useState(false);
   const pollTimer = useRef(null);
@@ -233,6 +239,25 @@ const JobDetail = () => {
     return date.toLocaleDateString('vi-VN');
   };
 
+  // Lọc theo tên/email + pha + đề xuất của AI. "Chưa phân tích" là một lựa chọn RIÊNG:
+  // gộp nó vào "Ít phù hợp" là đổ oan cho hồ sơ chưa ai đọc (cùng luật với xếp hạng V046).
+  const filteredApplications = applications.filter((a) => {
+    const q = candidateSearch.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      (a.fullName || a.name || '').toLowerCase().includes(q) ||
+      (a.email || '').toLowerCase().includes(q);
+
+    const matchesState = stateFilter === 'all' || a.state === stateFilter;
+
+    const analysed = a.screeningStatus === 'DONE';
+    const matchesFit =
+      fitFilter === 'all' ||
+      (fitFilter === 'NONE' ? !analysed : analysed && a.screeningDecision === fitFilter);
+
+    return matchesSearch && matchesState && matchesFit;
+  });
+
   const candidatesColumns = [
     {
       title: 'Ứng Viên',
@@ -316,6 +341,34 @@ const JobDetail = () => {
             wrap
           >
             <Space wrap>
+              <Input.Search
+                allowClear
+                placeholder="Tìm theo tên hoặc email"
+                value={candidateSearch}
+                onChange={(e) => setCandidateSearch(e.target.value)}
+                style={{ width: 240 }}
+              />
+              <Select
+                value={stateFilter}
+                onChange={setStateFilter}
+                style={{ width: 200 }}
+                options={[
+                  { value: 'all', label: 'Mọi trạng thái' },
+                  ...Object.entries(APPLICATION_STATE_LABELS).map(([value, label]) => ({ value, label })),
+                ]}
+              />
+              <Select
+                value={fitFilter}
+                onChange={setFitFilter}
+                style={{ width: 190 }}
+                options={[
+                  { value: 'all', label: 'Mọi mức phù hợp' },
+                  { value: 'PROCEED', label: 'Nên mời' },
+                  { value: 'CONSIDER', label: 'Cân nhắc' },
+                  { value: 'REJECT', label: 'Ít phù hợp' },
+                  { value: 'NONE', label: 'Chưa phân tích' },
+                ]}
+              />
               <Text type="secondary">Sắp xếp:</Text>
               <Segmented
                 value={sort}
@@ -350,12 +403,17 @@ const JobDetail = () => {
 
           <Table
             columns={candidatesColumns}
-            dataSource={applications}
+            dataSource={filteredApplications}
             rowKey="id"
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} ứng viên`
+              // Nói rõ đang lọc: "Tổng 3 ứng viên" trong khi vị trí có 40 hồ sơ là dễ hiểu nhầm
+              // rằng chưa ai nộp.
+              showTotal: (total) =>
+                total === applications.length
+                  ? `Tổng ${total} ứng viên`
+                  : `${total}/${applications.length} ứng viên (đang lọc)`
             }}
             className="candidates-table"
             loading={loading}
