@@ -12,7 +12,8 @@ import {
   MailOutlined,
   ArrowLeftOutlined,
   ReloadOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import { jobsAPI, applicationAPI, cvAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -39,6 +40,7 @@ const JobDetail = () => {
   // 'recent' cho ai muốn duyệt theo thứ tự nộp.
   const [sort, setSort] = useState('fit');
   const [screeningAll, setScreeningAll] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const pollTimer = useRef(null);
 
   // Reject per-row từ danh sách ứng viên
@@ -154,6 +156,38 @@ const JobDetail = () => {
       message.error(err?.response?.data?.userMsg || 'Không thể phân tích CV cho vị trí này');
     } finally {
       setScreeningAll(false);
+    }
+  };
+
+  /**
+   * Tải danh sách ứng viên của vị trí này ra file Excel (V047).
+   *
+   * File gồm cả phần AI đọc CV (tóm tắt, yêu cầu đạt kèm câu trích, yêu cầu thiếu, mức phù hợp)
+   * để người tuyển dụng mang ra ngoài hệ thống — họp, gửi sếp — mà không phải gõ lại từng dòng.
+   * Tên file do backend đặt (Content-Disposition), FE chỉ lấy lại để đặt tên khi lưu.
+   */
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await applicationAPI.exportByJob(jobId);
+      const disposition = res.headers?.['content-disposition'] || '';
+      const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+      const fileName = match ? decodeURIComponent(match[1]) : `Ung-vien-${jobId}.xlsx`;
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      message.success('Đã tải danh sách ứng viên.');
+    } catch (err) {
+      console.error('Error exporting applications:', err);
+      message.error(err?.response?.data?.userMsg || 'Không xuất được danh sách ứng viên');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -292,15 +326,26 @@ const JobDetail = () => {
                 ]}
               />
             </Space>
-            <Tooltip title="Cho AI đọc CV của mọi hồ sơ đang ở vòng sàng lọc và đối chiếu với tin tuyển dụng. Hồ sơ đã có kết quả sẽ được bỏ qua.">
-              <Button
-                icon={<ThunderboltOutlined />}
-                loading={screeningAll}
-                onClick={handleScreenAll}
-              >
-                Phân tích CV toàn bộ
-              </Button>
-            </Tooltip>
+            <Space wrap>
+              <Tooltip title="Tải file Excel danh sách ứng viên: liên hệ, trạng thái, và phần AI đọc CV (tóm tắt, yêu cầu đạt/thiếu, mức phù hợp).">
+                <Button
+                  icon={<FileExcelOutlined />}
+                  loading={exporting}
+                  onClick={handleExportExcel}
+                >
+                  Xuất Excel
+                </Button>
+              </Tooltip>
+              <Tooltip title="Cho AI đọc CV của mọi hồ sơ đang ở vòng sàng lọc và đối chiếu với tin tuyển dụng. Hồ sơ đã có kết quả sẽ được bỏ qua.">
+                <Button
+                  icon={<ThunderboltOutlined />}
+                  loading={screeningAll}
+                  onClick={handleScreenAll}
+                >
+                  Phân tích CV toàn bộ
+                </Button>
+              </Tooltip>
+            </Space>
           </Space>
 
           <Table

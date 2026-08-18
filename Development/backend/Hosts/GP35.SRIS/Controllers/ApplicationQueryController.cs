@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Services.Business;
+﻿using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
@@ -48,5 +48,19 @@ public class ApplicationQueryController : ControllerBase
     public async Task<IActionResult> GetById(long applicationId)
     {
         return Ok(await _queryService.GetDetailAsync(_contextData.CompanyId, applicationId));
+    }
+
+    /// <summary>
+    /// Tải danh sách ứng viên của 1 vị trí dạng Excel (V047) — liên hệ + trạng thái + kết quả
+    /// AI đọc CV (tóm tắt, yêu cầu đạt kèm trích dẫn, yêu cầu thiếu, điểm phù hợp).
+    /// Người phỏng vấn KHÔNG tải được: họ chỉ chấm ứng viên được giao, không cầm cả danh sách.
+    /// </summary>
+    [HttpGet("api/jobs/{jobId:long}/applications/export")]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
+    public async Task<IActionResult> ExportByJob(long jobId)
+    {
+        var (content, fileName) = await _queryService.ExportByJobAsync(_contextData.CompanyId, jobId);
+        return File(content,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 }

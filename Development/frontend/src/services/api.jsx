@@ -224,6 +224,11 @@ export const applicationAPI = {
   getById: (id) =>
     api.get(`/applications/${id}`),
 
+  // Tải danh sách ứng viên của 1 vị trí dạng Excel (V047). responseType 'blob' là bắt buộc:
+  // để mặc định thì axios cố parse file nhị phân thành chuỗi và file tải về sẽ hỏng.
+  exportByJob: (jobId) =>
+    api.get(`/jobs/${jobId}/applications/export`, { responseType: 'blob' }),
+
   // reason tùy chọn (kể cả khi toState = 'REJECTED').
   // interviewerIds: CHỈ dùng khi toState = 'INTERVIEW' — người Trưởng bộ phận cho gặp ứng viên
   // (V045). Duyệt vào phỏng vấn và chỉ định người phỏng vấn là MỘT quyết định, gửi trong 1 lần.
