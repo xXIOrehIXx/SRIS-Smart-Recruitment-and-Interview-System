@@ -59,7 +59,7 @@ public class InterviewScoringController : ControllerBase
 
     /// <summary>Bảng tổng hợp panel (chỉ phiếu đã nộp): Radar + std dev + điểm từng interviewer.</summary>
     [HttpGet("api/interview-schedules/{scheduleId:long}/aggregate")]
-    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
     public async Task<IActionResult> Aggregate(long scheduleId)
     {
         return Ok(await _scoringService.GetAggregateAsync(_contextData.CompanyId, scheduleId));
@@ -70,7 +70,7 @@ public class InterviewScoringController : ControllerBase
     /// đọc trước khi chốt tuyển/loại.
     /// </summary>
     [HttpGet("api/applications/{applicationId:long}/interview-aggregate")]
-    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
     public async Task<IActionResult> AggregateByApplication(long applicationId)
     {
         return Ok(await _scoringService.GetAggregatesByApplicationAsync(_contextData.CompanyId, applicationId));
@@ -81,7 +81,7 @@ public class InterviewScoringController : ControllerBase
     /// Không kèm điểm — màn "Quyết định tuyển dụng" của DM đọc cái này.
     /// </summary>
     [HttpGet("api/applications/{applicationId:long}/decision-brief")]
-    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
     public async Task<IActionResult> DecisionBrief(long applicationId)
     {
         return Ok(await _scoringService.GetDecisionBriefAsync(_contextData.CompanyId, applicationId));

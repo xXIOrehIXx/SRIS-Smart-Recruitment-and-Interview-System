@@ -183,7 +183,13 @@ const Criteria = () => {
     setExtracting(false);
 
     if (status.status === 'DONE') {
-      message.success(`AI đã đề xuất ${status.criteriaCount ?? 0} tiêu chí — rà lại rồi bấm Duyệt.`);
+      // 0 tiêu chí mới KHÔNG phải hỏng: AI bóc ra toàn thứ vị trí này đã có (BE bỏ dòng trùng
+      // tên thay vì đè lên tiêu chí đã duyệt). Báo "đã đề xuất 0 tiêu chí" thì người dùng tưởng lỗi.
+      if ((status.criteriaCount ?? 0) === 0) {
+        message.info('AI không tìm thấy tiêu chí nào mới — danh sách hiện có đã bao trùm những gì bóc được từ tin tuyển dụng.', 6);
+      } else {
+        message.success(`AI đã đề xuất ${status.criteriaCount} tiêu chí — rà lại rồi bấm Duyệt.`);
+      }
       fetchJobCriteria(jobId);
       return;
     }

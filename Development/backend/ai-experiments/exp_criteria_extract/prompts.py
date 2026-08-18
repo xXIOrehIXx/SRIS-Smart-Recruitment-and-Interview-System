@@ -36,7 +36,7 @@ if str(_AI_SERVICE) not in sys.path:
     sys.path.insert(0, str(_AI_SERVICE))
 
 from criteria_extract import _PROMPT as PROMPT_PRODUCTION  # noqa: E402
-from criteria_extract import MODEL, NUM_CTX  # noqa: E402  (tái xuất cho run.py)
+from criteria_extract import MODEL, NUM_CTX  # noqa: E402  (tái xuất cho 1_chay_model_va_may_cham.py)
 
 
 # ---------------------------------------------------------------------------

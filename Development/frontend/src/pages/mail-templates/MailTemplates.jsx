@@ -71,7 +71,6 @@ const MailTemplates = () => {
   // Đặt ở đầu component để mọi computed bên dưới (missingTypes, columns, stats) đều
   // dùng được — nếu khai báo sau khi đã tham chiếu sẽ nổ TypeError.
   const templateCategories = [
-    { value: "SCHEDULE", label: "Mời chọn lịch phỏng vấn", color: "blue" },
     // Chưa tạo mẫu thì hệ thống vẫn tự soạn được lá thư từ form gửi thư mời — nhưng có mẫu
     // thì công ty sửa được lời thư và ảnh đầu thư, nên vẫn nhắc như các loại khác.
     { value: "OFFER_RESPONSE", label: "Thư mời nhận việc", color: "green" },

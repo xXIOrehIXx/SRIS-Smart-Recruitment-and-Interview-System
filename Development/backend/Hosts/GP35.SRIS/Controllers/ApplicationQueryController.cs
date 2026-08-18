@@ -1,4 +1,5 @@
 using GP35.SRIS.Application.Contracts.Services.Business;
+using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.HostBase.Authorization;
@@ -10,7 +11,8 @@ namespace GP35.SRIS.Controllers;
 /// <summary>Đọc hồ sơ ứng tuyển cho Kanban + màn chi tiết ứng viên (5.16). Human Resource/DM.</summary>
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.Interviewer, RoleConstants.DepartmentManager,
+    RoleConstants.Director)]
 public class ApplicationQueryController : ControllerBase
 {
     private readonly IContextData _contextData;
@@ -22,11 +24,23 @@ public class ApplicationQueryController : ControllerBase
         _queryService = queryService;
     }
 
-    /// <summary>Toàn bộ hồ sơ của 1 job cho Kanban (FE nhóm theo state thành 4 pha).</summary>
+    /// <summary>
+    /// Toàn bộ hồ sơ của 1 job cho Kanban (FE nhóm theo state thành 4 pha), kèm kết quả sàng lọc
+    /// CV của từng hồ sơ.
+    /// <para>
+    /// <c>sort=fit</c> đưa hồ sơ AI thấy phù hợp nhất lên đầu (hồ sơ chưa phân tích xuống cuối);
+    /// mặc định <c>sort=recent</c> giữ nguyên thứ tự mới nộp trước. Giá trị lạ -> coi như recent,
+    /// không ném lỗi: đây là tuỳ chọn hiển thị, không đáng làm hỏng cả màn hình.
+    /// </para>
+    /// </summary>
     [HttpGet("api/jobs/{jobId:long}/applications")]
-    public async Task<IActionResult> GetByJob(long jobId)
+    public async Task<IActionResult> GetByJob(long jobId, [FromQuery] string? sort = null)
     {
-        return Ok(await _queryService.GetBoardByJobAsync(_contextData.CompanyId, jobId));
+        var order = string.Equals(sort, "fit", StringComparison.OrdinalIgnoreCase)
+            ? BoardSort.Fit
+            : BoardSort.Recent;
+
+        return Ok(await _queryService.GetBoardByJobAsync(_contextData.CompanyId, jobId, order));
     }
 
     /// <summary>Chi tiết 1 hồ sơ ứng viên.</summary>

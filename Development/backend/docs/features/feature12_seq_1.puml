@@ -4,51 +4,55 @@ skinparam sequenceMessageAlign center
 skinparam roundcorner 5
 skinparam minClassWidth 100
 
-title **Feature 12: Interview Pool Management - Sequence: Create Pool**
+title **Feature 12: Interview Scheduling - Sequence: Book a Session**
 
 actor Recruiter
 participant "Web UI" as UI
-participant "<<controller>>\nInterviewPoolController" as Ctrl
-participant "<<service>>\nInterviewPoolService" as Svc
+participant "<<controller>>\nInterviewScheduleController" as Ctrl
+participant "<<service>>\nInterviewScheduleService" as Svc
 participant "<<repository>>\nSchedulingRepository" as Repo
-participant "<<dbcontext>>\nAppDbContext" as DbContext
+participant "<<service>>\nNotificationService" as Notify
 participant "Database" as DB
 
-Recruiter -> UI: Enter Pool details (slots, interviewers)
+Recruiter -> UI: Phones interviewer & candidate, agrees a time
 activate UI
 
-UI -> Ctrl: POST /api/jobs/{id}/interview-pools
+UI -> Ctrl: POST /api/applications/{id}/interviews
 activate Ctrl
 
-Ctrl -> Svc: CreatePoolAsync(companyId, userId, jobId, dto)
+Ctrl -> Svc: BookAsync(companyId, userId, applicationId, dto)
 activate Svc
 
-note right of Svc: ValidateSlots (ensure >0 slots,\nstartTime in future, panel <= 5)
+note right of Svc: Application must be at INTERVIEW\n(the department manager approved it)
 
-Svc -> Repo: InsertPoolWithSlotsAsync(companyId, pool, slots)
+note right of Svc: Validate: job has approved criteria,\npanel 1..5, time in the future,\nround number not skipping ahead
+
+Svc -> Repo: FindCandidateBusyAtAsync / FindBusyInterviewerAsync
 activate Repo
-Repo -> DbContext: Add & SaveChanges
-activate DbContext
-DbContext -> DB: Execute SQL INSERT (Pool & Slots)
+Repo --> Svc: return conflict or null
+deactivate Repo
+
+Svc -> Repo: ManualConfirmAsync(...)
+activate Repo
+Repo -> DB: INSERT pool (CLOSED) + slot (BOOKED) + panel + schedule (CONFIRMED)
 activate DB
-DB --> DbContext: success
+DB --> Repo: success
 deactivate DB
-DbContext --> Repo: return poolId
-deactivate DbContext
-Repo --> Svc: return poolId
+Repo --> Svc: return scheduleId
 deactivate Repo
 
-Svc -> Repo: GetPoolByIdAsync(companyId, poolId)
-activate Repo
-Repo --> Svc: return InterviewSlotPool
-deactivate Repo
+Svc -> Notify: SendInterviewConfirmedAsync(...)
+activate Notify
+note right of Notify: Confirmation email + .ics\n(best effort)
+Notify --> Svc: ok
+deactivate Notify
 
-Svc --> Ctrl: return PoolDto
+Svc --> Ctrl: return scheduleId
 deactivate Svc
 
-Ctrl --> UI: return JSON
+Ctrl --> UI: return JSON { scheduleId }
 deactivate Ctrl
 
-UI --> Recruiter: Show Pool Created
+UI --> Recruiter: Session saved, candidate notified
 deactivate UI
 @enduml

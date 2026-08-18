@@ -14,6 +14,8 @@ export const ROLES = {
   INTERVIEWER: 'Interviewer',
   CANDIDATE: 'Candidate',
   DEPARTMENT_MANAGER: 'DepartmentManager',
+  // Giám đốc (V043, chốt 15/08/2026) — người DUY NHẤT quyết tuyển. Trưởng bộ phận chỉ đề xuất.
+  DIRECTOR: 'Director',
 };
 
 // Mapping từ các role name khác nhau sang role chuẩn
@@ -23,11 +25,13 @@ const ROLE_MAPPING = {
   'Interviewer': ROLES.INTERVIEWER,
   'Candidate': ROLES.CANDIDATE,
   'DepartmentManager': ROLES.DEPARTMENT_MANAGER,
+  'Director': ROLES.DIRECTOR,
   'admin': ROLES.ADMIN,
   'recruiter': ROLES.HUMAN_RESOURCE,
   'interviewer': ROLES.INTERVIEWER,
   'candidate': ROLES.CANDIDATE,
   'departmentmanager': ROLES.DEPARTMENT_MANAGER,
+  'director': ROLES.DIRECTOR,
 };
 
 // Chuyển đổi role về chuẩn
@@ -42,6 +46,7 @@ export const ROLE_ROUTES = {
   [ROLES.HUMAN_RESOURCE]: '/human-resource/dashboard',
   [ROLES.INTERVIEWER]: '/interviewer/incoming',
   [ROLES.DEPARTMENT_MANAGER]: '/dept/dashboard',
+  [ROLES.DIRECTOR]: '/director/proposals',
 };
 
 // Menu items theo vai trò
@@ -82,10 +87,16 @@ export const ROLE_MENUS = {
     { key: '/dept/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
     { key: '/dept/requests', icon: 'FileTextOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/dept/interviews', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
-    // DM duyệt ứng viên ở cửa INTERVIEW->OFFER thông qua Quyết Định Tuyển Dụng.
-    // Human Resource sẽ là người tạo OfferDetail.
-    { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Quyết Định Tuyển Dụng' },
+    // DM duyệt ai được vào phỏng vấn (SCREENING->INTERVIEW) và ĐỀ XUẤT tuyển; quyết định
+    // cuối là của Giám đốc (V043). Human Resource sàng lọc, xếp lịch và soạn thư mời.
+    { key: '/dept/screening', icon: 'SolutionOutlined', label: 'Duyệt Vào Phỏng Vấn' },
+    { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Đề Xuất Tuyển' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
+  ],
+  // Giám đốc chỉ có đúng việc của mình: duyệt đề xuất tuyển + nhìn số liệu tuyển dụng.
+  [ROLES.DIRECTOR]: [
+    { key: '/director/proposals', icon: 'AuditOutlined', label: 'Duyệt Đề Xuất Tuyển' },
+    { key: '/director/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
   ],
 };
 
@@ -117,6 +128,10 @@ export const hasPermission = (userRole, route) => {
     ],
     [ROLES.DEPARTMENT_MANAGER]: [
       '/dept',
+      '/settings',
+    ],
+    [ROLES.DIRECTOR]: [
+      '/director',
       '/settings',
     ],
   };

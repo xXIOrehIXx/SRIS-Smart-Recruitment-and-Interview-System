@@ -1,32 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card, Typography, Button, Table, Tag, Select, Upload, message,
+  Card, Typography, Button, Table, Select, Upload, message,
   Row, Col, Space, Modal, Input, Empty
 } from 'antd';
 import {
   UploadOutlined, InboxOutlined, ReloadOutlined, EyeOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import { cvAPI, jobsAPI, applicationAPI } from '../../services/api';
+import ApplicationStateTag from '../../components/ApplicationStateTag';
 import './css/CvIntake.css';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
-// Nhãn 4 pha hiển thị (6 state nội bộ gộp lại — docs 5.16).
-const STATE_LABEL = {
-  NEW: { text: 'Hồ sơ mới', color: 'blue' },
-  SCREENING: { text: 'Sàng lọc', color: 'gold' },
-  INTERVIEW: { text: 'Phỏng vấn', color: 'purple' },
-  OFFER: { text: 'Quyết định', color: 'cyan' },
-  HIRED: { text: 'Đã tuyển', color: 'green' },
-  REJECTED: { text: 'Đã loại', color: 'red' },
-};
+// Nhãn 4 pha dùng chung ở components/ApplicationStateTag.jsx — trước đây màn này tự khai một
+// bảng riêng, và nó đã trôi khỏi bản gốc (đổi tên pha 17/08/2026 thì bảng này vẫn giữ chữ cũ).
 
 /**
  * Nhận hồ sơ ứng viên: Human Resource nộp CV hộ ứng viên (CV nhận qua email, hội chợ
  * việc làm...) và xem danh sách hồ sơ đã nộp của một vị trí.
  *
- * KHÔNG chấm điểm, KHÔNG xếp hạng — sàng lọc là việc của người tuyển dụng.
+ * AI chấm mức phù hợp CV↔tin tuyển dụng ở màn vị trí (V044/V046) để gợi ý đọc hồ sơ nào
+ * trước; quyết định vẫn là của người tuyển dụng. Màn này chỉ NHẬN hồ sơ.
  */
 const CvIntake = () => {
   const [loading, setLoading] = useState(false);
@@ -146,11 +141,8 @@ const CvIntake = () => {
       title: 'Trạng thái',
       dataIndex: 'currentState',
       key: 'currentState',
-      width: 140,
-      render: (state) => {
-        const s = STATE_LABEL[state] || { text: state, color: 'default' };
-        return <Tag color={s.color}>{s.text}</Tag>;
-      },
+      width: 180,
+      render: (state) => <ApplicationStateTag state={state} />,
     },
     {
       title: 'Ngày nộp',
@@ -268,7 +260,7 @@ const CvIntake = () => {
           </Dragger>
 
           <Text type="secondary" style={{ fontSize: 12 }}>
-            <FileTextOutlined /> Hồ sơ được tạo ở bước “Hồ sơ mới”; việc sàng lọc do bạn quyết định.
+            <FileTextOutlined /> Hồ sơ vào bước “Tiếp nhận & sàng lọc”; bạn đọc CV và quyết hồ sơ nào chuyển tiếp cho Trưởng bộ phận.
           </Text>
         </Space>
       </Modal>

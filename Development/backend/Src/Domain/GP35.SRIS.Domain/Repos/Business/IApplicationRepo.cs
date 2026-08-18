@@ -2,10 +2,33 @@ using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
-/// <summary>1 card trên Kanban: hồ sơ + ứng viên.</summary>
+/// <summary>
+/// 1 card trên Kanban: hồ sơ + ứng viên + kết quả sàng lọc CV gần nhất (V046).
+///
+/// <para>
+/// Ba trường sàng lọc là LEFT JOIN sang <c>CvScreening</c>: hồ sơ chưa phân tích bao giờ thì
+/// <see cref="ScreeningStatus"/> = null, KHÔNG phải điểm 0. Phân biệt "chưa chấm" với "chấm
+/// thấp" là bắt buộc — gộp hai ca đó lại thì hồ sơ chưa ai đọc bị đẩy xuống đáy y như hồ sơ
+/// đã đọc và thấy không hợp.
+/// </para>
+/// </summary>
 public record ApplicationBoardRow(
     long ApplicationId, long CandidateId, string CandidateName, string CandidateEmail,
-    string CurrentState, long CvId, DateTime? AppliedAt);
+    string CurrentState, long CvId, DateTime? AppliedAt,
+    string? ScreeningStatus, int? FitScore, string? ScreeningDecision);
+
+/// <summary>Thứ tự trả về của bảng Kanban.</summary>
+public enum BoardSort
+{
+    /// <summary>Mới nộp trước (mặc định — thứ tự vốn có của hệ thống).</summary>
+    Recent = 0,
+
+    /// <summary>
+    /// Mức phù hợp CV↔JD cao trước, hồ sơ CHƯA phân tích xếp sau cùng (V046).
+    /// Dùng cho màn sàng lọc: người tuyển dụng đọc trước những CV AI thấy khớp nhất.
+    /// </summary>
+    Fit = 1
+}
 
 /// <summary>Chi tiết 1 hồ sơ cho màn xem ứng viên (join Candidate + Job + CvDocument).</summary>
 public record ApplicationDetailRow(
@@ -31,8 +54,13 @@ public interface IApplicationRepo : IBaseRepo<long, Application>
     /// <summary>Lấy 1 hồ sơ theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<Application?> GetByIdAsync(long companyId, long applicationId);
 
-    /// <summary>Toàn bộ hồ sơ của 1 job cho Kanban (mới nộp trước trong từng cột).</summary>
-    Task<IReadOnlyList<ApplicationBoardRow>> GetBoardByJobAsync(long companyId, long jobId);
+    /// <summary>
+    /// Toàn bộ hồ sơ của 1 job cho Kanban, kèm kết quả sàng lọc CV gần nhất.
+    /// <paramref name="sort"/> quyết định thứ tự trong từng cột (FE nhóm theo state, giữ nguyên
+    /// thứ tự trả về).
+    /// </summary>
+    Task<IReadOnlyList<ApplicationBoardRow>> GetBoardByJobAsync(
+        long companyId, long jobId, BoardSort sort = BoardSort.Recent);
 
     /// <summary>Chi tiết 1 hồ sơ (join Candidate + Job + CvDocument). Null nếu không thuộc company.</summary>
     Task<ApplicationDetailRow?> GetDetailAsync(long companyId, long applicationId);

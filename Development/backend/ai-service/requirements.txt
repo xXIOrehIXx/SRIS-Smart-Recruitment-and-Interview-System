@@ -3,4 +3,5 @@ uvicorn[standard]
 ollama
 pydantic
 # LLM chạy qua Ollama -> không cần torch/sentence-transformers.
-# Cần: `ollama pull qwen2.5` (bóc tiêu chí).
+# Cần: `ollama pull qwen2.5`  (bóc tiêu chí  — env SRIS_LLM_MODEL)
+#      `ollama pull qwen3:8b` (sàng lọc CV   — env SRIS_CV_MODEL)

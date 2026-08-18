@@ -1,0 +1,11 @@
+﻿id,so_bo_sot,ghi_chu
+J01_ke_toan,1,Mất 'báo cáo tài chính' (có trong skill_tags)
+J02_kinh_doanh,1,Mất 'CRM' (có trong skill_tags)
+J03_kho_van,0,
+J04_dotnet,0,
+J05_hanh_chinh,1,Mất 'tính lương'
+J06_le_tan,1,Mất 'OTA'
+J07_marketing,0,
+J08_cskh,0,"Thẻ kỹ năng 'xử lý khiếu nại' coi như đã nằm trong dòng 'xoa dịu khách đang bức xúc', không tính là sót"
+J09_chi_dau_viec,0,Trả rỗng là ĐÚNG thiết kế
+J10_qua_nhieu,0,Bỏ đúng 3 dòng giấy tờ

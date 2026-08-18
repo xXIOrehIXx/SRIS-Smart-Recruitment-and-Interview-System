@@ -1,25 +1,47 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Typography, Table, Tag, Select, Space, Button, Empty, Divider, Tooltip, Badge, message } from 'antd';
-import { CalendarOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons';
+import {
+  Card, Typography, Table, Tag, Select, Space, Button, Tooltip, Modal, Alert, message,
+} from 'antd';
+import {
+  CalendarOutlined, ReloadOutlined, EyeOutlined, TeamOutlined,
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { interviewAPI, jobsAPI, applicationAPI } from '../../services/api';
+import { interviewAPI, jobsAPI, applicationAPI, usersAPI } from '../../services/api';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
 
+const apiMessage = (error, fallback) =>
+  error?.response?.data?.userMsg || error?.response?.data?.UserMsg || fallback;
+
+/** Số người phỏng vấn tối đa cho một ứng viên — khớp InterviewPanel.MaxSize ở BE (V045). */
+const MAX_PANEL_SIZE = 5;
+
 /**
- * DM theo dõi lịch phỏng vấn (READ-ONLY — Human Resource mới thao tác mở pool/mời):
- * chọn job → xem pool khung giờ + ứng viên đã mời; buổi ĐÃ CHỐT có nút xem
- * tổng hợp điểm panel (chỉ phiếu đã nộp — blind review 5.7).
+ * Trưởng bộ phận theo dõi lịch phỏng vấn (CHỈ XEM — bộ phận nhân sự mới đặt/hủy buổi).
+ * Buổi đã diễn ra có nút xem tổng hợp điểm panel (chỉ phiếu đã nộp — blind review 5.7).
+ *
+ * V045 (16/08/2026): thêm bảng "Người phỏng vấn bạn chỉ định". Chỉ định LẦN ĐẦU nằm ở nút
+ * duyệt (màn Duyệt Ứng Viên Vào Phỏng Vấn) — đây là nơi SỬA sau đó: vòng 2 cần người khác,
+ * hoặc người được chỉ định nghỉ việc. Đổi danh sách KHÔNG đụng buổi đã hẹn, chỉ đổi những ai
+ * nhân sự được chọn cho buổi sau.
  */
 const DeptInterviewSchedule = () => {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(null);
-  const [pools, setPools] = useState([]);
-  const [applications, setApplications] = useState([]);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Ứng viên đang ở vòng phỏng vấn của vị trí này + nhóm người phỏng vấn đã chỉ định cho từng người.
+  const [panelRows, setPanelRows] = useState([]);
+  const [panelLoading, setPanelLoading] = useState(false);
+  const [interviewers, setInterviewers] = useState([]);
+
+  const [editRow, setEditRow] = useState(null);
+  const [editIds, setEditIds] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -33,118 +55,181 @@ const DeptInterviewSchedule = () => {
         message.error('Không thể tải danh sách vị trí');
       }
     })();
+
+    // /users/options mở cho cả DM; công ty chưa có tài khoản Interviewer nào thì BE rơi về
+    // Admin — đúng đường công ty nhỏ chạy bằng 1 tài khoản.
+    (async () => {
+      try {
+        const res = await usersAPI.getOptions('Interviewer');
+        setInterviewers(res.data || []);
+      } catch (error) {
+        console.error('Error fetching interviewers:', error);
+        setInterviewers([]);
+      }
+    })();
   }, []);
 
   const fetchJobData = useCallback(async (jobId) => {
     if (!jobId) return;
     setLoading(true);
     try {
-      const [poolsRes, appsRes] = await Promise.all([
-        interviewAPI.getInterviewPools(jobId),
-        applicationAPI.getAll(jobId),
-      ]);
-      setPools(poolsRes.data || []);
-      setApplications(appsRes.data?.applications || []);
+      const res = await interviewAPI.getJobInterviews(jobId);
+      setSessions(res.data || []);
     } catch (error) {
-      console.error('Error fetching pools:', error);
-      message.error(error?.response?.data?.userMsg || 'Không thể tải lịch phỏng vấn');
-      setPools([]);
+      console.error('Error fetching interviews:', error);
+      message.error(apiMessage(error, 'Không thể tải lịch phỏng vấn'));
+      setSessions([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const fetchPanels = useCallback(async (jobId) => {
+    if (!jobId) return;
+    setPanelLoading(true);
+    try {
+      const appsRes = await applicationAPI.getAll(jobId);
+      const apps = (appsRes.data?.applications || []).filter((a) => a.currentState === 'INTERVIEW');
+
+      // Một lượt gọi cho mỗi ứng viên: danh sách này chỉ vài người (số hồ sơ đang phỏng vấn
+      // của MỘT vị trí), không đáng làm endpoint gộp riêng.
+      const panels = await Promise.all(
+        apps.map((a) => interviewAPI.getAssignedInterviewers(a.applicationId)
+          .then((r) => r.data || [])
+          .catch(() => []))
+      );
+
+      setPanelRows(apps.map((a, i) => ({
+        applicationId: a.applicationId,
+        candidateName: a.candidateName,
+        candidateEmail: a.candidateEmail,
+        interviewers: panels[i],
+      })));
+    } catch (error) {
+      console.error('Error fetching assigned panels:', error);
+      setPanelRows([]);
+    } finally {
+      setPanelLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchJobData(selectedJobId);
-  }, [selectedJobId, fetchJobData]);
+    fetchPanels(selectedJobId);
+  }, [selectedJobId, fetchJobData, fetchPanels]);
 
-  const candidateLabel = (applicationId) => {
-    const app = applications.find(a => a.applicationId === applicationId);
-    return app ? app.candidateName : `Hồ sơ #${applicationId}`;
+  const openEdit = (row) => {
+    setEditRow(row);
+    setEditIds(row.interviewers.map((i) => i.interviewerId));
   };
 
-  const slotColumns = [
+  const handleSavePanel = async () => {
+    try {
+      setSaving(true);
+      await interviewAPI.assignInterviewers(editRow.applicationId, editIds);
+      message.success(editIds.length === 0
+        ? `Đã gỡ chỉ định — nhân sự sẽ không xếp lịch được cho ${editRow.candidateName} tới khi bạn chọn lại.`
+        : `Đã cập nhật người phỏng vấn cho ${editRow.candidateName}.`);
+      setEditRow(null);
+      fetchPanels(selectedJobId);
+    } catch (error) {
+      console.error(error);
+      message.error(apiMessage(error, 'Không lưu được danh sách người phỏng vấn'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const panelColumns = [
+    {
+      title: 'Ứng viên',
+      key: 'candidate',
+      render: (_, r) => (
+        <div>
+          <Text strong>{r.candidateName}</Text>
+          <br />
+          <Text type="secondary" style={{ fontSize: 12 }}>{r.candidateEmail}</Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Người phỏng vấn bạn chỉ định',
+      key: 'interviewers',
+      render: (_, r) => (r.interviewers.length
+        ? r.interviewers.map((i) => <Tag key={i.interviewerId}>{i.fullName || i.email}</Tag>)
+        : <Tag color="warning">Chưa chỉ định — nhân sự chưa xếp lịch được</Tag>),
+    },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 130,
+      render: (_, r) => (
+        <Button size="small" icon={<TeamOutlined />} onClick={() => openEdit(r)}>
+          Đổi người
+        </Button>
+      ),
+    },
+  ];
+
+  const columns = [
+    {
+      title: 'Ứng viên',
+      key: 'candidate',
+      render: (_, s) => (
+        <div>
+          <Text strong>{s.candidateName}</Text>
+          <br />
+          <Text type="secondary" style={{ fontSize: 12 }}>{s.candidateEmail}</Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Vòng',
+      key: 'round',
+      width: 200,
+      render: (_, s) => (
+        <Tag color="blue">Vòng {s.roundNumber}{s.roundName ? ` · ${s.roundName}` : ''}</Tag>
+      ),
+    },
     {
       title: 'Thời gian',
       dataIndex: 'startTime',
       key: 'startTime',
-      render: (t) => <span><CalendarOutlined /> {dayjs(t).format('DD/MM/YYYY - HH:mm')}</span>,
+      width: 190,
+      render: (t) => <span><CalendarOutlined /> {dayjs(t).format('HH:mm - DD/MM/YYYY')}</span>,
     },
     {
-      title: 'Panel interviewer',
+      title: 'Người phỏng vấn',
       dataIndex: 'interviewers',
       key: 'interviewers',
       render: (list) => (list?.length
-        ? list.map(i => <Tag key={i.interviewerId}>{i.fullName || i.email}</Tag>)
+        ? list.map((i) => <Tag key={i.interviewerId}>{i.fullName || i.email}</Tag>)
         : <Text type="secondary">—</Text>),
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      width: 130,
       render: (status) => {
         const config = {
-          OPEN: { color: 'success', label: 'Còn trống' },
-          BOOKED: { color: 'processing', label: 'Đã được đặt' },
-          LOCKED: { color: 'default', label: 'Đã khóa' },
+          CONFIRMED: { color: 'success', label: 'Đã chốt' },
+          CANCELLED: { color: 'default', label: 'Đã hủy' },
         };
         const c = config[status] || { color: 'default', label: status };
         return <Tag color={c.color}>{c.label}</Tag>;
-      },
-    },
-    {
-      title: 'Ứng viên đã đặt',
-      dataIndex: 'bookedApplicationId',
-      key: 'bookedApplicationId',
-      render: (appId) => appId ? candidateLabel(appId) : <Text type="secondary">—</Text>,
-    },
-  ];
-
-  const invitedColumns = [
-    {
-      title: 'Ứng viên',
-      dataIndex: 'applicationId',
-      key: 'applicationId',
-      render: (appId) => candidateLabel(appId),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const config = {
-          PENDING: { color: 'warning', label: 'Chờ chọn lịch' },
-          CONFIRMED: { color: 'success', label: 'Đã chốt lịch' },
-          NO_SLOT_FITS: { color: 'orange', label: 'Báo bận' },
-          CANCELLED: { color: 'error', label: 'Đã hủy' },
-        };
-        const c = config[status] || { color: 'default', label: status };
-        return <Tag color={c.color}>{c.label}</Tag>;
-      },
-    },
-    {
-      title: (
-        <Tooltip title="Số lần ứng viên báo không có khung giờ nào phù hợp — nhiều lần thì bộ phận nhân sự nên gọi điện hẹn tay">
-          <span>Ứng viên báo bận</span>
-        </Tooltip>
-      ),
-      dataIndex: 'flag',
-      key: 'flag',
-      render: (flag, record) => {
-        if (flag === 'RED') return <Badge color="red" text={<Text type="danger">Bận {record.noSlotFitsCount} lần</Text>} />;
-        if (flag === 'YELLOW') return <Badge color="gold" text={`Bận ${record.noSlotFitsCount} lần`} />;
-        return <Text type="secondary">Chưa lần nào</Text>;
       },
     },
     {
       title: 'Điểm panel',
       key: 'aggregate',
-      render: (_, record) => (
+      width: 150,
+      render: (_, s) => (
         <Tooltip title="Tổng hợp điểm của hội đồng phỏng vấn (chỉ hiện phiếu đã nộp, để người chấm không nhìn điểm của nhau)">
           <Button
             size="small"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/dept/interview/${record.scheduleId}`)}
+            onClick={() => navigate(`/dept/interview/${s.scheduleId}`)}
           >
             Xem tổng hợp
           </Button>
@@ -153,12 +238,19 @@ const DeptInterviewSchedule = () => {
     },
   ];
 
+  const refreshAll = () => {
+    fetchJobData(selectedJobId);
+    fetchPanels(selectedJobId);
+  };
+
   return (
     <div className="dept-interview-page">
       <div className="page-header">
         <div>
           <Title level={3} className="page-title">Lịch Phỏng Vấn</Title>
-          <Text type="secondary">Theo dõi pool khung giờ + tiến độ chọn lịch của ứng viên (chỉ xem)</Text>
+          <Text type="secondary">
+            Bạn chỉ định người phỏng vấn; bộ phận nhân sự chốt giờ và đặt buổi
+          </Text>
         </div>
         <Space>
           <Select
@@ -168,56 +260,81 @@ const DeptInterviewSchedule = () => {
             style={{ width: 260 }}
             showSearch
             optionFilterProp="label"
-            options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
+            options={jobs.map((job) => ({ value: job.jobId, label: job.title }))}
           />
-          <Button icon={<ReloadOutlined />} onClick={() => fetchJobData(selectedJobId)} loading={loading}>
+          <Button icon={<ReloadOutlined />} onClick={refreshAll} loading={loading}>
             Làm mới
           </Button>
         </Space>
       </div>
 
-      {pools.length === 0 && !loading && (
-        <Card className="main-card" bordered={false}>
-          <Empty description="Chưa có pool khung giờ nào cho vị trí này (Human Resource mở pool ở trang Lịch phỏng vấn)" />
-        </Card>
-      )}
+      <Card
+        className="main-card"
+        bordered={false}
+        style={{ marginBottom: 16 }}
+        title="Người phỏng vấn bạn chỉ định"
+      >
+        <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+          Ứng viên đang ở vòng phỏng vấn của vị trí này. Nhân sự chỉ xếp lịch được với những
+          người có tên ở đây — đổi ở đây không đụng buổi đã hẹn, chỉ áp cho buổi đặt sau.
+        </Text>
+        <Table
+          columns={panelColumns}
+          dataSource={panelRows}
+          rowKey="applicationId"
+          loading={panelLoading}
+          pagination={false}
+          size="small"
+          locale={{ emptyText: 'Chưa có ứng viên nào ở vòng phỏng vấn cho vị trí này' }}
+        />
+      </Card>
 
-      {pools.map((pool) => (
-        <Card
-          key={pool.poolId}
-          className="main-card"
-          bordered={false}
+      <Card className="main-card" bordered={false} title="Các buổi đã đặt">
+        <Table
+          columns={columns}
+          dataSource={sessions}
+          rowKey="scheduleId"
+          loading={loading}
+          pagination={{ pageSize: 10 }}
+          locale={{ emptyText: 'Vị trí này chưa có buổi phỏng vấn nào' }}
+        />
+      </Card>
+
+      <Modal
+        title={`Người phỏng vấn — ${editRow?.candidateName || ''}`}
+        open={!!editRow}
+        onOk={handleSavePanel}
+        confirmLoading={saving}
+        onCancel={() => setEditRow(null)}
+        okText="Lưu"
+        cancelText="Hủy"
+      >
+        <Alert
+          type="info"
+          showIcon
           style={{ marginBottom: 16 }}
-          title={
-            <Space>
-              {/* Tên vòng (V041) nói buổi đó để làm gì; số chỉ nói thứ tự. 'CLOSED' là chữ
-                  trong DB — pool đóng chỉ sinh ra từ nhánh chốt lịch tay của nhân sự. */}
-              <Text strong>Vòng {pool.roundNumber}{pool.name ? ` · ${pool.name}` : ''}</Text>
-              <Tag color={pool.status === 'OPEN' ? 'success' : pool.status === 'CANCELLED' ? 'error' : 'blue'}>
-                {pool.status === 'OPEN' ? 'Đang mở'
-                  : pool.status === 'CANCELLED' ? 'Đã hủy'
-                  : pool.status === 'CLOSED' ? 'Chốt lịch tay' : pool.status}
-              </Tag>
-            </Space>
+          message="Buổi đã hẹn giữ nguyên"
+          description="Danh sách này quyết định nhân sự được chọn ai cho buổi TIẾP THEO. Người đã có buổi hẹn không bị rút khỏi buổi đó."
+        />
+        <Text strong>Chọn tối đa {MAX_PANEL_SIZE} người:</Text>
+        <Select
+          mode="multiple"
+          maxCount={MAX_PANEL_SIZE}
+          style={{ width: '100%', marginTop: 8 }}
+          placeholder="Chọn người phỏng vấn"
+          showSearch
+          optionFilterProp="label"
+          value={editIds}
+          onChange={setEditIds}
+          options={interviewers.map((i) => ({
+            value: i.userId,
+            label: i.fullName || i.email,
+          }))}
+          notFoundContent={
+            <Text type="secondary">Chưa có tài khoản người phỏng vấn — nhờ Admin tạo</Text>
           }
-        >
-          <Table columns={slotColumns} dataSource={pool.slots} rowKey="slotId" pagination={false} size="small" />
-          {pool.invitedCandidates.length > 0 && (
-            <>
-              <Divider orientation="left" plain style={{ margin: '16px 0 8px' }}>
-                Ứng viên đã mời ({pool.invitedCandidates.length})
-              </Divider>
-              <Table
-                columns={invitedColumns}
-                dataSource={pool.invitedCandidates}
-                rowKey="scheduleId"
-                pagination={false}
-                size="small"
-              />
-            </>
-          )}
-        </Card>
-      ))}
+        />
+      </Modal>
     </div>
   );
 };

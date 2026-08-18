@@ -10,6 +10,8 @@ import {
   Descriptions,
   Avatar,
   Input,
+  InputNumber,
+  DatePicker,
   Select,
   Row,
   Col,
@@ -17,6 +19,7 @@ import {
   message,
   Popconfirm,
   Spin,
+  Alert,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -36,6 +39,7 @@ import {
   applicationAPI,
   interviewAPI,
   cvAPI,
+  hiringProposalAPI,
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
@@ -74,6 +78,9 @@ const HiringDecision = () => {
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [approveNote, setApproveNote] = useState('');
+  // Điều khoản ĐỀ XUẤT (Giám đốc có quyền chốt khác) — tùy chọn.
+  const [proposedSalary, setProposedSalary] = useState(null);
+  const [proposedStartDate, setProposedStartDate] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   
   const [statusFilter, setStatusFilter] = useState('all');
@@ -93,30 +100,46 @@ const HiringDecision = () => {
         
         // Chỉ hiện hồ sơ ĐÃ CÓ phiếu phỏng vấn nộp — chưa ai chấm thì không có gì để quyết.
         const rawCandidates = interviewColumn.cards;
-        const briefs = await Promise.all(
-          rawCandidates.map(c => interviewAPI.getDecisionBrief(c.applicationId).catch(() => ({ data: null })))
-        );
+        const [briefs, proposalRes] = await Promise.all([
+          Promise.all(rawCandidates.map(c =>
+            interviewAPI.getDecisionBrief(c.applicationId).catch(() => ({ data: null })))),
+          // Đề xuất đã gửi (mọi trạng thái) — để biết hồ sơ nào đang chờ Giám đốc duyệt,
+          // hồ sơ nào Giám đốc chưa duyệt và mình cần bổ sung căn cứ rồi đề xuất lại.
+          hiringProposalAPI.getList().catch(() => ({ data: [] })),
+        ]);
+
+        // Đề xuất MỚI NHẤT của mỗi hồ sơ (BE trả mới nhất trước).
+        const latestProposal = new Map();
+        (proposalRes.data || []).forEach((p) => {
+          if (!latestProposal.has(p.applicationId)) latestProposal.set(p.applicationId, p);
+        });
 
         const formattedData = rawCandidates
           .map((c, index) => ({ card: c, brief: briefs[index].data }))
           .filter(({ brief: b }) => (b?.totalSubmitted || 0) > 0)
-          .map(({ card: c, brief: b }) => ({
-            id: c.applicationId,
-            candidateName: c.candidateName,
-            candidateEmail: c.candidateEmail,
-            position: c.jobTitle,
-            department: c.department || 'Chưa gán phòng ban',
-            requestTitle: c.jobTitle,
-            appliedDate: c.appliedAt,
-            status: 'PENDING',
-            avatar: null,
-            candidateId: c.candidateId,
-            jobId: c.jobId,
-            hireCount: b.hireCount,
-            considerCount: b.considerCount,
-            noHireCount: b.noHireCount,
-            totalSubmitted: b.totalSubmitted,
-          }));
+          .map(({ card: c, brief: b }) => {
+            const proposal = latestProposal.get(c.applicationId) || null;
+            return {
+              id: c.applicationId,
+              candidateName: c.candidateName,
+              candidateEmail: c.candidateEmail,
+              position: c.jobTitle,
+              department: c.department || 'Chưa gán phòng ban',
+              requestTitle: c.jobTitle,
+              appliedDate: c.appliedAt,
+              // Trạng thái ở màn này là trạng thái ĐỀ XUẤT của mình, không phải quyết định:
+              // NOT_PROPOSED (chưa gửi) · PENDING (chờ Giám đốc) · REJECTED (Giám đốc chưa duyệt).
+              status: proposal ? proposal.status : 'NOT_PROPOSED',
+              proposal,
+              avatar: null,
+              candidateId: c.candidateId,
+              jobId: c.jobId,
+              hireCount: b.hireCount,
+              considerCount: b.considerCount,
+              noHireCount: b.noHireCount,
+              totalSubmitted: b.totalSubmitted,
+            };
+          });
 
         setCandidates(formattedData);
       } else {
@@ -138,11 +161,13 @@ const HiringDecision = () => {
   // Human Resource/DM gửi offer ở màn khác -> hồ sơ rơi vào cột OFFER; quay lại tab này là thấy ngay.
   useRefreshOnFocus(() => fetchCandidates());
 
+  // Trạng thái ĐỀ XUẤT của trưởng bộ phận (quyết định cuối là của Giám đốc — V043).
   const getStatusTag = (status) => {
     const config = {
-      PENDING: { color: 'warning', label: 'Chờ duyệt (Phỏng vấn)', icon: <ClockCircleOutlined /> },
-      APPROVED: { color: 'success', label: 'Đã duyệt', icon: <CheckCircleOutlined /> },
-      REJECTED: { color: 'error', label: 'Từ chối', icon: <CloseCircleOutlined /> },
+      NOT_PROPOSED: { color: 'default', label: 'Chưa đề xuất', icon: <ClockCircleOutlined /> },
+      PENDING: { color: 'processing', label: 'Chờ Giám đốc duyệt', icon: <ClockCircleOutlined /> },
+      APPROVED: { color: 'success', label: 'Giám đốc đã duyệt', icon: <CheckCircleOutlined /> },
+      REJECTED: { color: 'error', label: 'Giám đốc chưa duyệt', icon: <CloseCircleOutlined /> },
     };
     const c = config[status] || { color: 'default', label: status };
     return <Tag color={c.color} icon={c.icon}>{c.label}</Tag>;
@@ -278,50 +303,65 @@ const HiringDecision = () => {
       render: (_, record) => (
         <Space size={4}>
           <Button type="text" icon={<EyeOutlined />} onClick={() => openDetail(record)} />
-          {record.status === 'PENDING' && (
-            <>
-              <Button
-                type="primary"
-                size="small"
-                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-                onClick={() => {
-                  setSelectedRecord(record);
-                  setApproveModalOpen(true);
-                }}
-              >
-                Duyệt
-              </Button>
-              <Button
-                danger
-                size="small"
-                onClick={() => {
-                  setSelectedRecord(record);
-                  setRejectModalOpen(true);
-                }}
-              >
-                Loại
-              </Button>
-            </>
+          {/* Đề xuất được khi CHƯA gửi, hoặc khi Giám đốc chưa duyệt lần trước (gửi lại
+              sau khi bổ sung căn cứ). Đang chờ Giám đốc thì không gửi chồng. */}
+          {(record.status === 'NOT_PROPOSED' || record.status === 'REJECTED') && (
+            <Button
+              type="primary"
+              size="small"
+              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+              onClick={() => openProposeModal(record)}
+            >
+              {record.status === 'REJECTED' ? 'Đề xuất lại' : 'Đề xuất tuyển'}
+            </Button>
+          )}
+          {record.status !== 'APPROVED' && (
+            <Button
+              danger
+              size="small"
+              onClick={() => {
+                setSelectedRecord(record);
+                setRejectModalOpen(true);
+              }}
+            >
+              Loại
+            </Button>
           )}
         </Space>
       ),
     },
   ];
 
-  const handleApprove = async () => {
+  const openProposeModal = (record) => {
+    setSelectedRecord(record);
+    setApproveNote('');
+    setProposedSalary(null);
+    setProposedStartDate(null);
+    setApproveModalOpen(true);
+  };
+
+  /**
+   * Gửi ĐỀ XUẤT lên Giám đốc (V043) — trưởng bộ phận không tự chuyển hồ sơ sang bước Quyết
+   * định được nữa. Giám đốc duyệt đề xuất thì hệ thống mới đẩy hồ sơ sang OFFER.
+   */
+  const handlePropose = async () => {
     try {
       setActionLoading(true);
-      await applicationAPI.transition(selectedRecord.id, 'OFFER');
-      if (approveNote) {
-        await applicationAPI.addNote(selectedRecord.id, `[QUYẾT ĐỊNH TUYỂN DỤNG] Đồng ý tuyển: ${approveNote}`);
-      }
-      message.success(`Đã duyệt tuyển dụng cho ứng viên ${selectedRecord.candidateName}`);
+      await hiringProposalAPI.create(selectedRecord.id, {
+        note: approveNote || null,
+        proposedSalary: proposedSalary ?? null,
+        // Ngày vào làm là NGÀY — gửi đầu ngày giờ địa phương cho khỏi lệch múi giờ.
+        proposedStartDate: proposedStartDate
+          ? proposedStartDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss')
+          : null,
+      });
+      message.success(`Đã gửi đề xuất tuyển ${selectedRecord.candidateName} lên Giám đốc.`);
       setApproveModalOpen(false);
       setApproveNote('');
       fetchCandidates();
     } catch (error) {
       console.error(error);
-      message.error(apiMessage(error, 'Lỗi khi duyệt ứng viên'));
+      message.error(apiMessage(error, 'Không gửi được đề xuất tuyển'));
     } finally {
       setActionLoading(false);
     }
@@ -354,24 +394,45 @@ const HiringDecision = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = candidates.filter((i) => i.status === 'PENDING').length;
+  const notProposedCount = candidates.filter((i) => i.status === 'NOT_PROPOSED').length;
+  const waitingDirectorCount = candidates.filter((i) => i.status === 'PENDING').length;
 
   return (
     <div className="dept-hiring-decision-page">
       <div className="page-header">
         <div>
-          <Title level={3} className="page-title">Quyết Định Tuyển Dụng</Title>
-          <Text type="secondary">Xét duyệt các ứng viên đã qua vòng phỏng vấn (Cột INTERVIEW)</Text>
+          <Title level={3} className="page-title">Đề Xuất Tuyển</Title>
+          <Text type="secondary">
+            Ứng viên đã phỏng vấn xong — bạn đề xuất, Giám đốc quyết tuyển
+          </Text>
         </div>
       </div>
+
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Bạn đề xuất, Giám đốc quyết"
+        description="Gửi đề xuất kèm lý do (và mức lương, ngày vào làm nếu có ý kiến) để Giám đốc duyệt. Giám đốc duyệt thì hồ sơ tự sang bước Quyết định và bộ phận nhân sự soạn thư mời."
+        />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={12} sm={8}>
           <Card className="stat-card" bordered={false}>
             <Statistic
-              title="Chờ duyệt"
-              value={pendingCount}
+              title="Chờ bạn đề xuất"
+              value={notProposedCount}
               valueStyle={{ color: '#faad14' }}
+              prefix={<ClockCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={8}>
+          <Card className="stat-card" bordered={false}>
+            <Statistic
+              title="Chờ Giám đốc duyệt"
+              value={waitingDirectorCount}
+              valueStyle={{ color: '#1890ff' }}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
@@ -395,7 +456,10 @@ const HiringDecision = () => {
               style={{ width: 150 }}
             >
               <Option value="all">Tất cả trạng thái</Option>
-              <Option value="PENDING">Chờ duyệt</Option>
+              <Option value="NOT_PROPOSED">Chưa đề xuất</Option>
+              <Option value="PENDING">Chờ Giám đốc duyệt</Option>
+              <Option value="APPROVED">Giám đốc đã duyệt</Option>
+              <Option value="REJECTED">Giám đốc chưa duyệt</Option>
             </Select>
           </div>
           <Text type="secondary">{filteredData.length} ứng viên</Text>
@@ -420,7 +484,7 @@ const HiringDecision = () => {
           <Button key="close" onClick={() => setDetailModalOpen(false)}>
             Đóng
           </Button>,
-          selectedRecord?.status === 'PENDING' && (
+          selectedRecord?.status !== 'APPROVED' && (
             <Button
               key="reject"
               danger
@@ -429,20 +493,20 @@ const HiringDecision = () => {
                 setRejectModalOpen(true);
               }}
             >
-              Từ chối
+              Loại
             </Button>
           ),
-          selectedRecord?.status === 'PENDING' && (
+          (selectedRecord?.status === 'NOT_PROPOSED' || selectedRecord?.status === 'REJECTED') && (
             <Button
-              key="approve"
+              key="propose"
               type="primary"
               style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
               onClick={() => {
                 setDetailModalOpen(false);
-                setApproveModalOpen(true);
+                openProposeModal(selectedRecord);
               }}
             >
-              Duyệt Tuyển
+              {selectedRecord?.status === 'REJECTED' ? 'Đề xuất lại' : 'Đề xuất tuyển'}
             </Button>
           ),
         ]}
@@ -615,33 +679,66 @@ const HiringDecision = () => {
         )}
       </Modal>
 
-      {/* Approve Modal */}
+      {/* Gửi đề xuất lên Giám đốc */}
       <Modal
-        title="Xác Nhận Tuyển Dụng"
+        title="Đề Xuất Tuyển Ứng Viên"
         open={approveModalOpen}
-        onOk={handleApprove}
+        onOk={handlePropose}
         confirmLoading={actionLoading}
         onCancel={() => setApproveModalOpen(false)}
-        okText="Duyệt"
+        okText="Gửi đề xuất"
         cancelText="Hủy"
         okButtonProps={{ style: { background: MATCHA_GREEN, borderColor: MATCHA_GREEN } }}
       >
-        <p>Bạn có chắc chắn muốn duyệt tuyển dụng ứng viên <strong>{selectedRecord?.candidateName}</strong>?</p>
+        <p>
+          Đề xuất tuyển <strong>{selectedRecord?.candidateName}</strong> cho vị trí{' '}
+          <strong>{selectedRecord?.position}</strong>. Giám đốc sẽ đọc đề xuất này rồi quyết.
+        </p>
+
         <div style={{ marginTop: 16 }}>
-          <Text strong>Ghi chú quyết định:</Text>
+          <Text strong>Vì sao nên tuyển người này:</Text>
           <TextArea
             rows={3}
-            placeholder="Nhập ghi chú cho bộ phận HR..."
+            placeholder="VD: tay nghề chắc, từng quản lý ca 8 người, sẵn sàng đi làm ngay."
             value={approveNote}
             onChange={(e) => setApproveNote(e.target.value)}
             style={{ marginTop: 8 }}
+          />
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Mức lương đề xuất (tùy chọn):</Text>
+          <InputNumber
+            style={{ width: '100%', marginTop: 6 }}
+            value={proposedSalary}
+            onChange={setProposedSalary}
+            min={0}
+            step={1000000}
+            placeholder="VD: 15000000"
+            formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
+            parser={(v) => (v || '').replace(/,/g, '')}
+            addonAfter="₫"
+          />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Giám đốc có quyền chốt mức khác — con số cuối cùng nằm ở quyết định của Giám đốc.
+          </Text>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Ngày vào làm dự kiến (tùy chọn):</Text>
+          <DatePicker
+            style={{ width: '100%', marginTop: 6 }}
+            value={proposedStartDate}
+            onChange={setProposedStartDate}
+            format="DD/MM/YYYY"
+            placeholder="Chọn ngày dự kiến"
           />
         </div>
       </Modal>
 
       {/* Reject Modal */}
       <Modal
-        title="Từ Chối Tuyển Dụng"
+        title="Loại Ứng Viên"
         open={rejectModalOpen}
         onOk={handleReject}
         confirmLoading={actionLoading}
@@ -650,7 +747,7 @@ const HiringDecision = () => {
         okType="danger"
         cancelText="Hủy"
       >
-        <p>Từ chối ứng viên <strong>{selectedRecord?.candidateName}</strong>?</p>
+        <p>Loại hồ sơ <strong>{selectedRecord?.candidateName}</strong>?</p>
         <div style={{ marginTop: 16 }}>
           <Text strong>Lý do từ chối <span style={{ color: 'red' }}>*</span>:</Text>
           <TextArea

@@ -27,7 +27,7 @@ namespace GP35.SRIS.Lib.Services.Ai;
 /// </para>
 ///
 /// <para>
-/// Bộ mẫu giấy tờ giữ NGUYÊN VĂN <c>GIAY_TO_PATTERNS</c> trong <c>metrics.py</c> của bộ đo.
+/// Bộ mẫu giấy tờ giữ NGUYÊN VĂN <c>GIAY_TO_PATTERNS</c> trong <c>may_cham.py</c> của bộ đo.
 /// Cố ý không "cải tiến" thêm: lệch đi thì con số 7,7% trong báo cáo không còn mô tả đúng
 /// thứ đang chạy thật nữa. Đổi mẫu ở đây thì phải đổi cả bên kia rồi đo lại.
 /// </para>
@@ -50,7 +50,7 @@ public static class CriteriaNameFilter
         IReadOnlyList<string> Rewritten);
 
     // ---------------------------------------------------------------------
-    //  Lớp 1 — GIẤY TỜ: dò trên chuỗi đã bỏ dấu + hạ thường (khớp _khong_dau bên metrics.py)
+    //  Lớp 1 — GIẤY TỜ: dò trên chuỗi đã bỏ dấu + hạ thường (khớp _khong_dau bên may_cham.py)
     // ---------------------------------------------------------------------
     // Gồm cả nhân khẩu học (tuổi, giới tính, nơi ở, ngoại hình) vì cùng bản chất: nhìn hồ sơ
     // là biết, có/không, không ai cho điểm 0-10 được.
@@ -180,7 +180,7 @@ public static class CriteriaNameFilter
         return HoaChuDau(s);
     }
 
-    /// <summary>Bỏ dấu tiếng Việt + hạ chữ thường — khớp <c>_khong_dau()</c> bên metrics.py.</summary>
+    /// <summary>Bỏ dấu tiếng Việt + hạ chữ thường — khớp <c>_khong_dau()</c> bên may_cham.py.</summary>
     private static string KhongDau(string s)
     {
         var tach = s.ToLowerInvariant().Normalize(NormalizationForm.FormD);

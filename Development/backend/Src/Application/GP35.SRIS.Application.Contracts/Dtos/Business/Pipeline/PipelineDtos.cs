@@ -8,6 +8,12 @@ public class TransitionRequestDto
 
     /// <summary>Lý do — TÙY CHỌN, kể cả khi reject (1-chạm chip preset — 5.7).</summary>
     public string? Reason { get; set; }
+
+    /// <summary>
+    /// Người phỏng vấn Trưởng bộ phận chỉ định cho ứng viên này (V045) — chỉ có nghĩa khi
+    /// <see cref="ToState"/> = INTERVIEW. Bỏ trống = không đụng danh sách đang có.
+    /// </summary>
+    public List<long>? InterviewerIds { get; set; }
 }
 
 /// <summary>Yêu cầu loại hồ sơ — reject_reason tùy chọn (5.7).</summary>

@@ -53,8 +53,10 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewSlotPool> InterviewSlotPools => Set<InterviewSlotPool>();
     public DbSet<InterviewSlot> InterviewSlots => Set<InterviewSlot>();
     public DbSet<InterviewSlotInterviewer> InterviewSlotInterviewers => Set<InterviewSlotInterviewer>();
+    public DbSet<ApplicationInterviewer> ApplicationInterviewers => Set<ApplicationInterviewer>();
     public DbSet<EvaluationCriteria> EvaluationCriterias => Set<EvaluationCriteria>();
     public DbSet<CriteriaExtraction> CriteriaExtractions => Set<CriteriaExtraction>();
+    public DbSet<CvScreening> CvScreenings => Set<CvScreening>();
     public DbSet<CriteriaTemplate> CriteriaTemplates => Set<CriteriaTemplate>();
     public DbSet<CriteriaTemplateItem> CriteriaTemplateItems => Set<CriteriaTemplateItem>();
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
@@ -63,6 +65,7 @@ public class SrisDbContext : DbContext
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<RecruitmentRequest> RecruitmentRequests => Set<RecruitmentRequest>();
+    public DbSet<HiringProposal> HiringProposals => Set<HiringProposal>();
     public DbSet<JobRequirement> JobRequirements => Set<JobRequirement>();
     public DbSet<JobBenefit> JobBenefits => Set<JobBenefit>();
     public DbSet<Department> Departments => Set<Department>();
@@ -191,6 +194,14 @@ public class SrisDbContext : DbContext
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
 
+        b.Entity<ApplicationInterviewer>(e =>
+        {
+            e.ToTable("ApplicationInterviewer");
+            e.HasKey(x => new { x.ApplicationId, x.InterviewerId });
+            ConfigureCreatedAt(e.Property(x => x.AssignedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
         b.Entity<EvaluationCriteria>(e =>
         {
             e.ToTable("EvaluationCriteria");
@@ -207,6 +218,14 @@ public class SrisDbContext : DbContext
         {
             e.ToTable("CriteriaExtraction");
             e.HasKey(x => x.ExtractionId);
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<CvScreening>(e =>
+        {
+            e.ToTable("CvScreening");
+            e.HasKey(x => x.ScreeningId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
@@ -280,6 +299,16 @@ public class SrisDbContext : DbContext
             e.HasKey(x => x.RequestId);
             e.Property(x => x.SalaryMin).HasColumnType("decimal(18,2)");
             e.Property(x => x.SalaryMax).HasColumnType("decimal(18,2)");
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<HiringProposal>(e =>
+        {
+            e.ToTable("HiringProposal");
+            e.HasKey(x => x.ProposalId);
+            e.Property(x => x.ProposedSalary).HasColumnType("decimal(18,2)");
+            e.Property(x => x.ApprovedSalary).HasColumnType("decimal(18,2)");
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

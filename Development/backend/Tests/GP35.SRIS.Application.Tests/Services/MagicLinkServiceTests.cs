@@ -57,15 +57,16 @@ public class MagicLinkServiceTests
         _tokenRepo.Setup(r => r.InsertAsync(CompanyId, It.IsAny<MagicLinkToken>())).ReturnsAsync(1L);
 
         var service = CreateService();
-        var issued = await service.IssueAsync(CompanyId, AppId, "  schedule ");
+        var issued = await service.IssueAsync(CompanyId, AppId, "  status ");
 
-        Assert.Equal("SCHEDULE", issued.Purpose);
+        Assert.Equal("STATUS", issued.Purpose);
         _notify.Verify(n => n.SendMagicLinkAsync(
-            CompanyId, AppId, "SCHEDULE", issued.RawToken, It.IsAny<DateTime>()), Times.Once);
+            CompanyId, AppId, "STATUS", issued.RawToken, It.IsAny<DateTime>()), Times.Once);
     }
 
     [Theory]
-    [InlineData("QUIZ")] // quiz đã loại khỏi scope — purpose không còn hợp lệ
+    [InlineData("QUIZ")]     // quiz đã loại khỏi scope — purpose không còn hợp lệ
+    [InlineData("SCHEDULE")] // ứng viên không tự chọn khung nữa (15/08/2026)
     [InlineData("")]
     [InlineData("PASSWORD_RESET")]
     public async Task Issue_InvalidPurpose_Throws400(string purpose)
@@ -77,7 +78,6 @@ public class MagicLinkServiceTests
     }
 
     [Theory]
-    [InlineData("SCHEDULE", 5)]
     [InlineData("OFFER_RESPONSE", 7)]
     [InlineData("STATUS", 30)]
     public async Task Issue_DefaultTtlPerPurpose(string purpose, int days)
@@ -94,7 +94,7 @@ public class MagicLinkServiceTests
 
     // ===== Validate =====
 
-    private MagicLinkToken MakeToken(string raw, string purpose = "SCHEDULE",
+    private MagicLinkToken MakeToken(string raw, string purpose = "STATUS",
         DateTime? usedAt = null, DateTime? expiresAt = null) => new()
     {
         TokenId = 9,
@@ -114,7 +114,7 @@ public class MagicLinkServiceTests
             .ReturnsAsync(MakeToken(raw));
 
         var service = CreateService();
-        var result = await service.ValidateAsync(raw, "SCHEDULE");
+        var result = await service.ValidateAsync(raw, "STATUS");
 
         Assert.Equal(CompanyId, result.CompanyId);
         Assert.Equal(AppId, result.ApplicationId);
@@ -127,7 +127,7 @@ public class MagicLinkServiceTests
     {
         var service = CreateService();
         var ex = await Assert.ThrowsAsync<BaseException>(
-            () => service.ValidateAsync("token-khong-co-prefix", "SCHEDULE"));
+            () => service.ValidateAsync("token-khong-co-prefix", "STATUS"));
         Assert.Equal("INVALID_MAGIC_LINK", ex.ErrorCode);
     }
 
@@ -139,7 +139,7 @@ public class MagicLinkServiceTests
 
         var service = CreateService();
         var ex = await Assert.ThrowsAsync<BaseException>(
-            () => service.ValidateAsync($"{CompanyId}.token-la", "SCHEDULE"));
+            () => service.ValidateAsync($"{CompanyId}.token-la", "STATUS"));
         Assert.Equal("INVALID_MAGIC_LINK", ex.ErrorCode);
     }
 
@@ -165,7 +165,7 @@ public class MagicLinkServiceTests
 
         var service = CreateService();
         var ex = await Assert.ThrowsAsync<BaseException>(
-            () => service.ValidateAsync(raw, "SCHEDULE"));
+            () => service.ValidateAsync(raw, "STATUS"));
         Assert.Equal("MAGIC_LINK_EXPIRED", ex.ErrorCode);
     }
 
@@ -178,7 +178,7 @@ public class MagicLinkServiceTests
 
         var service = CreateService();
         var ex = await Assert.ThrowsAsync<BaseException>(
-            () => service.ValidateAsync(raw, "SCHEDULE"));
+            () => service.ValidateAsync(raw, "STATUS"));
         Assert.Equal("MAGIC_LINK_EXPIRED", ex.ErrorCode);
     }
 }

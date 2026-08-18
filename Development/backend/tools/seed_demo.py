@@ -135,6 +135,7 @@ for email, role, fullname in [
     (f"interviewer1.{RUN}@demo.vn", "Interviewer", "Lê Minh Đức (Interviewer)"),
     (f"interviewer2.{RUN}@demo.vn", "Interviewer", "Phạm Quang Huy (Interviewer)"),
     (f"dm.{RUN}@demo.vn", "DepartmentManager", "Ngô Thị Lan (Trưởng phòng)"),
+    (f"director.{RUN}@demo.vn", "Director", "Bùi Quang Hưng (Giám đốc)"),
 ]:
     s, d = call("POST", "/users", token=admin,
                 body={"email": email, "password": PASS, "fullName": fullname, "role": role})
@@ -145,6 +146,7 @@ for email, role, fullname in [
 
 recruiter = login(users["Recruiter"]["email"], PASS)
 dm = login(users["DepartmentManager"]["email"], PASS)
+director = login(users["Director"]["email"], PASS)
 iv1 = login(users["Interviewer"]["email"], PASS)
 iv2 = login(users["Interviewer2"]["email"], PASS)
 
@@ -161,7 +163,11 @@ for key, title, jd in [
      "Tuyen Nhan vien kinh doanh: 1 nam kinh nghiem ban hang/cham soc khach hang, giao tiep tot, "
      "chiu duoc ap luc doanh so. Uu tien biet tieng Anh. Luong cung + hoa hong."),
 ]:
-    s, d = call("POST", "/jobs", token=recruiter, body={"title": title, "jdText": jd})
+    # departmentManagerId BAT BUOC khi dang tin (Status mac dinh = Open): DM la cua duyet
+    # ung vien vao vong phong van (chot 15/08/2026), thieu thi ho so ket o Sang loc.
+    s, d = call("POST", "/jobs", token=recruiter,
+                body={"title": title, "jdText": jd,
+                      "departmentManagerId": users["DepartmentManager"]["id"]})
     must(s, d, f"tao job {title}")
     jobs[key] = d["jobId"]
     print(f"   + Job {d['jobId']}: {title}")
@@ -251,8 +257,19 @@ for jobkey, name, lines in CVS:
 # ---------- 6) Pipeline: keo trang thai ----------
 # (Truoc day cho AI cham diem CV o day. Sang loc CV bang AI + Talent Pool da bi cat khoi
 #  scope 08/08/2026: khong con endpoint /cv-scoring, nhan ho so chi con parse + luu file.)
+# Panel co dinh cua demo. V045: Truong bo phan chi dinh nguoi phong van NGAY khi duyet vao
+# vong phong van; khong chi dinh thi BE tu choi moi lenh dat lich o muc 7.
+iv_ids = [users["Interviewer"]["id"], users["Interviewer2"]["id"]]
+
+
 def transition(app, to):
-    must(*call("POST", f"/applications/{apps[app]['id']}/transition", token=recruiter, body={"toState": to}),
+    # Ai bam buoc nao (V043): nhan su sang loc (NEW->SCREENING), Truong bo phan duyet vao
+    # vong phong van (SCREENING->INTERVIEW), GIAM DOC quyet tuyen (INTERVIEW->OFFER, roi OFFER).
+    token = director if to in ("OFFER", "HIRED") else dm if to == "INTERVIEW" else recruiter
+    body = {"toState": to}
+    if to == "INTERVIEW":
+        body["interviewerIds"] = iv_ids
+    must(*call("POST", f"/applications/{apps[app]['id']}/transition", token=token, body=body),
          f"{app} -> {to}")
 
 # An (java): -> INTERVIEW -> (cham diem) -> OFFER PENDING
@@ -268,35 +285,19 @@ transition("Lê Thị Hồng", "SCREENING"); transition("Lê Thị Hồng", "INT
 transition("Hoàng Mai Phương", "SCREENING")
 print("   + Pipeline: NEW/SCREENING/INTERVIEW/REJECTED da co du")
 
-# ---------- 7) Pool phong van (panel 2 interviewer) + ung vien chot lich ----------
-iv_ids = [users["Interviewer"]["id"], users["Interviewer2"]["id"]]
+# ---------- 7) Dat lich phong van (panel 2 interviewer) ----------
+# 15/08/2026: khong con pool khung + magic link SCHEDULE. Nhan su goi dien chot gio roi NHAP
+# buoi vao he thong (POST /applications/{id}/interviews).
 _offs = random.randint(0, 40)  # phút lệch theo run — tránh trùng giờ giữa các lần seed
-future = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00Z", time.gmtime(time.time() + 3 * 86400))
-future2 = time.strftime(f"%Y-%m-%dT14:{_offs:02d}:00Z", time.gmtime(time.time() + 3 * 86400))
-# Lich chot tay cua Hong: NGAY KHAC hai khung tren. Backend chan 2 buoi cach nhau < 1 tieng
-# (cung interviewer hoac cung ung vien) -> dung lai `future` se an 409.
-future3 = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00Z", time.gmtime(time.time() + 4 * 86400))
-s, pool = call("POST", f"/jobs/{jobs['java']}/interview-pools", token=recruiter, body={
-    "roundNumber": 1, "slots": [
-        {"interviewerIds": iv_ids, "startTime": future},
-        {"interviewerIds": [iv_ids[0]], "startTime": future2}]})
-must(s, pool, "tao pool java")
-s, inv = call("POST", f"/interview-pools/{pool['poolId']}/invitations", token=recruiter,
-              body={"applicationIds": [apps["Nguyễn Văn An"]["id"]]})
-must(s, inv, "moi An vao pool")
-tok = inv["invited"][0]["magicToken"]; sched_id = inv["invited"][0]["scheduleId"]
-s, sched = call("GET", f"/candidate/schedule?token={urllib.request.quote(tok)}")
-must(s, sched, "ung vien xem lich")
-slot_id = None
-for cand_slot in sched["slots"]:
-    st, dd = call("POST", f"/candidate/schedule/confirm?token={urllib.request.quote(tok)}",
-                  body={"slotId": cand_slot["slotId"]})
-    if st in (200, 201):
-        slot_id = cand_slot["slotId"]; break
-    print(f"   ! slot {cand_slot['slotId']} khong chot duoc (HTTP {st}) -> thu slot ke")
-if slot_id is None:
-    raise SystemExit("LOI: khong chot duoc slot nao")
-print(f"   + An da chot lich phong van (slot {slot_id}, panel 2 interviewer)")
+future = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00", time.gmtime(time.time() + 3 * 86400))
+# Buoi cua Hong: NGAY KHAC. Backend chan 2 buoi cach nhau < 1 tieng (cung interviewer hoac
+# cung ung vien) -> dung lai `future` se an 409.
+future3 = time.strftime(f"%Y-%m-%dT09:{_offs:02d}:00", time.gmtime(time.time() + 4 * 86400))
+s, book = call("POST", f"/applications/{apps['Nguyễn Văn An']['id']}/interviews", token=recruiter,
+               body={"interviewerIds": iv_ids, "startTime": future, "name": "Phỏng vấn chuyên môn"})
+must(s, book, "dat lich phong van An")
+sched_id = book["scheduleId"]
+print(f"   + Da dat lich phong van cho An (schedule {sched_id}, panel 2 interviewer)")
 
 # ---------- 8) 2 interviewer cham + nop phieu (mo blind, du guard G2) ----------
 # Nop phieu BAT BUOC co `recommendation` (V031) va phai cham DU moi tieu chi — thieu mot
@@ -322,7 +323,8 @@ print("   + 2 phieu cham DA NOP -> panel aggregate co du lieu, guard G2 dat")
 # POST /offer KHONG tu transition: OfferService bat hồ sơ phải ĐANG ở OFFER rồi mới cho tạo
 # thư (nguoi quyet tuyen la DM/Recruiter, khac nguoi soan thu). Nen phai keo INTERVIEW->OFFER
 # truoc — buoc nay qua guard G2 (>=1 phieu cham SUBMITTED, vua nop o buoc 8).
-# Job seed khong gan department_manager_id -> Recruiter duoc quyet (duong mac dinh cong ty nho).
+# V043: cua INTERVIEW->OFFER la cua GIAM DOC (transition() tu chon token). Duong day du
+# "DM de xuat -> Giam doc duyet phieu HiringProposal" xem o seed_demo_full.py.
 transition("Nguyễn Văn An", "OFFER")
 s, offer = call("POST", f"/applications/{apps['Nguyễn Văn An']['id']}/offer", token=recruiter,
                 body={"salaryAmount": 25000000, "note": "Offer Java Developer — chờ phản hồi", "expiresInDays": 7})

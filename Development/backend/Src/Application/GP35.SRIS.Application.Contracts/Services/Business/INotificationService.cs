@@ -7,8 +7,8 @@
 public interface INotificationService : IBaseService
 {
     /// <summary>
-    /// Gửi email kèm nút magic link cho ứng viên theo purpose (SCHEDULE mời chọn lịch,
-    /// OFFER_RESPONSE gửi offer, STATUS xem trạng thái). Token gốc nhúng vào URL frontend.
+    /// Gửi email kèm nút magic link cho ứng viên theo purpose (OFFER_RESPONSE gửi thư mời,
+    /// STATUS xem trạng thái). Token gốc nhúng vào URL frontend.
     /// </summary>
     Task SendMagicLinkAsync(long companyId, long applicationId, string purpose, string rawToken, DateTime expiresAt);
 

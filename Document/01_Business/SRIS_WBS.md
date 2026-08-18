@@ -212,10 +212,10 @@ SRIS — Đồ án tốt nghiệp
 | 5.1.1 | Phỏng vấn sâu doanh nghiệp ≤200 người — mỗi thành viên 1 công ty | BE1·BE2·BE3·FE1·FE2 | 30 | S9 | 🔄 | Bộ 23 câu / 6 phần + phiếu ghi |
 | 5.1.2 | Tổng hợp phiếu ghi → bảng kết quả + điền KPI hiện trạng | BE1 | 8 | S10 | 🔄 | `docs/00_CONTEXT.md` §4.3 |
 | 5.2.1 | Khung đánh giá AI: bộ test cố định, versioning prompt, đo hai tầng | BE1 | 10 | S9 | ✅ | `ai-experiments/README.md` |
-| 5.2.2 | Bộ test 10 JD đa ngành + chạy 3 phiên bản prompt, đo tầng máy | BE1 | 14 | S9 | ✅ | `exp_criteria_extract/out/KET_QUA.md` |
-| 5.2.3 | Rubric 6 mã + gán nhãn tay 63 tiêu chí → precision/recall/F1 | BE2 | 14 | S10 | ✅ | `exp_criteria_extract/RUBRIC.md` |
-| 5.2.4 | Lọc tiêu chí "giấy tờ" bằng luật trong .NET (đề xuất từ kết quả đo) | BE3 | 12 | S10 | ⬜ | `CriteriaExtractionClient` |
-| 5.2.5 | Soạn bộ 10 tin tuyển dụng đa ngành + 3 ca đối chứng khó (rỗng, toàn giấy tờ, vượt trần) | BE2 | 12 | S9 | ✅ | `exp_criteria_extract/dataset.json` |
+| 5.2.2 | Bộ test 10 JD đa ngành + chạy 4 bậc prompt (ablation), đo tầng máy | BE1 | 14 | S9 | ✅ | `exp_criteria_extract/out/KET_QUA.md` |
+| 5.2.3 | Rubric 6 mã + gán nhãn tay 299 tiêu chí (cả 4 bậc) → precision/recall/F1 | BE2 | 14 | S10 | ✅ | `exp_criteria_extract/LUAT_NGUOI_CHAM.md`, `out/KET_QUA_TONG_HOP.xlsx` |
+| 5.2.4 | Lọc tiêu chí "giấy tờ" bằng luật trong .NET (đề xuất từ kết quả đo) | BE3 | 12 | S10 | ✅ | `GP35.SRIS.Lib/Services/Ai/CriteriaNameFilter.cs` + 33 test |
+| 5.2.5 | Soạn bộ 10 tin tuyển dụng đa ngành + 2 ca đối chứng khó (tin chỉ có đầu việc, tin vượt trần) | BE2 | 12 | S9 | ✅ | `exp_criteria_extract/dataset.json` |
 | 5.2.6 | Cập nhật màn tiêu chí theo kết quả đo: bỏ nhãn HARD/SOFT và ô từ khóa khỏi giao diện | FE2 | 10 | S10 | ✅ | `criteria/Criteria.jsx` |
 | 5.3.1 | Kiểm thử đơn vị backend: state machine, magic link, auth, bóc & duyệt tiêu chí | BE2 | 12 | S10 | ✅ | `Tests/GP35.SRIS.Application.Tests/` |
 | 5.3.2 | Kiểm thử frontend (Vitest) cho luồng ứng viên & tạo job | FE1 | 10 | S10 | 🔄 | `*.test.jsx` |

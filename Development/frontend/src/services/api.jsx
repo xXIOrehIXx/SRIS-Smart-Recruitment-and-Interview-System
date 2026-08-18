@@ -12,7 +12,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 const isPublicPath = (pathname) =>
   pathname === '/' ||
   /^\/[^/]+\/career(\/|$)/.test(pathname) ||
-  ['/schedule', '/offer', '/status', '/candidate/offer-response',
+  ['/offer', '/status', '/candidate/offer-response',
    '/forgot-password', '/reset-password'].includes(pathname);
 
 // Tạo axios instance
@@ -174,7 +174,9 @@ export const jobsAPI = {
 
 // ==================== CV (nhận hồ sơ) ====================
 
-// Nhận CV vào hệ thống. KHÔNG chấm điểm, không xếp hạng — sàng lọc là việc của người.
+// Nhận CV vào hệ thống + phân tích CV theo JD bằng AI.
+// Bản phân tích là THAM KHẢO: backend không đổi trạng thái hồ sơ theo nó, không xếp hạng
+// ứng viên với nhau. Quyết định vẫn là của người tuyển dụng.
 export const cvAPI = {
   uploadCV: async (formData, onProgress) => {
     const response = await api.post('/cvs/upload', formData, {
@@ -189,21 +191,44 @@ export const cvAPI = {
   // Trả { url } — presigned URL (~1h) để mở/tải file CV gốc
   getCvFileUrl: (cvId) =>
     api.get(`/cvs/${cvId}/file-url`),
+
+  // XẾP HÀNG lượt AI đối chiếu CV với JD → trả 202 ngay, worker nền mới gọi AI.
+  // Local LLM chạy CPU mất hàng chục giây nên không đợi trong request (timeout axios 30s).
+  // Bấm lại = chạy lượt mới đè lên kết quả cũ.
+  requestScreening: (applicationId) =>
+    api.post(`/applications/${applicationId}/cv-screening`),
+
+  // Hỏi trạng thái + kết quả — gọi lặp cho tới khi running=false.
+  // status: NONE (chưa phân tích bao giờ) | PENDING | RUNNING | DONE | FAILED
+  getScreening: (applicationId) =>
+    api.get(`/applications/${applicationId}/cv-screening`),
+
+  // XẾP HÀNG sàng lọc cho MỌI hồ sơ đang ở vòng sàng lọc của 1 vị trí (V046) — cần cho việc
+  // xếp ứng viên theo mức phù hợp: không chấm cả danh sách thì không xếp hạng được.
+  // rescreen=true: chấm lại cả hồ sơ đã có kết quả (dùng sau khi sửa tin tuyển dụng).
+  // Trả { jobId, queued, skippedDone, skippedRunning, totalCandidates }.
+  requestJobScreening: (jobId, rescreen = false) =>
+    api.post(`/jobs/${jobId}/cv-screening${rescreen ? '?rescreen=true' : ''}`),
 };
 
 // ==================== APPLICATIONS ====================
 
 export const applicationAPI = {
-  // Trả ApplicationBoardDto: { jobId, applications: [...] }
-  getAll: (jobId) =>
-    api.get(`/jobs/${jobId}/applications`),
+  // Trả ApplicationBoardDto: { jobId, sort, applications: [...] }.
+  // Mỗi card kèm screeningStatus / fitScore / screeningDecision (V046).
+  // sort='fit' -> hồ sơ AI thấy phù hợp nhất lên đầu, hồ sơ chưa phân tích xuống cuối.
+  // Bỏ trống -> 'recent' (mới nộp trước), giữ nguyên hành vi cũ cho các màn khác.
+  getAll: (jobId, sort) =>
+    api.get(`/jobs/${jobId}/applications${sort ? `?sort=${sort}` : ''}`),
 
   getById: (id) =>
     api.get(`/applications/${id}`),
 
-  // reason tùy chọn (kể cả khi toState = 'REJECTED')
-  transition: (id, toState, reason) =>
-    api.post(`/applications/${id}/transition`, { toState, reason }),
+  // reason tùy chọn (kể cả khi toState = 'REJECTED').
+  // interviewerIds: CHỈ dùng khi toState = 'INTERVIEW' — người Trưởng bộ phận cho gặp ứng viên
+  // (V045). Duyệt vào phỏng vấn và chỉ định người phỏng vấn là MỘT quyết định, gửi trong 1 lần.
+  transition: (id, toState, reason, interviewerIds) =>
+    api.post(`/applications/${id}/transition`, { toState, reason, interviewerIds }),
 
   // Loại hồ sơ — reason tùy chọn (bỏ trống thì backend lưu null)
   reject: (id, reason) =>
@@ -225,28 +250,35 @@ export const applicationAPI = {
 
 // ==================== INTERVIEW SCHEDULING ====================
 
-// Lịch phỏng vấn theo POOL dùng chung (docs Section 15):
-// Human Resource mở 1 pool khung giờ cho job + vòng → mời nhiều ứng viên (mỗi người 1
-// magic link SCHEDULE) → ai chốt slot trước lấy trước. Chốt tay cho nhánh gọi điện.
+// Đặt lịch phỏng vấn (docs Section 15 — viết lại 15/08/2026): bộ phận nhân sự gọi cho người
+// phỏng vấn hỏi lịch rảnh, gọi ứng viên chốt giờ, rồi NHẬP buổi vào hệ thống. Pool khung dùng
+// chung + magic link SCHEDULE (ứng viên tự chọn khung) đã bỏ hẳn — chờ ứng viên bấm link chậm
+// hơn một cuộc gọi.
 export const interviewAPI = {
-  // Danh sách pool của 1 job (kèm slots + ứng viên đã mời + cờ nhắc vàng/đỏ)
-  getInterviewPools: (jobId) =>
-    api.get(`/jobs/${jobId}/interview-pools`),
+  // Mọi buổi phỏng vấn của 1 vị trí (kèm ứng viên + panel + giờ)
+  getJobInterviews: (jobId) =>
+    api.get(`/jobs/${jobId}/interviews`),
 
-  // data: { roundNumber?, slots: [{ interviewerIds: [1..5 nguoi], startTime }] } — panel/slot
-  createPool: (jobId, data) =>
-    api.post(`/jobs/${jobId}/interview-pools`, data),
+  // Đặt 1 buổi: { interviewerIds: [1..5 nguoi], startTime, roundNumber?, name? } → { scheduleId }
+  bookInterview: (applicationId, data) =>
+    api.post(`/applications/${applicationId}/interviews`, data),
 
-  // Mời ứng viên vào pool — trả { invited: [...], skipped: [...] }
-  invite: (poolId, applicationIds) =>
-    api.post(`/interview-pools/${poolId}/invitations`, { applicationIds }),
+  cancelInterview: (scheduleId, reason) =>
+    api.post(`/interview-schedules/${scheduleId}/cancel`, { reason }),
 
-  cancelPool: (poolId, reason) =>
-    api.post(`/interview-pools/${poolId}/cancel`, { reason }),
+  // Dropdown người phỏng vấn (user role Interviewer, đang Active)
+  getInterviewers: () =>
+    api.get('/interviews/interviewers'),
 
-  // Chốt lịch TAY cho 1 ứng viên: { interviewerIds: [...], startTime, roundNumber? }
-  manualConfirm: (applicationId, data) =>
-    api.post(`/applications/${applicationId}/manual-interview`, data),
+  // Người phỏng vấn Trưởng bộ phận CHỈ ĐỊNH cho 1 ứng viên (V045) — [] nghĩa là chưa chỉ định,
+  // nhân sự chưa đặt lịch được. Nhân sự đọc để đổ dropdown; họ chốt giờ, DM chốt người.
+  getAssignedInterviewers: (applicationId) =>
+    api.get(`/applications/${applicationId}/interviewers`),
+
+  // DM ghi đè danh sách chỉ định (đổi người cho vòng sau, người cũ nghỉ việc...).
+  // Mảng rỗng = gỡ chỉ định.
+  assignInterviewers: (applicationId, interviewerIds) =>
+    api.put(`/applications/${applicationId}/interviewers`, { interviewerIds }),
 
   // Interviewer's schedules
   getMySchedules: () =>
@@ -282,6 +314,29 @@ export const interviewAPI = {
     api.get(`/applications/${applicationId}/decision-brief`),
 };
 
+// ==================== ĐỀ XUẤT TUYỂN (DM đề xuất → Giám đốc quyết) ====================
+
+// docs 5.14 (V043): Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển — họ đề xuất "nên tuyển người
+// này"; Giám đốc duyệt và chốt điều khoản (lương, ngày vào làm) để nhân sự soạn thư mời.
+// Duyệt đề xuất chính là hành động đẩy hồ sơ sang bước Quyết định (OFFER).
+export const hiringProposalAPI = {
+  // DM đề xuất: { note?, proposedSalary?, proposedStartDate? }
+  create: (applicationId, data) =>
+    api.post(`/applications/${applicationId}/hiring-proposal`, data),
+
+  // Lịch sử đề xuất của 1 hồ sơ (gồm cả lần bị từ chối)
+  getByApplication: (applicationId) =>
+    api.get(`/applications/${applicationId}/hiring-proposals`),
+
+  // Hàng đợi: ?status=PENDING | APPROVED | REJECTED (bỏ trống = tất cả)
+  getList: (status) =>
+    api.get(`/hiring-proposals${status ? `?status=${status}` : ''}`),
+
+  // Giám đốc quyết: { approve, note?, approvedSalary?, approvedStartDate? }
+  decide: (proposalId, data) =>
+    api.post(`/hiring-proposals/${proposalId}/decision`, data),
+};
+
 // ==================== CANDIDATE (Magic Link) ====================
 
 // Token luôn đi qua QUERY STRING (?token=) — backend đọc [FromQuery] ở mọi endpoint,
@@ -289,15 +344,6 @@ export const interviewAPI = {
 export const candidateAPI = {
   getStatus: (token) =>
     api.get(`/candidate/status?token=${encodeURIComponent(token)}`),
-
-  getSchedule: (token) =>
-    api.get(`/candidate/schedule?token=${encodeURIComponent(token)}`),
-
-  confirmSchedule: (token, slotId) =>
-    api.post(`/candidate/schedule/confirm?token=${encodeURIComponent(token)}`, { slotId }),
-
-  noSlotAvailable: (token) =>
-    api.post(`/candidate/schedule/no-slot?token=${encodeURIComponent(token)}`),
 
   // Tóm tắt thư mời nhận việc (ứng viên KHÔNG bấm đồng ý/từ chối — 5.15)
   getOffer: (token) =>

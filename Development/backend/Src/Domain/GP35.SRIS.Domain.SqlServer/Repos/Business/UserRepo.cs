@@ -38,7 +38,13 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
         if (userIds.Count == 0) return Array.Empty<User>();
         return await _db.Users.AsNoTracking()
             .Where(u => userIds.Contains(u.UserId))
-            .Select(u => new User { UserId = u.UserId, FullName = u.FullName, Email = u.Email })
+            // Kèm Role/Status: đủ để nơi gọi kiểm "id này có phải người dùng còn hoạt động không"
+            // mà không phải bắn thêm một truy vấn User nữa.
+            .Select(u => new User
+            {
+                UserId = u.UserId, FullName = u.FullName, Email = u.Email,
+                Role = u.Role, Status = u.Status
+            })
             .ToListAsync();
     }
 

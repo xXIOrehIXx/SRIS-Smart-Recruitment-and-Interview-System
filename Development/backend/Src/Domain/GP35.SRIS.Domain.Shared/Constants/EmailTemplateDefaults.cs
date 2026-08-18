@@ -27,17 +27,9 @@ public static class EmailTemplateDefaults
 
     public static IReadOnlyList<EmailTemplateSeed> All => new[]
     {
-        new EmailTemplateSeed(EmailTemplateType.Schedule, "Mời chọn lịch phỏng vấn",
-            "Mời bạn chọn lịch phỏng vấn — vị trí {{jobTitle}}",
-            """
-<p>Chào <b>{{candidateName}}</b>,</p>
-<p>Cảm ơn bạn đã ứng tuyển vị trí <b>{{jobTitle}}</b> tại {{companyName}}. Chúng tôi muốn mời bạn
-tham gia buổi phỏng vấn.</p>
-<p>Bấm nút bên dưới để chọn khung giờ phù hợp với bạn:</p>
-""" + Button("Chọn lịch phỏng vấn") + """
-<p>Liên kết có hiệu lực đến {{expiresAt}}.</p>
-"""),
-
+        // Mẫu "Mời chọn lịch phỏng vấn" đã bỏ cùng luồng ứng viên tự chọn khung (15/08/2026):
+        // bộ phận nhân sự gọi điện thống nhất giờ rồi nhập buổi, hệ thống gửi thẳng mẫu
+        // INTERVIEW_CONFIRMED (xác nhận + .ics) chứ không mời chọn khung nữa.
         new EmailTemplateSeed(EmailTemplateType.Status, "Tra cứu trạng thái hồ sơ",
             "Theo dõi hồ sơ ứng tuyển — vị trí {{jobTitle}}",
             """

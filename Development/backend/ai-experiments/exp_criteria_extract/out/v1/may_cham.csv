@@ -1,0 +1,11 @@
+﻿id,nganh,so_tieu_chi,so_giay_to,giay_to_rate,so_gop,gop_rate,so_nguong,nguong_rate,trung_lap,qua_tran,json_ok,on_dinh,giay_tb,loi
+J01_ke_toan,Kế toán,8,1,0.125,3,0.375,2,0.25,0,0,2,1.0,3.66,0
+J02_kinh_doanh,Kinh doanh,7,0,0.0,2,0.2857,0,0.0,0,0,2,1.0,4.27,0
+J03_kho_van,Kho vận,9,1,0.1111,3,0.3333,1,0.1111,0,0,2,1.0,3.3,0
+J04_dotnet,CNTT,8,0,0.0,3,0.375,0,0.0,0,0,2,1.0,3.29,0
+J05_hanh_chinh,Hành chính - Nhân sự,10,1,0.1,5,0.5,1,0.1,0,0,2,0.9333,3.61,0
+J06_le_tan,Khách sạn,7,1,0.1429,0,0.0,1,0.1429,0,0,2,1.0,3.81,0
+J07_marketing,Marketing,5,0,0.0,3,0.6,0,0.0,0,0,2,1.0,2.16,0
+J08_cskh,Dịch vụ khách hàng,6,1,0.1667,4,0.6667,2,0.3333,0,0,2,1.0,4.07,0
+J09_chi_dau_viec,Sản xuất,7,0,0.0,0,0.0,0,0.0,0,0,2,0.8913,2.06,0
+J10_qua_nhieu,CNTT,13,2,0.1538,4,0.3077,0,0.0,0,3,2,1.0,4.25,0

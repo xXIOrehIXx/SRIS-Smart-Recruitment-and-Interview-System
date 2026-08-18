@@ -29,12 +29,13 @@ import DeptInterviewSchedule from "./pages/dept-manager/InterviewSchedule";
 import DeptInterviewDetail from "./pages/dept-manager/InterviewDetail";
 import DeptRecruitmentRequests from "./pages/dept-manager/RecruitmentRequests";
 import HiringDecision from "./pages/dept-manager/HiringDecision";
+import ScreeningApproval from "./pages/dept-manager/ScreeningApproval";
+import HiringProposals from "./pages/director/HiringProposals";
 import CreateRecruitmentRequest from "./pages/dept-manager/CreateRecruitmentRequest";
 import OfferManagement from "./pages/offer/OfferManagement";
 import OfferDetail from "./pages/offer/OfferDetail";
 import CandidateResponse from "./pages/candidate/CandidateResponse";
 import CandidateStatus from "./pages/candidate/CandidateStatus";
-import Schedule from "./pages/candidate/Schedule";
 import Analytics from "./pages/analytics/Analytics";
 import CvIntake from "./pages/human-resource/CvIntake";
 import MailTemplates from "./pages/mail-templates/MailTemplates";
@@ -62,11 +63,11 @@ const App = () => {
         </Route>
 
       {/* Route ứng viên qua magic link — path khớp link backend sinh trong email:
-          /schedule (SCHEDULE) · /offer (OFFER_RESPONSE) · /status (STATUS) */}
+          /offer (OFFER_RESPONSE) · /status (STATUS). Trang /schedule (ứng viên tự chọn khung)
+          đã bỏ 15/08/2026: nhân sự gọi điện chốt giờ rồi nhập buổi vào hệ thống. */}
       <Route path="/candidate/offer-response" element={<CandidateResponse />} />
       <Route path="/offer" element={<CandidateResponse />} />
       <Route path="/status" element={<CandidateStatus />} />
-      <Route path="/schedule" element={<Schedule />} />
 
       <Route
         element={
@@ -144,6 +145,8 @@ const App = () => {
         <Route path="/dept/requests" element={<DeptRecruitmentRequests />} />
         <Route path="/dept/interviews" element={<DeptInterviewSchedule />} />
         <Route path="/dept/interview/:id" element={<DeptInterviewDetail />} />
+        {/* Cửa 1 của DM: chọn ai được vào vòng phỏng vấn (SCREENING→INTERVIEW) */}
+        <Route path="/dept/screening" element={<ScreeningApproval />} />
         <Route path="/dept/hiring-decision" element={<HiringDecision />} />
         <Route path="/dept/hiring-decision/:id" element={<HiringDecision />} />
         <Route
@@ -155,6 +158,20 @@ const App = () => {
           path="/dept/edit-request/:requestId"
           element={<CreateRecruitmentRequest />}
         />
+      </Route>
+
+      {/* Khu Giám đốc (V043): người DUY NHẤT quyết tuyển — duyệt đề xuất của trưởng bộ phận */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={[ROLES.DIRECTOR]}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/director/proposals" element={<HiringProposals />} />
+        <Route path="/director/dashboard" element={<Dashboard />} />
+        {/* Bảng điểm chi tiết của một buổi — dùng chung màn với trưởng bộ phận */}
+        <Route path="/director/interview/:id" element={<DeptInterviewDetail />} />
       </Route>
 
       <Route

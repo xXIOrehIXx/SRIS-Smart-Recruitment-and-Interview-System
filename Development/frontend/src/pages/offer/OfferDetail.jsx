@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Card, Typography, Button, Space, Descriptions, Divider, Avatar,
-  Popconfirm, Spin, Result, message, Row, Col,
+  Popconfirm, Spin, Result, message, Row, Col, Tooltip,
 } from 'antd';
 import {
   ArrowLeftOutlined, UserOutlined, MailOutlined, FileTextOutlined,
@@ -10,6 +10,8 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { offerAPI, applicationAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { canRejectAtState } from '../../utils/decisionRights';
 import { getStatusTag, getAppStatusTag, formatSalary, MATCHA_GREEN } from './offerDisplay';
 import '../Dashboard.css';
 
@@ -27,6 +29,8 @@ const OfferDetail = () => {
   const navigate = useNavigate();
   const { applicationId } = useParams();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const role = user?.role;
 
   const [loading, setLoading] = useState(true);
   const [offer, setOffer] = useState(null);
@@ -258,16 +262,25 @@ const OfferDetail = () => {
               <Button icon={<SendOutlined />} loading={acting} onClick={handleResend}>
                 Gửi lại thư mời
               </Button>
-              <Popconfirm
-                title="Thu hồi thư mời này?"
-                description="Hồ sơ sẽ chuyển sang Từ chối."
-                onConfirm={handleWithdraw}
-                okText="Thu hồi"
-                cancelText="Hủy"
-                okButtonProps={{ danger: true }}
-              >
-                <Button danger icon={<StopOutlined />} loading={acting}>Thu hồi</Button>
-              </Popconfirm>
+              {/* THU HỒI là quyết định của CÔNG TY (OFFER→REJECTED) -> chỉ Giám đốc, giống
+                  mọi đường rời bước Quyết định. Khác hẳn hai nút bên phải: những nút đó chỉ
+                  GHI NHẬN câu trả lời của ứng viên nên nhân sự vẫn bấm được. */}
+              {canRejectAtState(role, 'OFFER') ? (
+                <Popconfirm
+                  title="Thu hồi thư mời này?"
+                  description="Hồ sơ sẽ chuyển sang Từ chối."
+                  onConfirm={handleWithdraw}
+                  okText="Thu hồi"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button danger icon={<StopOutlined />} loading={acting}>Thu hồi</Button>
+                </Popconfirm>
+              ) : (
+                <Tooltip title="Thu hồi thư mời là quyết định của Giám đốc. Ghi nhận câu trả lời của ứng viên thì bạn vẫn làm được ở hai nút bên phải.">
+                  <Button danger icon={<StopOutlined />} disabled>Thu hồi</Button>
+                </Tooltip>
+              )}
             </Space>
             <Space>
               <Popconfirm

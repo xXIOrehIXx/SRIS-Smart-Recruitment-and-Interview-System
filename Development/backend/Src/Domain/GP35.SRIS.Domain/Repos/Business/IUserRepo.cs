@@ -16,7 +16,8 @@ public interface IUserRepo : IBaseRepo<Guid, User>
     Task<IReadOnlyList<User>> GetListByRoleAsync(long companyId, string role);
 
     /// <summary>
-    /// Lấy tên + email nhiều user theo id (dùng để hiển thị panel interviewer — không fetch cả User).
+    /// Lấy tên + email + role/status nhiều user theo id (dùng để hiển thị panel interviewer và
+    /// kiểm id có thật/còn hoạt động — không fetch cả User).
     /// </summary>
     Task<IReadOnlyList<User>> GetNamesByIdsAsync(long companyId, IReadOnlyList<long> userIds);
 

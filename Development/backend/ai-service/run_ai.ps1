@@ -14,7 +14,9 @@
  Thu vien rat nhe (fastapi + uvicorn + ollama + pydantic) - KHONG con torch,
  KHONG con sentence-transformers: model nam trong Ollama, service chi goi sang.
 
- YEU CAU: Ollama dang chay + da `ollama pull qwen2.5`.
+ YEU CAU: Ollama dang chay + da pull 2 model:
+   ollama pull qwen2.5     # boc tieu chi tu JD      (doi qua env SRIS_LLM_MODEL)
+   ollama pull qwen3:8b    # sang loc CV theo JD     (doi qua env SRIS_CV_MODEL)
 =====================================================================
 #>
 [CmdletBinding()]
@@ -119,7 +121,8 @@ if ($busy) {
 # 4) Chay AI service (chiem cua so nay - Ctrl+C de dung)
 # ---------------------------------------------------------------
 Ok "Khoi dong AI service tai http://127.0.0.1:$Port  (Ctrl+C de dung)"
-Warn "Nho: Ollama phai dang chay va da 'ollama pull qwen2.5'."
-Warn "Lan goi /extract-criteria DAU TIEN phai nap ~4.7GB model vao RAM -> cham hon han."
-Warn "Truoc khi demo, ban mot lan bo di de lam nong."
+Warn "Nho: Ollama phai dang chay va da pull 'qwen2.5' (boc tieu chi) + 'qwen3:8b' (sang loc CV)."
+Warn "Lan goi DAU TIEN cua moi endpoint phai nap model vao RAM (~5GB/model) -> cham hon han."
+Warn "Hai endpoint dung hai model khac nhau nen phai lam nong RIENG tung cai:"
+Warn "  ban thu 1 lan /extract-criteria VA 1 lan /screen-cv truoc khi demo."
 & $VenvPython -m uvicorn main:app --port $Port

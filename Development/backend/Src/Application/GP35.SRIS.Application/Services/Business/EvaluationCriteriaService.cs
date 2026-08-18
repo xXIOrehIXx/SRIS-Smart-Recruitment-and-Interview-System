@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -39,6 +38,14 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     public async Task<CriteriaDto> CreateAsync(long companyId, long jobId, CriteriaInputDto dto)
     {
         Validate(dto.Name, dto.Weight, dto.MaxScore);
+
+        // UNIQUE (job_id, name): để DB chặn thì người dùng nhận 500 kèm nguyên văn lỗi SQL.
+        // Chặn sớm để họ đọc được chuyện gì đang xảy ra.
+        var name = dto.Name.Trim();
+        var existed = await _criteriaRepo.GetByJobAsync(companyId, jobId,
+            activeOnly: false, approvedOnly: false);
+        if (existed.Any(c => string.Equals((c.Name ?? "").Trim(), name, StringComparison.OrdinalIgnoreCase)))
+            throw Bad($"Vị trí này đã có tiêu chí \"{name}\".");
 
         var entity = new EvaluationCriteria
         {
@@ -166,8 +173,37 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
             // Bóc lại = thay trọn bộ DRAFT cũ (tiêu chí đã APPROVED giữ nguyên).
             await _criteriaRepo.DeleteDraftsAsync(companyId, jobId);
 
+            // Bảng có UNIQUE (job_id, name). Tiêu chí đã DUYỆT (hoặc gõ tay, hoặc áp từ khuôn)
+            // KHÔNG bị xoá ở trên, nên AI bóc lại mà trùng tên là INSERT ném lỗi -> cả lượt bóc
+            // rơi vào catch chung và người dùng đọc được "AI chưa đề xuất được tiêu chí" trong
+            // khi AI đã trả kết quả tốt. Đây chính là ca "lúc được lúc không": job mới thì chạy,
+            // job từng duyệt tiêu chí rồi thì lần nào cũng hỏng.
+            // Bỏ QUA dòng trùng chứ không xoá bản cũ: bản đã duyệt mới là bản đang dùng, và có
+            // thể đã có phiếu chấm phỏng vấn trỏ vào nó.
+            // CHỈ tính tiêu chí CÒN HIỆU LỰC là "đã có tên". Tiêu chí bị xoá là xoá MỀM
+            // (active = 0) — coi tên của nó vẫn bị chiếm thì người dùng rơi vào ngõ cụt: xoá sạch
+            // tiêu chí của tin tuyển dụng rồi bấm bóc lại, AI (temperature = 0) trả về đúng những
+            // tên vừa xoá, tất cả bị bỏ qua, lượt bóc báo DONE với 0 tiêu chí và màn hình vẫn trống
+            // — không có cách nào lấy lại bộ tiêu chí ngoài việc gõ tay từng dòng.
+            // Ràng buộc DB cũng chỉ còn áp cho dòng active = 1 (xem V042), nên hai bên khớp nhau.
+            var takenNames = (await _criteriaRepo.GetByJobAsync(companyId, jobId,
+                    activeOnly: true, approvedOnly: false))
+                .Select(c => (c.Name ?? "").Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var inserted = 0;
+            var skipped = new List<string>();
+
             foreach (var c in extracted)
             {
+                // Add trả false = trùng — bắt cả trùng với bản cũ lẫn trùng bên trong chính
+                // lượt bóc (LLM thỉnh thoảng trả hai dòng y hệt nhau).
+                if (!takenNames.Add(c.Name))
+                {
+                    skipped.Add(c.Name);
+                    continue;
+                }
+
                 var entity = new EvaluationCriteria
                 {
                     JobId = jobId,
@@ -178,13 +214,31 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
                     Source = CriteriaSource.AiExtracted,
                     Status = CriteriaStatus.Draft
                 };
-                entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
+
+                try
+                {
+                    entity.CriteriaId = await _criteriaRepo.InsertAsync(companyId, entity);
+                    inserted++;
+                }
+                catch (Exception ex)
+                {
+                    // Lưới an toàn cho phần va chạm mà HashSet ở trên không thấy: collation của
+                    // SQL Server có thể coi hai tên khác dấu là một, và người khác có thể vừa
+                    // thêm tiêu chí cùng tên. Mất 1 dòng thì bỏ 1 dòng — đừng đánh đổ cả lượt bóc.
+                    _logger.Warning(ex, "RunExtraction: bỏ qua tiêu chí \"{Name}\" (job={JobId}) — " +
+                        "không chèn được.", c.Name, jobId);
+                    skipped.Add(c.Name);
+                }
             }
 
+            if (skipped.Count > 0)
+                _logger.Information("RunExtraction: job={JobId} bỏ {N} tiêu chí trùng tên đã có: [{Names}]",
+                    jobId, skipped.Count, string.Join(" | ", skipped));
+
             await CloseAsync(companyId, extractionId, jobId, ExtractionStatus.Done,
-                extracted.Count, null, null);
+                inserted, null, null);
             _logger.Information("RunExtraction: job={JobId} -> {N} tiêu chí DRAFT chờ duyệt.",
-                jobId, extracted.Count);
+                jobId, inserted);
         }
         catch (Exception ex)
         {
@@ -298,35 +352,14 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     // ============================================================
 
     /// <summary>
-    /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc. Giữ tiêu đề
-    /// từng mục để LLM thấy rõ ranh giới đầu việc / yêu cầu — prompt bóc tiêu chí dựa vào đúng
-    /// ranh giới đó. Mục trống thì bỏ hẳn, không để tiêu đề rỗng gây nhiễu.
+    /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc — prompt bóc
+    /// tiêu chí dựa vào ranh giới giữa các mục. Dùng chung với luồng sàng lọc CV
+    /// (xem <see cref="JobSourceText"/>) để hai bên không đọc hai phiên bản khác nhau của cùng
+    /// một tin tuyển dụng.
     /// </summary>
     private static string BuildSourceText(
-        string? jdText, IReadOnlyList<JobRequirement> requirements, string? skillTags)
-    {
-        var sb = new StringBuilder();
-
-        if (!string.IsNullOrWhiteSpace(jdText))
-            sb.Append("[Mô tả công việc]\n").Append(jdText.Trim()).Append("\n\n");
-
-        var reqLines = requirements
-            .Select(r => r.Content?.Trim())
-            .Where(c => !string.IsNullOrWhiteSpace(c))
-            .ToList();
-        if (reqLines.Count > 0)
-        {
-            sb.Append("[Yêu cầu ứng viên]\n");
-            foreach (var line in reqLines)
-                sb.Append("- ").Append(line).Append('\n');
-            sb.Append('\n');
-        }
-
-        if (!string.IsNullOrWhiteSpace(skillTags))
-            sb.Append("[Kỹ năng yêu cầu]\n").Append(skillTags.Trim()).Append('\n');
-
-        return sb.ToString().Trim();
-    }
+        string? jdText, IReadOnlyList<JobRequirement> requirements, string? skillTags) =>
+        JobSourceText.Build(jdText, requirements, skillTags);
 
     private static void Validate(string? name, decimal weight, decimal maxScore)
     {

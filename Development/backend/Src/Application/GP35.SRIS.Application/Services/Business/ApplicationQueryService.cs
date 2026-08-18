@@ -17,12 +17,14 @@ public class ApplicationQueryService : BaseService<ApplicationQueryService>, IAp
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
     }
 
-    public async Task<ApplicationBoardDto> GetBoardByJobAsync(long companyId, long jobId)
+    public async Task<ApplicationBoardDto> GetBoardByJobAsync(
+        long companyId, long jobId, BoardSort sort = BoardSort.Recent)
     {
-        var rows = await _appRepo.GetBoardByJobAsync(companyId, jobId);
+        var rows = await _appRepo.GetBoardByJobAsync(companyId, jobId, sort);
         return new ApplicationBoardDto
         {
             JobId = jobId,
+            Sort = sort == BoardSort.Fit ? "fit" : "recent",
             Applications = rows.Select(r => new ApplicationCardDto
             {
                 ApplicationId = r.ApplicationId,
@@ -31,7 +33,10 @@ public class ApplicationQueryService : BaseService<ApplicationQueryService>, IAp
                 CandidateEmail = r.CandidateEmail,
                 CurrentState = r.CurrentState,
                 CvId = r.CvId,
-                AppliedAt = r.AppliedAt
+                AppliedAt = r.AppliedAt,
+                ScreeningStatus = r.ScreeningStatus,
+                FitScore = r.FitScore,
+                ScreeningDecision = r.ScreeningDecision
             }).ToList()
         };
     }

@@ -24,6 +24,8 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 BASE = "http://localhost:5082/api"
 PASS = "demo123456"
 RECRUITER = "recruiter.7b880@demo.vn"
+# Cửa SCREENING->INTERVIEW là của Trưởng bộ phận (chốt 15/08/2026): token nhân sự bị 403.
+MANAGER = "dm.7b880@demo.vn"
 IV1 = "interviewer1.7b880@demo.vn"
 IV2 = "interviewer2.7b880@demo.vn"
 JOB_ID = 45          # "Lập trình viên Backend (.NET)" — Phòng Kỹ thuật, DM = manager@test.com
@@ -211,8 +213,11 @@ CANDIDATES = [
 
 print(">> Dang nhap ...")
 rec = login(RECRUITER)
+dm = login(MANAGER)
 iv1 = login(IV1)
 iv2 = login(IV2)
+# Ai bấm bước nào: nhân sự sàng lọc, Trưởng bộ phận duyệt vào vòng phỏng vấn.
+STEP_TOKEN = {"SCREENING": rec, "INTERVIEW": dm}
 iv_tokens = {IV1_ID: iv1, IV2_ID: iv2}
 
 s, job = call("GET", f"/jobs/{JOB_ID}", token=rec)
@@ -226,13 +231,19 @@ for c in CANDIDATES:
     email = f"{local}+{c['name'].split()[-1].lower()}.{RUN}@{domain}"
     app_id = upload_cv(rec, c["name"], email, c["phone"], c["cv"])
 
+    # V045: Truong bo phan chi dinh nguoi phong van NGAY khi duyet vao vong phong van.
+    # Khong gui interviewerIds thi lenh dat lich ben duoi bi BE tu choi (409).
+    panel = [IV1_ID, IV2_ID] if c["panel"] == "both" else [IV1_ID]
+
     for state in ("SCREENING", "INTERVIEW"):
-        must(*call("POST", f"/applications/{app_id}/transition", token=rec, body={"toState": state}),
+        body = {"toState": state}
+        if state == "INTERVIEW":
+            body["interviewerIds"] = panel
+        must(*call("POST", f"/applications/{app_id}/transition", token=STEP_TOKEN[state], body=body),
              f"{c['name']} -> {state}")
 
-    panel = [IV1_ID, IV2_ID] if c["panel"] == "both" else [IV1_ID]
     start = time.strftime(f"%Y-%m-%dT09:00:00Z", time.gmtime(time.time() + c["day"] * 86400))
-    s, sch = call("POST", f"/applications/{app_id}/manual-interview", token=rec,
+    s, sch = call("POST", f"/applications/{app_id}/interviews", token=rec,
                   body={"interviewerIds": panel, "startTime": start, "roundNumber": 1})
     must(s, sch, f"chot lich {c['name']}")
     sched_id = sch["scheduleId"]

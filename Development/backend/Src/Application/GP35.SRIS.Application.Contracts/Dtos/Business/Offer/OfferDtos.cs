@@ -1,10 +1,16 @@
 namespace GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 
 /// <summary>
-/// Người quyết tuyển (Department Manager của job; job không gán DM -> Human Resource) soạn THƯ MỜI
-/// NHẬN VIỆC cho hồ sơ đang ở trạng thái OFFER (docs 5.15). Tạo OfferDetail + gửi email kèm link
-/// mở file PDF thư mời. Ứng viên KHÔNG bấm đồng ý/từ chối trong hệ thống — trả lời ngoài hệ thống,
-/// Human Resource ghi nhận kết quả sau (<see cref="OfferOutcomeDto"/>).
+/// Bộ phận nhân sự SOẠN thư mời nhận việc cho hồ sơ đã ở trạng thái OFFER (docs 5.15).
+/// <para>
+/// Soạn thư KHÔNG phải là quyết định tuyển: hồ sơ chỉ tới được OFFER khi GIÁM ĐỐC đã duyệt phiếu
+/// Đề xuất tuyển (V043), và mức lương / ngày vào làm gợi ý trong form lấy từ chính quyết định đó
+/// (<see cref="OfferLetterDefaultsDto.TermsFromDirector"/>). Nhân sự chỉ chuyển điều khoản đã chốt
+/// thành văn bản gửi đi. (Chú thích cũ ở đây ghi "Department Manager quyết tuyển" — sai từ V043.)
+/// </para>
+/// Tạo OfferDetail + gửi email kèm link mở file PDF thư mời. Ứng viên KHÔNG bấm đồng ý/từ chối
+/// trong hệ thống — trả lời ngoài hệ thống, Human Resource ghi nhận kết quả sau
+/// (<see cref="OfferOutcomeDto"/>).
 /// Trường để trống -> lấy mặc định từ Job/Company (xem <see cref="OfferLetterDefaultsDto"/>);
 /// mục nào rỗng thì bản PDF bỏ hẳn dòng đó, không in "N/A".
 /// </summary>
@@ -58,9 +64,22 @@ public class OfferLetterDefaultsDto
     public string? ReportingTo { get; set; }
     public string? EmploymentType { get; set; }
     public string? WorkLocation { get; set; }
+    /// <summary>
+    /// Mức lương gợi ý. Ưu tiên mức GIÁM ĐỐC ĐÃ CHỐT khi duyệt đề xuất tuyển (V043); chưa có
+    /// đề xuất nào thì rơi về khoảng lương của tin tuyển dụng.
+    /// </summary>
     public decimal? SalaryAmount { get; set; }
     public string? Currency { get; set; }
     public string? SalaryPeriod { get; set; }
+
+    /// <summary>Ngày vào làm Giám đốc đã chốt (null nếu Giám đốc không ghi).</summary>
+    public DateTime? StartDate { get; set; }
+
+    /// <summary>
+    /// True khi lương/ngày vào làm ở trên đến từ quyết định của Giám đốc — form cảnh báo nhân sự
+    /// rằng đây là điều khoản đã chốt, sửa tay là lệch với thứ Giám đốc duyệt.
+    /// </summary>
+    public bool TermsFromDirector { get; set; }
 
     /// <summary>
     /// Phúc lợi của job (bảng JobBenefit, mỗi dòng 1 mục) gộp thành text nhiều dòng.

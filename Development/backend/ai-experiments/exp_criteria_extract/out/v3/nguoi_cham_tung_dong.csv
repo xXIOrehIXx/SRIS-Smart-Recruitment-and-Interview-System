@@ -1,0 +1,68 @@
+﻿id,tieu_chi,nhan,ghi_chu
+J01_ke_toan,Tốt nghiệp Cao đẳng trở lên chuyên ngành Kế toán - Kiểm toán,GIAYTO,Nhìn bằng là xong
+J01_ke_toan,Có tối thiểu 2 năm kinh nghiệm ở vị trí kế toán tổng hợp,DUNG,
+J01_ke_toan,Nắm vững chế độ kế toán và luật thuế hiện hành,DUNG,"Chế độ kế toán và luật thuế là một mảng kiến thức, chấm một điểm"
+J01_ke_toan,Sử dụng thành thạo phần mềm kế toán MISA hoặc Fast,DUNG,"MISA/Fast là hai biến thể cùng một thứ, không tính gộp"
+J01_ke_toan,"Thành thạo Excel (hàm SUMIF, VLOOKUP, PivotTable)",DUNG,
+J01_ke_toan,Cẩn thận,DUNG,
+J01_ke_toan,Trung thực,DUNG,
+J01_ke_toan,Chịu được áp lực mùa quyết toán,DUNG,
+J02_kinh_doanh,Kinh nghiệm bán hàng B2B,DUNG,
+J02_kinh_doanh,Kỹ năng đàm phán và thuyết phục,DUNG,"Thuyết phục là một phần của đàm phán, một điểm"
+J02_kinh_doanh,"Kỹ năng giao tiếp, xây dựng quan hệ khách hàng",DUNG,"Xây dựng quan hệ là giao tiếp áp dụng vào bán hàng, một điểm"
+J02_kinh_doanh,Chủ động tìm kiếm khách hàng mới,DUNG,
+J02_kinh_doanh,Có thể chịu được áp lực doanh số,DUNG,
+J02_kinh_doanh,Kỹ năng sử dụng CRM,DUNG,Có trong skill_tags
+J02_kinh_doanh,Tệp khách hàng ngành xây dựng sẵn có,DUNG,"CV không thể hiện, phải hỏi mới biết"
+J03_kho_van,Tốt nghiệp THPT trở lên,GIAYTO,Nhìn bằng là xong
+J03_kho_van,"Sức khỏe tốt, có thể làm việc theo ca",DUNG,"Ca ranh giới: mơ hồ và có kèm điều kiện ca làm, nhưng tin có nêu và người phỏng vấn vẫn hỏi được"
+J03_kho_van,"Biết sử dụng máy tính văn phòng cơ bản (Word, Excel)",DUNG,"Một mức độ 'tin học văn phòng cơ bản', phần trong ngoặc chỉ là ví dụ"
+J03_kho_van,"Cẩn thận, trung thực trong kiểm đếm hàng hóa",GOP,Cẩn thận (không nhầm số) và trung thực (không gian lận) là hai điểm khác nhau
+J03_kho_van,Kinh nghiệm vận hành xe nâng,DUNG,
+J04_dotnet,Kinh nghiệm với C# và ASP.NET Core,GOP,Ngôn ngữ và framework chấm riêng được — V4 tách đúng
+J04_dotnet,Kinh nghiệm với Entity Framework,DUNG,
+J04_dotnet,Kinh nghiệm với REST API,DUNG,
+J04_dotnet,Kinh nghiệm với kiến trúc microservices,DUNG,
+J04_dotnet,Thành thạo SQL Server và viết stored procedure,GOP,Dùng được SQL Server khác với viết được stored procedure — V4 tách đúng
+J04_dotnet,Sử dụng được Git trong quy trình làm việc nhóm,DUNG,
+J04_dotnet,Tiếng Anh đọc hiểu tài liệu kỹ thuật,DUNG,
+J04_dotnet,"Tư duy phân tích, giải quyết vấn đề độc lập",DUNG,"Một năng lực giải quyết vấn đề, một điểm"
+J05_hanh_chinh,"Tốt nghiệp Đại học các ngành Quản trị nhân lực, Luật hoặc tương đương",GIAYTO,Nhìn bằng là xong
+J05_hanh_chinh,Có 1 năm kinh nghiệm ở vị trí hành chính nhân sự,DUNG,
+J05_hanh_chinh,"Nắm được quy định về BHXH, hợp đồng lao động",DUNG,"Cùng một mảng pháp luật lao động, một điểm"
+J05_hanh_chinh,Thành thạo Word,DUNG,
+J05_hanh_chinh,Thành thạo Excel,DUNG,
+J05_hanh_chinh,Biết dùng phần mềm chấm công,DUNG,
+J05_hanh_chinh,Kỹ năng giao tiếp tốt,DUNG,
+J05_hanh_chinh,Kỹ năng sắp xếp công việc tốt,DUNG,
+J05_hanh_chinh,"Cẩn thận, bảo mật thông tin",GOP,Cẩn thận và ý thức bảo mật là hai điểm khác nhau; không phiên bản nào tách
+J06_le_tan,Ngoại hình ưa nhìn,GIAYTO,"Nhìn là biết, không chấm phỏng vấn (rubric chốt sẵn)"
+J06_le_tan,Chiều cao từ 1m60 trở lên,GIAYTO,"Số đo, không phải thứ đem chấm"
+J06_le_tan,Tiếng Anh giao tiếp tốt,DUNG,Rubric chốt: tiếng Anh giao tiếp phải nói mới biết
+J06_le_tan,Biết thêm tiếng Trung hoặc Hàn,DUNG,
+J06_le_tan,Kỹ năng giao tiếp,DUNG,
+J06_le_tan,Kỹ năng xử lý tình huống với khách khó tính,DUNG,
+J06_le_tan,"Có thể làm việc theo ca, kể cả cuối tuần và lễ tết",DUNG,
+J06_le_tan,Kinh nghiệm làm lễ tân khách sạn 3 sao trở lên,DUNG,
+J07_marketing,Kinh nghiệm chạy quảng cáo Facebook Ads và Google Ads,GOP,"Hai nền tảng nối bằng 'và', chấm hai điểm được — V4 tách đúng"
+J07_marketing,Viết nội dung bán hàng bằng tiếng Việt mạch lạc,DUNG,
+J07_marketing,Sử dụng Canva hoặc Photoshop ở mức cơ bản,DUNG,Nối bằng 'hoặc' — hai biến thể cùng một việc
+J07_marketing,Đọc hiểu số liệu và sử dụng Google Analytics,DUNG,Ca ranh giới: đọc số và dùng GA là một năng lực phân tích
+J07_marketing,"Sáng tạo, chủ động đề xuất ý tưởng",DUNG,"Chủ động đề xuất ý tưởng chính là biểu hiện của sáng tạo, một điểm"
+J08_cskh,Tốt nghiệp Trung cấp trở lên,GIAYTO,Nhìn bằng là xong
+J08_cskh,Có ít nhất 6 tháng kinh nghiệm chăm sóc khách hàng qua điện thoại,DUNG,
+J08_cskh,"Giọng nói dễ nghe, phát âm rõ ràng",DUNG,"Ca ranh giới: nghe hai câu là biết, đúng thứ chỉ phỏng vấn mới đánh giá được"
+J08_cskh,Kỹ năng lắng nghe và xoa dịu khách đang bức xúc,GOP,Lắng nghe và xoa dịu chấm rời được — V2 tách đúng
+J08_cskh,Sử dụng được Excel,DUNG,
+J08_cskh,Sử dụng được phần mềm quản lý khách hàng,DUNG,
+J08_cskh,"Kiên nhẫn, giữ được bình tĩnh khi bị khách lớn tiếng",DUNG,"Giữ bình tĩnh là biểu hiện của kiên nhẫn, một điểm"
+J10_qua_nhieu,Kinh nghiệm phát triển phần mềm,DUNG,
+J10_qua_nhieu,Kinh nghiệm dẫn dắt nhóm,DUNG,
+J10_qua_nhieu,Thành thạo Java hoặc C#,DUNG,Nối bằng 'hoặc'
+J10_qua_nhieu,Kinh nghiệm thiết kế kiến trúc hệ thống phân tán,DUNG,
+J10_qua_nhieu,Nắm vững cơ sở dữ liệu quan hệ và tối ưu truy vấn,DUNG,"Tối ưu truy vấn nằm trong kiến thức CSDL quan hệ, một điểm"
+J10_qua_nhieu,"Kinh nghiệm với Docker, Kubernetes",GOP,Hai công nghệ chấm riêng được; không phiên bản nào tách
+J10_qua_nhieu,Hiểu quy trình Agile/Scrum,DUNG,
+J10_qua_nhieu,Kỹ năng giao tiếp và thuyết trình tốt,GOP,Giao tiếp 1-1 và thuyết trình trước đám đông là hai điểm khác nhau
+J10_qua_nhieu,"Kỹ năng huấn luyện, kèm cặp thành viên mới",DUNG,Huấn luyện và kèm cặp là một việc
+J10_qua_nhieu,Tiếng Anh giao tiếp được với khách hàng nước ngoài,DUNG,

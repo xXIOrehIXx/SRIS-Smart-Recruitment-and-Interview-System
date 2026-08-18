@@ -6,43 +6,63 @@ skinparam nodesep 80
 skinparam ranksep 80
 hide circle
 
-title **Feature 3: Candidate Schedule Booking (Class Diagram)**
+title **Feature 3: Hiring Proposal & Director Approval (Class Diagram)**
 
-class CandidateScheduleController <<boundary>> {
-    - _candidateScheduleService : CandidateScheduleService
-    + ConfirmAsync(token : string, dto : Object) : Object
+note as N1
+  Replaces the former "Candidate Schedule Booking" feature,
+  dropped 15/08/2026 together with the shared slot pool.
+  New rule from the defence panel: the department manager
+  only RECOMMENDS; the director decides and sets the terms.
+end note
+
+class HiringProposalController <<boundary>> {
+    - _proposalService : HiringProposalService
+    + CreateAsync(applicationId : long, dto : Object) : Object
+    + DecideAsync(proposalId : long, dto : Object) : Object
+    + GetListAsync(status : string) : Object
 }
 
-class CandidateScheduleService <<control>> {
-    - _magicLink : MagicLinkService
-    - _schedulingRepo : SchedulingRepository
-    + ConfirmAsync(rawToken : string, dto : Object) : ScheduleConfirmationDto
+class HiringProposalService <<control>> {
+    - _proposalRepo : HiringProposalRepository
+    - _appRepo : ApplicationRepository
+    - _jobRepo : JobRepository
+    - _stateService : ApplicationStateService
+    + CreateAsync(companyId : long, userId : long, applicationId : long, dto : Object) : HiringProposalDto
+    + DecideAsync(companyId : long, userId : long, proposalId : long, dto : Object) : HiringProposalDto
+    + GetListAsync(companyId : long, status : string) : List<HiringProposalDto>
 }
 
-class InterviewSlotPool <<entity>> {
-    - poolId : long
-    - roundNumber : int
-    - status : string
-}
-
-class InterviewSlot <<entity>> {
-    - slotId : long
-    - poolId : long
-    - startTime : DateTime
-    - status : string
-}
-
-class InterviewSchedule <<entity>> {
-    - scheduleId : long
+class HiringProposal <<entity>> {
+    - proposalId : long
     - applicationId : long
-    - poolId : long
-    - confirmedSlotId : long
+    - status : string
+    - proposalNote : string
+    - proposedSalary : decimal
+    - proposedStartDate : DateTime
+    - approvedSalary : decimal
+    - approvedStartDate : DateTime
+    - createdBy : long
+    - decidedBy : long
+}
+
+class Application <<entity>> {
+    - applicationId : long
+    - jobId : long
+    - candidateId : long
+    - currentState : string
+}
+
+class OfferDetail <<entity>> {
+    - offerId : long
+    - applicationId : long
+    - salaryAmount : decimal
+    - startDate : DateTime
     - status : string
 }
 
-CandidateScheduleController --> CandidateScheduleService : Association
-
-InterviewSlotPool "1" *--> "*" InterviewSlot : Composition
-InterviewSlotPool "1" *--> "*" InterviewSchedule : Composition
+HiringProposalController --> HiringProposalService : Association
+HiringProposalService --> HiringProposal : Dependency
+Application "1" *--> "*" HiringProposal : Composition
+HiringProposal ..> OfferDetail : approved terms feed the offer letter
 
 @enduml

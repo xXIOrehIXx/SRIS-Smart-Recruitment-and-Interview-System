@@ -1,5 +1,0 @@
-﻿version,mo_ta,tong_tieu_chi,json_ok_rate,giay_to_rate,gop_rate,nguong_rate,trung_lap,qua_tran,on_dinh,giay_tb
-v1,Câu lệnh trần, không luật, không ép định dạng,81,1.0,0.1111,0.3086,0.0741,0,3,0.9825,3.26
-v2,+ Ràng buộc JSON schema (Pydantic) & temperature=0,79,1.0,0.0886,0.3418,0.0759,0,0,1.0,2.49
-v3,+ Luật nghiệp vụ (yêu cầu vs đầu việc, bỏ giấy tờ, tách, trần 10),60,1.0,0.0833,0.35,0.1,0,0,0.9742,2.08
-v4,+ Khối ví dụ mẫu (few-shot) = prompt production,65,1.0,0.0769,0.2769,0.0923,0,0,0.9958,2.07

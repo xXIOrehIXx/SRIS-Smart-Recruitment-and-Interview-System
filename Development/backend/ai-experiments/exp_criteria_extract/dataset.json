@@ -1,5 +1,5 @@
 {
-  "_note": "10 tin tuyển dụng mẫu, nhiều ngành — KHÔNG chỉ IT, vì hệ thống tuyển mọi vị trí. Ba trường jd_text / requirements / skill_tags khớp đúng 3 ô người dùng nhập trong CreateJob, và run.py ghép lại y hệt BuildSourceText của .NET. Hai tin cuối là ca cố tình khó (xem expect).",
+  "_note": "10 tin tuyển dụng mẫu, nhiều ngành — KHÔNG chỉ IT, vì hệ thống tuyển mọi vị trí. Ba trường jd_text / requirements / skill_tags khớp đúng 3 ô người dùng nhập trong CreateJob, và 1_chay_model_va_may_cham.py ghép lại y hệt BuildSourceText của .NET. J09 và J10 là hai ca cố tình khó (xem expect). LỊCH SỬ: tin J08_tai_xe (tài xế giao hàng) bị THAY bằng J08_cskh (giữ nguyên số thứ tự trong bộ test) ngày 14/08/2026 — xem mục Hạn chế trong out/KET_QUA.md.",
   "jobs": [
     {
       "id": "J01_ke_toan",
@@ -110,20 +110,20 @@
       "expect": "Không dòng nào là giấy tờ. Giữ đủ 5, không được biến đầu việc trong mô tả thành tiêu chí."
     },
     {
-      "id": "J08_tai_xe",
-      "industry": "Vận tải",
-      "title": "Tài xế giao hàng",
-      "jd_text": "Giao hàng theo tuyến được phân công trong nội thành. Kiểm tra hàng hóa trước khi rời kho. Thu tiền COD và nộp về công ty cuối ngày. Bảo quản xe, báo cáo sự cố kịp thời. Hỗ trợ bốc xếp hàng khi cần.",
+      "id": "J08_cskh",
+      "industry": "Dịch vụ khách hàng",
+      "title": "Nhân viên chăm sóc khách hàng",
+      "jd_text": "Tiếp nhận cuộc gọi và tin nhắn của khách qua tổng đài và fanpage. Giải đáp thắc mắc về sản phẩm, chính sách đổi trả và bảo hành. Ghi nhận khiếu nại rồi chuyển bộ phận liên quan xử lý. Gọi lại cho khách sau khi sự việc được giải quyết xong. Tổng hợp phản hồi của khách và báo cáo hàng tuần.",
       "requirements": [
-        "Có bằng lái xe hạng B2 còn hiệu lực",
-        "Nam, độ tuổi từ 22 đến 40",
-        "Thường trú hoặc tạm trú tại Hà Nội",
-        "Thuộc đường nội thành Hà Nội",
-        "Có kinh nghiệm giao hàng, biết xử lý khi khách từ chối nhận",
-        "Trung thực, có trách nhiệm với tiền COD"
+        "Tốt nghiệp Trung cấp trở lên",
+        "Có ít nhất 6 tháng kinh nghiệm chăm sóc khách hàng qua điện thoại",
+        "Giọng nói dễ nghe, phát âm rõ ràng",
+        "Kỹ năng lắng nghe và xoa dịu khách đang bức xúc",
+        "Sử dụng được Excel và phần mềm quản lý khách hàng",
+        "Kiên nhẫn, giữ được bình tĩnh khi bị khách lớn tiếng"
       ],
-      "skill_tags": "lái xe B2, giao hàng, COD, thuộc đường Hà Nội",
-      "expect": "CA KHÓ NHẤT: 4/6 dòng là giấy tờ hoặc nhân khẩu (bằng lái, tuổi, nơi ở). Chỉ nên còn 2-3 tiêu chí. Đây là ca đo trực tiếp bộ lọc mới."
+      "skill_tags": "chăm sóc khách hàng, tổng đài, Excel, xử lý khiếu nại",
+      "expect": "Bỏ 'Tốt nghiệp Trung cấp' (giấy tờ). 'Giọng nói dễ nghe' là ca ranh giới nhưng NGHE là biết ngay trong buổi phỏng vấn nên GIỮ. Còn lại 5 dòng đều chấm được."
     },
     {
       "id": "J09_chi_dau_viec",
