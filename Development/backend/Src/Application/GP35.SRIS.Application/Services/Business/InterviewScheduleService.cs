@@ -95,14 +95,15 @@ public class InterviewScheduleService : BaseService<InterviewScheduleService>, I
 
         var panel = dto.InterviewerIds.Distinct().ToList();
 
-        // Chống trùng giờ: nhân sự đã gọi điện thống nhất, nhưng lưới an toàn vẫn cần —
-        // người gọi không nhớ hết lịch của 5 interviewer.
+        // Chỉ chặn TRÙNG ĐÚNG GIỜ (18/08/2026 — bỏ luật cách nhau 1 tiếng, xem InterviewTiming):
+        // giờ đã được nhân sự gọi điện chốt với cả hai bên, và buổi 30 phút xong là mời người
+        // kế tiếp vào luôn. Cái duy nhất vẫn vô lý là một người bắt đầu hai buổi cùng lúc.
         var myBusyAt = await _schedulingRepo.FindCandidateBusyAtAsync(
             companyId, applicationId, dto.StartTime, InterviewTiming.MinGap, excludeScheduleId: 0);
         if (myBusyAt is DateTime busyAt)
             throw Conflict(
-                $"Ứng viên đã có buổi phỏng vấn lúc {busyAt:HH:mm dd/MM/yyyy}. " +
-                $"Hai buổi phải cách nhau ít nhất {InterviewTiming.MinGapHours} tiếng.");
+                $"Ứng viên đã có buổi phỏng vấn đúng lúc {busyAt:HH:mm dd/MM/yyyy} — " +
+                "chọn giờ khác cho buổi này.");
 
         var busy = await _schedulingRepo.FindBusyInterviewerAsync(
             companyId, panel, dto.StartTime, InterviewTiming.MinGap, excludeSlotId: 0);
@@ -112,8 +113,8 @@ public class InterviewScheduleService : BaseService<InterviewScheduleService>, I
                 .Select(u => u.FullName ?? u.Email)
                 .FirstOrDefault() ?? $"#{busy.InterviewerId}";
             throw Conflict(
-                $"{name} đã có buổi phỏng vấn lúc {busy.StartTime:HH:mm dd/MM/yyyy} — " +
-                $"các buổi phải cách nhau ít nhất {InterviewTiming.MinGapHours} tiếng.");
+                $"{name} đã có buổi phỏng vấn đúng lúc {busy.StartTime:HH:mm dd/MM/yyyy} — " +
+                "chọn giờ khác hoặc bỏ người này khỏi buổi.");
         }
 
         var scheduleId = await _schedulingRepo.ManualConfirmAsync(

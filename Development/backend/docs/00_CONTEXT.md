@@ -488,7 +488,7 @@ Hai lời từ chối của BE ở bước này nói hai chuyện khác nhau:
 **Vì sao chia đôi như vậy (V045 — 16/08/2026):** chọn ai gặp ứng viên là phán đoán chuyên môn (ai đủ sức hỏi mảng này, ai đang rảnh tay trong bộ phận), còn chốt giờ là việc vận hành. Trước V045 nhân sự truyền id tùy ý khi đặt buổi, tức là họ đang quyết cả hai. Danh sách chỉ chặn được khi nó là ràng buộc — đừng nới thành "gợi ý".
 
 ### 15.2 Hệ thống lo gì sau khi nhân sự bấm lưu
-- **Chống trùng giờ (giữ nguyên):** chặn nếu chính ứng viên, hoặc bất kỳ ai trong panel, đã có buổi cách dưới `MinGap` (1 tiếng). Nhân sự đã gọi điện nhưng không nhớ hết lịch của 5 người — đây là lưới an toàn, và lỗi báo TÊN người bận kèm giờ buổi kia.
+- **Chống trùng giờ (nới 18/08/2026):** chỉ chặn khi chính ứng viên, hoặc ai đó trong panel, đã có buổi ĐÚNG GIỜ ĐÓ. Luật cũ "cách nhau ít nhất 1 tiếng" đã bỏ: buổi 30 phút xong là mời người kế tiếp vào luôn, mà hệ thống lại không cho đặt — trong khi giờ vốn do nhân sự gọi điện chốt với cả hai bên (họ biết buổi trước dài bao lâu, bảng dữ liệu không lưu thời lượng nên hệ thống không biết). Lỗi vẫn báo TÊN người bận kèm giờ buổi kia. Thay cho việc chặn, form đặt lịch hiện **lịch bận của panel** (`GET /api/interviews/interviewer-busy`, V047) và nhắc màu vàng khi giờ chọn cách một buổi khác dưới 30 phút — nhắc, không cấm.
 - **Chặn giờ quá khứ** và **chặn nhảy cóc vòng** (buổi đầu tiên của một ứng viên luôn là vòng 1).
 - **Email xác nhận + tệp .ics** gửi ứng viên (best-effort — email hỏng không làm rớt buổi đã lưu).
 - **Tạo phiếu chấm** cho từng người trong panel (`InterviewSchedule` CONFIRMED → InterviewScore gắn theo `schedule_id`).

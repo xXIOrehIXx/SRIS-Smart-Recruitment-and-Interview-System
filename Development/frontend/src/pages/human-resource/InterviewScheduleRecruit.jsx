@@ -165,11 +165,19 @@ const InterviewScheduleRecruit = () => {
     return () => { cancelled = true; };
   }, [bookModalOpen, selectedInterviewerKey, busyWindowKey]);
 
-  // Giờ đang chọn có đụng buổi nào của nhóm không (cùng luật 1 tiếng như BE — BE vẫn là chốt
-  // chặn thật, đây chỉ để người dùng thấy trước khi bấm lưu).
-  const clashingSlots = watchedStartTime
-    ? busySlots.filter((b) => Math.abs(dayjs(b.startTime).diff(watchedStartTime, 'minute')) < 60)
+  // Buổi của nhóm nằm SÁT giờ đang chọn (dưới 30 phút). Chỉ NHẮC, không chặn: từ 18/08/2026
+  // backend chỉ chặn trùng đúng giờ, vì buổi 30 phút xong là mời người kế tiếp vào luôn —
+  // hệ thống không biết buổi trước dài bao lâu, người gọi điện chốt lịch thì biết.
+  const NEAR_MINUTES = 30;
+  const nearbySlots = watchedStartTime
+    ? busySlots.filter(
+        (b) => Math.abs(dayjs(b.startTime).diff(watchedStartTime, 'minute')) < NEAR_MINUTES
+      )
     : [];
+  // Trùng khít giờ — cái này backend sẽ từ chối, nói trước cho khỏi bấm phí.
+  const sameTimeSlots = nearbySlots.filter(
+    (b) => dayjs(b.startTime).isSame(watchedStartTime, 'minute')
+  );
 
   const handleJobChange = (jobId) => {
     setSelectedJobId(jobId);
@@ -439,17 +447,27 @@ const InterviewScheduleRecruit = () => {
           </Form.Item>
 
           {/* Lịch bận của nhóm đang chọn (V047) — đọc trước khi chốt giờ qua điện thoại. */}
-          {(busyLoading || busySlots.length > 0 || clashingSlots.length > 0) && (
+          {(busyLoading || busySlots.length > 0 || nearbySlots.length > 0) && (
             <div style={{ marginBottom: 16 }}>
-              {clashingSlots.length > 0 && (
+              {sameTimeSlots.length > 0 ? (
+                <Alert
+                  type="error"
+                  showIcon
+                  style={{ marginBottom: 8 }}
+                  message="Trùng đúng giờ — không lưu được"
+                  description={sameTimeSlots
+                    .map((b) => `${b.interviewerName} đã có buổi lúc ${dayjs(b.startTime).format('HH:mm DD/MM')}`)
+                    .join(' · ')}
+                />
+              ) : nearbySlots.length > 0 && (
                 <Alert
                   type="warning"
                   showIcon
                   style={{ marginBottom: 8 }}
-                  message="Giờ này đụng buổi đã hẹn"
-                  description={clashingSlots
-                    .map((b) => `${b.interviewerName} đã có buổi lúc ${dayjs(b.startTime).format('HH:mm DD/MM')}`)
-                    .join(' · ')}
+                  message={`Sát giờ một buổi khác (dưới ${NEAR_MINUTES} phút)`}
+                  description={`${nearbySlots
+                    .map((b) => `${b.interviewerName} có buổi lúc ${dayjs(b.startTime).format('HH:mm DD/MM')}`)
+                    .join(' · ')} — vẫn lưu được nếu bạn đã hẹn như vậy.`}
                 />
               )}
               <Card

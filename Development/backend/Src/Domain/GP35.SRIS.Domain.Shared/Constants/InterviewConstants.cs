@@ -48,18 +48,30 @@ public static class InterviewRecommendation
 }
 
 /// <summary>
-/// Ràng buộc thời gian giữa các buổi phỏng vấn. Hệ thống chỉ lưu giờ BẮT ĐẦU (không có
-/// thời lượng), nên "không trùng" được hiểu là hai buổi phải cách nhau tối thiểu
-/// <see cref="MinGapHours"/> tiếng — áp cho CẢ ứng viên (không thể ngồi 2 buổi một lúc)
-/// lẫn interviewer (không thể chấm 2 buổi một lúc).
+/// Ràng buộc thời gian giữa các buổi phỏng vấn — chỉ còn chặn TRÙNG ĐÚNG GIỜ.
+///
+/// <para>
+/// Trước 18/08/2026 hai buổi phải cách nhau 1 tiếng. Bỏ luật đó vì nó chặn nhầm việc có thật:
+/// buổi phỏng vấn 30 phút xong là gọi người kế tiếp vào luôn, mà hệ thống lại không cho đặt.
+/// Giờ phỏng vấn vốn do nhân sự gọi điện thống nhất với cả người phỏng vấn lẫn ứng viên rồi
+/// mới nhập vào — họ biết buổi trước dài bao lâu, hệ thống thì không (bảng không lưu thời lượng).
+/// </para>
+///
+/// <para>
+/// Cái còn giữ lại: một người không thể bắt đầu hai buổi ở CÙNG một thời điểm — đó là lỗi
+/// nhập liệu chứ không phải lựa chọn xếp lịch. <see cref="MinGap"/> để 1 phút chính là để câu
+/// truy vấn cửa sổ (biên mở) bắt được đúng ca trùng khít này; đặt 0 thì cửa sổ rỗng và không
+/// còn chặn gì cả. Muốn biết ai sắp bận sát giờ thì xem lịch bận ngay trong form đặt lịch
+/// (<c>GET /api/interviews/interviewer-busy</c>, V047) — nhắc bằng THÔNG TIN, không chặn.
+/// </para>
 /// </summary>
 public static class InterviewTiming
 {
-    /// <summary>Khoảng cách tối thiểu giữa 2 buổi phỏng vấn (giờ).</summary>
-    public const int MinGapHours = 1;
+    /// <summary>Cửa sổ coi là "trùng giờ" (phút) — chỉ đủ rộng để bắt hai buổi cùng thời điểm.</summary>
+    public const int MinGapMinutes = 1;
 
     /// <summary>Cùng giá trị dạng TimeSpan — dùng làm cửa sổ chống trùng khi chốt khung.</summary>
-    public static TimeSpan MinGap => TimeSpan.FromHours(MinGapHours);
+    public static TimeSpan MinGap => TimeSpan.FromMinutes(MinGapMinutes);
 }
 
 /// <summary>
