@@ -12,12 +12,13 @@ import {
   MailOutlined,
   ArrowLeftOutlined,
   ReloadOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import { jobsAPI, applicationAPI, cvAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { canRejectAtState, rejectOwnerLabel } from '../../utils/decisionRights';
-import ApplicationStateTag from '../../components/ApplicationStateTag';
+import ApplicationStateTag, { APPLICATION_STATE_LABELS } from '../../components/ApplicationStateTag';
 import FitScoreTag from '../../components/FitScoreTag';
 import './css/JobDetail.css';
 
@@ -38,7 +39,14 @@ const JobDetail = () => {
   // hồ sơ nào trước, nên mở ra đã thấy ngay hồ sơ AI cho là khớp nhất. Vẫn đổi được về
   // 'recent' cho ai muốn duyệt theo thứ tự nộp.
   const [sort, setSort] = useState('fit');
+  // Bộ lọc danh sách ứng viên (V047 — hội đồng muốn "lọc, tách lọc để kiểm soát").
+  // Lọc ở FE: một vị trí thường vài chục tới vài trăm hồ sơ và đã tải sẵn cả danh sách,
+  // đẩy xuống API chỉ thêm một vòng mạng cho mỗi lần gõ phím.
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [stateFilter, setStateFilter] = useState('all');
+  const [fitFilter, setFitFilter] = useState('all');
   const [screeningAll, setScreeningAll] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const pollTimer = useRef(null);
 
   // Reject per-row từ danh sách ứng viên
@@ -157,6 +165,38 @@ const JobDetail = () => {
     }
   };
 
+  /**
+   * Tải danh sách ứng viên của vị trí này ra file Excel (V047).
+   *
+   * File gồm cả phần AI đọc CV (tóm tắt, yêu cầu đạt kèm câu trích, yêu cầu thiếu, mức phù hợp)
+   * để người tuyển dụng mang ra ngoài hệ thống — họp, gửi sếp — mà không phải gõ lại từng dòng.
+   * Tên file do backend đặt (Content-Disposition), FE chỉ lấy lại để đặt tên khi lưu.
+   */
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await applicationAPI.exportByJob(jobId);
+      const disposition = res.headers?.['content-disposition'] || '';
+      const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+      const fileName = match ? decodeURIComponent(match[1]) : `Ung-vien-${jobId}.xlsx`;
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      message.success('Đã tải danh sách ứng viên.');
+    } catch (err) {
+      console.error('Error exporting applications:', err);
+      message.error(err?.response?.data?.userMsg || 'Không xuất được danh sách ứng viên');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Pipeline stats
   const getPipelineStats = () => {
     const stats = {
@@ -198,6 +238,25 @@ const JobDetail = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN');
   };
+
+  // Lọc theo tên/email + pha + đề xuất của AI. "Chưa phân tích" là một lựa chọn RIÊNG:
+  // gộp nó vào "Ít phù hợp" là đổ oan cho hồ sơ chưa ai đọc (cùng luật với xếp hạng V046).
+  const filteredApplications = applications.filter((a) => {
+    const q = candidateSearch.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      (a.fullName || a.name || '').toLowerCase().includes(q) ||
+      (a.email || '').toLowerCase().includes(q);
+
+    const matchesState = stateFilter === 'all' || a.state === stateFilter;
+
+    const analysed = a.screeningStatus === 'DONE';
+    const matchesFit =
+      fitFilter === 'all' ||
+      (fitFilter === 'NONE' ? !analysed : analysed && a.screeningDecision === fitFilter);
+
+    return matchesSearch && matchesState && matchesFit;
+  });
 
   const candidatesColumns = [
     {
@@ -282,6 +341,34 @@ const JobDetail = () => {
             wrap
           >
             <Space wrap>
+              <Input.Search
+                allowClear
+                placeholder="Tìm theo tên hoặc email"
+                value={candidateSearch}
+                onChange={(e) => setCandidateSearch(e.target.value)}
+                style={{ width: 240 }}
+              />
+              <Select
+                value={stateFilter}
+                onChange={setStateFilter}
+                style={{ width: 200 }}
+                options={[
+                  { value: 'all', label: 'Mọi trạng thái' },
+                  ...Object.entries(APPLICATION_STATE_LABELS).map(([value, label]) => ({ value, label })),
+                ]}
+              />
+              <Select
+                value={fitFilter}
+                onChange={setFitFilter}
+                style={{ width: 190 }}
+                options={[
+                  { value: 'all', label: 'Mọi mức phù hợp' },
+                  { value: 'PROCEED', label: 'Nên mời' },
+                  { value: 'CONSIDER', label: 'Cân nhắc' },
+                  { value: 'REJECT', label: 'Ít phù hợp' },
+                  { value: 'NONE', label: 'Chưa phân tích' },
+                ]}
+              />
               <Text type="secondary">Sắp xếp:</Text>
               <Segmented
                 value={sort}
@@ -292,25 +379,41 @@ const JobDetail = () => {
                 ]}
               />
             </Space>
-            <Tooltip title="Cho AI đọc CV của mọi hồ sơ đang ở vòng sàng lọc và đối chiếu với tin tuyển dụng. Hồ sơ đã có kết quả sẽ được bỏ qua.">
-              <Button
-                icon={<ThunderboltOutlined />}
-                loading={screeningAll}
-                onClick={handleScreenAll}
-              >
-                Phân tích CV toàn bộ
-              </Button>
-            </Tooltip>
+            <Space wrap>
+              <Tooltip title="Tải file Excel danh sách ứng viên: liên hệ, trạng thái, và phần AI đọc CV (tóm tắt, yêu cầu đạt/thiếu, mức phù hợp).">
+                <Button
+                  icon={<FileExcelOutlined />}
+                  loading={exporting}
+                  onClick={handleExportExcel}
+                >
+                  Xuất Excel
+                </Button>
+              </Tooltip>
+              <Tooltip title="Cho AI đọc CV của mọi hồ sơ đang ở vòng sàng lọc và đối chiếu với tin tuyển dụng. Hồ sơ đã có kết quả sẽ được bỏ qua.">
+                <Button
+                  icon={<ThunderboltOutlined />}
+                  loading={screeningAll}
+                  onClick={handleScreenAll}
+                >
+                  Phân tích CV toàn bộ
+                </Button>
+              </Tooltip>
+            </Space>
           </Space>
 
           <Table
             columns={candidatesColumns}
-            dataSource={applications}
+            dataSource={filteredApplications}
             rowKey="id"
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} ứng viên`
+              // Nói rõ đang lọc: "Tổng 3 ứng viên" trong khi vị trí có 40 hồ sơ là dễ hiểu nhầm
+              // rằng chưa ai nộp.
+              showTotal: (total) =>
+                total === applications.length
+                  ? `Tổng ${total} ứng viên`
+                  : `${total}/${applications.length} ứng viên (đang lọc)`
             }}
             className="candidates-table"
             loading={loading}

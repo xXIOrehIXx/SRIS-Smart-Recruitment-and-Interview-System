@@ -1,8 +1,10 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Request;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
+using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -10,19 +12,22 @@ using Serilog;
 namespace GP35.SRIS.Application.Services.Business;
 
 /// <summary>
-/// Yêu cầu tuyển dụng (docs 5.17). DM ra đề → Human Resource duyệt → tạo Job từ yêu cầu (CONVERTED).
+/// Yêu cầu tuyển dụng (docs 5.17). DM ra đề → GIÁM ĐỐC duyệt (V047) → Human Resource tạo Job
+/// từ yêu cầu (CONVERTED).
 /// Chỉ sửa/hủy khi còn PENDING; duyệt xong không sửa nội dung nữa (giữ audit "đề bài gốc").
 /// </summary>
 public class RecruitmentRequestService : BaseService<RecruitmentRequestService>, IRecruitmentRequestService
 {
     private readonly IRecruitmentRequestRepo _requestRepo;
     private readonly IJobRepo _jobRepo;
+    private readonly IContextData _contextData;
     private readonly ILogger _logger;
 
     public RecruitmentRequestService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _requestRepo = serviceProvider.GetRequiredService<IRecruitmentRequestRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
+        _contextData = serviceProvider.GetRequiredService<IContextData>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<RecruitmentRequestService>();
     }
 
@@ -118,7 +123,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         request.UpdatedAt = DateTime.UtcNow;
         await _requestRepo.SaveAsync();
 
-        _logger.Information("RecruitmentRequest: user {UserId} {Action} yêu cầu id={RequestId}.",
+        _logger.Information("RecruitmentRequest: Giám đốc {UserId} {Action} yêu cầu id={RequestId}.",
             userId, request.Status, requestId);
 
         return await GetByIdAsync(companyId, requestId);
@@ -129,9 +134,18 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
     {
         var request = await _requestRepo.GetByIdAsync(companyId, requestId)
             ?? throw NotFound($"Không tìm thấy yêu cầu tuyển dụng (request_id={requestId}).");
-        // Đường tắt công ty nhỏ: cho convert thẳng từ PENDING (tạo job = ngầm chấp thuận).
-        if (request.Status is not ("PENDING" or "APPROVED"))
-            throw Conflict($"Yêu cầu ở trạng thái {request.Status} — không thể gắn job.");
+
+        // Đường tắt "tạo job = ngầm chấp thuận" CHỈ còn cho Admin (công ty nhỏ dùng 1 tài khoản,
+        // người tạo job cũng chính là chủ). Với nhân sự thì đường tắt đó là cửa sau đi vòng qua
+        // Giám đốc: duyệt yêu cầu là quyền của Giám đốc (V047), gắn job không được thay thế nó.
+        var isAdmin = string.Equals(_contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase);
+        var allowed = isAdmin
+            ? request.Status is "PENDING" or "APPROVED"
+            : request.Status is "APPROVED";
+        if (!allowed)
+            throw Conflict(request.Status == "PENDING"
+                ? "Yêu cầu này chưa được Giám đốc duyệt — chưa tạo được tin tuyển dụng từ nó."
+                : $"Yêu cầu ở trạng thái {request.Status} — không thể gắn job.");
 
         var job = await _jobRepo.GetByIdAsync(companyId, dto.JobId)
             ?? throw NotFound($"Không tìm thấy job (job_id={dto.JobId}).");

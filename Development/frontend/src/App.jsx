@@ -169,6 +169,10 @@ const App = () => {
         }
       >
         <Route path="/director/proposals" element={<HiringProposals />} />
+        {/* V047: Giám đốc duyệt Yêu cầu tuyển dụng của trưởng bộ phận (mở vị trí = cam kết
+            chi tiền, nên cùng người chịu trách nhiệm quyết tuyển). Dùng chung màn với DM/nhân
+            sự — nút hiện theo role. */}
+        <Route path="/director/requests" element={<DeptRecruitmentRequests />} />
         <Route path="/director/dashboard" element={<Dashboard />} />
         {/* Bảng điểm chi tiết của một buổi — dùng chung màn với trưởng bộ phận */}
         <Route path="/director/interview/:id" element={<DeptInterviewDetail />} />

@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Cv;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Cv;
 
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
@@ -16,6 +16,12 @@ public interface ICvIntakeService : IBaseService
     Task<CvUploadResultDto> UploadCvAsync(
         long companyId, long jobId, string candidateName, string candidateEmail, string? candidatePhone,
         string fileName, string? mimeType, byte[] fileBytes);
+
+    /// <summary>
+    /// Đọc thử file PDF và bóc tên/email/điện thoại để ĐIỀN SẴN form (V047). KHÔNG lưu gì cả:
+    /// không tạo CvDocument, không tạo hồ sơ — người dùng còn phải sửa rồi mới bấm nộp.
+    /// </summary>
+    CvContactPreviewDto PreviewContact(byte[] fileBytes);
 
     /// <summary>
     /// Tạo URL tải tạm thời (presigned) để xem/tải lại file CV gốc của 1 cv_id.

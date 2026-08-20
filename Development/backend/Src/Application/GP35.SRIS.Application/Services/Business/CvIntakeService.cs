@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Cv;
@@ -36,6 +36,32 @@ public class CvIntakeService : BaseService<CvIntakeService>, ICvIntakeService
         _applicationRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _fileStorage = serviceProvider.GetRequiredService<IFileStorageService>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<CvIntakeService>();
+    }
+
+    public CvContactPreviewDto PreviewContact(byte[] fileBytes)
+    {
+        // Chạy đồng bộ, không lưu gì: người dùng vừa chọn file và đang đợi form tự điền.
+        // File hỏng cũng không được ném — cùng lắm là form trống như trước, không có gì mất mát.
+        try
+        {
+            var extract = _pdfExtractor.Extract(fileBytes);
+            if (extract.Kind != PdfKind.HasText || string.IsNullOrWhiteSpace(extract.Text))
+                return new CvContactPreviewDto { HasText = false };
+
+            var contact = CvContactExtractor.Extract(extract.Text);
+            return new CvContactPreviewDto
+            {
+                HasText = true,
+                CandidateName = contact.FullName,
+                CandidateEmail = contact.Email,
+                CandidatePhone = contact.Phone
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "PreviewContact: không đọc được PDF để điền sẵn form.");
+            return new CvContactPreviewDto { HasText = false };
+        }
     }
 
     public async Task<CvUploadResultDto> UploadCvAsync(

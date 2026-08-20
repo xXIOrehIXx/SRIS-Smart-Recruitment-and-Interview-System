@@ -1,4 +1,4 @@
-using System.Net.Mime;
+﻿using System.Net.Mime;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -67,6 +67,9 @@ services.AddHostedService<GP35.SRIS.Workers.CriteriaExtractionWorker>();
 // dùng hai model Ollama khác nhau — xen kẽ trong một vòng lặp là bắt Ollama nạp/đuổi model
 // liên tục.
 services.AddHostedService<GP35.SRIS.Workers.CvScreeningWorker>();
+// Worker chạy hàng đợi tổng hợp ý kiến hội đồng phỏng vấn (V047). Cũng tách riêng theo đúng
+// luật trên; việc này dùng chung model với lượt bóc tiêu chí nên không đá nhau về model.
+services.AddHostedService<GP35.SRIS.Workers.PanelSummaryWorker>();
 services
   .AddControllers()
   .AddJsonOptions(options =>

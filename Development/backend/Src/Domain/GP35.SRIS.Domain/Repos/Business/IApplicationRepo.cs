@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
@@ -30,6 +30,17 @@ public enum BoardSort
     Fit = 1
 }
 
+/// <summary>
+/// 1 dòng của file Excel danh sách ứng viên (V047). Gộp thông tin liên hệ + trạng thái + kết
+/// quả AI đọc CV để người tuyển dụng mang ra ngoài hệ thống (họp, gửi sếp) mà không phải gõ lại.
+/// </summary>
+public record ApplicationExportRow(
+    long ApplicationId, string CandidateName, string CandidateEmail, string? CandidatePhone,
+    string? CandidateSource, string CurrentState, string? RejectReason, DateTime? AppliedAt,
+    string? CvFileName,
+    string? ScreeningStatus, int? FitScore, string? ScreeningDecision,
+    string? ScreeningSummary, string? MatchedJson, string? MissingJson);
+
 /// <summary>Chi tiết 1 hồ sơ cho màn xem ứng viên (join Candidate + Job + CvDocument).</summary>
 public record ApplicationDetailRow(
     long ApplicationId, string CurrentState,
@@ -53,6 +64,13 @@ public interface IApplicationRepo : IBaseRepo<long, Application>
 
     /// <summary>Lấy 1 hồ sơ theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<Application?> GetByIdAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// Mọi hồ sơ của 1 job kèm liên hệ + kết quả sàng lọc CV, để xuất file Excel (V047).
+    /// Thứ tự: điểm phù hợp cao trước, hồ sơ chưa phân tích xuống cuối — giống <see cref="BoardSort.Fit"/>,
+    /// vì file mang đi họp nên đọc từ trên xuống phải là thứ tự đáng đọc.
+    /// </summary>
+    Task<IReadOnlyList<ApplicationExportRow>> GetExportRowsByJobAsync(long companyId, long jobId);
 
     /// <summary>
     /// Toàn bộ hồ sơ của 1 job cho Kanban, kèm kết quả sàng lọc CV gần nhất.

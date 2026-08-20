@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using GP35.SRIS.Application;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
@@ -53,6 +53,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddSingleton<IPdfTextExtractor, PdfTextExtractor>();
             services.AddScoped<ICriteriaExtractionClient, CriteriaExtractionClient>();
             services.AddScoped<ICvScreeningClient, CvScreeningClient>();
+            services.AddScoped<IPanelSummaryClient, PanelSummaryClient>();
 
             // Email ứng viên — SMTP trực tiếp (MailKit), best-effort.
             // Đổi sang EmailService nếu muốn gửi qua NotificationCenter (HTTP).
@@ -72,6 +73,10 @@ namespace GP35.SRIS.HostBase.Extensions
             // Logo brand in ở đầu thư — singleton vì có cache ảnh trong bộ nhớ.
             services.AddSingleton<GP35.SRIS.Lib.Services.Pdf.IBrandLogoFetcher,
                 GP35.SRIS.Lib.Services.Pdf.BrandLogoFetcher>();
+
+            // Xuất danh sách ứng viên ra Excel (V047) — thuần định dạng, không state.
+            services.AddSingleton<GP35.SRIS.Lib.Services.Excel.ICandidateExcelExporter,
+                GP35.SRIS.Lib.Services.Excel.CandidateExcelExporter>();
 
             // Lưu trữ file (MinIO, tương thích S3) — đổi sang S3 chỉ cần đổi config/registration này
             services.AddMinioStorage();
@@ -103,6 +108,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IEvaluationCriteriaRepo, EvaluationCriteriaRepo>();
             services.AddScoped<ICriteriaExtractionRepo, CriteriaExtractionRepo>();
             services.AddScoped<ICvScreeningRepo, CvScreeningRepo>();
+            services.AddScoped<IPanelSummaryRepo, PanelSummaryRepo>();
             services.AddScoped<ICriteriaTemplateRepo, CriteriaTemplateRepo>();
             services.AddScoped<IInterviewScoreRepo, InterviewScoreRepo>();
 
@@ -144,6 +150,7 @@ namespace GP35.SRIS.HostBase.Extensions
             services.AddScoped<IJobService, JobService>();
             services.AddScoped<ICvIntakeService, CvIntakeService>();
             services.AddScoped<ICvScreeningService, CvScreeningService>();
+            services.AddScoped<IPanelSummaryService, PanelSummaryService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IEmailTemplateService, EmailTemplateService>();
             services.AddScoped<IMagicLinkService, MagicLinkService>();
