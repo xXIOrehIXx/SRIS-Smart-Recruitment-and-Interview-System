@@ -1,4 +1,4 @@
-namespace GP35.SRIS.Application.Contracts.Dtos.CareerSite;
+﻿namespace GP35.SRIS.Application.Contracts.Dtos.CareerSite;
 
 /// <summary>Thông tin brand công khai để Career Site render (logo + màu). Không lộ cấu hình nội bộ.</summary>
 public class PublicBrandDto
@@ -26,6 +26,14 @@ public class PublicJobDto
     public decimal? SalaryMin { get; set; }
     public decimal? SalaryMax { get; set; }
     public DateTime? Deadline { get; set; }
+
+    /// <summary>
+    /// Đã quá hạn nộp hồ sơ (<c>Deadline</c> &lt; hôm nay UTC). Tin vẫn xem được nhưng KHÔNG nộp
+    /// được nữa — FE dựa vào cờ này để thay form ứng tuyển bằng thông báo "đã hết hạn".
+    /// Backend mới là chỗ chặn thật (<c>ApplyAsync</c>).
+    /// </summary>
+    public bool IsExpired { get; set; }
+
     public List<string>? Skills { get; set; }
     public List<string>? Benefits { get; set; }
     public List<string>? Requirements { get; set; }

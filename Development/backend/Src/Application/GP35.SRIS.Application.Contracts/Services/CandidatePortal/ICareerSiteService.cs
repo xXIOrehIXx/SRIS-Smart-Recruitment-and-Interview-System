@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.CareerSite;
+﻿using GP35.SRIS.Application.Contracts.Dtos.CareerSite;
 
 namespace GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 
@@ -12,11 +12,19 @@ public interface ICareerSiteService : IBaseService
     /// <summary>Brand công khai (tên/logo/màu) để Career Site render.</summary>
     Task<PublicBrandDto?> GetBrandAsync(long companyId);
 
-    /// <summary>Danh sách job đang mở (Status = "Open") của công ty.</summary>
+    /// <summary>
+    /// Danh sách job CÒN NHẬN hồ sơ (Status = "Open" và chưa quá hạn nộp) của công ty.
+    /// Tin quá hạn không lên danh sách nhưng vẫn mở được bằng link trực tiếp
+    /// (xem <see cref="GetPublicJobAsync"/>).
+    /// </summary>
     Task<IEnumerable<PublicJobDto>> ListOpenJobsAsync(long companyId);
 
-    /// <summary>Chi tiết một job đang mở. Null nếu không tồn tại hoặc đã đóng.</summary>
-    Task<PublicJobDto?> GetOpenJobAsync(long companyId, long jobId);
+    /// <summary>
+    /// Chi tiết một tin công khai. Trả cả tin ĐÃ QUÁ HẠN (kèm <c>IsExpired = true</c>) để ứng viên
+    /// mở link cũ vẫn đọc được nội dung và thấy rõ là hết hạn, thay vì ăn 404.
+    /// Null nếu không tồn tại hoặc bị đóng khi CHƯA tới hạn (nhà tuyển dụng chủ động gỡ tin).
+    /// </summary>
+    Task<PublicJobDto?> GetPublicJobAsync(long companyId, long jobId);
 
     /// <summary>
     /// Ứng viên nộp CV (PDF) cho một job: tạo Candidate/Application + parse + chấm điểm nội bộ.
