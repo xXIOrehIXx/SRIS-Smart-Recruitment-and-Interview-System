@@ -7,6 +7,8 @@ import {
   Upload,
   Spin,
   Result,
+  Alert,
+  Tag,
   message,
 } from "antd";
 import {
@@ -36,6 +38,7 @@ import {
   getJobType,
   getLocation,
   getDeadline,
+  isJobExpired,
   itemText,
   formatSalary,
   formatDate,
@@ -252,6 +255,7 @@ const PublicJobDetail = () => {
   const type = getJobType(job);
   const location = getLocation(job);
   const deadline = getDeadline(job);
+  const expired = isJobExpired(job);
   const skills = getSkills(job).map(itemText).filter(Boolean);
 
   return (
@@ -275,6 +279,7 @@ const PublicJobDetail = () => {
                       <span>{job.experienceLevel}</span>
                     </span>
                   )}
+                  {expired && <Tag color="default">Đã hết hạn nộp hồ sơ</Tag>}
                 </div>
               </div>
             </div>
@@ -283,9 +288,12 @@ const PublicJobDetail = () => {
               <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(careerUrl)}>
                 Tất cả vị trí
               </Button>
-              <Button type="primary" onClick={scrollToApply}>
-                Ứng tuyển
-              </Button>
+              {/* Hết hạn: không còn cửa nộp nên nút Ứng tuyển cũng không còn nghĩa. */}
+              {!expired && (
+                <Button type="primary" onClick={scrollToApply}>
+                  Ứng tuyển
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -327,7 +335,11 @@ const PublicJobDetail = () => {
                 <OverviewItem
                   icon={<ClockCircleOutlined />}
                   label="Hạn nộp hồ sơ"
-                  value={deadline ? formatDate(deadline) : null}
+                  value={
+                    deadline
+                      ? `${formatDate(deadline)}${expired ? " — đã hết hạn" : ""}`
+                      : null
+                  }
                 />
 
                 <div className="cs-share">
@@ -340,7 +352,27 @@ const PublicJobDetail = () => {
               <div className="cs-panel" ref={applyRef} id="apply">
                 <div className="cs-panel-title">Ứng tuyển</div>
 
-                {applied ? (
+                {expired ? (
+                  <>
+                    <Alert
+                      type="warning"
+                      showIcon
+                      message="Đã hết hạn nộp hồ sơ"
+                      description={
+                        deadline
+                          ? `Vị trí này nhận hồ sơ đến hết ngày ${formatDate(deadline)}. Bạn vẫn xem được nội dung tin, nhưng không nộp hồ sơ mới được nữa.`
+                          : "Vị trí này đã ngừng nhận hồ sơ. Bạn vẫn xem được nội dung tin, nhưng không nộp hồ sơ mới được nữa."
+                      }
+                    />
+                    <Button
+                      style={{ marginTop: 16 }}
+                      block
+                      onClick={() => navigate(careerUrl)}
+                    >
+                      Xem vị trí đang tuyển
+                    </Button>
+                  </>
+                ) : applied ? (
                   <div className="cs-apply-done">
                     <Result
                       status="success"

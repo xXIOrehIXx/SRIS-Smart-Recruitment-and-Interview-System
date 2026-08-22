@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
+﻿using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
 using GP35.SRIS.Domain.Shared.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +35,7 @@ public class PublicCareerController : ControllerBase
         return brand is null ? CompanyNotFound(slug) : Ok(brand);
     }
 
-    /// <summary>Danh sách vị trí đang mở.</summary>
+    /// <summary>Danh sách vị trí đang mở và CÒN HẠN nộp.</summary>
     [HttpGet("jobs")]
     public async Task<IActionResult> Jobs(string slug)
     {
@@ -45,14 +45,17 @@ public class PublicCareerController : ControllerBase
         return Ok(await _careerSite.ListOpenJobsAsync(companyId));
     }
 
-    /// <summary>Chi tiết một vị trí đang mở.</summary>
+    /// <summary>
+    /// Chi tiết một vị trí công khai. Tin đã quá hạn vẫn trả về (kèm <c>isExpired = true</c>) để ứng
+    /// viên mở link cũ đọc được nội dung và thấy rõ là hết hạn; nộp hồ sơ thì bị chặn ở /apply.
+    /// </summary>
     [HttpGet("jobs/{jobId:long}")]
     public async Task<IActionResult> Job(string slug, long jobId)
     {
         if (!TryGetCompany(out var companyId))
             return CompanyNotFound(slug);
 
-        var job = await _careerSite.GetOpenJobAsync(companyId, jobId);
+        var job = await _careerSite.GetPublicJobAsync(companyId, jobId);
         return job is null
             ? NotFound(new { error = "Vị trí tuyển dụng không tồn tại hoặc đã đóng." })
             : Ok(job);

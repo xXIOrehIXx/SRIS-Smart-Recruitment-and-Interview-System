@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.CareerSite;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Contracts.Services.CandidatePortal;
@@ -60,7 +60,8 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
     {
         var jobs = await _jobRepo.GetListByCompanyAsync(companyId);
         var result = new List<PublicJobDto>();
-        foreach (var j in jobs.Where(IsOpen))
+        // Tin quá hạn bị loại khỏi DANH SÁCH ngay, không đợi JobExpiryWorker quét (tối đa 5').
+        foreach (var j in jobs.Where(j => IsOpen(j) && !IsExpired(j)))
         {
             var dto = await ToPublicDtoAsync(companyId, j);
             result.Add(dto);
@@ -68,10 +69,10 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
         return result;
     }
 
-    public async Task<PublicJobDto?> GetOpenJobAsync(long companyId, long jobId)
+    public async Task<PublicJobDto?> GetPublicJobAsync(long companyId, long jobId)
     {
         var job = await _jobRepo.GetByIdAsync(companyId, jobId);
-        if (job is null || !IsOpen(job)) return null;
+        if (job is null || !IsPubliclyVisible(job)) return null;
         return await ToPublicDtoAsync(companyId, job);
     }
 
@@ -86,10 +87,17 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
         if (string.IsNullOrWhiteSpace(candidatePhone))
             throw Bad("Vui lòng nhập số điện thoại.");
 
-        // Chỉ cho nộp vào job đang mở (kiểm theo tenant hiện tại).
+        // Chỉ cho nộp vào job đang mở VÀ còn hạn (kiểm theo tenant hiện tại).
         var job = await _jobRepo.GetByIdAsync(companyId, jobId);
-        if (job is null || !IsOpen(job))
+        if (job is null || !IsPubliclyVisible(job))
             throw NotFound("Vị trí tuyển dụng không tồn tại hoặc đã đóng.");
+
+        // Hết hạn: tin vẫn ĐỌC được (GetPublicJobAsync) nhưng đóng cửa nộp. Chặn ở đây mới là chặn
+        // thật — FE ẩn form chỉ để người dùng biết trước, và JobExpiryWorker để job ở trạng thái
+        // Open tối đa 5 phút sau khi quá hạn.
+        if (IsExpired(job))
+            throw Bad($"Vị trí này đã hết hạn nhận hồ sơ (hạn nộp {job.Deadline:dd/MM/yyyy}). " +
+                      "Bạn vẫn xem được tin nhưng không nộp hồ sơ mới được.");
 
         // ---- Chặn TRƯỚC khi ghi bất cứ gì ----
         // UploadCvAsync upsert Candidate + đẩy file lên MinIO RỒI mới bóc PDF, nên mọi nhánh hỏng
@@ -163,13 +171,28 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
     private static bool IsOpen(Job j) =>
         string.Equals(j.Status, OpenStatus, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Quá hạn nộp = <c>Deadline</c> trước hôm nay (so theo NGÀY, UTC — cùng mốc với
+    /// <c>JobExpiryWorker</c> và <c>JobService.ValidateDeadline</c>, nên ngày hạn cuối vẫn nộp được).
+    /// </summary>
+    private static bool IsExpired(Job j) =>
+        j.Deadline is { } d && d.Date < DateTime.UtcNow.Date;
+
+    /// <summary>
+    /// Tin còn hiện trên Career Site: đang mở, hoặc đã quá hạn (kể cả khi JobExpiryWorker đã
+    /// chuyển sang Closed) — ứng viên giữ link cũ vẫn đọc được và thấy dòng "đã hết hạn".
+    /// Tin bị đóng tay khi CHƯA tới hạn thì ẩn hẳn: nhà tuyển dụng chủ động gỡ.
+    /// </summary>
+    private static bool IsPubliclyVisible(Job j) => IsOpen(j) || IsExpired(j);
+
     private static PublicJobDto ToPublicDto(Job j) => new()
     {
         JobId = j.JobId,
         Title = j.Title,
         JdText = j.JdText,
         Status = j.Status,
-        CreatedAt = j.CreatedAt
+        CreatedAt = j.CreatedAt,
+        IsExpired = IsExpired(j)
     };
 
     /// <summary>V020: build public DTO kèm requirements/benefits (chỉ field an toàn).</summary>
@@ -204,6 +227,7 @@ public class CareerSiteService : BaseService<CareerSiteService>, ICareerSiteServ
             SalaryMin = j.SalaryMin,
             SalaryMax = j.SalaryMax,
             Deadline = j.Deadline,
+            IsExpired = IsExpired(j),
             Requirements = requirements,
             Benefits = benefits,
             Skills = string.IsNullOrWhiteSpace(j.SkillTags)

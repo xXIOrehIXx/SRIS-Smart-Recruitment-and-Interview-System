@@ -41,6 +41,24 @@ export const getSkills = (job) => {
 export const getDeadline = (job) =>
   job.deadline || job.expiresAt || job.expiredAt || job.expirationDate || null;
 
+/**
+ * Tin đã quá hạn nộp hồ sơ. Ưu tiên cờ `isExpired` do backend tính (mốc UTC, cùng chuẩn với
+ * chỗ chặn nộp); chỉ tự so ngày khi API cũ chưa trả cờ này.
+ * Chỉ để ẩn/đổi UI — backend mới là chỗ chặn nộp thật.
+ */
+export const isJobExpired = (job) => {
+  if (!job) return false;
+  if (typeof job.isExpired === "boolean") return job.isExpired;
+  const deadline = getDeadline(job);
+  if (!deadline) return false;
+  const d = new Date(deadline);
+  if (Number.isNaN(d.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return d < today;
+};
+
 export const getCreatedDate = (job) =>
   job.createdAt || job.postedDate || job.createdDate || job.postedAt || null;
 
