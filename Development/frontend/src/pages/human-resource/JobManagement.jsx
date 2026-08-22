@@ -107,13 +107,28 @@ const JobManagement = () => {
    * Mở lại job Closed -> Open bằng PUT /api/jobs/{id} { status: "Open" }. BE chấp nhận
    * status "Open"/"Closed" trong regex ["Draft|Open|Closed"]. Trước đây menu "Kích hoạt
    * lại" không có onClick — bug UX.
+   *
+   * Hai điều kiện làm việc mở lại BẤT KHẢ THI ở đây, phải đưa người dùng sang trang Sửa chứ
+   * không gửi PUT rồi báo lỗi cụt:
+   *   - Tin chưa có Trưởng bộ phận phụ trách -> BE chặn đăng (người này duyệt ứng viên vào
+   *     vòng phỏng vấn và chốt tuyển; thiếu là hồ sơ kẹt ở Sàng lọc).
+   *   - Hạn nộp đã qua -> có mở được cũng vô nghĩa: tin không lên career site, và
+   *     JobExpiryWorker đóng lại trong vòng 5 phút.
    */
   const handleReopenJob = async (record) => {
+    const jobId = record.jobId || record.id;
     try {
-      const jobId = record.jobId || record.id;
       // Lấy job hiện tại, đổi status, gửi PUT — tránh mất các field khác.
       const res = await jobsAPI.getById(jobId);
       const current = res.data || {};
+
+      const blocker = reopenBlocker(current);
+      if (blocker) {
+        message.warning(blocker);
+        navigate(`/human-resource/jobs/create?edit=${jobId}`);
+        return;
+      }
+
       await jobsAPI.update(jobId, { ...current, status: "Open" });
       message.success(`Đã mở lại tin "${record.title}".`);
       fetchJobs();
@@ -121,6 +136,22 @@ const JobManagement = () => {
       console.error("Error reopening job:", error);
       message.error(error?.response?.data?.userMsg || "Không thể mở lại tin");
     }
+  };
+
+  /** Lý do tin không mở lại được ngay, hoặc null nếu mở lại được. */
+  const reopenBlocker = (job) => {
+    if (!(job.departmentManagerId > 0))
+      return "Tin này chưa có Trưởng bộ phận phụ trách nên chưa đăng lại được — chọn người phụ trách rồi bấm Đăng tin.";
+
+    const deadline = job.deadline ? new Date(job.deadline) : null;
+    if (deadline && !Number.isNaN(deadline.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      deadline.setHours(0, 0, 0, 0);
+      if (deadline < today)
+        return "Hạn nộp hồ sơ của tin này đã qua — gia hạn rồi bấm Đăng tin, nếu không tin sẽ tự đóng lại.";
+    }
+    return null;
   };
 
   // Đóng tin là thao tác một chiều (mở lại được, nhưng tin biến mất khỏi career site ngay)
