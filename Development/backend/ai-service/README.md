@@ -63,9 +63,13 @@ Không tải model nào lúc khởi động — model nằm trong Ollama. Kiểm
   "missing": ["Tiếng Anh giao tiếp"],
   "fit_score": 72,
   "decision": "PROCEED",
-  "decision_reason": "1-2 câu nêu lý do cụ thể"
+  "decision_reason": "CV trích dẫn chứng minh được 3/5 yêu cầu: ... Chưa thấy trong CV: ..."
 }
 ```
+
+`decision` và `decision_reason` **không phải do model viết** — cả hai được sinh lại bằng code
+sau khi đã lọc trích dẫn bịa: `decision` suy từ `fit_score`, `decision_reason` suy từ chính hai
+danh sách `matched`/`missing` cuối cùng. Xem "Chống bịa" bên dưới.
 
 Danh sách `criteria` **rỗng là kết quả hợp lệ** (văn bản chỉ liệt kê đầu việc, hoặc chỉ nêu
 những thứ đọc hồ sơ là biết), không phải lỗi — .NET phân biệt hai ca này.
@@ -78,7 +82,7 @@ không lên phiếu chấm nữa vì người tuyển dụng đã đối chiếu
 ### Chống bịa ở `/screen-cv`
 
 Rủi ro lớn nhất của việc này không phải sai chính tả mà là **bằng chứng bịa**: model đọc
-"tốt nghiệp ngành CNTT" rồi kết luận ứng viên biết Java. Ba lớp chặn:
+"tốt nghiệp ngành CNTT" rồi kết luận ứng viên biết Java. Bốn lớp chặn:
 
 1. **Bắt buộc trích dẫn.** Mỗi mục `matched` phải kèm `evidence` là câu/cụm **trích nguyên
    văn** từ CV. Không trích được thì phải xếp xuống `missing`. Người đọc kiểm chứng được
@@ -89,6 +93,14 @@ Rủi ro lớn nhất của việc này không phải sai chính tả mà là **
    45-69 `CONSIDER`, <45 `REJECT`) và được áp lại **sau khi** model trả lời. LLM rất hay
    trả `fit_score: 35` kèm `decision: "PROCEED"` — hai con số mâu thuẫn nằm cạnh nhau trên
    màn hình là thứ người dùng thấy ngay và mất niềm tin vào cả tính năng.
+4. **`decision_reason` do code sinh, model không được viết.** Trường này đã bỏ khỏi schema
+   gửi cho Ollama (`_LlmDraft`); `_reason()` dựng câu từ `matched`/`missing` **cuối cùng**,
+   chạy sau cả lớp 1 lẫn lớp 3. Đo thật trên qwen3:8b: `missing` có `"giao tiep tot"` nhưng
+   model vẫn viết `decision_reason` = "Ứng viên đáp ứng... giao tiếp tốt" — hai câu chửi nhau
+   trên cùng một màn hình. Kể cả khi model tự nhất quán thì lớp 1 vẫn đẩy bớt mục từ `matched`
+   xuống `missing` **sau** khi câu lý do đã viết xong, nên câu đó nói về một kết quả khác với
+   kết quả hiển thị. Nhận xét định tính (thành tích, mốc thời gian) vẫn thuộc về model, nhưng
+   ở `summary` — chỗ model KỂ LẠI CV chứ không phán xét đạt/thiếu.
 
 Chất lượng đầu ra còn phụ thuộc một mắt xích **ngoài** service này: `PdfTextExtractor` bên
 .NET phải bóc text theo đúng thứ tự đọc. Bản cũ cố ý vứt thứ tự (khi đó text chỉ dùng cho

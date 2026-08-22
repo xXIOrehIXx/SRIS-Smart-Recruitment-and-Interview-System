@@ -59,15 +59,41 @@ class MatchedItem(BaseModel):
     evidence: str = Field(min_length=2, max_length=400)
 
 
-class CvScreeningResult(BaseModel):
-    """Toàn bộ đầu ra một lượt sàng lọc. Đúng những trường hiện lên màn hình, không hơn."""
+class _LlmDraft(BaseModel):
+    """
+    ĐÚNG những trường LLM được phép tự viết — schema này là thứ đưa vào Ollama qua `format`.
+
+    "decision_reason" cố ý KHÔNG có ở đây: xem CvScreeningResult bên dưới.
+    """
 
     summary: str = Field(min_length=10, max_length=1500)
     matched: list[MatchedItem] = Field(default_factory=list, max_length=12)
     missing: list[str] = Field(default_factory=list, max_length=12)
     fit_score: int = Field(ge=0, le=100)
     decision: Literal["PROCEED", "CONSIDER", "REJECT"]
-    decision_reason: str = Field(min_length=5, max_length=600)
+
+
+class CvScreeningResult(_LlmDraft):
+    """
+    Toàn bộ đầu ra một lượt sàng lọc. Đúng những trường hiện lên màn hình, không hơn.
+
+    Khác _LlmDraft đúng một trường: "decision_reason" do CODE sinh (xem _reason), không
+    phải model viết. Lý do y hệt lý do đã ép "decision" theo fit_score ở _band — nhưng
+    ở đây hỏng nặng hơn vì nó là câu chữ người dùng đọc:
+
+      - Model tự viết lý do thì rất hay mâu thuẫn với chính danh sách nó vừa liệt kê.
+        Đo thật trên qwen3:8b: missing = ["giao tiep tot"] nhưng decision_reason viết
+        "Ứng viên đáp ứng... giao tiếp tốt". Hai câu chửi nhau trên cùng một màn hình.
+      - Kể cả model tự nhất quán thì _verify vẫn ĐẨY bớt mục từ matched xuống missing sau
+        đó (trích dẫn bịa), và _band vẫn có thể đổi decision. Câu lý do viết TRƯỚC hai
+        bước ấy nên nó nói về một kết quả KHÁC với kết quả cuối cùng.
+
+    Sinh bằng code thì mâu thuẫn không xảy ra được, chứ không phải "ít xảy ra". Phần nhận
+    xét định tính (thành tích, mốc thời gian) vẫn còn nguyên ở "summary" — chỗ đó model
+    được tự do vì nó KỂ LẠI CV chứ không phán xét đạt/thiếu.
+    """
+
+    decision_reason: str = Field(default="", max_length=600)
 
 
 _PROMPT = """Bạn là chuyên viên tuyển dụng đang sàng lọc hồ sơ. Đọc CV của ứng viên và tin
@@ -114,7 +140,7 @@ cầu chứ không đếm đầu mục:
 
 "decision" đặt theo đúng fit_score: >= {proceed_min} -> "PROCEED" (nên mời phỏng vấn),
 {consider_min}-{proceed_max} -> "CONSIDER" (cần người xem thêm), dưới {consider_min} -> "REJECT" (chưa phù hợp).
-"decision_reason": 1-2 câu, nêu LÝ DO CỤ THỂ dựa trên chỗ đạt/thiếu vừa liệt kê.
+KHÔNG viết câu giải thích cho quyết định — phần đó hệ thống tự sinh từ hai danh sách trên.
 
 ========== TIN TUYỂN DỤNG ==========
 {jd_text}
@@ -134,7 +160,7 @@ def _norm_loose(s: str) -> str:
     return re.sub(r"[^0-9a-zÀ-ỹ]+", " ", _norm(s)).strip()
 
 
-def _verify(result: "CvScreeningResult", cv_text: str) -> None:
+def _verify(result: "_LlmDraft", cv_text: str) -> None:
     """
     Bỏ khỏi "matched" mọi mục có evidence KHÔNG thật sự nằm trong CV, và dồn yêu cầu đó
     xuống "missing". Sửa tại chỗ.
@@ -174,6 +200,70 @@ def _verify(result: "CvScreeningResult", cv_text: str) -> None:
     # bỏ bên missing. Hai bên mâu thuẫn nhau trên màn hình là lỗi người dùng thấy ngay.
     ten_dat = {_norm(m.requirement) for m in result.matched}
     result.missing = [x for x in result.missing if _norm(x) not in ten_dat]
+
+
+# Số mục nêu tên trong câu lý do. Liệt kê hết 12 yêu cầu thì câu đó dài hơn cả ô hiển
+# thị và không ai đọc — danh sách đầy đủ đã nằm ngay bên trên màn hình rồi, câu này chỉ
+# cần tóm lại cân đối đạt/thiếu.
+REASON_MAX_ITEMS = 3
+REASON_ITEM_CHARS = 80
+REASON_MAX_CHARS = 600
+
+
+def _ngan(s: str, n: int) -> str:
+    """
+    Cắt cho vừa ô hiển thị, cắt ở ranh giới từ để không đứt giữa chữ.
+
+    Chừa sẵn 1 ký tự cho dấu "…": kết quả LUÔN <= n. Nếu không chừa thì chuỗi 600 ký tự
+    liền không dấu cách sẽ ra 601 ký tự và Pydantic ném ValidationError ngay lúc dựng
+    CvScreeningResult — hỏng cả lượt sàng lọc chỉ vì một cái tên yêu cầu dài bất thường.
+    """
+    s = re.sub(r"\s+", " ", s).strip()
+    if len(s) <= n:
+        return s
+    return s[: n - 1].rsplit(" ", 1)[0].rstrip(" ,.;:-") + "…"
+
+
+def _liet_ke(items: list[str]) -> str:
+    """'a, b, c và 2 mục khác' — nêu tên vài mục đầu, phần còn lại đếm số."""
+    ten = [_ngan(x, REASON_ITEM_CHARS) for x in items[:REASON_MAX_ITEMS]]
+    con = len(items) - len(ten)
+    ke = ", ".join(ten)
+    return f"{ke} và {con} mục khác" if con > 0 else ke
+
+
+def _reason(result: "_LlmDraft") -> str:
+    """
+    Sinh câu lý do TỪ kết quả cuối cùng, thay vì để model tự viết (xem CvScreeningResult).
+
+    Gọi SAU _verify và _band thì câu chữ và danh sách hiển thị chắc chắn là của cùng một
+    kết quả — mâu thuẫn kiểu "đáp ứng giao tiếp tốt" trong khi "giao tiếp tốt" nằm ở cột
+    THIẾU không còn đường xảy ra.
+
+    Cố ý KHÔNG nhắc lại chữ "nên mời / cân nhắc / ít phù hợp": nhãn đó đã hiện ngay cạnh
+    điểm trên UI (quy tắc hiển thị của V046). Nhắc lại ở đây là vừa thừa, vừa tạo thêm một
+    chỗ nữa phải sửa mỗi lần đổi nhãn — mà đổi sót một chỗ là quay về đúng cái lỗi đang sửa.
+    """
+    dat = [m.requirement.strip() for m in result.matched if m.requirement.strip()]
+    thieu = [x.strip() for x in result.missing if x.strip()]
+    tong = len(dat) + len(thieu)
+
+    if tong == 0:
+        # Model không nêu được yêu cầu nào (JD chỉ liệt kê đầu việc, hoặc CV lạc đề hẳn).
+        # Nói thẳng là chưa đối chiếu được, đừng bịa ra một câu nhận xét nghe như đã xét.
+        return "Chưa đối chiếu được yêu cầu cụ thể nào giữa CV và tin tuyển dụng."
+
+    ve = []
+    if dat:
+        ve.append(f"CV trích dẫn chứng minh được {len(dat)}/{tong} yêu cầu: {_liet_ke(dat)}.")
+    else:
+        ve.append(f"Không yêu cầu nào trong {tong} yêu cầu đối chiếu có trích dẫn từ CV.")
+    if thieu:
+        ve.append(f"Chưa thấy trong CV: {_liet_ke(thieu)}.")
+
+    # "…" + "." của câu đứng cạnh nhau thành "…." — dấu ba chấm đã thay cho phần bị cắt,
+    # không cần thêm dấu chấm nữa.
+    return _ngan(" ".join(ve).replace("….", "…"), REASON_MAX_CHARS)
 
 
 def _band(score: int) -> str:
@@ -232,24 +322,27 @@ def screen_cv(cv_text: str, jd_text: str) -> CvScreeningResult:
     last_error: Exception | None = None
     for _ in range(MAX_RETRY):
         try:
-            result = CvScreeningResult.model_validate_json(_chat(prompt))
+            draft = _LlmDraft.model_validate_json(_chat(prompt))
         except (ValidationError, json.JSONDecodeError, KeyError) as e:
             # Sai schema -> thử lại (LLM không tất định tuyệt đối kể cả temperature=0).
             last_error = e
             continue
 
         # Dọn dòng trắng: Pydantic đếm ký tự trước khi trim nên "  " lọt min_length.
-        result.missing = [m.strip() for m in result.missing if m and m.strip()]
-        result.matched = [
-            m for m in result.matched if m.requirement.strip() and m.evidence.strip()
+        draft.missing = [m.strip() for m in draft.missing if m and m.strip()]
+        draft.matched = [
+            m for m in draft.matched if m.requirement.strip() and m.evidence.strip()
         ]
 
         # Đối chiếu từng trích dẫn với CV thật (xem _verify).
-        _verify(result, cv)
+        _verify(draft, cv)
 
         # Ép decision khớp fit_score (xem PROCEED_MIN ở đầu file). Chạy SAU _verify để
         # điểm và danh sách đạt/thiếu là của cùng một kết quả đã lọc.
-        result.decision = _band(result.fit_score)
-        return result
+        draft.decision = _band(draft.fit_score)
+
+        # Câu lý do sinh CUỐI CÙNG, từ chính draft đã lọc ở hai bước trên — đây là chỗ
+        # bảo đảm câu chữ không mâu thuẫn với danh sách hiển thị (xem CvScreeningResult).
+        return CvScreeningResult(**draft.model_dump(), decision_reason=_reason(draft))
 
     raise RuntimeError(f"LLM khong ra JSON hop le sau {MAX_RETRY} luot: {last_error}")
