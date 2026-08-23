@@ -21,13 +21,15 @@ public static class OfferLetterEmailBuilder
     private static readonly CultureInfo Vn = CultureInfo.GetCultureInfo("vi-VN");
 
     /// <summary>
-    /// Gạch đầu dòng ♦ (U+2666). Bản PDF dùng ❖ (U+2756) được vì Lato nhúng thẳng vào file;
-    /// email thì KHÔNG — nó chạy bằng font máy người nhận, mà Arial/Helvetica không có glyph
-    /// U+2756. Máy Windows còn mượn tạm được Segoe UI Symbol, Gmail Android / Outlook mobile
-    /// thì hết đường lùi và ứng viên thấy ô vuông □ đầu mỗi dòng. U+2666 nằm trong WGL4 nên
-    /// font web-safe nào cũng có, và mặc định vẫn là ký tự chữ chứ không nhảy thành emoji.
+    /// Gạch đầu dòng • (U+2022) — CÙNG ký tự với bản PDF, để một lá thư không vẽ ra hai kiểu
+    /// gạch đầu dòng tuỳ ứng viên mở email hay mở file.
+    ///
+    /// <para>Không dùng ❖ (U+2756) của thư mẫu: cả Arial/Helvetica lẫn Lato (font nhúng trong
+    /// PDF) đều không có glyph này. Trước đây email lùi về ♦ (U+2666) cho an toàn, nhưng Lato
+    /// cũng không có U+2666 nên bản PDF không theo được. U+2022 thì có ở khắp nơi — trong WGL4,
+    /// trong cả 18 weight của Lato — và mặc định vẫn là ký tự chữ chứ không nhảy thành emoji.</para>
     /// </summary>
-    private const string Bullet = "&#9830;";
+    private const string Bullet = "&#8226;";
 
     public static string BuildSubject(OfferLetterModel m) =>
         Has(m.JobTitle)
@@ -127,9 +129,14 @@ public static class OfferLetterEmailBuilder
             Letterhead(m, p)));
 
         // ----- Tiêu đề -----
+        // font-weight:bold (700), KHÔNG phải 800: ở mức 800 máy người nhận chọn Arial Black,
+        // mà Arial Black không có Ư/Ơ/Ậ/Ệ (U+01AF, U+01A0, U+1EAC, U+1EC6...) nên nó mượn tạm
+        // Arial thường cho đúng mấy chữ đó — tiêu đề ra "THƯ MỜI NHẬN VIỆC" với 4 chữ cái nhỏ
+        // và mảnh hơn phần còn lại. Arial Bold thì có đủ. Áp dụng cho mọi chữ đậm tiếng Việt:
+        // đừng nâng weight quá 700 trong email.
         sb.Append(Row(p, "padding:22px 34px 0 34px;",
             $"<div style=\"text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:22px;" +
-            $"font-weight:800;letter-spacing:0.5px;color:{p.Frame};\">THƯ MỜI NHẬN VIỆC</div>"));
+            $"font-weight:bold;letter-spacing:0.5px;color:{p.Frame};\">THƯ MỜI NHẬN VIỆC</div>"));
 
         // ----- Ngày + người nhận -----
         sb.Append(Row(p, "padding:20px 34px 0 34px;",
