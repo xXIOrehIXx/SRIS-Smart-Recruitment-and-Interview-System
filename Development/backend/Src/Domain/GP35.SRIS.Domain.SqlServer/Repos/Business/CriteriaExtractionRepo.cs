@@ -64,15 +64,17 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
     public async Task<ClaimedExtraction?> ClaimNextPendingAsync(CancellationToken ct = default)
     {
         // Worker không chạy trong request nào nên SESSION_CONTEXT('CompanyId') chưa set ->
-        // RLS lọc sạch mọi dòng. Tắt policy đúng trong lúc chạy câu lệnh giành việc (cùng
-        // cách UserRepo.GetByEmail làm cho luồng login ẩn danh), rồi bật lại ngay.
+        // RLS lọc sạch mọi dòng. Chạy dưới tenant "hệ thống" (V049) để nhìn xuyên công ty.
+        //
+        // Trước V049 chỗ này tắt hẳn TenantSecurityPolicy bằng DDL. Đừng quay lại: DDL đó tắt
+        // RLS cho TOÀN database, và ba worker cùng tắt/bật mỗi 5 giây thì câu UPDATE của
+        // worker này thường xuyên chạy đúng lúc worker kia đã bật lại -> giành hụt việc, lượt
+        // bóc nằm PENDING hàng chục giây.
         //
         // UPDATE ... OUTPUT là MỘT câu lệnh: giành + đánh dấu RUNNING xảy ra nguyên tử, hai
         // worker song song không thể cùng nhận một dòng. READPAST bỏ qua dòng đang bị khoá
         // thay vì xếp hàng đợi nó.
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);", ct);
-        try
+        return await _db.RunAsSystemAsync(async () =>
         {
             var rows = await _db.Database
                 .SqlQueryRaw<ClaimedRow>(
@@ -87,12 +89,7 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
 
             var row = rows.FirstOrDefault();
             return row is null ? null : new ClaimedExtraction(row.ExtractionId, row.CompanyId, row.JobId);
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);", CancellationToken.None);
-        }
+        }, ct);
     }
 
     public async Task<int> FinishAsync(long companyId, long extractionId, string status,
@@ -112,20 +109,11 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
 
     public async Task<int> RequeueStaleRunningAsync(CancellationToken ct = default)
     {
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);", ct);
-        try
-        {
-            return await _db.Database.ExecuteSqlRawAsync(
-                "UPDATE dbo.CriteriaExtraction " +
-                "SET status = 'PENDING', started_at = NULL, updated_at = SYSUTCDATETIME() " +
-                "WHERE status = 'RUNNING'", ct);
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);", CancellationToken.None);
-        }
+        // Chạy lúc app khởi động, ngoài mọi request -> tenant "hệ thống" (V049).
+        return await _db.RunAsSystemAsync(() => _db.Database.ExecuteSqlRawAsync(
+            "UPDATE dbo.CriteriaExtraction " +
+            "SET status = 'PENDING', started_at = NULL, updated_at = SYSUTCDATETIME() " +
+            "WHERE status = 'RUNNING'", ct), ct);
     }
 
     /// <summary>

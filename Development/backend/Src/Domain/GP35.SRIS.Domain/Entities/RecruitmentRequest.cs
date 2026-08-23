@@ -19,6 +19,10 @@ public class RecruitmentRequest : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
     public string Title { get; set; } = null!;
     [Column("department")]
     public string? Department { get; set; }
+
+    /// <summary>Nơi làm việc (V048) — DM ra đề biết rõ hơn ai hết, HR khỏi phải hỏi lại.</summary>
+    [Column("location")]
+    public string? Location { get; set; }
     [Column("quantity")]
     public int Quantity { get; set; } = 1;
     [Column("employment_type")]
@@ -42,6 +46,13 @@ public class RecruitmentRequest : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
     public decimal? SalaryMax { get; set; }
     [Column("expected_start_date")]
     public DateTime? ExpectedStartDate { get; set; }
+
+    /// <summary>
+    /// Hạn NHẬN HỒ SƠ mong muốn (V048) — chép sang <c>Job.deadline</c> khi HR tạo tin.
+    /// Khác <see cref="ExpectedStartDate"/> là ngày cần người có mặt.
+    /// </summary>
+    [Column("deadline")]
+    public DateTime? Deadline { get; set; }
 
     /// <summary>PENDING | APPROVED | REJECTED | CONVERTED | CANCELLED.</summary>
     [Column("status")]

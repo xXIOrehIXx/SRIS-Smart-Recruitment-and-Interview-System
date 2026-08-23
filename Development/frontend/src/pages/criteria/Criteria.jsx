@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Card, Typography, Button, Table, Tag, Modal, Form, Input, Select,
   Space, message, Popconfirm, Tooltip, Descriptions,
@@ -11,6 +11,7 @@ import {
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { criteriaAPI, jobsAPI } from '../../services/api';
+import { weightPercentMap, weightPercents } from '../../utils/criteriaWeight';
 import './css/Criteria.css';
 
 const { Title, Text } = Typography;
@@ -90,6 +91,8 @@ const Criteria = () => {
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [jobCriteria, setJobCriteria] = useState([]);
+  // Trọng số thô không đọc được nếu không biết tổng — quy sang tỉ trọng % (utils dùng chung).
+  const jobWeightPct = useMemo(() => weightPercentMap(jobCriteria, 'criteriaId'), [jobCriteria]);
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [searchText, setSearchText] = useState('');
@@ -486,11 +489,15 @@ const Criteria = () => {
       render: (_, record) => <div style={{ fontWeight: 600 }}>{record.name}</div>,
     },
     {
-      title: 'Trọng số',
+      title: 'Tỉ trọng',
       dataIndex: 'weight',
       key: 'weight',
-      width: 90,
-      render: (w) => <Text strong>{w}</Text>,
+      width: 100,
+      render: (w, record) => (
+        <Tooltip title={`Trọng số ${w} / tổng trọng số cả bộ`}>
+          <Text strong>{jobWeightPct[record.criteriaId] ?? 0}%</Text>
+        </Tooltip>
+      ),
     },
     {
       title: 'Điểm tối đa',
@@ -673,7 +680,7 @@ const Criteria = () => {
           name="weight"
           initialValue={1}
           rules={RULES.weight()}
-          tooltip="Tiêu chí càng quan trọng với vị trí thì đặt càng cao — dùng để tính điểm tổng."
+          tooltip="Số tương đối: tỉ trọng của một tiêu chí = trọng số của nó chia tổng trọng số cả bộ. Ví dụ ba tiêu chí 2 / 1 / 1 sẽ thành 50% / 25% / 25%."
         >
           <InputNumber min={0.5} max={10} step={0.5} style={{ width: 100 }} />
         </Form.Item>
@@ -769,6 +776,15 @@ const Criteria = () => {
               locale={{
                 emptyText: 'Chưa có tiêu chí — bấm "AI đề xuất tiêu chí" để bắt đầu, hoặc thêm thủ công / áp template',
               }}
+              /* Hiện dòng tổng để thấy ngay bộ tiêu chí chia hết 100% — đó là lý do đổi
+                 trọng số thô sang tỉ trọng. */
+              summary={() => (jobCriteria.length > 0 ? (
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0}><Text strong>Tổng</Text></Table.Summary.Cell>
+                  <Table.Summary.Cell index={1}><Text strong>100%</Text></Table.Summary.Cell>
+                  <Table.Summary.Cell index={2} colSpan={jobCriteriaColumns.length - 2} />
+                </Table.Summary.Row>
+              ) : null)}
             />
           ) : (
             <div style={{ textAlign: 'center', padding: 40, color: '#8c8c8b' }}>
@@ -1065,7 +1081,18 @@ const Criteria = () => {
                 dataSource={selectedTemplate.items}
                 columns={[
                   { title: 'Tiêu chí', dataIndex: 'name', key: 'name' },
-                  { title: 'Trọng số', dataIndex: 'weight', key: 'weight', width: 90 },
+                  {
+                    title: 'Tỉ trọng',
+                    dataIndex: 'weight',
+                    key: 'weight',
+                    width: 100,
+                    render: (_w, record) => {
+                      const items = selectedTemplate.items || [];
+                      const pct = weightPercents(items.map((i) => i.weight));
+                      const idx = items.findIndex((i) => i.itemId === record.itemId);
+                      return `${(idx >= 0 ? pct[idx] : 0) ?? 0}%`;
+                    },
+                  },
                   { title: 'Điểm max', dataIndex: 'maxScore', key: 'maxScore', width: 90 },
                 ]}
               />

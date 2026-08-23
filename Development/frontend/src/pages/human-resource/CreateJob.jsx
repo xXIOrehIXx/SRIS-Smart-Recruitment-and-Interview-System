@@ -341,6 +341,10 @@ const CreateJob = () => {
           experienceYearsToJob(req.experienceYearsMin)
           ?? EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
         quantity: req.quantity,
+        // Địa điểm + hạn nộp đơn DM đã ghi trong đề bài (V048) — không điền sẵn thì HR phải
+        // quay lại hỏi, đúng thứ luồng "ra đề -> đăng tin" sinh ra để bỏ đi.
+        location: req.location || undefined,
+        expiresAt: toDatePickerValue(req.deadline),
         // Ô Kỹ năng là Select mode="tags" -> nhận MẢNG, không phải chuỗi ngăn phẩy.
         skillTags: skills,
         description: req.description,

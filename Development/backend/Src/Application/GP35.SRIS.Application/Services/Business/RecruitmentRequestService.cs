@@ -39,6 +39,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         {
             Title = dto.Title.Trim(),
             Department = Clean(dto.Department),
+            Location = Clean(dto.Location),
             Quantity = dto.Quantity > 0 ? dto.Quantity : 1,
             EmploymentType = Clean(dto.EmploymentType),
             ExperienceLevel = Clean(dto.ExperienceLevel),
@@ -49,6 +50,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
             SalaryMin = dto.SalaryMin,
             SalaryMax = dto.SalaryMax,
             ExpectedStartDate = dto.ExpectedStartDate,
+            Deadline = dto.Deadline,
             Status = "PENDING",
             CreatedBy = userId > 0 ? userId : null
         };
@@ -82,6 +84,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
 
         request.Title = dto.Title.Trim();
         request.Department = Clean(dto.Department);
+        request.Location = Clean(dto.Location);
         request.Quantity = dto.Quantity > 0 ? dto.Quantity : 1;
         request.EmploymentType = Clean(dto.EmploymentType);
         request.ExperienceLevel = Clean(dto.ExperienceLevel);
@@ -92,6 +95,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         request.SalaryMin = dto.SalaryMin;
         request.SalaryMax = dto.SalaryMax;
         request.ExpectedStartDate = dto.ExpectedStartDate;
+        request.Deadline = dto.Deadline;
         request.UpdatedAt = DateTime.UtcNow;
         await _requestRepo.SaveAsync();
 
@@ -191,6 +195,9 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         // không biết deadline thật là bao giờ. So ở mức NGÀY (ô này không nhập giờ).
         if (dto.ExpectedStartDate is { } start && start.Date < DateTime.UtcNow.Date)
             throw Bad($"Ngày cần tuyển ({start:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
+        // Hạn nộp đơn (V048) — cùng luật với Job.deadline, vì nó chép thẳng sang tin tuyển dụng.
+        if (dto.Deadline is { } deadline && deadline.Date < DateTime.UtcNow.Date)
+            throw Bad($"Hạn nộp đơn ({deadline:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
     }
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
@@ -200,6 +207,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         RequestId = r.RequestId,
         Title = r.Title,
         Department = r.Department,
+        Location = r.Location,
         Quantity = r.Quantity,
         EmploymentType = r.EmploymentType,
         ExperienceLevel = r.ExperienceLevel,
@@ -210,6 +218,7 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         SalaryMin = r.SalaryMin,
         SalaryMax = r.SalaryMax,
         ExpectedStartDate = r.ExpectedStartDate,
+        Deadline = r.Deadline,
         Status = r.Status,
         ReviewNote = r.ReviewNote,
         ReviewedByName = reviewedByName,
