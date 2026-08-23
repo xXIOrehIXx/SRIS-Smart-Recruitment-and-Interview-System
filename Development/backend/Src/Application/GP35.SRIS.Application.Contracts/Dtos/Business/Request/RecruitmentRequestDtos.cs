@@ -5,6 +5,9 @@ public class RecruitmentRequestInputDto
 {
     public string Title { get; set; } = null!;
     public string? Department { get; set; }
+
+    /// <summary>Nơi làm việc (V048).</summary>
+    public string? Location { get; set; }
     public int Quantity { get; set; } = 1;
     public string? EmploymentType { get; set; }
     public string? ExperienceLevel { get; set; }
@@ -17,6 +20,9 @@ public class RecruitmentRequestInputDto
     public decimal? SalaryMin { get; set; }
     public decimal? SalaryMax { get; set; }
     public DateTime? ExpectedStartDate { get; set; }
+
+    /// <summary>Hạn nhận hồ sơ mong muốn (V048) — chép sang Job.deadline khi tạo tin.</summary>
+    public DateTime? Deadline { get; set; }
 }
 
 /// <summary>Human Resource duyệt yêu cầu: approve=true -> APPROVED, false -> REJECTED (kèm note).</summary>
@@ -37,6 +43,9 @@ public class RecruitmentRequestDto
     public long RequestId { get; set; }
     public string Title { get; set; } = null!;
     public string? Department { get; set; }
+
+    /// <summary>Nơi làm việc (V048).</summary>
+    public string? Location { get; set; }
     public int Quantity { get; set; }
     public string? EmploymentType { get; set; }
     public string? ExperienceLevel { get; set; }
@@ -49,6 +58,9 @@ public class RecruitmentRequestDto
     public decimal? SalaryMin { get; set; }
     public decimal? SalaryMax { get; set; }
     public DateTime? ExpectedStartDate { get; set; }
+
+    /// <summary>Hạn nhận hồ sơ mong muốn (V048) — chép sang Job.deadline khi tạo tin.</summary>
+    public DateTime? Deadline { get; set; }
 
     /// <summary>PENDING | APPROVED | REJECTED | CONVERTED | CANCELLED.</summary>
     public string Status { get; set; } = "PENDING";
