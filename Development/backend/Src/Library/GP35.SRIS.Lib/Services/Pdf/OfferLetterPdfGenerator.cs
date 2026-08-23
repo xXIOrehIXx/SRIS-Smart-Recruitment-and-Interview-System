@@ -23,8 +23,15 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
 {
     private const string FontFamily = "Lato";
 
-    /// <summary>Ký tự gạch đầu dòng của thư mẫu.</summary>
-    private const string Bullet = "❖";
+    /// <summary>
+    /// Ký tự gạch đầu dòng. U+2022 chứ KHÔNG phải ❖ (U+2756) như thư mẫu: Lato không có
+    /// glyph U+2756 ở bất kỳ weight nào trong 18 file mà QuestPDF nhúng sẵn. Máy Windows còn
+    /// mượn tạm được font hệ thống nên bản in ra vẫn có hình, nhưng chạy trong container Linux
+    /// (không cài font nào) là mỗi dòng một ô vuông ngay giữa văn bản chính thức gửi ứng viên.
+    /// U+2022 có đủ trong cả 18 weight của Lato — và cả trong Arial, nên bản email dùng chung
+    /// được một ký tự, hai kênh không vẽ ra hai kiểu gạch đầu dòng khác nhau.
+    /// </summary>
+    private const string Bullet = "•";
 
     /// <summary>Khoảng trắng từ mép giấy tới khung viền.</summary>
     private const float OuterMargin = 9f;

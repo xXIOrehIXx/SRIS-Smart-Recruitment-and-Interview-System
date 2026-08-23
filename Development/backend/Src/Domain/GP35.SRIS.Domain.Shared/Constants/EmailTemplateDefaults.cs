@@ -13,6 +13,11 @@ public record EmailTemplateSeed(string Type, string Name, string Subject, string
 ///
 /// Thông tin riêng của từng công ty (giờ làm, chỗ gửi xe, nội quy) để trong [ngoặc vuông];
 /// riêng ONBOARDING seed ở trạng thái TẮT để không ai nhận thư còn nguyên chỗ trống.
+///
+/// <para><b>Chữ đậm: dừng ở <c>font-weight:bold</c> (700), đừng lên 800/900.</b> Từ 800 trở
+/// lên mail client chọn Arial Black, mà Arial Black không có Ư/Ơ/Ờ/Ậ/Ệ — nó mượn tạm Arial
+/// thường cho riêng mấy chữ đó, nên tiêu đề tiếng Việt ra kiểu "THƯ MỜI NHẬN VIỆC" với bốn
+/// chữ cái nhỏ và mảnh hơn hẳn. Arial Bold có đủ bộ (xem migration V050).</para>
 /// </summary>
 public static class EmailTemplateDefaults
 {
@@ -82,7 +87,7 @@ có cơ hội phù hợp hơn.</p>
             "Thư mời nhận việc — vị trí {{jobTitle}}",
             """
 {{letterhead}}
-<div style="text-align:center;font-size:22px;font-weight:800;letter-spacing:0.5px;margin:22px 0 20px 0;">
+<div style="text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:bold;letter-spacing:0.5px;margin:22px 0 20px 0;">
 THƯ MỜI NHẬN VIỆC</div>
 <p>{{letterDate}}</p>
 <p><b>{{candidateName}}</b></p>
