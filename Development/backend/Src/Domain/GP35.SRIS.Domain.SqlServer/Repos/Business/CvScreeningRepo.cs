@@ -81,9 +81,9 @@ public class CvScreeningRepo : BaseRepo<long, CvScreening>, ICvScreeningRepo
         // UPDATE ... OUTPUT là MỘT câu lệnh: giành + đánh dấu RUNNING xảy ra nguyên tử, hai
         // worker song song không thể cùng nhận một dòng. READPAST bỏ qua dòng đang bị khoá
         // thay vì xếp hàng đợi nó.
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);", ct);
-        try
+        // Chạy ngoài request -> tenant "hệ thống" (V049). KHÔNG tắt TenantSecurityPolicy:
+        // DDL đó tắt RLS toàn database và các worker đua nhau bật/tắt nên giành hụt việc.
+        return await _db.RunAsSystemAsync(async () =>
         {
             var rows = await _db.Database
                 .SqlQueryRaw<ClaimedRow>(
@@ -98,12 +98,7 @@ public class CvScreeningRepo : BaseRepo<long, CvScreening>, ICvScreeningRepo
 
             var row = rows.FirstOrDefault();
             return row is null ? null : new ClaimedScreening(row.ScreeningId, row.CompanyId, row.ApplicationId);
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);", CancellationToken.None);
-        }
+        }, ct);
     }
 
     public async Task<int> FinishAsync(long companyId, long screeningId, string status,
@@ -128,20 +123,15 @@ public class CvScreeningRepo : BaseRepo<long, CvScreening>, ICvScreeningRepo
 
     public async Task<int> RequeueStaleRunningAsync(CancellationToken ct = default)
     {
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);", ct);
-        try
+        // Chạy ngoài request -> tenant "hệ thống" (V049). KHÔNG tắt TenantSecurityPolicy:
+        // DDL đó tắt RLS toàn database và các worker đua nhau bật/tắt nên giành hụt việc.
+        return await _db.RunAsSystemAsync(async () =>
         {
             return await _db.Database.ExecuteSqlRawAsync(
                 "UPDATE dbo.CvScreening " +
                 "SET status = 'PENDING', started_at = NULL, updated_at = SYSUTCDATETIME() " +
                 "WHERE status = 'RUNNING'", ct);
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);", CancellationToken.None);
-        }
+        }, ct);
     }
 
     /// <summary>

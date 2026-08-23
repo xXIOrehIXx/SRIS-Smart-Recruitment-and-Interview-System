@@ -58,7 +58,7 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
         // Email duy nhất TOÀN HỆ THỐNG (V028) -> phải soi xuyên tenant, nếu không thì một email
         // đã dùng ở công ty khác sẽ lọt qua tầng service rồi vỡ ở UQ_User_email lúc INSERT.
         // Bỏ Global Query Filter + tắt RLS policy, cùng pattern với GetByEmail.
-        return await WithPolicyOffAsync(async () =>
+        return await WithSystemTenantAsync(async () =>
             await _db.Users
                 .IgnoreQueryFilters()
                 .Where(u => u.Email == email && (excludeUserId == null || u.UserId != excludeUserId))
@@ -109,27 +109,20 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
     {
         user.CompanyId = companyId;
         // Đăng ký chạy ẩn danh -> SESSION_CONTEXT('CompanyId') chưa set -> RLS BLOCK chặn insert.
-        // Tắt policy trong lúc tạo Admin đầu tiên (pattern như GetByEmail). ALTER là trạng thái toàn DB.
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);");
-        try
+        // Chạy dưới tenant hệ thống trong lúc tạo Admin đầu tiên (V049).
+        return await WithSystemTenantAsync(async () =>
         {
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
             return user.UserId;
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);");
-        }
+        });
     }
 
     public async Task TouchLastLoginAsync(long userId)
     {
         // Chạy ngay sau khi xác thực mật khẩu nhưng TRƯỚC khi có JWT -> SESSION_CONTEXT chưa set.
         // Tắt policy + IgnoreQueryFilters để update không bị RLS/filter nuốt (0 dòng).
-        await WithPolicyOffAsync(async () =>
+        await WithSystemTenantAsync(async () =>
             await _db.Users
                 .IgnoreQueryFilters()
                 .Where(u => u.UserId == userId)
@@ -139,7 +132,7 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
     public async Task<User?> GetByIdCrossTenantAsync(long userId)
     {
         // Refresh token chạy ẩn danh (chưa có JWT) -> tra XUYÊN tenant.
-        return await WithPolicyOffAsync(async () =>
+        return await WithSystemTenantAsync(async () =>
             await _db.Users
                 .IgnoreQueryFilters()
                 .AsNoTracking()
@@ -149,7 +142,7 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
     public async Task UpdatePasswordCrossTenantAsync(long userId, string passwordHash)
     {
         // Reset mật khẩu qua email chạy ẩn danh -> update XUYÊN tenant.
-        await WithPolicyOffAsync(async () =>
+        await WithSystemTenantAsync(async () =>
             await _db.Users
                 .IgnoreQueryFilters()
                 .Where(u => u.UserId == userId)
@@ -158,44 +151,27 @@ public class UserRepo : BaseRepo<Guid, User>, IUserRepo
                     .SetProperty(u => u.UpdatedAt, DateTime.UtcNow)));
     }
 
-    /// <summary>Chạy tác vụ với RLS policy tạm tắt (DB-level) — dùng cho các luồng auth ẩn danh.</summary>
-    private async Task<T> WithPolicyOffAsync<T>(Func<Task<T>> action)
-    {
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);");
-        try
-        {
-            return await action();
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);");
-        }
-    }
+    /// <summary>
+    /// Chạy tác vụ dưới tenant "hệ thống" (V049) — dùng cho các luồng auth ẩn danh, lúc chưa
+    /// biết người dùng thuộc công ty nào.
+    ///
+    /// Trước V049 chỗ này tắt hẳn TenantSecurityPolicy bằng DDL, tức tắt RLS cho TOÀN database
+    /// trong lúc chạy: mọi request của tenant khác rơi đúng khoảng đó đọc được dữ liệu chéo.
+    /// Giờ chỉ đóng dấu lên connection của chính mình. Đừng đổi ngược lại.
+    /// </summary>
+    private Task<T> WithSystemTenantAsync<T>(Func<Task<T>> action) => _db.RunAsSystemAsync(action);
 
-    private async Task WithPolicyOffAsync(Func<Task> action) =>
-        await WithPolicyOffAsync(async () => { await action(); return 0; });
+    private Task WithSystemTenantAsync(Func<Task> action) => _db.RunAsSystemAsync(action);
 
     public async Task<User> GetByEmail(string email)
     {
         // Lúc login chưa biết company -> phải tra User XUYÊN tenant:
         //  - IgnoreQueryFilters(): bỏ Global Query Filter company_id ở tầng code.
-        //  - Tắt RLS policy (DB-level) trong lúc tra, vì SESSION_CONTEXT('CompanyId') chưa được set.
-        // ALTER SECURITY POLICY là trạng thái toàn DB nên có hiệu lực bất kể connection nào EF dùng.
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);");
-        try
-        {
-            return await _db.Users
+        //  - Tenant hệ thống (V049) để RLS ở tầng DB cho qua, vì SESSION_CONTEXT chưa được set.
+        return await WithSystemTenantAsync(async () =>
+            await _db.Users
                 .IgnoreQueryFilters()
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email);
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);");
-        }
+                .FirstOrDefaultAsync(u => u.Email == email));
     }
 }
