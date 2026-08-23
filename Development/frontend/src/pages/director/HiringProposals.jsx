@@ -500,6 +500,7 @@ const HiringProposals = () => {
                 onChange={setStartDate}
                 format="DD/MM/YYYY"
                 placeholder="Chọn ngày vào làm"
+                disabledDate={(d) => d && d < dayjs().startOf('day')}
               />
             </div>
           </>

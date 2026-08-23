@@ -740,6 +740,7 @@ const HiringDecision = () => {
             onChange={setProposedStartDate}
             format="DD/MM/YYYY"
             placeholder="Chọn ngày dự kiến"
+            disabledDate={(d) => d && d < dayjs().startOf('day')}
           />
         </div>
       </Modal>

@@ -91,7 +91,6 @@ const IncomingInterview = () => {
     try {
       setLoading(true);
       const response = await interviewAPI.getMySchedules();
-      console.log('[IncomingInterview] raw response:', response);
 
       let data = response.data;
       if (data === null || data === undefined || data === '') {
@@ -314,15 +313,12 @@ const IncomingInterview = () => {
                 <Text strong style={{ display: 'block', marginBottom: 8 }}>
                   Bạn chưa có buổi phỏng vấn nào được giao.
                 </Text>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                <Text type="secondary" style={{ display: 'block' }}>
                   Các buổi sẽ hiện ở đây sau khi:
                   <ul style={{ marginTop: 8, paddingLeft: 24, textAlign: 'left' }}>
-                    <li>Human Resource mở pool khung giờ và gán panel có bạn.</li>
-                    <li>Ứng viên chốt 1 khung → schedule chuyển sang <Tag color="processing">CONFIRMED</Tag>.</li>
+                    <li>Trưởng bộ phận chỉ định bạn phỏng vấn một ứng viên.</li>
+                    <li>Bộ phận nhân sự chốt giờ với ứng viên và đặt buổi.</li>
                   </ul>
-                </Text>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  Nếu đã có ứng viên chốt mà vẫn trống, mở DevTools → Console, kiểm tra log <code>[IncomingInterview] raw response</code> để xem API có trả dữ liệu không.
                 </Text>
               </div>
             ),
