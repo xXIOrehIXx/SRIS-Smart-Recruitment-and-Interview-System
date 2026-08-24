@@ -1,4 +1,4 @@
-﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
+using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
@@ -77,6 +77,18 @@ public class InterviewScheduleController : ControllerBase
 
         return Ok(await _scheduleService.GetInterviewerBusyAsync(
             _contextData.CompanyId, ids, fromUtc, toUtc));
+    }
+
+    /// <summary>
+    /// Sửa 1 buổi đã chốt: dời giờ / đổi người phỏng vấn / đổi tên vòng. Giữ nguyên schedule_id
+    /// nên phiếu chấm đã có không mất; gửi lại email xác nhận kèm .ics giờ mới.
+    /// </summary>
+    [HttpPut("api/interview-schedules/{scheduleId:long}")]
+    public async Task<IActionResult> Reschedule(long scheduleId, [FromBody] RescheduleInterviewDto dto)
+    {
+        await _scheduleService.RescheduleAsync(
+            _contextData.CompanyId, _contextData.UserId, scheduleId, dto);
+        return NoContent();
     }
 
     /// <summary>Hủy 1 buổi phỏng vấn — body <c>{ reason? }</c>; hệ thống email báo ứng viên.</summary>

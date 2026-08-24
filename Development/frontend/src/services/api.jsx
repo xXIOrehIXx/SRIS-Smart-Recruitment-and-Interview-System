@@ -278,6 +278,11 @@ export const interviewAPI = {
   bookInterview: (applicationId, data) =>
     api.post(`/applications/${applicationId}/interviews`, data),
 
+  // Sửa buổi ĐÃ chốt: { interviewerIds, startTime, name? }. Giữ nguyên scheduleId nên phiếu
+  // chấm đã có không mất; BE gửi lại email xác nhận kèm .ics giờ mới.
+  updateInterview: (scheduleId, data) =>
+    api.put(`/interview-schedules/${scheduleId}`, data),
+
   cancelInterview: (scheduleId, reason) =>
     api.post(`/interview-schedules/${scheduleId}/cancel`, { reason }),
 
@@ -347,10 +352,12 @@ export const interviewAPI = {
 // ==================== ĐỀ XUẤT TUYỂN (DM đề xuất → Giám đốc quyết) ====================
 
 // docs 5.14 (V043): Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển — họ đề xuất "nên tuyển người
-// này"; Giám đốc duyệt và chốt điều khoản (lương, ngày vào làm) để nhân sự soạn thư mời.
+// này"; Giám đốc duyệt và chốt MỨC LƯƠNG để nhân sự soạn thư mời.
 // Duyệt đề xuất chính là hành động đẩy hồ sơ sang bước Quyết định (OFFER).
+// Ngày vào làm KHÔNG nằm ở đây (24/08/2026): nhân sự gọi ứng viên chốt ngày onboard rồi điền
+// vào thư mời (offerAPI.create -> startDate).
 export const hiringProposalAPI = {
-  // DM đề xuất: { note?, proposedSalary?, proposedStartDate? }
+  // DM đề xuất: { note?, proposedSalary? }
   create: (applicationId, data) =>
     api.post(`/applications/${applicationId}/hiring-proposal`, data),
 
@@ -362,7 +369,7 @@ export const hiringProposalAPI = {
   getList: (status) =>
     api.get(`/hiring-proposals${status ? `?status=${status}` : ''}`),
 
-  // Giám đốc quyết: { approve, note?, approvedSalary?, approvedStartDate? }
+  // Giám đốc quyết: { approve, note?, approvedSalary? }
   decide: (proposalId, data) =>
     api.post(`/hiring-proposals/${proposalId}/decision`, data),
 };

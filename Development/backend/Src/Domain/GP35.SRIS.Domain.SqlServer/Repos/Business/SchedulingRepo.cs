@@ -1,4 +1,4 @@
-﻿using GP35.SRIS.Domain.Entities;
+using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.SqlServer.Persistence;
@@ -346,6 +346,57 @@ public class SchedulingRepo : BaseRepo<long, InterviewSchedule>, ISchedulingRepo
 
         await tx.CommitAsync();
         return schedule.ScheduleId;
+    }
+
+    public async Task RescheduleAsync(
+        long companyId, long scheduleId, long poolId, long slotId, DateTime newStartTime,
+        IReadOnlyList<long> interviewerIds, string? roundName)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        var slot = await _db.InterviewSlots.FirstOrDefaultAsync(x => x.SlotId == slotId);
+        if (slot is null)
+        {
+            await tx.RollbackAsync();
+            return;
+        }
+
+        // Giữ ĐỘ DÀI buổi khi dời giờ (end_time hiện chỉ có ở dữ liệu cũ — buổi nhập tay để null).
+        if (slot.EndTime is DateTime end)
+            slot.EndTime = newStartTime + (end - slot.StartTime);
+        slot.StartTime = newStartTime;
+        slot.UpdatedAt = DateTime.UtcNow;
+
+        // Panel: thay trọn bộ. Xóa hết rồi thêm lại thay vì so từng dòng — panel tối đa 5 người.
+        var current = await _db.InterviewSlotInterviewers.Where(x => x.SlotId == slotId).ToListAsync();
+        _db.InterviewSlotInterviewers.RemoveRange(current);
+        foreach (var iid in interviewerIds)
+        {
+            _db.InterviewSlotInterviewers.Add(new InterviewSlotInterviewer
+            {
+                SlotId = slotId,
+                CompanyId = companyId,
+                InterviewerId = iid,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        var pool = await _db.InterviewSlotPools.FirstOrDefaultAsync(x => x.PoolId == poolId);
+        if (pool is not null)
+        {
+            pool.Name = roundName;
+            pool.UpdatedAt = DateTime.UtcNow;
+        }
+
+        var schedule = await _db.InterviewSchedules.FirstOrDefaultAsync(x => x.ScheduleId == scheduleId);
+        if (schedule is not null)
+        {
+            schedule.RescheduleCount += 1;
+            schedule.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+        await tx.CommitAsync();
     }
 
     // ---------- Chấm điểm (interviewer = người của KHUNG ĐÃ CHỐT) ----------
