@@ -11,10 +11,15 @@ namespace GP35.SRIS.Controllers;
 /// <summary>
 /// Tiêu chí đánh giá per-job (docs 5.7, 5.18) — bộ khung để interviewer chấm phỏng vấn.
 /// CRUD + AI bóc DRAFT từ JD + người duyệt chốt APPROVED.
+///
+/// <para><b>Trưởng bộ phận vào được (24/08/2026):</b> họ là người RA ĐỀ cho vị trí của bộ phận
+/// mình, nên bóc tiêu chí bằng AI và chốt bộ tiêu chí là việc của họ. Nhân sự giữ nguyên quyền cũ
+/// (công ty nhỏ hay nhờ nhân sự nhập hộ). Ràng buộc "đúng vị trí mình phụ trách" của DM nằm ở
+/// tầng service — <c>JobCriteriaAccessGuard</c>, không phải ở đây, vì attribute này chỉ biết role.</para>
 /// </summary>
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.HumanResource)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
 public class EvaluationCriteriaController : ControllerBase
 {
     private readonly IContextData _contextData;

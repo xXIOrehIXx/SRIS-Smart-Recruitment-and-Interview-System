@@ -11,10 +11,14 @@ namespace GP35.SRIS.Controllers;
 /// <summary>
 /// Thư viện tiêu chí mẫu cấp company (Việc 12). Human Resource CRUD khuôn rồi áp vào job —
 /// clone thành EvaluationCriteria của job (xem EvaluationCriteriaController để sửa per-job sau).
+///
+/// <para>Trưởng bộ phận ĐỌC được thư viện và ÁP khuôn vào vị trí mình phụ trách (24/08/2026 —
+/// cùng đợt cho DM ra đề tiêu chí), nhưng KHÔNG sửa thư viện: khuôn là tài sản dùng chung cả
+/// công ty, sửa/ẩn một khuôn là đụng vào bộ phận khác.</para>
 /// </summary>
 [ApiController]
 [Authorize]
-[WithRole(RoleConstants.HumanResource)]
+[WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager)]
 [Route("api/criteria-templates")]
 public class CriteriaTemplateController : ControllerBase
 {
@@ -27,8 +31,9 @@ public class CriteriaTemplateController : ControllerBase
         _templateService = templateService;
     }
 
-    /// <summary>Tạo 1 khuôn tiêu chí mới.</summary>
+    /// <summary>Tạo 1 khuôn tiêu chí mới (thư viện dùng chung — chỉ nhân sự).</summary>
     [HttpPost]
+    [WithRole(RoleConstants.HumanResource)]
     public async Task<IActionResult> Create([FromBody] CriteriaTemplateInputDto dto)
     {
         return Ok(await _templateService.CreateAsync(_contextData.CompanyId, dto));
@@ -51,15 +56,17 @@ public class CriteriaTemplateController : ControllerBase
         return Ok(dto);
     }
 
-    /// <summary>Sửa khuôn (header + thay toàn bộ dòng + bật/tắt).</summary>
+    /// <summary>Sửa khuôn (header + thay toàn bộ dòng + bật/tắt) — chỉ nhân sự.</summary>
     [HttpPut("{templateId:long}")]
+    [WithRole(RoleConstants.HumanResource)]
     public async Task<IActionResult> Update(long templateId, [FromBody] CriteriaTemplateUpdateDto dto)
     {
         return Ok(await _templateService.UpdateAsync(_contextData.CompanyId, templateId, dto));
     }
 
-    /// <summary>Ẩn 1 khuôn (không xoá cứng).</summary>
+    /// <summary>Ẩn 1 khuôn (không xoá cứng) — chỉ nhân sự.</summary>
     [HttpDelete("{templateId:long}")]
+    [WithRole(RoleConstants.HumanResource)]
     public async Task<IActionResult> Deactivate(long templateId)
     {
         var ok = await _templateService.DeactivateAsync(_contextData.CompanyId, templateId);

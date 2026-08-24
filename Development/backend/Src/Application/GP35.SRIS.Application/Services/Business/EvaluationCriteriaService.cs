@@ -4,6 +4,7 @@ using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
+using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Lib.Services.Ai;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     private readonly IApplicationRepo _applicationRepo;
     private readonly IApplicationStateService _stateService;
     private readonly ICriteriaExtractionClient _extractionClient;
+    private readonly IContextData _contextData;
     private readonly ILogger _logger;
 
     public EvaluationCriteriaService(IServiceProvider serviceProvider) : base(serviceProvider)
@@ -32,11 +34,13 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         _applicationRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _extractionClient = serviceProvider.GetRequiredService<ICriteriaExtractionClient>();
+        _contextData = serviceProvider.GetRequiredService<IContextData>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<EvaluationCriteriaService>();
     }
 
     public async Task<CriteriaDto> CreateAsync(long companyId, long jobId, CriteriaInputDto dto)
     {
+        await EnsureCanEditAsync(companyId, jobId);
         Validate(dto.Name, dto.Weight, dto.MaxScore);
 
         // UNIQUE (job_id, name): để DB chặn thì người dùng nhận 500 kèm nguyên văn lỗi SQL.
@@ -76,6 +80,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
 
         var existing = await _criteriaRepo.GetByIdAsync(companyId, criteriaId)
             ?? throw NotFound($"Không tìm thấy tiêu chí (criteria_id={criteriaId}).");
+        await EnsureCanEditAsync(companyId, existing.JobId);
 
         await _criteriaRepo.UpdateAsync(companyId, criteriaId, dto.Name.Trim(), dto.Weight, dto.MaxScore,
             dto.Active);
@@ -91,6 +96,8 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     {
         // Kiểm những thứ biết được NGAY (job có tồn tại không, có gì để bóc không) ở đây, đồng bộ,
         // để người dùng nhận lỗi tức thì thay vì xếp hàng rồi vài chục giây sau mới biết là vô ích.
+        await EnsureCanEditAsync(companyId, jobId);
+
         var job = await _jobRepo.GetByIdAsync(companyId, jobId)
             ?? throw NotFound($"Không tìm thấy Job (job_id={jobId}).");
         var requirements = await _jobRepo.GetRequirementsAsync(companyId, jobId);
@@ -290,6 +297,8 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
 
     public async Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId)
     {
+        await EnsureCanEditAsync(companyId, jobId);
+
         var approved = await _criteriaRepo.ApproveDraftsAsync(companyId, jobId, userId);
         if (approved == 0)
             throw Bad("Job không có tiêu chí DRAFT nào để duyệt.");
@@ -346,10 +355,18 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     {
         var existing = await _criteriaRepo.GetByIdAsync(companyId, criteriaId)
             ?? throw NotFound($"Không tìm thấy tiêu chí (criteria_id={criteriaId}).");
+        await EnsureCanEditAsync(companyId, existing.JobId);
         await _criteriaRepo.DeactivateAsync(companyId, existing.CriteriaId);
     }
 
     // ============================================================
+
+    /// <summary>
+    /// Trưởng bộ phận chỉ ra đề được cho vị trí mình phụ trách; nhân sự/Admin không bị chặn.
+    /// Xem <see cref="JobCriteriaAccessGuard"/>.
+    /// </summary>
+    private Task EnsureCanEditAsync(long companyId, long jobId) =>
+        JobCriteriaAccessGuard.EnsureCanEditAsync(_jobRepo, _contextData, companyId, jobId);
 
     /// <summary>
     /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc — prompt bóc
