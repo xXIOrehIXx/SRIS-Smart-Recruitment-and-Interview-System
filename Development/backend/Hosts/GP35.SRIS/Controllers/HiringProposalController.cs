@@ -55,7 +55,7 @@ public class HiringProposalController : ControllerBase
     }
 
     /// <summary>
-    /// Giám đốc quyết: <c>{ approve, note?, approvedSalary?, approvedStartDate? }</c>.
+    /// Giám đốc quyết: <c>{ approve, note?, approvedSalary? }</c>.
     /// Duyệt -> hồ sơ sang OFFER; không duyệt -> hồ sơ Ở LẠI bước Phỏng vấn (KHÔNG loại ứng viên).
     /// </summary>
     [HttpPost("api/hiring-proposals/{proposalId:long}/decision")]

@@ -9,8 +9,10 @@ public class CreateProposalDto
     /// <summary>Mức lương ĐỀ XUẤT (tùy chọn). Giám đốc có quyền chốt mức khác.</summary>
     public decimal? ProposedSalary { get; set; }
 
-    /// <summary>Ngày vào làm dự kiến (tùy chọn).</summary>
-    public DateTime? ProposedStartDate { get; set; }
+    // Ngày vào làm đã BỎ khỏi phiếu đề xuất (24/08/2026): Giám đốc quyết TIỀN, không quyết ngày.
+    // Ngày onboard là kết quả một cuộc gọi giữa nhân sự và ứng viên (họ còn phải báo trước cho
+    // chỗ làm cũ), nên nó được nhập ở thư mời — OfferDetail.StartDate. Đặt ở đây chỉ tạo một
+    // con số phải đoán từ trước cả tuần rồi luôn sai.
 }
 
 /// <summary>Giám đốc quyết một đề xuất. Duyệt = hồ sơ sang bước Quyết định (OFFER).</summary>
@@ -27,8 +29,6 @@ public class DecideProposalDto
     /// </summary>
     public decimal? ApprovedSalary { get; set; }
 
-    /// <summary>Ngày vào làm CHỐT. Bỏ trống khi duyệt thì lấy ngày DM đề xuất.</summary>
-    public DateTime? ApprovedStartDate { get; set; }
 }
 
 /// <summary>Một phiếu đề xuất tuyển (kèm thông tin ứng viên/vị trí để hiển thị thẳng).</summary>
@@ -42,14 +42,12 @@ public class HiringProposalDto
 
     public string? ProposalNote { get; set; }
     public decimal? ProposedSalary { get; set; }
-    public DateTime? ProposedStartDate { get; set; }
     public long? CreatedBy { get; set; }
     public string? CreatedByName { get; set; }
     public DateTime? CreatedAt { get; set; }
 
     public string? DecisionNote { get; set; }
     public decimal? ApprovedSalary { get; set; }
-    public DateTime? ApprovedStartDate { get; set; }
     public long? DecidedBy { get; set; }
     public string? DecidedByName { get; set; }
     public DateTime? DecidedAt { get; set; }

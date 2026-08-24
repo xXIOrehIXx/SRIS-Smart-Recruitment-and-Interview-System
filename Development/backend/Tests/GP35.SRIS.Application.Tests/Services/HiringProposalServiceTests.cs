@@ -164,7 +164,7 @@ public class HiringProposalServiceTests
         CurrentProposal = new HiringProposal
         {
             ProposalId = ProposalId, CompanyId = CompanyId, ApplicationId = AppId, Status = "PENDING",
-            ProposedSalary = 15_000_000, ProposedStartDate = new DateTime(2026, 9, 1)
+            ProposedSalary = 15_000_000
         };
         _proposalRepo.Setup(r => r.GetByIdAsync(CompanyId, ProposalId)).ReturnsAsync(() => CurrentProposal);
         _context.Role = RoleConstants.Director;
@@ -175,7 +175,6 @@ public class HiringProposalServiceTests
         Assert.Equal("APPROVED", result.Status);
         // Bỏ trống điều khoản = gật đầu với mức DM đề xuất, không phải xoá trắng.
         Assert.Equal(15_000_000, CurrentProposal.ApprovedSalary);
-        Assert.Equal(new DateTime(2026, 9, 1), CurrentProposal.ApprovedStartDate);
         Assert.Equal(DirectorUserId, CurrentProposal.DecidedBy);
         _stateService.Verify(s => s.TransitionAsync(
             CompanyId, DirectorUserId, AppId, "OFFER", "Đồng ý tuyển", false), Times.Once);

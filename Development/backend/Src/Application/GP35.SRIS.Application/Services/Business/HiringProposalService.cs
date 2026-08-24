@@ -66,18 +66,12 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         if (await _proposalRepo.GetPendingByApplicationAsync(companyId, applicationId) is not null)
             throw Conflict("Hồ sơ này đã có một đề xuất đang chờ Giám đốc duyệt.");
 
-        // Ngày vào làm ở quá khứ là gõ nhầm — cùng luật với thư mời (OfferService). So ở mức
-        // NGÀY vì ô này không nhập giờ; chọn đúng hôm nay vẫn hợp lệ.
-        if (dto.ProposedStartDate is { } proposedStart && proposedStart.Date < DateTime.UtcNow.Date)
-            throw Bad($"Ngày vào làm dự kiến ({proposedStart:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
-
         var proposal = new HiringProposal
         {
             ApplicationId = applicationId,
             Status = StatusPending,
             ProposalNote = Normalize(dto.Note),
             ProposedSalary = dto.ProposedSalary,
-            ProposedStartDate = dto.ProposedStartDate,
             CreatedBy = userId > 0 ? userId : null
         };
         var proposalId = await _proposalRepo.InsertAsync(companyId, proposal);
@@ -108,11 +102,6 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         var note = Normalize(dto.Note);
         var now = DateTime.UtcNow;
 
-        // Giám đốc chốt lại ngày thì ngày ĐÓ mới là ngày đi vào thư mời — kiểm cùng luật với
-        // lúc đề xuất, nếu không cửa sau vẫn nhận được ngày quá khứ.
-        if (dto.Approve && dto.ApprovedStartDate is { } approvedStart && approvedStart.Date < now.Date)
-            throw Bad($"Ngày vào làm ({approvedStart:dd/MM/yyyy}) đã ở quá khứ — chọn ngày từ hôm nay trở đi.");
-
         if (dto.Approve)
         {
             // Chuyển trạng thái TRƯỚC khi đóng phiếu: guard G2 hoặc luật quyền có chặn thì
@@ -124,7 +113,6 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
             proposal.Status = StatusApproved;
             // Bỏ trống = giữ nguyên mức DM đề xuất (Giám đốc gật đầu chứ không mặc cả lại).
             proposal.ApprovedSalary = dto.ApprovedSalary ?? proposal.ProposedSalary;
-            proposal.ApprovedStartDate = dto.ApprovedStartDate ?? proposal.ProposedStartDate;
         }
         else
         {
@@ -200,14 +188,12 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
 
         ProposalNote = row.Proposal.ProposalNote,
         ProposedSalary = row.Proposal.ProposedSalary,
-        ProposedStartDate = row.Proposal.ProposedStartDate,
         CreatedBy = row.Proposal.CreatedBy,
         CreatedByName = row.CreatedByName,
         CreatedAt = row.Proposal.CreatedAt,
 
         DecisionNote = row.Proposal.DecisionNote,
         ApprovedSalary = row.Proposal.ApprovedSalary,
-        ApprovedStartDate = row.Proposal.ApprovedStartDate,
         DecidedBy = row.Proposal.DecidedBy,
         DecidedByName = row.DecidedByName,
         DecidedAt = row.Proposal.DecidedAt,
