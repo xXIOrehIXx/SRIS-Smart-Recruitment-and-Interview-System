@@ -91,6 +91,8 @@ const DeptRecruitmentRequests = () => {
         salaryMin: r.salaryMin,
         salaryMax: r.salaryMax,
         expectedStartDate: r.expectedStartDate,
+        location: r.location,
+        deadline: r.deadline,
         reviewNote: r.reviewNote,
         reviewedByName: r.reviewedByName,
         jobId: r.jobId,
@@ -515,6 +517,14 @@ const DeptRecruitmentRequests = () => {
               <Descriptions.Item label="Mức lương đề xuất" span={2}>
                 {formatSalaryRange(selectedRequest.salaryMin, selectedRequest.salaryMax)
                   || <Text type="secondary">Thỏa thuận</Text>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Địa điểm làm việc" span={2}>
+                {selectedRequest.location || <Text type="secondary">Chưa ghi</Text>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Hạn nộp đơn" span={2}>
+                {selectedRequest.deadline
+                  ? dayjs(selectedRequest.deadline).format('DD/MM/YYYY')
+                  : <Text type="secondary">Chưa xác định</Text>}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày cần tuyển" span={2}>
                 {selectedRequest.expectedStartDate

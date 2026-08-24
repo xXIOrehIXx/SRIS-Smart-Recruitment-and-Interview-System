@@ -69,9 +69,9 @@ public class PanelSummaryRepo : BaseRepo<long, PanelSummary>, IPanelSummaryRepo
     {
         // Worker chạy ngoài request -> SESSION_CONTEXT('CompanyId') chưa set, RLS lọc sạch mọi
         // dòng. Tắt policy đúng lúc chạy câu giành việc rồi bật lại ngay (cùng cách CvScreeningRepo).
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);", ct);
-        try
+        // Chạy ngoài request -> tenant "hệ thống" (V049). KHÔNG tắt TenantSecurityPolicy:
+        // DDL đó tắt RLS toàn database và các worker đua nhau bật/tắt nên giành hụt việc.
+        return await _db.RunAsSystemAsync(async () =>
         {
             var rows = await _db.Database
                 .SqlQueryRaw<ClaimedRow>(
@@ -86,12 +86,7 @@ public class PanelSummaryRepo : BaseRepo<long, PanelSummary>, IPanelSummaryRepo
 
             var row = rows.FirstOrDefault();
             return row is null ? null : new ClaimedPanelSummary(row.SummaryId, row.CompanyId, row.ApplicationId);
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);", CancellationToken.None);
-        }
+        }, ct);
     }
 
     public async Task<int> FinishAsync(long companyId, long summaryId, string status,
@@ -115,20 +110,15 @@ public class PanelSummaryRepo : BaseRepo<long, PanelSummary>, IPanelSummaryRepo
 
     public async Task<int> RequeueStaleRunningAsync(CancellationToken ct = default)
     {
-        await _db.Database.ExecuteSqlRawAsync(
-            "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = OFF);", ct);
-        try
+        // Chạy ngoài request -> tenant "hệ thống" (V049). KHÔNG tắt TenantSecurityPolicy:
+        // DDL đó tắt RLS toàn database và các worker đua nhau bật/tắt nên giành hụt việc.
+        return await _db.RunAsSystemAsync(async () =>
         {
             return await _db.Database.ExecuteSqlRawAsync(
                 "UPDATE dbo.PanelSummary " +
                 "SET status = 'PENDING', started_at = NULL, updated_at = SYSUTCDATETIME() " +
                 "WHERE status = 'RUNNING'", ct);
-        }
-        finally
-        {
-            await _db.Database.ExecuteSqlRawAsync(
-                "ALTER SECURITY POLICY [dbo].[TenantSecurityPolicy] WITH (STATE = ON);", CancellationToken.None);
-        }
+        }, ct);
     }
 
     /// <summary>Wrapper cho SqlQueryRaw — EF map theo tên property (giống ClaimedRow ở CvScreeningRepo).</summary>

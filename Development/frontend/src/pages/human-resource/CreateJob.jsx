@@ -341,6 +341,10 @@ const CreateJob = () => {
           experienceYearsToJob(req.experienceYearsMin)
           ?? EXPERIENCE_LEVEL_TO_JOB[req.experienceLevel],
         quantity: req.quantity,
+        // Địa điểm + hạn nộp đơn DM đã ghi trong đề bài (V048) — không điền sẵn thì HR phải
+        // quay lại hỏi, đúng thứ luồng "ra đề -> đăng tin" sinh ra để bỏ đi.
+        location: req.location || undefined,
+        expiresAt: toDatePickerValue(req.deadline),
         // Ô Kỹ năng là Select mode="tags" -> nhận MẢNG, không phải chuỗi ngăn phẩy.
         skillTags: skills,
         description: req.description,
@@ -387,6 +391,10 @@ const CreateJob = () => {
         form.setFieldsValue({
           title: job.title,
           department: job.department,
+          // Thiếu dòng này thì vào Sửa là ô "Trưởng bộ phận phụ trách" TRỐNG dù tin đã có
+          // người: bấm "Đăng tin" ăn lỗi required trên ô mình chưa đụng vào, còn "Lưu nháp"
+          // (không validate ô này) gửi null lên BE và XOÁ MẤT người phụ trách của tin.
+          departmentManagerId: job.departmentManagerId ?? undefined,
           type: job.employmentType || job.jobType,
           experienceLevel: job.experienceLevel,
           quantity: job.quantity,
@@ -472,7 +480,11 @@ const CreateJob = () => {
       salaryMin: values.salaryMin,
       salaryMax: values.salaryMax,
       currency: values.currency || "VND",
-      deadline: values.expiresAt,
+      // .format() chứ KHÔNG gửi thẳng dayjs: axios serialize dayjs bằng toJSON() -> chuỗi UTC
+      // ("2026-09-13" giờ VN thành "2026-09-12T17:00:00Z"), mà cột Job.deadline là kiểu `date`
+      // nên hạn nộp lùi đúng 1 ngày sau MỖI lần lưu. Cùng lý do đó, chọn hạn = hôm nay bị BE
+      // trả "Hạn nộp đơn (hôm qua) đã ở quá khứ" — ngày người dùng không hề chọn.
+      deadline: values.expiresAt ? dayjs(values.expiresAt).format("YYYY-MM-DD") : null,
       requirements: requirements.filter((r) => r.trim() !== ""),
       benefits: benefits.filter((b) => b.trim() !== ""),
       // Kỹ năng TỪNG bị bỏ quên ở đây: ô hiện trên form, có validate, có prefill, nhưng

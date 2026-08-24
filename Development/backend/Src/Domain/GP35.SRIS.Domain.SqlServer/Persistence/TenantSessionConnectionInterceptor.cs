@@ -9,8 +9,12 @@ namespace GP35.SRIS.Domain.SqlServer.Persistence;
 /// Security (TenantSecurityPolicy) lọc/cho phép đúng dữ liệu công ty hiện tại.
 ///
 /// BẪY connection pooling (docs 5.2): mỗi lần lấy lại connection từ pool phải set lại session
-/// context — interceptor chạy ở MỌI lần open nên xử lý đúng. Chưa đăng nhập (companyId &lt;= 0)
-/// thì bỏ qua, RLS chặn theo mặc định an toàn.
+/// context — interceptor chạy ở MỌI lần open nên xử lý đúng.
+///
+/// Chưa đăng nhập (companyId &lt;= 0) thì ghi NULL chứ KHÔNG bỏ qua. Bản trước `return` sớm, để
+/// nguyên dấu tenant của request trước còn dính trên connection lấy từ pool — request ẩn danh
+/// (career site, magic link, login) vớ đúng connection đó là đọc dữ liệu của công ty khác.
+/// Ghi NULL thì predicate RLS không khớp gì cả, tức mặc định an toàn đúng nghĩa.
 /// </summary>
 public sealed class TenantSessionConnectionInterceptor : DbConnectionInterceptor
 {
@@ -25,30 +29,26 @@ public sealed class TenantSessionConnectionInterceptor : DbConnectionInterceptor
 
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
     {
-        var companyId = _contextData?.CompanyId ?? 0;
-        if (companyId <= 0) return;
-
-        using var cmd = CreateSetCommand(connection, companyId);
+        using var cmd = CreateSetCommand(connection, _contextData?.CompanyId ?? 0);
         cmd.ExecuteNonQuery();
     }
 
     public override async Task ConnectionOpenedAsync(
         DbConnection connection, ConnectionEndEventData eventData, CancellationToken cancellationToken = default)
     {
-        var companyId = _contextData?.CompanyId ?? 0;
-        if (companyId <= 0) return;
-
-        await using var cmd = CreateSetCommand(connection, companyId);
+        await using var cmd = CreateSetCommand(connection, _contextData?.CompanyId ?? 0);
         await cmd.ExecuteNonQueryAsync(cancellationToken);
     }
 
+    /// <summary>companyId &lt;= 0 (chưa đăng nhập) -&gt; ghi NULL để xoá dấu tenant còn sót của
+    /// request trước trên connection lấy từ pool.</summary>
     private static DbCommand CreateSetCommand(DbConnection connection, long companyId)
     {
         var cmd = connection.CreateCommand();
         cmd.CommandText = SetSql;
         var p = cmd.CreateParameter();
         p.ParameterName = "@companyId";
-        p.Value = companyId;
+        p.Value = companyId > 0 ? companyId : (object)DBNull.Value;
         cmd.Parameters.Add(p);
         return cmd;
     }

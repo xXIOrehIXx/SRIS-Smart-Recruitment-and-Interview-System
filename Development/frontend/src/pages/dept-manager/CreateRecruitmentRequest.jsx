@@ -96,6 +96,7 @@ const CreateRecruitmentRequest = () => {
         form.setFieldsValue({
           title: r.title,
           department: r.department,
+          location: r.location,
           positions: r.quantity ?? 1,
           employmentType: r.employmentType,
           experienceYearsMin: r.experienceYearsMin,
@@ -108,6 +109,7 @@ const CreateRecruitmentRequest = () => {
           salaryMin: r.salaryMin,
           salaryMax: r.salaryMax,
           startDate: r.expectedStartDate ? dayjs(r.expectedStartDate) : null,
+          deadline: r.deadline ? dayjs(r.deadline) : null,
         });
       })
       .catch((err) => {
@@ -171,6 +173,7 @@ const CreateRecruitmentRequest = () => {
       const payload = {
         title: values.title,
         department: values.department,
+        location: values.location,
         quantity: values.positions || 1,
         employmentType: values.employmentType,
         experienceYearsMin: values.experienceYearsMin,
@@ -181,6 +184,7 @@ const CreateRecruitmentRequest = () => {
         salaryMin: values.salaryMin,
         salaryMax: values.salaryMax,
         expectedStartDate: values.startDate?.format('YYYY-MM-DDTHH:mm:ss'),
+        deadline: values.deadline?.format('YYYY-MM-DDTHH:mm:ss'),
       };
 
       if (isEdit) {
@@ -316,6 +320,27 @@ const CreateRecruitmentRequest = () => {
                         </Option>
                       ))}
                     </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={24}>
+                <Col xs={24} lg={12}>
+                  <Form.Item label="Địa điểm làm việc" name="location">
+                    <Input size="large" placeholder="VD: Tầng 5, 123 Nguyễn Trãi, Thanh Xuân, Hà Nội" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} lg={12}>
+                  {/* Hạn NHẬN HỒ SƠ, khác "Ngày cần tuyển" là ngày cần người có mặt.
+                      Chép thẳng sang tin tuyển dụng nên chặn ngày quá khứ y như bên đó. */}
+                  <Form.Item label="Hạn nộp đơn" name="deadline">
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      size="large"
+                      format="DD/MM/YYYY"
+                      placeholder="Hạn nhận hồ sơ"
+                      disabledDate={(current) => current && current < dayjs().startOf('day')}
+                    />
                   </Form.Item>
                 </Col>
               </Row>

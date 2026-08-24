@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card, Typography, Button, Space, Table, Statistic, Row, Col,
   Empty, Spin, Tooltip, Progress, message
@@ -7,6 +7,7 @@ import { ArrowLeftOutlined, ReloadOutlined, WarningOutlined, TeamOutlined } from
 import { useParams, useNavigate } from 'react-router-dom';
 import { interviewAPI } from '../../services/api';
 import ConsensusTag from '../../components/ConsensusTag';
+import { weightPercentMap } from '../../utils/criteriaWeight';
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -44,6 +45,9 @@ const DeptInterviewDetail = () => {
 
   const criteria = aggregate?.criteria || [];
   const needsDiscussionCount = criteria.filter(c => c.needsDiscussion).length;
+
+  // Trọng số thô vô nghĩa nếu không biết tổng — quy sang tỉ trọng % (utils dùng chung).
+  const criteriaWeightPct = useMemo(() => weightPercentMap(criteria, 'criteriaId'), [criteria]);
 
   const criteriaColumns = [
     {
@@ -85,13 +89,14 @@ const DeptInterviewDetail = () => {
     },
     {
       title: (
-        <Tooltip title="Tiêu chí quan trọng hơn thì trọng số cao hơn và tính nặng hơn khi ra điểm tổng">
-          <span>Trọng số</span>
+        <Tooltip title="Tỉ trọng của tiêu chí trong cả phiếu — cộng lại đúng 100%. Tiêu chí tỉ trọng cao ảnh hưởng nhiều hơn tới điểm tổng.">
+          <span>Tỉ trọng</span>
         </Tooltip>
       ),
       dataIndex: 'weight',
       key: 'weight',
-      width: 90,
+      width: 100,
+      render: (_w, record) => `${criteriaWeightPct[record.criteriaId] ?? 0}%`,
     },
     {
       title: 'Điểm & note từng interviewer',

@@ -19,6 +19,7 @@ import {
   MinusCircleOutlined
 } from '@ant-design/icons';
 import { applicationAPI, cvAPI, interviewAPI } from '../../services/api';
+import { weightPercents } from '../../utils/criteriaWeight';
 import { useAuth } from '../../contexts/AuthContext';
 import { canRejectAtState, rejectOwnerLabel } from '../../utils/decisionRights';
 import ApplicationStateTag, { stateLabel } from '../../components/ApplicationStateTag';
@@ -408,13 +409,19 @@ const CandidateDetail = () => {
                       },
                       {
                         title: (
-                          <Tooltip title="Tiêu chí quan trọng hơn thì trọng số cao hơn và tính nặng hơn khi ra điểm tổng">
-                            <span>Trọng số</span>
+                          <Tooltip title="Tỉ trọng của tiêu chí trong cả phiếu — cộng lại đúng 100%. Tiêu chí tỉ trọng cao ảnh hưởng nhiều hơn tới điểm tổng.">
+                            <span>Tỉ trọng</span>
                           </Tooltip>
                         ),
                         dataIndex: 'weight',
                         key: 'weight',
-                        width: 90,
+                        width: 100,
+                        render: (_w, r) => {
+                          const items = agg.criteria || [];
+                          const pct = weightPercents(items.map((c) => c.weight));
+                          const idx = items.findIndex((c) => c.criteriaId === r.criteriaId);
+                          return `${(idx >= 0 ? pct[idx] : 0) ?? 0}%`;
+                        },
                       },
                       {
                         // Hội đồng lệch nhau nhiều ở tiêu chí nào thì đánh dấu tiêu chí đó (5.7).
