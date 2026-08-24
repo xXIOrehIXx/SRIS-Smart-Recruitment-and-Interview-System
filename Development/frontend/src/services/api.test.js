@@ -205,7 +205,7 @@ describe('hiringProposalAPI', () => {
   });
 
   test('decide gửi quyết định + điều khoản chốt', () => {
-    const data = { approve: true, note: 'OK', approvedSalary: 14000000, approvedStartDate: null };
+    const data = { approve: true, note: 'OK', approvedSalary: 14000000 };
     hiringProposalAPI.decide(77, data);
     expect(apiInst.post).toHaveBeenCalledWith('/hiring-proposals/77/decision', data);
   });

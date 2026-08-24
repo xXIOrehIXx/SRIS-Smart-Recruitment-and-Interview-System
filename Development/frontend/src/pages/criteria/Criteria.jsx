@@ -11,6 +11,7 @@ import {
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { criteriaAPI, jobsAPI } from '../../services/api';
+import { useAuth, ROLES } from '../../contexts/AuthContext';
 import { weightPercentMap, weightPercents } from '../../utils/criteriaWeight';
 import './css/Criteria.css';
 
@@ -106,6 +107,20 @@ const Criteria = () => {
   const [addCriterionModalOpen, setAddCriterionModalOpen] = useState(false);
   const [editCriterionModalOpen, setEditCriterionModalOpen] = useState(false);
   const [selectedCriterion, setSelectedCriterion] = useState(null);
+
+  // Trưởng bộ phận chỉ ra đề cho vị trí MÌNH phụ trách (24/08/2026) và không sửa thư viện
+  // template dùng chung. Backend chặn thật (JobCriteriaAccessGuard + [WithRole]); ở đây chỉ
+  // lọc dropdown và ẩn nút để họ không bấm vào thứ chắc chắn nhận 403.
+  const { user } = useAuth();
+  const isDeptManager = user?.role === ROLES.DEPARTMENT_MANAGER;
+  const canManageTemplates = !isDeptManager;
+
+  const visibleJobs = useMemo(() => {
+    if (!isDeptManager) return jobs;
+    // userId từ JWT có thể là chuỗi -> so sánh sau khi ép số.
+    const myId = Number(user?.userId);
+    return jobs.filter((j) => Number(j.departmentManagerId) === myId);
+  }, [jobs, isDeptManager, user?.userId]);
 
   const [templateForm] = Form.useForm();
   const [editTemplateForm] = Form.useForm();
@@ -581,6 +596,8 @@ const Criteria = () => {
           <Tooltip title="Xem chi tiết">
             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
           </Tooltip>
+          {!canManageTemplates ? null : (
+          <>
           <Tooltip title="Chỉnh sửa">
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditTemplate(record)} />
           </Tooltip>
@@ -594,6 +611,8 @@ const Criteria = () => {
           >
             <Button type="text" size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
+          </>
+          )}
         </Space>
       ),
     },
@@ -717,7 +736,7 @@ const Criteria = () => {
               style={{ width: 280 }}
               showSearch
               optionFilterProp="label"
-              options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
+              options={visibleJobs.map(job => ({ value: job.jobId, label: job.title }))}
               allowClear
             />
             {selectedJob && (
@@ -808,14 +827,16 @@ const Criteria = () => {
               style={{ width: 240 }}
               allowClear
             />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setCreateModalOpen(true)}
-              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-            >
-              Tạo Template Mới
-            </Button>
+            {canManageTemplates && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setCreateModalOpen(true)}
+                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+              >
+                Tạo Template Mới
+              </Button>
+            )}
           </div>
           <Table
             columns={templateColumns}
@@ -838,6 +859,14 @@ const Criteria = () => {
           <Text type="secondary">
             AI đề xuất tiêu chí từ tin tuyển dụng → người duyệt chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn
           </Text>
+          {isDeptManager && (
+            <div style={{ marginTop: 4 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Bạn đang xem các vị trí do mình phụ trách — bộ tiêu chí bạn chốt ở đây chính là phiếu
+                chấm người phỏng vấn sẽ dùng.
+              </Text>
+            </div>
+          )}
         </div>
         <Button
           icon={<ReloadOutlined />}

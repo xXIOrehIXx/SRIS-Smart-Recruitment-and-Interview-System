@@ -47,8 +47,18 @@ const InterviewScheduleRecruit = () => {
   const [panelLoading, setPanelLoading] = useState(false);
 
   const [bookModalOpen, setBookModalOpen] = useState(false);
+  // Buổi đang SỬA (null = đang đặt buổi mới). Dùng chung một modal: hai việc nhập đúng những ô
+  // như nhau, tách ra là hai bản sao của cùng một form rồi trôi khỏi nhau.
+  const [editingSession, setEditingSession] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [bookForm] = Form.useForm();
+
+  const closeBookModal = () => {
+    setBookModalOpen(false);
+    setEditingSession(null);
+    bookForm.resetFields();
+    setAssignedPanel([]);
+  };
 
   useEffect(() => {
     fetchJobs();
@@ -185,24 +195,54 @@ const InterviewScheduleRecruit = () => {
     setSearchParams(jobId ? { jobId: String(jobId) } : {});
   };
 
+  // Sửa buổi đã chốt: nạp đúng nhóm người phỏng vấn ứng viên được chỉ định, rồi điền form theo
+  // buổi HIỆN TẠI — không chọn sẵn cả nhóm như lúc đặt mới, panel của buổi này mới là đúng.
+  const openEditSession = async (s) => {
+    setEditingSession(s);
+    setAssignedPanel([]);
+    setBookModalOpen(true);
+    bookForm.setFieldsValue({
+      applicationId: s.applicationId,
+      interviewerIds: (s.interviewers || []).map((i) => i.interviewerId),
+      startTime: dayjs(s.startTime),
+      name: s.roundName || undefined,
+    });
+    setPanelLoading(true);
+    try {
+      const res = await interviewAPI.getAssignedInterviewers(s.applicationId);
+      setAssignedPanel(res.data || []);
+    } catch (error) {
+      console.error(error);
+      message.error(apiMessage(error, 'Không tải được danh sách người phỏng vấn của ứng viên này'));
+    } finally {
+      setPanelLoading(false);
+    }
+  };
+
   const handleBook = async (values) => {
+    // KHÔNG format 'Z': giờ người dùng chọn là giờ ĐỊA PHƯƠNG. Gắn 'Z' là đẩy buổi lệch đúng
+    // offset múi giờ (VN +7) so với giờ đã hẹn qua điện thoại.
+    const payload = {
+      interviewerIds: values.interviewerIds,
+      startTime: values.startTime.format('YYYY-MM-DDTHH:mm:ss'),
+      name: values.name || null,
+    };
     try {
       setSubmitting(true);
-      await interviewAPI.bookInterview(values.applicationId, {
-        interviewerIds: values.interviewerIds,
-        // KHÔNG format 'Z': giờ người dùng chọn là giờ ĐỊA PHƯƠNG. Gắn 'Z' là đẩy buổi lệch
-        // đúng offset múi giờ (VN +7) so với giờ đã hẹn qua điện thoại.
-        startTime: values.startTime.format('YYYY-MM-DDTHH:mm:ss'),
-        name: values.name || null,
-      });
-      message.success('Đã lưu buổi phỏng vấn — hệ thống đã gửi email xác nhận kèm lịch (.ics) cho ứng viên.');
-      setBookModalOpen(false);
-      bookForm.resetFields();
-      setAssignedPanel([]);
+      if (editingSession) {
+        await interviewAPI.updateInterview(editingSession.scheduleId, payload);
+        message.success('Đã cập nhật buổi phỏng vấn — hệ thống gửi lại email xác nhận kèm lịch (.ics) cho ứng viên.');
+      } else {
+        await interviewAPI.bookInterview(values.applicationId, payload);
+        message.success('Đã lưu buổi phỏng vấn — hệ thống đã gửi email xác nhận kèm lịch (.ics) cho ứng viên.');
+      }
+      closeBookModal();
       fetchJobData(selectedJobId);
     } catch (error) {
       console.error(error);
-      message.error(apiMessage(error, 'Không lưu được buổi phỏng vấn'));
+      message.error(apiMessage(error, editingSession
+        ? 'Không cập nhật được buổi phỏng vấn'
+        : 'Không lưu được buổi phỏng vấn'));
     } finally {
       setSubmitting(false);
     }
@@ -271,19 +311,24 @@ const InterviewScheduleRecruit = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 110,
+      width: 170,
       render: (_, s) => (
         s.status === 'CANCELLED' ? null : (
-          <Popconfirm
-            title="Hủy buổi phỏng vấn này?"
-            description="Hệ thống sẽ gửi email báo ứng viên."
-            okText="Hủy buổi"
-            cancelText="Không"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => handleCancel(s.scheduleId)}
-          >
-            <Button danger size="small">Hủy buổi</Button>
-          </Popconfirm>
+          <Space size={4}>
+            {/* Dời giờ / đổi người KHÔNG phải hủy rồi đặt lại: hủy là ứng viên nhận thư báo hủy
+                và phiếu chấm của buổi cũ thành rác, chỉ vì đổi một con số giờ. */}
+            <Button size="small" onClick={() => openEditSession(s)}>Sửa</Button>
+            <Popconfirm
+              title="Hủy buổi phỏng vấn này?"
+              description="Hệ thống sẽ gửi email báo ứng viên."
+              okText="Hủy buổi"
+              cancelText="Không"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => handleCancel(s.scheduleId)}
+            >
+              <Button danger size="small">Hủy buổi</Button>
+            </Popconfirm>
+          </Space>
         )
       ),
     },
@@ -305,7 +350,12 @@ const InterviewScheduleRecruit = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => { bookForm.resetFields(); setAssignedPanel([]); setBookModalOpen(true); }}
+            onClick={() => {
+              bookForm.resetFields();
+              setAssignedPanel([]);
+              setEditingSession(null);
+              setBookModalOpen(true);
+            }}
             disabled={!selectedJobId}
           >
             Đặt lịch phỏng vấn
@@ -359,9 +409,11 @@ const InterviewScheduleRecruit = () => {
       </Card>
 
       <Modal
-        title="Đặt lịch phỏng vấn"
+        title={editingSession
+          ? `Sửa buổi phỏng vấn - ${editingSession.candidateName}`
+          : 'Đặt lịch phỏng vấn'}
         open={bookModalOpen}
-        onCancel={() => { setBookModalOpen(false); bookForm.resetFields(); setAssignedPanel([]); }}
+        onCancel={closeBookModal}
         footer={null}
         width={560}
         destroyOnClose
@@ -370,8 +422,12 @@ const InterviewScheduleRecruit = () => {
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Chỉ nhập buổi ĐÃ thống nhất qua điện thoại"
-          description="Hệ thống gửi email xác nhận ngay khi lưu — ứng viên sẽ nhận đúng giờ bạn nhập."
+          message={editingSession
+            ? 'Chỉ sửa khi đã báo lại ứng viên và người phỏng vấn'
+            : 'Chỉ nhập buổi ĐÃ thống nhất qua điện thoại'}
+          description={editingSession
+            ? 'Hệ thống gửi lại email xác nhận kèm lịch (.ics) theo giờ mới ngay khi lưu.'
+            : 'Hệ thống gửi email xác nhận ngay khi lưu — ứng viên sẽ nhận đúng giờ bạn nhập.'}
         />
         <Form form={bookForm} layout="vertical" onFinish={handleBook}>
           <Form.Item
@@ -384,7 +440,17 @@ const InterviewScheduleRecruit = () => {
               showSearch
               optionFilterProp="label"
               onChange={handleCandidateChange}
-              options={interviewStageApps.map((a) => ({
+              /* Sửa buổi thì KHÔNG đổi được ứng viên: buổi này là của người đó, chuyển sang
+                 người khác thì phiếu chấm đã lưu trỏ nhầm hồ sơ. Cần vậy thì đặt buổi mới. */
+              disabled={!!editingSession}
+              options={(editingSession
+                ? [{
+                    applicationId: editingSession.applicationId,
+                    candidateName: editingSession.candidateName,
+                    candidateEmail: editingSession.candidateEmail,
+                  }]
+                : interviewStageApps
+              ).map((a) => ({
                 value: a.applicationId,
                 label: `${a.candidateName}${a.candidateEmail ? ` — ${a.candidateEmail}` : ''}`,
               }))}
@@ -512,11 +578,11 @@ const InterviewScheduleRecruit = () => {
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => { setBookModalOpen(false); bookForm.resetFields(); setAssignedPanel([]); }}>
+              <Button onClick={closeBookModal}>
                 Hủy
               </Button>
               <Button type="primary" htmlType="submit" loading={submitting}>
-                Lưu buổi phỏng vấn
+                {editingSession ? 'Lưu thay đổi' : 'Lưu buổi phỏng vấn'}
               </Button>
             </Space>
           </Form.Item>

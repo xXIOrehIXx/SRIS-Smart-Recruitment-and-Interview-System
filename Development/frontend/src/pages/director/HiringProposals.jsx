@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Typography, Table, Tag, Button, Space, Modal, Descriptions, Avatar, Input,
-  InputNumber, DatePicker, Row, Col, Statistic, message, Spin, Segmented, Alert,
+  InputNumber, Row, Col, Statistic, message, Spin, Segmented, Alert,
 } from 'antd';
 import {
   CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, SearchOutlined,
@@ -55,7 +55,6 @@ const HiringProposals = () => {
   const [approving, setApproving] = useState(true);
   const [decisionNote, setDecisionNote] = useState('');
   const [salary, setSalary] = useState(null);
-  const [startDate, setStartDate] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchProposals = async (status = statusFilter) => {
@@ -123,7 +122,6 @@ const HiringProposals = () => {
     setDecisionNote('');
     // Điền sẵn mức Trưởng bộ phận đề xuất — Giám đốc gật đầu hoặc sửa lại.
     setSalary(record.proposedSalary ?? null);
-    setStartDate(record.proposedStartDate ? dayjs(record.proposedStartDate) : null);
     setDecisionOpen(true);
   };
 
@@ -134,10 +132,6 @@ const HiringProposals = () => {
         approve: approving,
         note: decisionNote || null,
         approvedSalary: approving ? salary : null,
-        // Ngày vào làm là NGÀY, gửi theo giờ địa phương đầu ngày cho khỏi lệch múi giờ.
-        approvedStartDate: approving && startDate
-          ? startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss')
-          : null,
       });
       message.success(approving
         ? `Đã duyệt tuyển ${selected.candidateName} — bộ phận nhân sự sẽ soạn thư mời.`
@@ -352,9 +346,6 @@ const HiringProposals = () => {
                 {selected.createdAt ? dayjs(selected.createdAt).format('DD/MM/YYYY HH:mm') : '—'}
               </Descriptions.Item>
               <Descriptions.Item label="Lương đề xuất">{money(selected.proposedSalary)}</Descriptions.Item>
-              <Descriptions.Item label="Ngày vào làm đề xuất">
-                {selected.proposedStartDate ? dayjs(selected.proposedStartDate).format('DD/MM/YYYY') : '—'}
-              </Descriptions.Item>
               <Descriptions.Item label="Lý do đề xuất" span={2}>
                 {selected.proposalNote || <Text type="secondary">Không ghi</Text>}
               </Descriptions.Item>
@@ -385,9 +376,6 @@ const HiringProposals = () => {
                   {selected.decidedAt ? ` · ${dayjs(selected.decidedAt).format('DD/MM/YYYY HH:mm')}` : ''}
                 </Descriptions.Item>
                 <Descriptions.Item label="Lương chốt">{money(selected.approvedSalary)}</Descriptions.Item>
-                <Descriptions.Item label="Ngày vào làm chốt">
-                  {selected.approvedStartDate ? dayjs(selected.approvedStartDate).format('DD/MM/YYYY') : '—'}
-                </Descriptions.Item>
                 <Descriptions.Item label="Ghi chú quyết định" span={2}>
                   {selected.decisionNote || <Text type="secondary">Không ghi</Text>}
                 </Descriptions.Item>
@@ -489,20 +477,12 @@ const HiringProposals = () => {
                 addonAfter="₫"
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
-                Bỏ trống thì giữ nguyên mức trưởng bộ phận đề xuất. Đây là con số thư mời sẽ dùng.
+                Bỏ trống thì giữ nguyên mức trưởng bộ phận đề xuất. Đây là con số thư mời sẽ dùng —
+                bộ phận nhân sự không sửa được.
               </Text>
             </div>
-            <div style={{ marginTop: 12 }}>
-              <Text strong>Ngày vào làm:</Text>
-              <DatePicker
-                style={{ width: '100%', marginTop: 6 }}
-                value={startDate}
-                onChange={setStartDate}
-                format="DD/MM/YYYY"
-                placeholder="Chọn ngày vào làm"
-                disabledDate={(d) => d && d < dayjs().startOf('day')}
-              />
-            </div>
+            {/* Không có ô ngày vào làm (24/08/2026): Giám đốc chốt LƯƠNG, bộ phận nhân sự gọi
+                ứng viên hỏi ngày họ đi làm được rồi điền vào thư mời. */}
           </>
         )}
 

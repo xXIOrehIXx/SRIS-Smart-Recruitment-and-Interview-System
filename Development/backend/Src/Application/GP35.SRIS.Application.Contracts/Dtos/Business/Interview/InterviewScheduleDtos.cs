@@ -1,4 +1,4 @@
-﻿namespace GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
+namespace GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 
 /// <summary>1 interviewer rút gọn (id + tên) — để bộ phận nhân sự thấy panel của buổi.</summary>
 public class InterviewerMiniDto
@@ -38,6 +38,25 @@ public class AssignInterviewersDto
 {
     /// <summary>Tối đa 5 người. Nhân sự đặt buổi chỉ chọn được trong danh sách này.</summary>
     public List<long> InterviewerIds { get; set; } = new();
+}
+
+/// <summary>
+/// Nhân sự SỬA một buổi đã chốt (24/08/2026): dời giờ, đổi người phỏng vấn, đổi tên vòng.
+/// Trước đây chốt xong chỉ còn cách hủy rồi đặt lại — mà hủy thì ứng viên nhận email báo hủy
+/// và phiếu chấm của buổi cũ thành rác, chỉ để sửa một con số giờ.
+///
+/// <para>Vòng (<c>round_number</c>) KHÔNG sửa được: nó là thứ tự buổi của ứng viên, đổi tay là
+/// làm lệch cách đánh vòng của các buổi sau. Muốn bỏ hẳn một vòng thì hủy buổi.</para>
+/// </summary>
+public class RescheduleInterviewDto
+{
+    /// <summary>Panel mới (1..5 người, vẫn phải nằm trong danh sách Trưởng bộ phận chỉ định).</summary>
+    public List<long> InterviewerIds { get; set; } = new();
+
+    public DateTime StartTime { get; set; }
+
+    /// <summary>Tên vòng — gửi rỗng/null là xóa tên (UI quay về "Vòng N").</summary>
+    public string? Name { get; set; }
 }
 
 /// <summary>Hủy 1 buổi phỏng vấn. Lý do (tùy chọn) ghi nhật ký + email báo ứng viên.</summary>

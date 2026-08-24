@@ -6,6 +6,7 @@ using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Lib.Services.Ai;
+using GP35.SRIS.Lib.Services.Excel;
 using GP35.SRIS.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -175,6 +176,9 @@ public class CvScreeningRankingTests
         var provider = TestHost.Build(s =>
         {
             s.AddSingleton(appRepo.Object);
+            s.AddSingleton(new Mock<IJobRepo>().Object);
+            s.AddSingleton(new Mock<ICompanyRepo>().Object);
+            s.AddSingleton(new Mock<ICandidateExcelExporter>().Object);
             s.AddSingleton<IContextData>(_context);
         });
         var service = new ApplicationQueryService(provider);
@@ -204,6 +208,9 @@ public class CvScreeningRankingTests
         var provider = TestHost.Build(s =>
         {
             s.AddSingleton(appRepo.Object);
+            s.AddSingleton(new Mock<IJobRepo>().Object);
+            s.AddSingleton(new Mock<ICompanyRepo>().Object);
+            s.AddSingleton(new Mock<ICandidateExcelExporter>().Object);
             s.AddSingleton<IContextData>(_context);
         });
 

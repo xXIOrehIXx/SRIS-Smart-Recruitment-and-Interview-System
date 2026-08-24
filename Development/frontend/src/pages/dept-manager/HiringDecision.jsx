@@ -11,7 +11,6 @@ import {
   Avatar,
   Input,
   InputNumber,
-  DatePicker,
   Select,
   Row,
   Col,
@@ -81,7 +80,6 @@ const HiringDecision = () => {
   const [approveNote, setApproveNote] = useState('');
   // Điều khoản ĐỀ XUẤT (Giám đốc có quyền chốt khác) — tùy chọn.
   const [proposedSalary, setProposedSalary] = useState(null);
-  const [proposedStartDate, setProposedStartDate] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   
   const [statusFilter, setStatusFilter] = useState('all');
@@ -337,7 +335,6 @@ const HiringDecision = () => {
     setSelectedRecord(record);
     setApproveNote('');
     setProposedSalary(null);
-    setProposedStartDate(null);
     setApproveModalOpen(true);
   };
 
@@ -351,10 +348,6 @@ const HiringDecision = () => {
       await hiringProposalAPI.create(selectedRecord.id, {
         note: approveNote || null,
         proposedSalary: proposedSalary ?? null,
-        // Ngày vào làm là NGÀY — gửi đầu ngày giờ địa phương cho khỏi lệch múi giờ.
-        proposedStartDate: proposedStartDate
-          ? proposedStartDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss')
-          : null,
       });
       message.success(`Đã gửi đề xuất tuyển ${selectedRecord.candidateName} lên Giám đốc.`);
       setApproveModalOpen(false);
@@ -732,17 +725,10 @@ const HiringDecision = () => {
           </Text>
         </div>
 
-        <div style={{ marginTop: 16 }}>
-          <Text strong>Ngày vào làm dự kiến (tùy chọn):</Text>
-          <DatePicker
-            style={{ width: '100%', marginTop: 6 }}
-            value={proposedStartDate}
-            onChange={setProposedStartDate}
-            format="DD/MM/YYYY"
-            placeholder="Chọn ngày dự kiến"
-            disabledDate={(d) => d && d < dayjs().startOf('day')}
-          />
-        </div>
+        {/* Ngày vào làm đã BỎ khỏi phiếu đề xuất (24/08/2026): Giám đốc quyết TIỀN, không quyết
+            NGÀY. Ngày onboard là kết quả cuộc gọi giữa nhân sự và ứng viên (ứng viên còn phải báo
+            trước cho chỗ cũ), nên nó được nhập ở thư mời. Đoán trước cả tuần thì luôn phải sửa,
+            mà đề xuất duyệt muộn vài ngày là ngày đó rơi vào quá khứ và hệ thống chặn duyệt. */}
       </Modal>
 
       {/* Reject Modal */}

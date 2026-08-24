@@ -47,6 +47,8 @@ const OfferManagement = () => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [loadingDefaults, setLoadingDefaults] = useState(false);
+  // Hồ sơ này đã qua đề xuất tuyển và Giám đốc chốt mức lương -> ô lương khoá lại (24/08/2026).
+  const [salaryFromDirector, setSalaryFromDirector] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -248,12 +250,16 @@ const OfferManagement = () => {
     setSelectedApplication(application);
     setCreateModalOpen(true);
     form.resetFields();
+    setSalaryFromDirector(false);
 
     // Điền sẵn form từ Job + Company + hồ sơ để Human Resource chỉ sửa lại chỗ cần.
     try {
       setLoadingDefaults(true);
       const res = await offerAPI.getDefaults(application.id || application.applicationId);
       const d = res.data || {};
+      // Mức lương là điều khoản GIÁM ĐỐC đã chốt khi duyệt đề xuất tuyển (V043) — nhân sự soạn
+      // thư chứ không mặc cả lại, nên khoá ô lại. Backend cũng ép cùng số đó khi lưu.
+      setSalaryFromDirector(!!d.termsFromDirector);
       form.setFieldsValue({
         jobTitle: d.jobTitle,
         department: d.department,
@@ -273,6 +279,7 @@ const OfferManagement = () => {
       });
     } catch (error) {
       console.error('Error fetching offer defaults:', error);
+      setSalaryFromDirector(false);
       // Không chặn: người dùng vẫn gõ tay được.
       form.setFieldsValue({ currency: 'VND', salaryPeriod: 'THANG', deadline: dayjs().add(7, 'day') });
     } finally {
@@ -601,13 +608,23 @@ const OfferManagement = () => {
             <Divider orientation="left" plain>Lương &amp; phúc lợi</Divider>
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
-              <Form.Item label="Mức lương" name="salaryAmount">
+              <Form.Item
+                label="Mức lương"
+                name="salaryAmount"
+                tooltip={salaryFromDirector
+                  ? 'Mức Giám đốc đã chốt khi duyệt đề xuất tuyển — bộ phận nhân sự không sửa.'
+                  : undefined}
+                extra={salaryFromDirector
+                  ? 'Giám đốc đã chốt mức này. Cần đổi thì đề nghị Giám đốc quyết lại.'
+                  : undefined}
+              >
                 <InputNumber
                   style={{ width: '100%' }}
                   placeholder="Bỏ trống = Thỏa thuận"
                   formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                   parser={value => value.replace(/,/g, '')}
                   min={0}
+                  disabled={salaryFromDirector}
                 />
               </Form.Item>
 

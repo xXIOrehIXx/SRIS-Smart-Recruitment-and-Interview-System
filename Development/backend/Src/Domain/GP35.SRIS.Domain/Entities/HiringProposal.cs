@@ -6,7 +6,8 @@ namespace GP35.SRIS.Domain.Entities;
 /// <summary>
 /// Phiếu ĐỀ XUẤT TUYỂN (V043, chốt 15/08/2026) — Trưởng bộ phận đọc kết luận hội đồng phỏng vấn
 /// rồi đề xuất "nên tuyển người này"; GIÁM ĐỐC là người quyết và chốt điều khoản
-/// (<see cref="ApprovedSalary"/> / <see cref="ApprovedStartDate"/>) để nhân sự soạn thư mời.
+/// (<see cref="ApprovedSalary"/>) để nhân sự soạn thư mời. Ngày vào làm KHÔNG nằm ở đây
+/// (bỏ 24/08/2026): nhân sự gọi ứng viên chốt ngày onboard rồi điền thẳng vào thư mời.
 ///
 /// Đối xứng với <see cref="RecruitmentRequest"/>: đầu quy trình DM ra đề — nhân sự duyệt;
 /// cuối quy trình DM đề xuất — Giám đốc duyệt.
@@ -36,8 +37,6 @@ public class HiringProposal : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     [Column("proposed_salary")]
     public decimal? ProposedSalary { get; set; }
 
-    [Column("proposed_start_date")]
-    public DateTime? ProposedStartDate { get; set; }
 
     /// <summary>DM đề xuất.</summary>
     [Column("created_by")]
@@ -55,8 +54,6 @@ public class HiringProposal : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     [Column("approved_salary")]
     public decimal? ApprovedSalary { get; set; }
 
-    [Column("approved_start_date")]
-    public DateTime? ApprovedStartDate { get; set; }
 
     /// <summary>Giám đốc quyết.</summary>
     [Column("decided_by")]
