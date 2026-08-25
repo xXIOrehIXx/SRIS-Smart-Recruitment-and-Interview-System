@@ -1,4 +1,4 @@
-name: CI/CD Build and Deploy
+name: CI/CD Build and Deploy Backend
 
 on:
   push:
@@ -18,6 +18,9 @@ jobs:
   build-and-test:
     name: Build & Test .NET App
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Development/backend
 
     steps:
     - name: Checkout repository
@@ -74,8 +77,8 @@ jobs:
     - name: Build and push .NET Backend Docker image
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: Dockerfile
+        context: ./Development/backend
+        file: ./Development/backend/Dockerfile
         push: true
         tags: ${{ steps.meta-net.outputs.tags }}
         labels: ${{ steps.meta-net.outputs.labels }}
