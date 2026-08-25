@@ -2,9 +2,9 @@ name: CI/CD Build and Deploy Backend
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, feature/ntsan_dep ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, feature/ntsan_dep ]
 
 permissions:
   contents: read
