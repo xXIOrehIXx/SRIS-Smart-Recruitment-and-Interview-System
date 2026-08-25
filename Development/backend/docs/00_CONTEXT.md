@@ -43,7 +43,7 @@ Nguyên tắc cửa vào: người trong cuộc đều đăng nhập Portal. Ch�
 | Human Resource | Vận hành toàn bộ pipeline | Đăng nhập Portal | Tạo Tin tuyển dụng từ Yêu cầu **Giám đốc đã duyệt** (V047); duyệt bộ tiêu chí AI bóc; Kanban, sàng lọc, ĐẶT LỊCH phỏng vấn, soạn thư mời theo điều khoản Giám đốc chốt |
 | Interviewer | Người chấm phỏng vấn | Đăng nhập Portal | Xem buổi được giao, chấm theo tiêu chí + nêu **đề xuất tuyển/không**, sửa tới khi hồ sơ khóa |
 | Department Manager | Trưởng bộ phận — ra đề và ĐỀ XUẤT | Đăng nhập Portal | Tạo Yêu cầu tuyển dụng (5.17); duyệt ứng viên vào vòng phỏng vấn; đọc đề xuất của panel rồi **gửi Đề xuất tuyển** lên Giám đốc |
-| **Giám đốc** (V043) | Người quyết tuyển | Đăng nhập Portal | Duyệt/không duyệt Đề xuất tuyển của DM + **chốt mức lương và ngày vào làm**; phạm vi toàn công ty |
+| **Giám đốc** (V043) | Người quyết tuyển | Đăng nhập Portal | Duyệt/không duyệt Đề xuất tuyển của DM — **duyệt = chốt luôn mức lương DM ghi trên phiếu** (V053); phạm vi toàn công ty |
 | Candidate | Ứng viên ngoài hệ thống | Magic link | Nộp CV, xem trạng thái, xem thư mời |
 
 - **Mỗi User giữ ĐÚNG 1 role** — code không gán chồng. Công ty gia đình dùng **1 tài khoản Admin** làm hết; tách vai = tạo thêm tài khoản khi công ty lớn lên.
@@ -165,7 +165,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 - **Ai chạm hồ sơ (sửa sau bảo vệ hội đồng 15/08/2026 — DM có HAI cửa):**
   - `NEW→SCREENING`: Human Resource tự sàng lọc hồ sơ, không cổng duyệt.
   - `SCREENING→INTERVIEW` — **cửa 1 của DM: CHỌN ai được vào vòng phỏng vấn.** Human Resource KHÔNG tự đưa ai vào phỏng vấn; nhân sự chỉ **lên lịch** cho người đã được duyệt (mời vào pool / chốt lịch tay đều đòi hồ sơ đã ở INTERVIEW). Lý do hội đồng nêu: ai đáng gặp là phán đoán chuyên môn của trưởng bộ phận, không phải việc vận hành của nhân sự. Job **bắt buộc** có `department_manager_id` khi đăng (Status=Open) — không có DM thì không ai duyệt được, BE chặn ngay lúc đăng tin.
-  - `INTERVIEW→OFFER` — **cửa của GIÁM ĐỐC: quyết tuyển** (chốt 15/08/2026, V043). Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển: họ đọc đề xuất panel rồi gửi **phiếu Đề xuất tuyển** (`HiringProposal`); Giám đốc duyệt — chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm mức lương + ngày vào làm đã chốt. Giám đốc có phạm vi TOÀN CÔNG TY, không gán theo vị trí. Không duyệt ≠ loại: hồ sơ ở lại INTERVIEW, DM đề xuất lại được.
+  - `INTERVIEW→OFFER` — **cửa của GIÁM ĐỐC: quyết tuyển** (chốt 15/08/2026, V043). Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển: họ đọc đề xuất panel rồi gửi **phiếu Đề xuất tuyển** (`HiringProposal`); Giám đốc duyệt — chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm mức lương ghi trên phiếu (V053: Giám đốc KHÔNG gõ mức khác; không ưng thì chưa duyệt + ghi rõ muốn bao nhiêu, DM sửa rồi gửi lại. Ngày vào làm nhập ở thư mời — V051). Giám đốc có phạm vi TOÀN CÔNG TY, không gán theo vị trí. Không duyệt ≠ loại: hồ sơ ở lại INTERVIEW, DM đề xuất lại được.
   - Loại hồ sơ (`→REJECTED`) không bị khoá theo vai: nhân sự loại ở bước sàng lọc, DM loại ở hai màn duyệt của mình.
   - Admin là superuser, đi qua cả hai cửa (công ty nhỏ 1 tài khoản chạy trọn luồng).
 - forward-only ≠ cứng nhắc: reschedule + nhiều vòng diễn ra BÊN TRONG stage INTERVIEW (5.12).
@@ -232,11 +232,11 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 ### 5.15 Thư mời nhận việc (Offer Letter)
 - **Không có nút "Đồng ý / Từ chối" cho ứng viên.** Công ty nhỏ gửi thư mời rồi ứng viên gọi/mail trả lời; bắt bấm nút trong hệ thống lạ chỉ thêm bước thừa mà không thay được cuộc trao đổi thật.
-- `OfferDetail` = nội dung một lá thư: salary/currency/start_date, job_title, department, reporting_to, employment_type, work_location, salary_period, bonus, benefits, terms, hr_contact_*, signer_*, candidate_address, note. Các mục lấy từ Job được **chụp lại lúc soạn** — sửa Job về sau KHÔNG đổi nội dung thư đã phát đi. **0..1 offer per Application** (UNIQUE `application_id`).
+- `OfferDetail` = nội dung một lá thư: salary/currency/start_date, job_title, department, reporting_to, employment_type, work_location, salary_period, bonus, benefits, terms, hr_contact_*, signer_*, note (`candidate_address` đã xoá — V054, 25/08/2026: thư mời đi bằng email nên không cần địa chỉ nhà). Các mục lấy từ Job được **chụp lại lúc soạn** — sửa Job về sau KHÔNG đổi nội dung thư đã phát đi. **0..1 offer per Application** (UNIQUE `application_id`).
 - Liên hệ đầu thư (tên/địa chỉ/email/điện thoại công ty) lấy từ `Company`, nhập một lần ở hồ sơ công ty.
 - **Nội dung thư là EMAIL TEMPLATE sửa được** (loại `OFFER_RESPONSE`): code dựng các khối dữ liệu (`{{positionBlock}}`, `{{compensationBlock}}`, `{{termsBlock}}`, `{{signature}}`, `{{letterhead}}`), template giữ phần lời văn + hình ảnh. Mỗi công ty đổi được câu chữ mà không sợ nhãn trống thò ra.
 - **Mang brand của tenant:** logo + màu lấy từ cùng bộ brand với Career Site. Màu quá sáng tự làm tối cho đủ tương phản trên giấy trắng; chưa cấu hình brand → navy mặc định. Tải logo là best-effort (link hỏng → in thư không logo, không bao giờ lỗi 500).
-- **Luồng:** DM gửi Đề xuất tuyển → **Giám đốc duyệt + chốt lương/ngày vào làm** (hồ sơ sang OFFER) → HR soạn thư (form điền sẵn ĐÚNG điều khoản Giám đốc chốt, phần còn lại lấy từ Job/Company, sửa được) → lưu `OfferDetail` (PENDING) + gửi email → ứng viên trả lời NGOÀI hệ thống → HR bấm "Đã nhận việc"/"Từ chối" trong Portal → ACCEPTED+HIRED (kèm email onboarding) / DECLINED+REJECTED.
+- **Luồng:** DM gửi Đề xuất tuyển KÈM mức lương → **Giám đốc duyệt đúng mức đó, hoặc trả phiếu về kèm mức mình muốn để DM sửa rồi gửi lại** (V053; duyệt → hồ sơ sang OFFER) → HR soạn thư (ô lương KHOÁ theo mức đã duyệt, ngày vào làm HR tự điền sau khi gọi ứng viên — V051; phần còn lại lấy từ Job/Company, phần còn lại lấy từ Job/Company, sửa được) → lưu `OfferDetail` (PENDING) + gửi email → ứng viên trả lời NGOÀI hệ thống → HR bấm "Đã nhận việc"/"Từ chối" trong Portal → ACCEPTED+HIRED (kèm email onboarding) / DECLINED+REJECTED.
 - Trang ứng viên (magic link `OFFER_RESPONSE`) **CHỈ ĐỌC**: tóm tắt + PDF thư mời (QuestPDF, font Lato có dấu tiếng Việt) + nút tải. Token **không bị đốt khi mở** — không chốt gì ở đó thì đốt chỉ làm ứng viên mất bản thư.
 - Ghi nhận kết quả **không** áp luật "chỉ DM của job quyết": ứng viên nhận hay từ chối là sự thật khách quan, không phải quyết định mới. Bắt đúng DM mới được gõ vào sẽ làm hồ sơ kẹt ở OFFER trong khi thư đã có câu trả lời.
 - KHÔNG làm: lịch sử thương lượng, ký số.
@@ -315,7 +315,7 @@ KHÔNG OpenAI/Gemini (thầy: gọi API là mức thấp nhất, tốn tiền/re
 
 **MẢNG 1 — RECRUITMENT:** [nếu bật phiếu] DM tạo Yêu cầu tuyển dụng → Giám đốc duyệt → HR tạo Tin tuyển dụng / [mặc định công ty nhỏ] chủ tạo job trực tiếp → AI bóc tiêu chí DRAFT → người duyệt chốt bộ tiêu chí (5.18) → ứng viên nộp CV qua Career Site hoặc HR nộp hộ → hệ thống parse PDF + lưu hồ sơ ở NEW → HR bấm **Phân tích CV toàn bộ** cho AI đối chiếu từng CV với tin tuyển dụng (V044) → Kanban 4 pha xếp hồ sơ phù hợp nhất lên đầu (V046) để HR đọc trước, rồi HR tự quyết.
 
-**MẢNG 2 — INTERVIEW & OFFER:** DM duyệt ứng viên vào vòng phỏng vấn → HR gọi chốt giờ rồi đặt buổi, hệ thống gửi xác nhận + .ics (5.9, Section 15) → phỏng vấn + chấm theo CÙNG bộ tiêu chí, mỗi interviewer nêu đề xuất tuyển/không (5.7) → DM đọc bản tóm đề xuất rồi **gửi đề xuất tuyển**; **GIÁM ĐỐC duyệt** = hồ sơ sang Quyết định kèm lương + ngày vào làm đã chốt (5.14) → HR soạn thư mời theo đúng điều khoản đó (5.15) → ứng viên trả lời ngoài hệ thống → HR ghi nhận → HIRED/REJECTED + Dashboard.
+**MẢNG 2 — INTERVIEW & OFFER:** DM duyệt ứng viên vào vòng phỏng vấn → HR gọi chốt giờ rồi đặt buổi, hệ thống gửi xác nhận + .ics (5.9, Section 15) → phỏng vấn + chấm theo CÙNG bộ tiêu chí, mỗi interviewer nêu đề xuất tuyển/không (5.7) → DM đọc bản tóm đề xuất rồi **gửi đề xuất tuyển**; **GIÁM ĐỐC duyệt** = hồ sơ sang Quyết định kèm mức lương trên phiếu (5.14) → HR soạn thư mời theo đúng điều khoản đó (5.15) → ứng viên trả lời ngoài hệ thống → HR ghi nhận → HIRED/REJECTED + Dashboard.
 
 ---
 
@@ -437,7 +437,7 @@ Xưng hô: KHÔNG "web của chúng em". Nhóm là người thiết kế & phát
   - **AI chấm mức phù hợp CV↔JD và xếp thứ tự đọc, nhưng KHÔNG quyết tuyển.** Hai việc của AI: bóc tiêu chí từ JD (5.18) và sàng lọc CV (5.19). Mọi quyết định pipeline vẫn do người bấm.
   - **Luồng tiêu chí:** DM tạo Yêu cầu tuyển dụng (tùy chọn) → HR tạo Job → AI bóc tiêu chí DRAFT → người duyệt chốt → bộ tiêu chí đó LÀ phiếu chấm phỏng vấn. **Đã code — đừng thiết kế lại.**
   - Pipeline: hiển thị **4 pha**; **6 state nội bộ, 8 transition**, forward-only, guard G2 (5.8, 5.16).
-  - Chấm vs đề xuất vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**, duyệt ai vào phỏng vấn (SCREENING→INTERVIEW) rồi **gửi Đề xuất tuyển**; **GIÁM ĐỐC quyết tuyển** (INTERVIEW→OFFER) và chốt lương/ngày vào làm; HR sàng lọc + đặt lịch + soạn thư. `reject_reason` tùy chọn.
+  - Chấm vs đề xuất vs quyết (5.7, 5.14): phiếu ẩn tới khi nộp; interviewer nêu đề xuất tuyển; DM đọc **đề xuất chứ không đọc điểm**, duyệt ai vào phỏng vấn (SCREENING→INTERVIEW) rồi **gửi Đề xuất tuyển**; **GIÁM ĐỐC quyết tuyển** (INTERVIEW→OFFER) và chốt mức lương trên phiếu (V053); HR sàng lọc + đặt lịch + soạn thư (điền ngày vào làm). `reject_reason` tùy chọn.
   - Token (5.13): one-time = đốt khi CHỐT; **2 purpose**: STATUS · OFFER_RESPONSE.
   - Role: 5 role (thêm **Giám đốc** — V043), mỗi user 1 role, Admin superuser; **giá trị role của Human Resource trong DB/JWT là `'Recruiter'`**.
   - Stack: SQL Server 2025 · EF Core · MinIO · Redis · Local AI (Ollama + qwen2.5, chỉ bóc tiêu chí). PDPD 2026 = luận điểm tuân thủ.
