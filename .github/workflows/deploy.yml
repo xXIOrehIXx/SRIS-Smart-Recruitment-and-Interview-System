@@ -3,8 +3,14 @@ name: CI/CD Build and Deploy Backend
 on:
   push:
     branches: [ main, master, feature/ntsan_dep ]
+    paths:
+      - 'Development/backend/**'
+      - '.github/workflows/deploy.yml'
   pull_request:
     branches: [ main, master, feature/ntsan_dep ]
+    paths:
+      - 'Development/backend/**'
+      - '.github/workflows/deploy.yml'
 
 permissions:
   contents: read
