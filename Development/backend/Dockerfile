@@ -22,6 +22,7 @@ COPY ["Src/Library/GP35.SRIS.Lib/GP35.SRIS.Lib.csproj", "Src/Library/GP35.SRIS.L
 COPY ["Src/Library/GP35.SRIS.Storage/GP35.SRIS.Storage.csproj", "Src/Library/GP35.SRIS.Storage/"]
 COPY ["Src/Library/GP35.SRIS.Storage.Minio/GP35.SRIS.Storage.Minio.csproj", "Src/Library/GP35.SRIS.Storage.Minio/"]
 COPY ["tools/GP35.SRIS.DbMigrator/GP35.SRIS.DbMigrator.csproj", "tools/GP35.SRIS.DbMigrator/"]
+COPY ["Tests/GP35.SRIS.Application.Tests/GP35.SRIS.Application.Tests.csproj", "Tests/GP35.SRIS.Application.Tests/"]
 
 # Restore dependencies
 RUN dotnet restore "GP35.SRIS.sln"
