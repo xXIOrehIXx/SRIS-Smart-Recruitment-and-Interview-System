@@ -6,7 +6,11 @@ public class CreateProposalDto
     /// <summary>Vì sao nên tuyển người này — căn cứ để Giám đốc quyết.</summary>
     public string? Note { get; set; }
 
-    /// <summary>Mức lương ĐỀ XUẤT (tùy chọn). Giám đốc có quyền chốt mức khác.</summary>
+    /// <summary>
+    /// Mức lương đề xuất — BẮT BUỘC (V053, 25/08/2026). Giám đốc chỉ duyệt hoặc trả lại chứ
+    /// không gõ mức khác, nên phiếu không có số thì chẳng có gì để duyệt và nhân sự lại phải
+    /// tự điền lương vào thư mời.
+    /// </summary>
     public decimal? ProposedSalary { get; set; }
 
     // Ngày vào làm đã BỎ khỏi phiếu đề xuất (24/08/2026): Giám đốc quyết TIỀN, không quyết ngày.
@@ -20,15 +24,17 @@ public class DecideProposalDto
 {
     public bool Approve { get; set; }
 
-    /// <summary>Ghi chú quyết định (tùy chọn) — lý do duyệt / vì sao chưa duyệt.</summary>
+    /// <summary>
+    /// Ghi chú quyết định. BẮT BUỘC khi CHƯA duyệt (V053): đó là chỗ Giám đốc nói rõ vướng ở
+    /// đâu — thường là mức lương ("khung phòng này tối đa 14tr") — để Trưởng bộ phận sửa phiếu
+    /// rồi gửi lại. Không ghi thì phiếu quay về mà không ai biết phải sửa gì.
+    /// </summary>
     public string? Note { get; set; }
 
-    /// <summary>
-    /// Mức lương CHỐT. Bỏ trống khi duyệt thì lấy mức DM đề xuất. Đây là con số thư mời dùng,
-    /// nên bộ phận nhân sự không phải hỏi lại Giám đốc "chốt bao nhiêu".
-    /// </summary>
-    public decimal? ApprovedSalary { get; set; }
-
+    // Mức lương chốt đã BỎ (V053, 25/08/2026): Giám đốc không mặc cả bằng cách gõ đè một con số
+    // khác lên phiếu. Không ưng mức đề xuất thì CHƯA DUYỆT + ghi mức mình muốn; Trưởng bộ phận
+    // sửa và gửi lại. Một khoản tiền chỉ có MỘT ô — ProposedSalary — và duyệt nghĩa là gật đầu
+    // đúng con số đang nằm trên phiếu.
 }
 
 /// <summary>Một phiếu đề xuất tuyển (kèm thông tin ứng viên/vị trí để hiển thị thẳng).</summary>
@@ -41,13 +47,14 @@ public class HiringProposalDto
     public string Status { get; set; } = null!;
 
     public string? ProposalNote { get; set; }
+
+    /// <summary>Mức lương trên phiếu. Phiếu APPROVED = mức Giám đốc đã duyệt, thư mời lấy số này.</summary>
     public decimal? ProposedSalary { get; set; }
     public long? CreatedBy { get; set; }
     public string? CreatedByName { get; set; }
     public DateTime? CreatedAt { get; set; }
 
     public string? DecisionNote { get; set; }
-    public decimal? ApprovedSalary { get; set; }
     public long? DecidedBy { get; set; }
     public string? DecidedByName { get; set; }
     public DateTime? DecidedAt { get; set; }

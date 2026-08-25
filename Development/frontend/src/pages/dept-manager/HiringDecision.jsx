@@ -19,6 +19,7 @@ import {
   Popconfirm,
   Spin,
   Alert,
+  Tooltip,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -185,6 +186,8 @@ const HiringDecision = () => {
     return <Tag color={c.color}>{c.label}</Tag>;
   };
 
+  const money = (v) => (v == null ? '—' : `${Number(v).toLocaleString('vi-VN')} ₫`);
+
   /// Tóm tắt 1 dòng: "2/3 nên tuyển" — đủ để lướt bảng, chi tiết xem trong modal.
   const verdictSummary = (record) => {
     if (!record.totalSubmitted) return <Text type="secondary">—</Text>;
@@ -292,7 +295,15 @@ const HiringDecision = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status) => getStatusTag(status),
+      // Phiếu bị trả về: hiện luôn lời Giám đốc khi rê chuột — người dùng thấy tag đỏ là muốn
+      // biết NGAY vì sao, không phải mở modal mới đọc được.
+      render: (status, record) => (record.proposal?.decisionNote
+        ? (
+          <Tooltip title={record.proposal.decisionNote}>
+            <span>{getStatusTag(status)}</span>
+          </Tooltip>
+        )
+        : getStatusTag(status)),
     },
     {
       title: 'Thao tác',
@@ -333,8 +344,10 @@ const HiringDecision = () => {
 
   const openProposeModal = (record) => {
     setSelectedRecord(record);
-    setApproveNote('');
-    setProposedSalary(null);
+    // Đề xuất LẠI thì điền sẵn phiếu cũ (V053): Giám đốc trả phiếu về thường chỉ vì một con số —
+    // bắt gõ lại toàn bộ căn cứ chỉ để sửa mức lương là ép người ta viết lại từ đầu.
+    setApproveNote(record?.status === 'REJECTED' ? (record.proposal?.proposalNote || '') : '');
+    setProposedSalary(record?.status === 'REJECTED' ? (record.proposal?.proposedSalary ?? null) : null);
     setApproveModalOpen(true);
   };
 
@@ -343,11 +356,17 @@ const HiringDecision = () => {
    * định được nữa. Giám đốc duyệt đề xuất thì hệ thống mới đẩy hồ sơ sang OFFER.
    */
   const handlePropose = async () => {
+    // Mức lương BẮT BUỘC (V053): Giám đốc chỉ duyệt hoặc trả phiếu về chứ không tự điền mức —
+    // phiếu trống thì chẳng có gì để duyệt, và thư mời lại rơi về cảnh nhân sự tự quyết lương.
+    if (!(proposedSalary > 0)) {
+      message.warning('Nhập mức lương đề xuất — đó là con số Giám đốc duyệt và thư mời sẽ dùng.');
+      return;
+    }
     try {
       setActionLoading(true);
       await hiringProposalAPI.create(selectedRecord.id, {
         note: approveNote || null,
-        proposedSalary: proposedSalary ?? null,
+        proposedSalary,
       });
       message.success(`Đã gửi đề xuất tuyển ${selectedRecord.candidateName} lên Giám đốc.`);
       setApproveModalOpen(false);
@@ -516,6 +535,40 @@ const HiringDecision = () => {
                 <div style={{ marginTop: 8 }}>{getStatusTag(selectedRecord.status)}</div>
               </div>
             </div>
+
+            {/* Phiếu đã gửi: hiện nguyên văn lời Giám đốc. Trước V053 màn này chỉ hiện cái tag
+                "Giám đốc chưa duyệt" mà không nói vì sao — mà giờ đó là kênh DUY NHẤT Giám đốc
+                báo mức lương họ muốn, nên giấu đi là bắt trưởng bộ phận đi hỏi miệng. */}
+            {selectedRecord.proposal && (
+              <Alert
+                type={selectedRecord.status === 'REJECTED' ? 'warning'
+                  : selectedRecord.status === 'APPROVED' ? 'success' : 'info'}
+                showIcon
+                style={{ marginBottom: 16 }}
+                message={
+                  selectedRecord.status === 'REJECTED'
+                    ? `Giám đốc chưa duyệt${selectedRecord.proposal.decidedByName ? ` — ${selectedRecord.proposal.decidedByName}` : ''}`
+                    : selectedRecord.status === 'APPROVED'
+                      ? `Giám đốc đã duyệt mức ${money(selectedRecord.proposal.proposedSalary)}`
+                      : `Đang chờ Giám đốc duyệt mức ${money(selectedRecord.proposal.proposedSalary)}`
+                }
+                description={
+                  <>
+                    {selectedRecord.proposal.decisionNote && (
+                      <div style={{ whiteSpace: 'pre-wrap', marginBottom: 6 }}>
+                        {selectedRecord.proposal.decisionNote}
+                      </div>
+                    )}
+                    {selectedRecord.status === 'REJECTED' && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Ứng viên chưa bị loại — sửa mức lương / bổ sung căn cứ rồi bấm "Đề xuất lại".
+                        {!selectedRecord.proposal.decisionNote && ' (Giám đốc không ghi lý do — hỏi lại trực tiếp.)'}
+                      </Text>
+                    )}
+                  </>
+                }
+              />
+            )}
 
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Vị trí ứng tuyển" span={2}>
@@ -696,6 +749,20 @@ const HiringDecision = () => {
           <strong>{selectedRecord?.position}</strong>. Giám đốc sẽ đọc đề xuất này rồi quyết.
         </p>
 
+        {/* Đề xuất LẠI: đặt lời nhắn của Giám đốc ngay trên ô nhập, vì đó chính là thứ phải sửa
+            (V053 — Giám đốc không tự đổi mức lương nữa mà trả phiếu về kèm con số họ muốn). */}
+        {selectedRecord?.status === 'REJECTED' && selectedRecord?.proposal?.decisionNote && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={`Giám đốc chưa duyệt lần trước${selectedRecord.proposal.decidedByName ? ` — ${selectedRecord.proposal.decidedByName}` : ''}`}
+            description={
+              <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedRecord.proposal.decisionNote}</Text>
+            }
+          />
+        )}
+
         <div style={{ marginTop: 16 }}>
           <Text strong>Vì sao nên tuyển người này:</Text>
           <TextArea
@@ -708,7 +775,7 @@ const HiringDecision = () => {
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <Text strong>Mức lương đề xuất (tùy chọn):</Text>
+          <Text strong>Mức lương đề xuất <span style={{ color: 'red' }}>*</span>:</Text>
           <InputNumber
             style={{ width: '100%', marginTop: 6 }}
             value={proposedSalary}
@@ -721,7 +788,8 @@ const HiringDecision = () => {
             addonAfter="₫"
           />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Giám đốc có quyền chốt mức khác — con số cuối cùng nằm ở quyết định của Giám đốc.
+            Giám đốc duyệt ĐÚNG con số này (thư mời lấy y nguyên) hoặc trả phiếu về kèm mức họ
+            muốn — lúc đó bạn sửa ở đây rồi gửi lại.
           </Text>
         </div>
 
