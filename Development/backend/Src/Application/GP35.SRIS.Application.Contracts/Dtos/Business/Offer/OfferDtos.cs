@@ -38,7 +38,6 @@ public class MakeOfferDto
     public string? SignerName { get; set; }          // null -> tên người ra offer
     public string? SignerTitle { get; set; }
 
-    public string? CandidateAddress { get; set; }    // in ở đầu thư, gõ tay (CV không lưu địa chỉ)
     public string? Note { get; set; }                // lời nhắn thêm, in cuối phần điều khoản
 
     /// <summary>Hạn xác nhận in trên thư + TTL link xem thư. null -> 7 ngày.</summary>
@@ -125,7 +124,6 @@ public class OfferDto
     public string? HrContactEmail { get; set; }
     public string? SignerName { get; set; }
     public string? SignerTitle { get; set; }
-    public string? CandidateAddress { get; set; }
     public string? Note { get; set; }
 
     public long? DecidedBy { get; set; }

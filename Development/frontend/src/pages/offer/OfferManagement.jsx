@@ -182,7 +182,6 @@ const OfferManagement = () => {
         startDate: values.startDate?.format('YYYY-MM-DD'),
         employmentType: values.employmentType,
         workLocation: values.workLocation,
-        candidateAddress: values.candidateAddress,
 
         salaryAmount: values.salaryAmount,
         currency: values.currency,
@@ -579,7 +578,11 @@ const OfferManagement = () => {
                 <Input placeholder="VD: Trưởng phòng Nguyễn Văn B" maxLength={200} />
               </Form.Item>
 
+              {/* CỐ Ý không điền sẵn (V051, 24/08/2026): ngày đi làm là kết quả cuộc gọi giữa bạn
+                  và ứng viên — họ còn phải báo trước cho chỗ làm cũ. Giám đốc duyệt tuyển chỉ chốt
+                  TIỀN, không chốt NGÀY, nên hệ thống không có số nào để đoán mà không đoán sai. */}
               <Form.Item label="Ngày bắt đầu" name="startDate"
+                extra="Hỏi ứng viên qua điện thoại rồi điền — hệ thống không điền sẵn ô này."
                 rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}>
                 <DatePicker
                   style={{ width: '100%' }}
@@ -598,12 +601,8 @@ const OfferManagement = () => {
               </Form.Item>
             </div>
 
-            {/* BE (MakeOfferDto.CandidateAddress) in dòng này ở ĐẦU thư mời nhưng form chưa
-                có ô nào để gõ -> thư luôn thiếu địa chỉ người nhận. CV không lưu địa chỉ nên
-                phải nhập tay; bỏ trống thì bản PDF bỏ hẳn dòng đó. */}
-            <Form.Item label="Địa chỉ ứng viên (in ở đầu thư — tùy chọn)" name="candidateAddress">
-              <Input placeholder="VD: Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội" maxLength={300} />
-            </Form.Item>
+            {/* Không còn ô "địa chỉ ứng viên" (V054, 25/08/2026): thư mời đi bằng EMAIL nên
+                địa chỉ nhà chẳng dùng vào việc gì, mà CV không lưu nên nhân sự phải gõ tay. */}
 
             <Divider orientation="left" plain>Lương &amp; phúc lợi</Divider>
 

@@ -33,7 +33,6 @@ public class OfferLetterModel
 
     // --- Người nhận ---
     public string? CandidateName { get; set; }
-    public string? CandidateAddress { get; set; }
 
     // --- Thông tin vị trí ---
     public string? JobTitle { get; set; }
