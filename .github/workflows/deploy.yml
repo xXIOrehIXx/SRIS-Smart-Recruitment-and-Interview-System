@@ -18,7 +18,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  NET_IMAGE_NAME: xxxiorehixx/sris-smart-recruitment-and-interview-system-backend
+  NET_IMAGE_NAME: xxiorehixx/sris-smart-recruitment-and-interview-system-backend
 
 jobs:
   build-and-test:
