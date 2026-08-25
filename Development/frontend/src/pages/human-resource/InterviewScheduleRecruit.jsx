@@ -45,6 +45,9 @@ const InterviewScheduleRecruit = () => {
   // Rỗng = DM chưa chỉ định -> BE sẽ từ chối đặt buổi, nên chặn luôn ở đây cho khỏi bấm phí.
   const [assignedPanel, setAssignedPanel] = useState([]);
   const [panelLoading, setPanelLoading] = useState(false);
+  // Hồ sơ đã nạp panel xong. CHƯA chọn ứng viên thì danh sách rỗng là chuyện đương nhiên —
+  // không phải "Trưởng bộ phận chưa chỉ định ai", nên đừng tố oan họ ngay lúc mở form.
+  const [panelAppId, setPanelAppId] = useState(null);
 
   const [bookModalOpen, setBookModalOpen] = useState(false);
   // Buổi đang SỬA (null = đang đặt buổi mới). Dùng chung một modal: hai việc nhập đúng những ô
@@ -58,6 +61,7 @@ const InterviewScheduleRecruit = () => {
     setEditingSession(null);
     bookForm.resetFields();
     setAssignedPanel([]);
+    setPanelAppId(null);
   };
 
   useEffect(() => {
@@ -85,12 +89,14 @@ const InterviewScheduleRecruit = () => {
   const handleCandidateChange = async (applicationId) => {
     bookForm.setFieldsValue({ interviewerIds: [] });
     setAssignedPanel([]);
+    setPanelAppId(null);
     if (!applicationId) return;
     setPanelLoading(true);
     try {
       const res = await interviewAPI.getAssignedInterviewers(applicationId);
       const panel = res.data || [];
       setAssignedPanel(panel);
+      setPanelAppId(applicationId);
       bookForm.setFieldsValue({ interviewerIds: panel.map((p) => p.interviewerId) });
     } catch (error) {
       console.error(error);
@@ -200,6 +206,7 @@ const InterviewScheduleRecruit = () => {
   const openEditSession = async (s) => {
     setEditingSession(s);
     setAssignedPanel([]);
+    setPanelAppId(s.applicationId);
     setBookModalOpen(true);
     bookForm.setFieldsValue({
       applicationId: s.applicationId,
@@ -353,6 +360,7 @@ const InterviewScheduleRecruit = () => {
             onClick={() => {
               bookForm.resetFields();
               setAssignedPanel([]);
+              setPanelAppId(null);
               setEditingSession(null);
               setBookModalOpen(true);
             }}
@@ -468,8 +476,15 @@ const InterviewScheduleRecruit = () => {
             label="Người phỏng vấn"
             tooltip="Trưởng bộ phận chỉ định ai được gặp ứng viên này. Bạn chỉ chọn trong nhóm đó."
             rules={[{ required: true, message: 'Chọn ít nhất 1 người' }]}
+            /* Chỉ tố "Trưởng bộ phận chưa chỉ định" khi ĐÃ nạp panel của một ứng viên cụ thể.
+               Lúc mới mở form chưa chọn ai thì danh sách rỗng là đương nhiên — hiện cảnh báo ở
+               đó là báo động giả, nhân sự đi hỏi trưởng bộ phận một việc họ đã làm rồi. */
             extra={
-              !panelLoading && assignedPanel.length === 0 ? (
+              !panelAppId ? (
+                'Chọn ứng viên trước — hệ thống hiện đúng nhóm người Trưởng bộ phận đã chỉ định.'
+              ) : panelLoading ? (
+                'Đang tải nhóm người phỏng vấn của ứng viên này…'
+              ) : assignedPanel.length === 0 ? (
                 <Text type="warning">
                   Trưởng bộ phận chưa chỉ định người phỏng vấn cho ứng viên này — hãy đề nghị họ
                   chọn ở màn Duyệt Ứng Viên Vào Phỏng Vấn, rồi quay lại đặt lịch.
