@@ -167,7 +167,6 @@ const OfferDetail = () => {
               <Descriptions column={1} size="small" colon={false}>
                 <Descriptions.Item label="Điện thoại">{application?.candidatePhone || '—'}</Descriptions.Item>
                 <Descriptions.Item label="Nguồn hồ sơ">{application?.candidateSource || '—'}</Descriptions.Item>
-                <Descriptions.Item label="Địa chỉ trên thư">{offer.candidateAddress || '—'}</Descriptions.Item>
               </Descriptions>
 
               {/* Ứng viên trả lời bằng cách Reply chính email thư mời, không bấm gì trong hệ thống. */}

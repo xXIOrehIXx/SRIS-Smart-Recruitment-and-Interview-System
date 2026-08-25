@@ -317,7 +317,6 @@ public class SrisDbContext : DbContext
             e.ToTable("HiringProposal");
             e.HasKey(x => x.ProposalId);
             e.Property(x => x.ProposedSalary).HasColumnType("decimal(18,2)");
-            e.Property(x => x.ApprovedSalary).HasColumnType("decimal(18,2)");
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });

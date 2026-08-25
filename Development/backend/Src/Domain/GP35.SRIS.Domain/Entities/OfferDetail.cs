@@ -58,8 +58,6 @@ public class OfferDetail : BaseEntity<long>, IHasCreateInfo, IHasModifyInfo, IHa
     public string? SignerName { get; set; }
     [Column("signer_title")]
     public string? SignerTitle { get; set; }
-    [Column("candidate_address")]
-    public string? CandidateAddress { get; set; }
 
     /// <summary>Người ghi nhận kết quả cuối (khác <see cref="DecidedBy"/> — người ra offer).</summary>
     [Column("outcome_by")]

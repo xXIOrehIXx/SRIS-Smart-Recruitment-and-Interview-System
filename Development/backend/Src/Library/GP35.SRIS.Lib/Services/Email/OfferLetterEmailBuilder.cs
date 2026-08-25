@@ -142,8 +142,7 @@ public static class OfferLetterEmailBuilder
         sb.Append(Row(p, "padding:20px 34px 0 34px;",
             Text($"Ngày {m.LetterDate:dd} tháng {m.LetterDate:MM} năm {m.LetterDate:yyyy}") +
             $"<div style=\"height:10px;line-height:10px;\">&nbsp;</div>" +
-            Text(candidateAccent) +
-            (Has(m.CandidateAddress) ? Text(E(m.CandidateAddress!)) : "")));
+            Text(candidateAccent)));
 
         // ----- Chủ đề + lời mở -----
         var company = Has(m.CompanyName) ? $" tại <b>{E(m.CompanyName!)}</b>" : "";

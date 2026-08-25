@@ -14,10 +14,14 @@ namespace GP35.SRIS.Application.Services.Business;
 /// <summary>
 /// Đề xuất tuyển (docs 5.14 — chốt 15/08/2026 sau bảo vệ hội đồng).
 ///
-/// Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển: họ đọc kết luận hội đồng phỏng vấn rồi ĐỀ XUẤT;
-/// GIÁM ĐỐC quyết và chốt điều khoản (lương, ngày vào làm). Duyệt đề xuất chính là hành động
+/// Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển: họ đọc kết luận hội đồng phỏng vấn rồi ĐỀ XUẤT
+/// kèm mức lương; GIÁM ĐỐC duyệt hoặc trả lại phiếu. Duyệt đề xuất chính là hành động
 /// đẩy hồ sơ INTERVIEW→OFFER — hai việc đi cùng nhau nên không có cảnh "đã duyệt mà card
 /// vẫn nằm ở cột Phỏng vấn".
+///
+/// V053 (25/08/2026): Giám đốc KHÔNG gõ đè một mức lương khác lên phiếu nữa. Cửa "chưa duyệt"
+/// đã đủ để mặc cả: chưa duyệt + ghi rõ muốn bao nhiêu -> DM sửa mức đề xuất -> gửi lại -> duyệt.
+/// Nhờ vậy mỗi phiếu chỉ có MỘT con số lương, và DM luôn nhìn thấy vì sao mức của mình bị đổi.
 /// </summary>
 public class HiringProposalService : BaseService<HiringProposalService>, IHiringProposalService
 {
@@ -66,12 +70,18 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         if (await _proposalRepo.GetPendingByApplicationAsync(companyId, applicationId) is not null)
             throw Conflict("Hồ sơ này đã có một đề xuất đang chờ Giám đốc duyệt.");
 
+        // Mức lương BẮT BUỘC (V053): Giám đốc chỉ duyệt hoặc trả lại phiếu, không gõ mức khác —
+        // phiếu không có số thì Giám đốc chẳng duyệt được điều khoản nào, và thư mời lại rơi về
+        // cảnh nhân sự tự điền lương.
+        if (dto.ProposedSalary is not decimal salary || salary <= 0)
+            throw Bad("Nhập mức lương đề xuất — đó là con số Giám đốc duyệt và thư mời sẽ dùng.");
+
         var proposal = new HiringProposal
         {
             ApplicationId = applicationId,
             Status = StatusPending,
             ProposalNote = Normalize(dto.Note),
-            ProposedSalary = dto.ProposedSalary,
+            ProposedSalary = salary,
             CreatedBy = userId > 0 ? userId : null
         };
         var proposalId = await _proposalRepo.InsertAsync(companyId, proposal);
@@ -102,6 +112,12 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         var note = Normalize(dto.Note);
         var now = DateTime.UtcNow;
 
+        // CHƯA duyệt thì phải nói vì sao: phiếu quay về bàn Trưởng bộ phận, và ghi chú này là
+        // thứ DUY NHẤT họ đọc được để biết sửa gì rồi gửi lại (V053). Thường là mức lương —
+        // Giám đốc không còn ô "lương chốt" để tự sửa nữa, nên phải viết ra con số mình muốn.
+        if (!dto.Approve && note is null)
+            throw Bad("Chưa duyệt thì phải ghi lý do — Trưởng bộ phận cần biết sửa gì (VD: mức lương tối đa của vị trí này) để đề xuất lại.");
+
         if (dto.Approve)
         {
             // Chuyển trạng thái TRƯỚC khi đóng phiếu: guard G2 hoặc luật quyền có chặn thì
@@ -110,9 +126,9 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
             await _stateService.TransitionAsync(
                 companyId, userId, proposal.ApplicationId, ApplicationState.Offer, note);
 
+            // Duyệt = gật đầu ĐÚNG con số đang nằm trên phiếu. Không có ô "lương chốt" riêng để
+            // Giám đốc gõ đè (V053): muốn mức khác thì chưa duyệt + ghi rõ, DM sửa rồi gửi lại.
             proposal.Status = StatusApproved;
-            // Bỏ trống = giữ nguyên mức DM đề xuất (Giám đốc gật đầu chứ không mặc cả lại).
-            proposal.ApprovedSalary = dto.ApprovedSalary ?? proposal.ProposedSalary;
         }
         else
         {
@@ -186,14 +202,12 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         ApplicationId = row.Proposal.ApplicationId,
         Status = row.Proposal.Status,
 
-        ProposalNote = row.Proposal.ProposalNote,
         ProposedSalary = row.Proposal.ProposedSalary,
         CreatedBy = row.Proposal.CreatedBy,
         CreatedByName = row.CreatedByName,
         CreatedAt = row.Proposal.CreatedAt,
 
         DecisionNote = row.Proposal.DecisionNote,
-        ApprovedSalary = row.Proposal.ApprovedSalary,
         DecidedBy = row.Proposal.DecidedBy,
         DecidedByName = row.DecidedByName,
         DecidedAt = row.Proposal.DecidedAt,

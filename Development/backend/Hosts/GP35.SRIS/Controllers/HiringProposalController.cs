@@ -9,9 +9,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace GP35.SRIS.Controllers;
 
 /// <summary>
-/// Đề xuất tuyển (docs 5.14 — V043): Trưởng bộ phận đề xuất "nên tuyển người này",
-/// GIÁM ĐỐC quyết và chốt điều khoản. Duyệt = hồ sơ sang bước Quyết định (OFFER), rồi
-/// bộ phận nhân sự soạn thư mời theo đúng mức lương/ngày vào làm Giám đốc đã chốt.
+/// Đề xuất tuyển (docs 5.14 — V043): Trưởng bộ phận đề xuất "nên tuyển người này" kèm mức
+/// lương, GIÁM ĐỐC duyệt hoặc trả lại phiếu. Duyệt = hồ sơ sang bước Quyết định (OFFER) và
+/// bộ phận nhân sự soạn thư mời theo đúng mức lương trên phiếu đã duyệt (nhân sự chỉ điền
+/// ngày vào làm). Giám đốc muốn mức khác thì CHƯA DUYỆT + ghi rõ, DM sửa rồi gửi lại (V053).
 /// </summary>
 [ApiController]
 [Authorize]
@@ -26,7 +27,7 @@ public class HiringProposalController : ControllerBase
         _proposalService = proposalService;
     }
 
-    /// <summary>DM đề xuất tuyển 1 ứng viên đang ở bước Phỏng vấn.</summary>
+    /// <summary>DM đề xuất tuyển 1 ứng viên đang ở bước Phỏng vấn (kèm mức lương — bắt buộc).</summary>
     [HttpPost("api/applications/{applicationId:long}/hiring-proposal")]
     [WithRole(RoleConstants.DepartmentManager)]
     public async Task<IActionResult> Create(long applicationId, [FromBody] CreateProposalDto dto)
@@ -55,7 +56,8 @@ public class HiringProposalController : ControllerBase
     }
 
     /// <summary>
-    /// Giám đốc quyết: <c>{ approve, note?, approvedSalary? }</c>.
+    /// Giám đốc quyết: <c>{ approve, note? }</c>. Không duyệt thì <c>note</c> BẮT BUỘC — đó là
+    /// thứ Trưởng bộ phận đọc để sửa phiếu (V053).
     /// Duyệt -> hồ sơ sang OFFER; không duyệt -> hồ sơ Ở LẠI bước Phỏng vấn (KHÔNG loại ứng viên).
     /// </summary>
     [HttpPost("api/hiring-proposals/{proposalId:long}/decision")]

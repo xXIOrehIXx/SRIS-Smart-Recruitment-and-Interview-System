@@ -101,6 +101,22 @@ public class HiringProposalServiceTests
         _logRepo.Verify(r => r.InsertAsync(CompanyId, It.Is<ActivityLog>(l => l.Action == "HIRING_PROPOSED")), Times.Once);
     }
 
+    /// <summary>
+    /// V053: phiếu KHÔNG có mức lương thì Giám đốc chẳng có điều khoản nào để duyệt, và thư mời
+    /// lại rơi về cảnh nhân sự tự điền lương — chặn ngay lúc gửi đề xuất.
+    /// </summary>
+    [Fact]
+    public async Task Create_WithoutSalary_Throws400()
+    {
+        var service = CreateService();
+
+        var ex = await Assert.ThrowsAsync<BaseException>(() => service.CreateAsync(
+            CompanyId, DmUserId, AppId, new CreateProposalDto { Note = "Tay nghề chắc" }));
+
+        Assert.Equal("BAD_REQUEST", ex.ErrorCode);
+        _proposalRepo.Verify(r => r.InsertAsync(It.IsAny<long>(), It.IsAny<HiringProposal>()), Times.Never);
+    }
+
     [Fact]
     public async Task Create_ByOtherManager_Throws403()
     {
@@ -173,29 +189,29 @@ public class HiringProposalServiceTests
             new DecideProposalDto { Approve = true, Note = "Đồng ý tuyển" });
 
         Assert.Equal("APPROVED", result.Status);
-        // Bỏ trống điều khoản = gật đầu với mức DM đề xuất, không phải xoá trắng.
-        Assert.Equal(15_000_000, CurrentProposal.ApprovedSalary);
+        // Duyệt = gật đầu ĐÚNG mức trên phiếu — không có ô lương thứ hai để ghi đè (V053).
+        Assert.Equal(15_000_000, CurrentProposal.ProposedSalary);
         Assert.Equal(DirectorUserId, CurrentProposal.DecidedBy);
         _stateService.Verify(s => s.TransitionAsync(
             CompanyId, DirectorUserId, AppId, "OFFER", "Đồng ý tuyển", false), Times.Once);
     }
 
+    /// <summary>
+    /// V053: Giám đốc không gõ đè mức lương khác nữa — cửa mặc cả là "chưa duyệt KÈM lý do".
+    /// Không ghi lý do thì phiếu quay về mà Trưởng bộ phận không biết phải sửa gì.
+    /// </summary>
     [Fact]
-    public async Task Decide_Approve_WithOwnTerms_OverridesProposal()
+    public async Task Decide_Reject_WithoutNote_Throws400()
     {
         var service = CreateService();
-        CurrentProposal = new HiringProposal
-        {
-            ProposalId = ProposalId, CompanyId = CompanyId, ApplicationId = AppId, Status = "PENDING",
-            ProposedSalary = 15_000_000
-        };
         _proposalRepo.Setup(r => r.GetByIdAsync(CompanyId, ProposalId)).ReturnsAsync(() => CurrentProposal);
         _context.Role = RoleConstants.Director;
 
-        await service.DecideAsync(CompanyId, DirectorUserId, ProposalId,
-            new DecideProposalDto { Approve = true, ApprovedSalary = 13_000_000 });
+        var ex = await Assert.ThrowsAsync<BaseException>(() => service.DecideAsync(
+            CompanyId, DirectorUserId, ProposalId, new DecideProposalDto { Approve = false, Note = "  " }));
 
-        Assert.Equal(13_000_000, CurrentProposal.ApprovedSalary);
+        Assert.Equal("BAD_REQUEST", ex.ErrorCode);
+        Assert.Equal("PENDING", CurrentProposal.Status);
     }
 
     /// <summary>Không duyệt KHÁC loại ứng viên: hồ sơ ở lại bước Phỏng vấn.</summary>

@@ -5,9 +5,12 @@ namespace GP35.SRIS.Domain.Entities;
 
 /// <summary>
 /// Phiếu ĐỀ XUẤT TUYỂN (V043, chốt 15/08/2026) — Trưởng bộ phận đọc kết luận hội đồng phỏng vấn
-/// rồi đề xuất "nên tuyển người này"; GIÁM ĐỐC là người quyết và chốt điều khoản
-/// (<see cref="ApprovedSalary"/>) để nhân sự soạn thư mời. Ngày vào làm KHÔNG nằm ở đây
-/// (bỏ 24/08/2026): nhân sự gọi ứng viên chốt ngày onboard rồi điền thẳng vào thư mời.
+/// rồi đề xuất "nên tuyển người này" KÈM mức lương; GIÁM ĐỐC duyệt hoặc trả lại phiếu.
+///
+/// Trên phiếu chỉ có MỘT con số lương (<see cref="ProposedSalary"/>): Giám đốc KHÔNG gõ đè
+/// mức khác (bỏ approved_salary — V053, 25/08/2026). Không ưng thì CHƯA DUYỆT kèm
+/// <see cref="DecisionNote"/> nói rõ muốn bao nhiêu, DM sửa phiếu rồi gửi lại. Ngày vào làm
+/// cũng KHÔNG nằm ở đây (bỏ 24/08/2026): nhân sự chốt ngày với ứng viên rồi điền vào thư mời.
 ///
 /// Đối xứng với <see cref="RecruitmentRequest"/>: đầu quy trình DM ra đề — nhân sự duyệt;
 /// cuối quy trình DM đề xuất — Giám đốc duyệt.
@@ -34,6 +37,7 @@ public class HiringProposal : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     [Column("proposal_note")]
     public string? ProposalNote { get; set; }
 
+    /// <summary>Mức lương đề xuất — phiếu được duyệt thì đây LÀ mức thư mời dùng (V053).</summary>
     [Column("proposed_salary")]
     public decimal? ProposedSalary { get; set; }
 
@@ -47,13 +51,12 @@ public class HiringProposal : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
 
     // ----- Quyết định của Giám đốc -----
 
+    /// <summary>
+    /// Ghi chú quyết định. Khi CHƯA duyệt thì đây là kênh DUY NHẤT Giám đốc nói cho Trưởng bộ
+    /// phận biết phải sửa gì (thường là mức lương) — vì vậy bắt buộc nhập ở nhánh đó (V053).
+    /// </summary>
     [Column("decision_note")]
     public string? DecisionNote { get; set; }
-
-    /// <summary>Mức lương CHỐT — có thể khác mức DM đề xuất; là thứ thư mời lấy ra dùng.</summary>
-    [Column("approved_salary")]
-    public decimal? ApprovedSalary { get; set; }
-
 
     /// <summary>Giám đốc quyết.</summary>
     [Column("decided_by")]
