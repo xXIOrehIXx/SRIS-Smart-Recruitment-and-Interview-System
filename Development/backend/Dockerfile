@@ -37,6 +37,7 @@ RUN dotnet build "GP35.SRIS.csproj" -c Release -o /app/build
 # Publish stage
 FROM build AS publish
 RUN dotnet publish "GP35.SRIS.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN echo $(date -u +'%Y-%m-%dT%H:%M:%SZ') > /app/publish/buildtime.txt
 
 # Final runtime image
 FROM base AS final

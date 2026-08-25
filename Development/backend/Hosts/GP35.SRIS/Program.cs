@@ -191,7 +191,23 @@ app.UseMiddleware<CandidateTenantMiddleware>();
 // Career Site công khai (/api/public/{slug}): giải tenant từ slug TRƯỚC khi controller/DbContext tạo.
 app.UseMiddleware<CareerSiteTenantMiddleware>();
 
-app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+  ResponseWriter = async (context, report) =>
+  {
+    context.Response.ContentType = "application/json";
+    var buildTime = System.IO.File.Exists("buildtime.txt")
+        ? await System.IO.File.ReadAllTextAsync("buildtime.txt")
+        : "Unknown";
+
+    var json = JsonSerializer.Serialize(new
+    {
+      status = report.Status.ToString(),
+      buildTime = buildTime.Trim()
+    });
+    await context.Response.WriteAsync(json);
+  }
+});
 
 app.UseMiddleware<AuthMiddleware>();
 

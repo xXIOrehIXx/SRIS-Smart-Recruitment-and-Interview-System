@@ -96,23 +96,26 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
         key: ${{ secrets.VPS_SSH_KEY }}
+        timeout: 600s 
         script: |
-          # Đăng nhập vào GHCR trên VPS
+          echo "=== 1. Đăng nhập vào GitHub Container Registry ==="
           echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
-          # Pull image mới nhất về
+          echo "=== 2. Kéo (Pull) Docker image mới nhất từ GHCR ==="
           docker pull ghcr.io/${{ env.NET_IMAGE_NAME }}:latest
           
-          # Dừng và xóa container cũ (nếu có)
+          echo "=== 3. Dừng và xóa container cũ ==="
           docker stop sris-backend || true
           docker rm sris-backend || true
           
-          # Khởi chạy container mới với cấu hình khởi động lại tự động
+          echo "=== 4. Khởi chạy container mới ==="
           docker run -d \
             -p 80:8080 \
             --name sris-backend \
             --restart unless-stopped \
             ghcr.io/${{ env.NET_IMAGE_NAME }}:latest
             
-          # Xóa các image cũ không còn sử dụng để tiết kiệm dung lượng đĩa
+          echo "=== 5. Dọn dẹp các Docker image cũ rác ==="
           docker image prune -f
+          
+          echo "=== Deploy hoàn tất thành công! ==="
