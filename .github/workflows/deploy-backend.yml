@@ -128,25 +128,31 @@ jobs:
           
           echo "=== Deploy Backend hoàn tất! ==="
 
-    - name: Notify Discord
-      if: always()
+  notify:
+    name: Discord Notification
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-and-push-docker, deploy]
+    if: always()
+    steps:
+    - name: Send Status to Discord
       run: |
-        if [ "${{ job.status }}" = "success" ]; then
-          EMOJI="✅"
-          STATUS_TEXT="Thành công"
-        else
+        # Đánh giá tổng thể: Nếu có bất kỳ job nào thất bại thì coi là Thất bại
+        if [ "${{ needs.build-and-test.result }}" = "failure" ] || [ "${{ needs.build-and-push-docker.result }}" = "failure" ] || [ "${{ needs.deploy.result }}" = "failure" ]; then
           EMOJI="❌"
           STATUS_TEXT="Thất bại"
+        else
+          EMOJI="✅"
+          STATUS_TEXT="Thành công"
         fi
         
-        # Get commit message safely
         COMMIT_MSG=$(jq -Rs . <<< "${{ github.event.head_commit.message }}")
-        # Remove quotes around it
         COMMIT_MSG="${COMMIT_MSG%\"}"
         COMMIT_MSG="${COMMIT_MSG#\"}"
         
-        MESSAGE="**$EMOJI Deploy Backend $STATUS_TEXT!**\n**Branch**: \`${{ github.ref_name }}\`\n**Commit**: \`$COMMIT_MSG\`\n**Log chi tiết**: [Nhấn vào đây](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        MESSAGE="**$EMOJI Luồng Backend $STATUS_TEXT!**
+**Branch**: \`${{ github.ref_name }}\`
+**Commit**: \`$COMMIT_MSG\`
+**Log chi tiết**: [Nhấn vào đây](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
         
         JSON_PAYLOAD=$(jq -n --arg content "$MESSAGE" '{content: $content}')
-        
         curl -H "Content-Type: application/json" -d "$JSON_PAYLOAD" ${{ secrets.DISCORD_WEBHOOK }}
