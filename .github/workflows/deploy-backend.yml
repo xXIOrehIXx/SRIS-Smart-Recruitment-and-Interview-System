@@ -121,11 +121,11 @@ jobs:
         script: |
           set -e
           echo "=== 1. Triển khai cấu hình Kubernetes ==="
-          kubectl apply -f ~/sris-k8s/Development/k8s/backend.yaml
+          sudo k0s kubectl apply -f ~/sris-k8s/Development/k8s/backend.yaml
           
           echo "=== 2. Ép k0s tải lại image mới (Zero-downtime) ==="
-          kubectl rollout restart deployment/sris-backend
-          kubectl rollout status deployment/sris-backend --timeout=120s
+          sudo k0s kubectl rollout restart deployment/sris-backend
+          sudo k0s kubectl rollout status deployment/sris-backend --timeout=120s
           
           echo "=== Deploy Backend hoàn tất! ==="
 
