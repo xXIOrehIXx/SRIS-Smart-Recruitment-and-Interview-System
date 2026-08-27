@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sris-backend
+  labels:
+    app: sris-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sris-backend
+  template:
+    metadata:
+      labels:
+        app: sris-backend
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: sris-backend
+        image: ghcr.io/xxiorehixx/sris-smart-recruitment-and-interview-system-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1024Mi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sris-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: sris-backend
+  ports:
+  - port: 8080
+    targetPort: 8080

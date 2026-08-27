@@ -2,12 +2,12 @@ name: Deploy Frontend
 
 on:
   push:
-    branches: [ main, master, feature/ntsan_dep ]
+    branches: [ main, master, feature/ntsan_dep_k0s ]
     paths:
       - 'Development/frontend/**'
       - '.github/workflows/deploy-frontend.yml'
   pull_request:
-    branches: [ main, master, feature/ntsan_dep ]
+    branches: [ main, master, feature/ntsan_dep_k0s ]
     paths:
       - 'Development/frontend/**'
       - '.github/workflows/deploy-frontend.yml'
@@ -68,7 +68,19 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
-    - name: SSH and Deploy to VPS
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Copy K8s Manifests to VPS
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        source: "Development/k8s/frontend.yaml"
+        target: "~/sris-k8s"
+
+    - name: Apply K8s Manifests
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -77,27 +89,12 @@ jobs:
         timeout: 600s 
         script: |
           set -e
-          echo "=== 1. Đăng nhập vào GitHub Container Registry ==="
-          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "=== 1. Triển khai cấu hình Kubernetes ==="
+          kubectl apply -f ~/sris-k8s/Development/k8s/frontend.yaml
           
-          echo "=== 2. Tạo mạng ảo Docker (sris-network) nếu chưa tồn tại ==="
-          docker network create sris-network || true
-          
-          echo "=== 3. Kéo (Pull) Docker image Frontend mới nhất ==="
-          docker pull ghcr.io/${{ env.FE_IMAGE_NAME }}:latest
-          
-          echo "=== 4. Khởi chạy container Frontend (Cổng chính 80) ==="
-          docker stop sris-frontend || true
-          docker rm sris-frontend || true
-          docker run -d \
-            -p 80:80 \
-            --name sris-frontend \
-            --network sris-network \
-            --restart unless-stopped \
-            ghcr.io/${{ env.FE_IMAGE_NAME }}:latest
-            
-          echo "=== 5. Dọn dẹp các Docker image cũ rác ==="
-          docker image prune -f
+          echo "=== 2. Ép k0s tải lại image mới (Zero-downtime) ==="
+          kubectl rollout restart deployment/sris-frontend
+          kubectl rollout status deployment/sris-frontend --timeout=120s
           
           echo "=== Deploy Frontend hoàn tất! ==="
 
