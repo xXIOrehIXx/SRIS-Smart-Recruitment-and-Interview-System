@@ -1,0 +1,98 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [ main, master, feature/ntsan_dep ]
+    paths:
+      - 'Development/frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  pull_request:
+    branches: [ main, master, feature/ntsan_dep ]
+    paths:
+      - 'Development/frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  FE_IMAGE_NAME: xxiorehixx/sris-smart-recruitment-and-interview-system-frontend
+
+jobs:
+  build-and-push-docker:
+    name: Build & Push Frontend Docker Image
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Frontend
+      id: meta-fe
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.FE_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=semver,pattern={{version}}
+          type=sha,format=short
+          latest
+
+    - name: Build and push Frontend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./Development/frontend
+        file: ./Development/frontend/Dockerfile
+        push: true
+        tags: ${{ steps.meta-fe.outputs.tags }}
+        labels: ${{ steps.meta-fe.outputs.labels }}
+
+  deploy:
+    name: Deploy Frontend to VPS
+    runs-on: ubuntu-latest
+    needs: build-and-push-docker
+    if: github.event_name == 'push'
+
+    steps:
+    - name: SSH and Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        timeout: 600s 
+        script: |
+          set -e
+          echo "=== 1. Đăng nhập vào GitHub Container Registry ==="
+          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          echo "=== 2. Tạo mạng ảo Docker (sris-network) nếu chưa tồn tại ==="
+          docker network create sris-network || true
+          
+          echo "=== 3. Kéo (Pull) Docker image Frontend mới nhất ==="
+          docker pull ghcr.io/${{ env.FE_IMAGE_NAME }}:latest
+          
+          echo "=== 4. Khởi chạy container Frontend (Cổng chính 80) ==="
+          docker stop sris-frontend || true
+          docker rm sris-frontend || true
+          docker run -d \
+            -p 80:80 \
+            --name sris-frontend \
+            --network sris-network \
+            --restart unless-stopped \
+            ghcr.io/${{ env.FE_IMAGE_NAME }}:latest
+            
+          echo "=== 5. Dọn dẹp các Docker image cũ rác ==="
+          docker image prune -f
+          
+          echo "=== Deploy Frontend hoàn tất! ==="

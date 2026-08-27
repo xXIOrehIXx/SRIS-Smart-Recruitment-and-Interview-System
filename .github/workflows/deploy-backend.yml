@@ -1,18 +1,16 @@
-name: CI/CD Build and Deploy
+name: Deploy Backend
 
 on:
   push:
     branches: [ main, master, feature/ntsan_dep ]
     paths:
       - 'Development/backend/**'
-      - 'Development/frontend/**'
-      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-backend.yml'
   pull_request:
     branches: [ main, master, feature/ntsan_dep ]
     paths:
       - 'Development/backend/**'
-      - 'Development/frontend/**'
-      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-backend.yml'
 
 permissions:
   contents: read
@@ -21,10 +19,9 @@ permissions:
 env:
   REGISTRY: ghcr.io
   NET_IMAGE_NAME: xxiorehixx/sris-smart-recruitment-and-interview-system-backend
-  FE_IMAGE_NAME: xxiorehixx/sris-smart-recruitment-and-interview-system-frontend
 
 jobs:
-  build-and-test-backend:
+  build-and-test:
     name: Build & Test Backend
     runs-on: ubuntu-latest
     defaults:
@@ -54,10 +51,10 @@ jobs:
           echo "No Tests directory found, skipping tests."
         fi
 
-  build-and-push-backend-docker:
+  build-and-push-docker:
     name: Build & Push Backend Docker Image
     runs-on: ubuntu-latest
-    needs: build-and-test-backend
+    needs: build-and-test
     if: github.event_name == 'push'
 
     steps:
@@ -91,46 +88,10 @@ jobs:
         tags: ${{ steps.meta-net.outputs.tags }}
         labels: ${{ steps.meta-net.outputs.labels }}
 
-  build-and-push-frontend-docker:
-    name: Build & Push Frontend Docker Image
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Log in to the Container registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Extract metadata (tags, labels) for Frontend
-      id: meta-fe
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.FE_IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=semver,pattern={{version}}
-          type=sha,format=short
-          latest
-
-    - name: Build and push Frontend Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./Development/frontend
-        file: ./Development/frontend/Dockerfile
-        push: true
-        tags: ${{ steps.meta-fe.outputs.tags }}
-        labels: ${{ steps.meta-fe.outputs.labels }}
-
   deploy:
-    name: Deploy to VPS
+    name: Deploy Backend to VPS
     runs-on: ubuntu-latest
-    needs: [build-and-push-backend-docker, build-and-push-frontend-docker]
+    needs: build-and-push-docker
     if: github.event_name == 'push'
 
     steps:
@@ -149,11 +110,10 @@ jobs:
           echo "=== 2. Tạo mạng ảo Docker (sris-network) nếu chưa tồn tại ==="
           docker network create sris-network || true
           
-          echo "=== 3. Kéo (Pull) Docker image mới nhất cho Backend & Frontend ==="
+          echo "=== 3. Kéo (Pull) Docker image Backend mới nhất ==="
           docker pull ghcr.io/${{ env.NET_IMAGE_NAME }}:latest
-          docker pull ghcr.io/${{ env.FE_IMAGE_NAME }}:latest
           
-          echo "=== 4. Triển khai Backend (Cổng nội bộ 8080) ==="
+          echo "=== 4. Khởi chạy container Backend (Cổng nội bộ 8080) ==="
           docker stop sris-backend || true
           docker rm sris-backend || true
           docker run -d \
@@ -163,17 +123,7 @@ jobs:
             --restart unless-stopped \
             ghcr.io/${{ env.NET_IMAGE_NAME }}:latest
             
-          echo "=== 5. Triển khai Frontend (Cổng chính 80) ==="
-          docker stop sris-frontend || true
-          docker rm sris-frontend || true
-          docker run -d \
-            -p 80:80 \
-            --name sris-frontend \
-            --network sris-network \
-            --restart unless-stopped \
-            ghcr.io/${{ env.FE_IMAGE_NAME }}:latest
-            
-          echo "=== 6. Dọn dẹp các Docker image cũ rác ==="
+          echo "=== 5. Dọn dẹp các Docker image cũ rác ==="
           docker image prune -f
           
-          echo "=== Deploy hoàn tất thành công! ==="
+          echo "=== Deploy Backend hoàn tất! ==="
