@@ -96,3 +96,25 @@ jobs:
           docker image prune -f
           
           echo "=== Deploy Frontend hoàn tất! ==="
+
+    - name: Notify Discord
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          EMOJI="✅"
+          STATUS_TEXT="Thành công"
+        else
+          EMOJI="❌"
+          STATUS_TEXT="Thất bại"
+        fi
+        
+        # Get commit message safely
+        COMMIT_MSG=$(jq -Rs . <<< "${{ github.event.head_commit.message }}")
+        COMMIT_MSG="${COMMIT_MSG%\"}"
+        COMMIT_MSG="${COMMIT_MSG#\"}"
+        
+        MESSAGE="**$EMOJI Deploy Frontend $STATUS_TEXT!**\n**Branch**: \`${{ github.ref_name }}\`\n**Commit**: \`$COMMIT_MSG\`\n**Log chi tiết**: [Nhấn vào đây](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        
+        JSON_PAYLOAD=$(jq -n --arg content "$MESSAGE" '{content: $content}')
+        
+        curl -H "Content-Type: application/json" -d "$JSON_PAYLOAD" ${{ secrets.DISCORD_WEBHOOK }}
