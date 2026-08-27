@@ -150,9 +150,9 @@ jobs:
         COMMIT_MSG="${COMMIT_MSG#\"}"
         
         MESSAGE="**$EMOJI Luồng Backend $STATUS_TEXT!**
-**Branch**: \`${{ github.ref_name }}\`
-**Commit**: \`$COMMIT_MSG\`
-**Log chi tiết**: [Nhấn vào đây](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        **Branch**: \`${{ github.ref_name }}\`
+        **Commit**: \`$COMMIT_MSG\`
+        **Log chi tiết**: [Nhấn vào đây](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
         
         JSON_PAYLOAD=$(jq -n --arg content "$MESSAGE" '{content: $content}')
         curl -H "Content-Type: application/json" -d "$JSON_PAYLOAD" ${{ secrets.DISCORD_WEBHOOK }}
