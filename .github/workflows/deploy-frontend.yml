@@ -16,6 +16,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency: 
+  group: deploy-vps
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   FE_IMAGE_NAME: xxiorehixx/sris-smart-recruitment-and-interview-system-frontend
