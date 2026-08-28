@@ -14,6 +14,7 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import requestIcon from "./request-icon.svg";
+import LogoIcon from "../../components/LogoIcon";
 
 const ICON_MAP = {
   DashboardOutlined,
@@ -113,27 +114,7 @@ const Sidebar = ({ collapsed }) => {
     <div className="sidebar-container">
       <div className="sider-header">
         <div className="logo" onClick={() => navigate("/")}>
-          <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill={primaryColor} />
-            <path
-              d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-              stroke="white"
-              strokeWidth="2"
-            />
-            <path
-              d="M20 22L24 26L28 22"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M24 18V26"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <LogoIcon color={primaryColor} />
           {!collapsed && <span className="logo-text">SRIS</span>}
         </div>
       </div>

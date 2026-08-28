@@ -27,6 +27,7 @@ import {
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import "./Home.css";
+import LogoIcon from "../components/LogoIcon";
 
 const { Header, Content, Footer } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -67,27 +68,7 @@ const Home = () => {
       {/* HEADER */}
       <Header className="home-header">
         <div className="header-logo">
-          <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill="#5D8C3E" />
-            <path
-              d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-              stroke="white"
-              strokeWidth="2"
-            />
-            <path
-              d="M20 22L24 26L28 22"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M24 18V26"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <LogoIcon size={40} />
           <h2>SRIS</h2>
         </div>
 
@@ -539,27 +520,7 @@ const Home = () => {
         <Row justify="space-between" align="middle">
           <Col>
             <div className="footer-logo">
-              <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-                <rect width="48" height="48" rx="12" fill="#5D8C3E" />
-                <path
-                  d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-                  stroke="white"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M20 22L24 26L28 22"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M24 18V26"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <LogoIcon size={32} />
               <span>SRIS</span>
             </div>
           </Col>

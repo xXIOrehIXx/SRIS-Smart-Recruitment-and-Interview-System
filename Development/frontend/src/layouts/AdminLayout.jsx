@@ -29,6 +29,7 @@ import { useAuth, ROLES } from "../contexts/AuthContext";
 import { useCompany } from "../contexts/CompanyContext";
 import { authAPI } from "../services/api";
 import "./css/MainLayout.css";
+import LogoIcon from "../components/LogoIcon";
 
 const { Header, Sider, Content } = Layout;
 
@@ -176,27 +177,7 @@ const AdminLayout = () => {
                   style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 4 }}
                 />
               ) : (
-                <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-                  <rect width="48" height="48" rx="12" fill="#5D8C3E" />
-                  <path
-                    d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M20 22L24 26L28 22"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M24 18V26"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <LogoIcon />
               )}
               {!collapsed && (
                 <span className="logo-text">
