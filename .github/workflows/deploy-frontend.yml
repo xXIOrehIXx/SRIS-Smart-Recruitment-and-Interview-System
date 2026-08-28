@@ -5,11 +5,13 @@ on:
     branches: [ main, master, feature/ntsan_dep_k0s ]
     paths:
       - 'Development/frontend/**'
+      - 'Development/k8s/frontend.yaml'
       - '.github/workflows/deploy-frontend.yml'
   pull_request:
     branches: [ main, master, feature/ntsan_dep_k0s ]
     paths:
       - 'Development/frontend/**'
+      - 'Development/k8s/frontend.yaml'
       - '.github/workflows/deploy-frontend.yml'
 
 permissions:
