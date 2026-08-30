@@ -79,8 +79,8 @@ jobs:
         timeout: 60s 
         script: |
           echo "=== Yêu cầu K8s khởi động lại Pod để nhận Image mới ==="
-          sudo k0s kubectl rollout restart deployment sris-frontend
-          sudo k0s kubectl rollout status deployment sris-frontend --timeout=120s
+          sudo k0s kubectl rollout restart deployment sris-sris-ui -n sris
+          sudo k0s kubectl rollout status deployment sris-sris-ui -n sris --timeout=120s
 
   notify:
     name: Discord Notification
