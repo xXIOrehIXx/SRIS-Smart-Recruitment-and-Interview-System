@@ -93,23 +93,30 @@ jobs:
         labels: ${{ steps.meta-net.outputs.labels }}
 
   deploy:
-    name: Restart Backend to Pull New Image
+    name: Update Helm Chart (GitOps)
     runs-on: ubuntu-latest
     needs: build-and-push-docker
     if: github.event_name == 'push'
 
     steps:
-    - name: Trigger K8s Rollout Restart
-      uses: appleboy/ssh-action@v1.0.3
+    - name: Checkout Helm Chart repo
+      uses: actions/checkout@v4
       with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        timeout: 60s 
-        script: |
-          echo "=== Yêu cầu K8s khởi động lại Pod để nhận Image mới ==="
-          sudo k0s kubectl rollout restart deployment sris-sris-business-api -n sris
-          sudo k0s kubectl rollout status deployment sris-sris-business-api -n sris --timeout=120s
+        repository: sannxt244/sris-helm-chart
+        token: ${{ secrets.HELM_REPO_PAT }}
+        path: sris-helm-chart
+
+    - name: Update values.yaml
+      run: |
+        cd sris-helm-chart
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        sed -i "/srisBusinessApi:/,/tag:/ s/tag:.*/tag: sha-$SHORT_SHA/" values.yaml
+        
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git add values.yaml
+        git commit -m "Update srisBusinessApi tag to sha-$SHORT_SHA" || echo "No changes to commit"
+        git push
 
   notify:
     name: Discord Notification
