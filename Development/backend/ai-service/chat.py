@@ -1,21 +1,24 @@
 import json
 import urllib.request
 import urllib.error
+import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter(tags=["Test Chat"])
 
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+
 @router.get("/models")
 def get_ollama_models():
     """Lấy danh sách các model đang cài trong Ollama cục bộ."""
     try:
-        req = urllib.request.Request("http://127.0.0.1:11434/api/tags")
+        req = urllib.request.Request(f"{OLLAMA_BASE_URL}/api/tags")
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             return {"models": [m["name"] for m in data.get("models", [])]}
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Không kết nối được Ollama (11434): {e}")
+        raise HTTPException(status_code=502, detail=f"Không kết nối được Ollama: {e}")
 
 class ChatRequest(BaseModel):
     model: str
@@ -32,7 +35,7 @@ def chat_with_ollama(req: ChatRequest):
         }).encode('utf-8')
         
         http_req = urllib.request.Request(
-            "http://127.0.0.1:11434/api/chat",
+            f"{OLLAMA_BASE_URL}/api/chat",
             data=payload,
             headers={'Content-Type': 'application/json'}
         )
