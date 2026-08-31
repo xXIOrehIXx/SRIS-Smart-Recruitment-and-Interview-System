@@ -125,6 +125,12 @@ def summarize_panel_endpoint(req: SummarizePanelRequest):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Tong hop y kien that bai: {e}")
 
+# ============================================================
+#  CHAT UI — Lấy model và Chat trực tiếp
+# ============================================================
+from chat import router as chat_router
+app.include_router(chat_router)
+
 
 # Chạy:   uvicorn main:app --port 8000
 # Cần Ollama chạy (mặc định cổng 11434) + `ollama pull qwen2.5` + `ollama pull qwen3:8b`.

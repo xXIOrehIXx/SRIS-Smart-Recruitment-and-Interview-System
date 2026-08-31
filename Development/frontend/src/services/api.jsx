@@ -654,4 +654,9 @@ export const publicCareerAPI = {
   getBrand: (slug) => publicApi.get(`/public/${slug}/brand`),
 };
 
+export const chatAiAPI = {
+  getModels: () => api.get('/chat-ai/models'),
+  chat: (model, message) => api.post('/chat-ai/chat', { model, message }),
+};
+
 export default api;
