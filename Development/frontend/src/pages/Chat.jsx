@@ -36,14 +36,72 @@ export default function Chat() {
     
     const userMsg = message;
     setMessage('');
-    setChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
+    
+    // Thêm tin nhắn của User và 1 bong bóng rỗng cho AI
+    setChatHistory(prev => [
+      ...prev, 
+      { role: 'user', content: userMsg },
+      { role: 'ai', content: '' }
+    ]);
     setLoading(true);
 
     try {
-      const res = await chatAiAPI.chat(selectedModel, userMsg);
-      setChatHistory(prev => [...prev, { role: 'ai', content: res.data.reply }]);
+      const token = localStorage.getItem('token');
+      // Lấy BASE_URL từ axios config của project
+      const baseUrl = chatAiAPI.chat.toString().includes('api.post') 
+        ? '/api' // Fallback
+        : '/api'; // React dev proxy
+
+      const res = await fetch(`${baseUrl}/chat-ai/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ model: selectedModel, message: userMsg })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `Lỗi HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let botMessage = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        // Ollama trả về từng dòng JSON riêng lẻ (JSON lines)
+        const lines = chunk.split('\n').filter(line => line.trim());
+        
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line);
+            if (data.message?.content) {
+              botMessage += data.message.content;
+              
+              setChatHistory(prev => {
+                const newHistory = [...prev];
+                newHistory[newHistory.length - 1].content = botMessage;
+                return newHistory;
+              });
+            }
+          } catch (e) {
+            // Bỏ qua nếu json bị cắt ngang (hiếm khi xảy ra với TextDecoder đúng chuẩn)
+          }
+        }
+      }
     } catch (err) {
-      setChatHistory(prev => [...prev, { role: 'error', content: err.response?.data || err.message }]);
+      setChatHistory(prev => {
+        const newHistory = [...prev];
+        newHistory[newHistory.length - 1].role = 'error';
+        newHistory[newHistory.length - 1].content = err.message;
+        return newHistory;
+      });
     }
     
     setLoading(false);

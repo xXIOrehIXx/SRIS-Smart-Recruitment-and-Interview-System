@@ -40,19 +40,32 @@ public class ChatAiController : ControllerBase
         public string Message { get; set; } = "";
     }
 
-    [HttpPost("chat")]
-    public async Task<IActionResult> Chat([FromBody] ChatRequestDto req, CancellationToken ct)
+    [HttpPost("chat/stream")]
+    public async Task ChatStream([FromBody] ChatRequestDto req, CancellationToken ct)
     {
         var baseUrl = _config.AiService?.BaseUrl?.TrimEnd('/');
-        if (string.IsNullOrWhiteSpace(baseUrl)) return StatusCode(500, "Chưa cấu hình 'AiService:BaseUrl'.");
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            Response.StatusCode = 500;
+            await Response.WriteAsync("Chưa cấu hình AiService:BaseUrl");
+            return;
+        }
 
         using var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromMinutes(2); // AI trả lời có thể mất 30s-1p
-        var url = $"{baseUrl}/chat";
+        client.Timeout = Timeout.InfiniteTimeSpan; // Stream không giới hạn timeout
+        var url = $"{baseUrl}/chat/stream";
         
-        var resp = await client.PostAsJsonAsync(url, new { model = req.Model, message = req.Message }, ct);
-        var body = await resp.Content.ReadAsStringAsync(ct);
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { model = req.Model, message = req.Message })
+        };
+
+        using var resp = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
         
-        return Content(body, "application/json");
+        Response.StatusCode = (int)resp.StatusCode;
+        Response.ContentType = resp.Content.Headers.ContentType?.ToString() ?? "application/x-ndjson";
+        
+        var stream = await resp.Content.ReadAsStreamAsync(ct);
+        await stream.CopyToAsync(Response.Body, ct);
     }
 }

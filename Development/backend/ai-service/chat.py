@@ -24,14 +24,16 @@ class ChatRequest(BaseModel):
     model: str
     message: str
 
-@router.post("/chat")
-def chat_with_ollama(req: ChatRequest):
-    """Chat hỏi đáp trực tiếp (Không stream) với một model do người dùng chọn."""
-    try:
+from fastapi.responses import StreamingResponse
+
+@router.post("/chat/stream")
+def chat_stream_ollama(req: ChatRequest):
+    """Chat trực tiếp với Ollama sử dụng luồng (Stream) để tránh timeout."""
+    def generate():
         payload = json.dumps({
             "model": req.model,
             "messages": [{"role": "user", "content": req.message}],
-            "stream": False
+            "stream": True
         }).encode('utf-8')
         
         http_req = urllib.request.Request(
@@ -39,8 +41,12 @@ def chat_with_ollama(req: ChatRequest):
             data=payload,
             headers={'Content-Type': 'application/json'}
         )
-        with urllib.request.urlopen(http_req) as response:
-            data = json.loads(response.read().decode())
-            return {"reply": data.get("message", {}).get("content", "")}
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Lỗi chat Ollama: {e}")
+        try:
+            with urllib.request.urlopen(http_req) as response:
+                for line in response:
+                    if line:
+                        yield line
+        except Exception as e:
+            yield json.dumps({"error": str(e)}).encode('utf-8')
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
