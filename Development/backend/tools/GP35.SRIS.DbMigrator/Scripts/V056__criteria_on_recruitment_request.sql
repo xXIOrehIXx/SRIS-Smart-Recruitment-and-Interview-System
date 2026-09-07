@@ -157,5 +157,36 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes
     CREATE NONCLUSTERED INDEX IX_CritExtract_request ON dbo.CriteriaExtraction (request_id);
 GO
 
+/* ---------- 4) UNIQUE(job_id) phải thành chỉ mục LỌC ---------- */
+/*
+   UQ_CriteriaExtraction_job (V037) là UNIQUE CONSTRAINT không có điều kiện lọc, đúng vì hồi
+   đó job_id NOT NULL. Giờ job_id NULL được thì nó thành cái bẫy: SQL Server coi mọi NULL là
+   BẰNG NHAU trong ràng buộc duy nhất, nên yêu cầu tuyển dụng THỨ HAI xin bóc tiêu chí (job_id
+   NULL) sẽ đụng dòng của yêu cầu thứ nhất và INSERT ném lỗi.
+
+   Đổi thành hai chỉ mục lọc — "một dòng / một job" và "một dòng / một yêu cầu" — giữ đúng ý
+   ban đầu của V037 (bấm bóc lại thì ghi đè, không xếp hàng chồng nhau) cho cả hai phía.
+*/
+IF EXISTS (SELECT 1 FROM sys.indexes
+            WHERE object_id = OBJECT_ID('dbo.CriteriaExtraction')
+              AND name = 'UQ_CriteriaExtraction_job' AND is_unique_constraint = 1)
+BEGIN
+    ALTER TABLE dbo.CriteriaExtraction DROP CONSTRAINT UQ_CriteriaExtraction_job;
+    PRINT N'V056: đã bỏ UNIQUE CONSTRAINT UQ_CriteriaExtraction_job (không lọc NULL được).';
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+                WHERE object_id = OBJECT_ID('dbo.CriteriaExtraction') AND name = 'UQ_CritExtract_job')
+    CREATE UNIQUE INDEX UQ_CritExtract_job
+        ON dbo.CriteriaExtraction (job_id) WHERE job_id IS NOT NULL;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+                WHERE object_id = OBJECT_ID('dbo.CriteriaExtraction') AND name = 'UQ_CritExtract_request')
+    CREATE UNIQUE INDEX UQ_CritExtract_request
+        ON dbo.CriteriaExtraction (request_id) WHERE request_id IS NOT NULL;
+GO
+
 PRINT N'V056 xong: tiêu chí và hàng đợi bóc AI gắn được vào Yêu cầu tuyển dụng.';
 GO

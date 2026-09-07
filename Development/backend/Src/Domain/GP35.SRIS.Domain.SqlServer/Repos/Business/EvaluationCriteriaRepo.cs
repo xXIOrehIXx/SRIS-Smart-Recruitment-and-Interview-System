@@ -123,6 +123,54 @@ public class EvaluationCriteriaRepo : BaseRepo<long, EvaluationCriteria>, IEvalu
                 .SetProperty(c => c.UpdatedAt, now));
     }
 
+    public async Task<IReadOnlyList<EvaluationCriteria>> GetByRequestAsync(
+        long companyId, long requestId, bool activeOnly, bool approvedOnly = true)
+    {
+        // job_id == null: chỉ lấy tiêu chí CÒN ở yêu cầu. Bỏ điều kiện này thì sau khi job được
+        // tạo, màn yêu cầu và màn job cùng hiện một bộ và người dùng sửa ở đâu cũng được — trong
+        // khi từ lúc có job thì cửa quyền phải là cửa của job (Trưởng bộ phận phụ trách vị trí).
+        var q = _db.EvaluationCriterias.AsNoTracking()
+            .Where(c => c.RequestId == requestId && c.JobId == null);
+        if (activeOnly) q = q.Where(c => c.Active);
+        if (approvedOnly) q = q.Where(c => c.Status == CriteriaStatus.Approved);
+        return await q.OrderBy(c => c.CriteriaId).ToListAsync();
+    }
+
+    public async Task<int> DeleteDraftsByRequestAsync(long companyId, long requestId)
+    {
+        return await _db.EvaluationCriterias
+            .Where(c => c.RequestId == requestId && c.JobId == null && c.Status == CriteriaStatus.Draft)
+            .ExecuteDeleteAsync();
+    }
+
+    public async Task<int> ApproveForRequestAsync(long companyId, long requestId, long userId)
+    {
+        var now = DateTime.UtcNow;
+        return await _db.EvaluationCriterias
+            .Where(c => c.RequestId == requestId && c.JobId == null && c.Active
+                        && c.Status != CriteriaStatus.Approved)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Status, CriteriaStatus.Approved)
+                .SetProperty(c => c.ApprovedBy, userId)
+                .SetProperty(c => c.ApprovedAt, now)
+                .SetProperty(c => c.ReviewedBy, userId)
+                .SetProperty(c => c.ReviewedAt, now)
+                .SetProperty(c => c.ReviewNote, (string?)null)
+                .SetProperty(c => c.UpdatedAt, now));
+    }
+
+    public async Task<int> MoveToJobAsync(long companyId, long requestId, long jobId)
+    {
+        // Chỉ chuyển dòng ĐÃ DUYỆT: bản nháp Trưởng bộ phận chưa chốt không được lặng lẽ thành
+        // phiếu chấm phỏng vấn chỉ vì nhân sự bấm tạo tin.
+        return await _db.EvaluationCriterias
+            .Where(c => c.RequestId == requestId && c.JobId == null
+                        && c.Status == CriteriaStatus.Approved)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.JobId, jobId)
+                .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
+    }
+
     public async Task<EvaluationCriteria?> GetLatestReviewedAsync(long companyId, long jobId)
     {
         return await _db.EvaluationCriterias

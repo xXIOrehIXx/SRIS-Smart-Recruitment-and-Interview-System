@@ -385,14 +385,27 @@ JOBS_DEF = [
                    "Xe công ty khi đi công tác"]),
 ]
 
-jobs = {}
+# V056: MỌI tin tuyển dụng phải sinh ra từ một Yêu cầu tuyển dụng đã được Giám đốc duyệt.
+# Trình tự đúng như ngoài đời, và cũng là trình tự bộ tiêu chí đi qua:
+#   DM tạo yêu cầu -> DM ra đề tiêu chí NGAY TRÊN yêu cầu -> DM chốt
+#   -> Giám đốc duyệt yêu cầu -> nhân sự tạo tin (tiêu chí TỰ CHUYỂN sang tin)
+requests_of_job = {}
 for j in JOBS_DEF:
-    body = {k: v for k, v in j.items() if k != "key"}
-    body["deadline"] = time.strftime("%Y-%m-%dT23:59:59", time.gmtime(time.time() + 30 * 86400))
-    body["currency"] = "VND"
-    d = must(*call("POST", "/jobs", token=hr, body=body), f"tạo job {j['title']}")
-    jobs[j["key"]] = d["jobId"]
-    print(f"   + Job {d['jobId']}: {j['title']}")
+    # Yêu cầu mang cùng nội dung với tin sẽ đăng — đây là nguồn AI bóc tiêu chí ở luồng thật.
+    d = must(*call("POST", "/recruitment-requests", token=dm, body={
+        "title": j["title"],
+        "department": j["department"],
+        "quantity": j.get("quantity", 1),
+        "employmentType": j.get("employmentType"),
+        "experienceLevel": j.get("experienceLevel"),
+        "description": j["jdText"],
+        "requirements": "\n".join(j.get("requirements", [])),
+        "benefits": "\n".join(j.get("benefits", [])),
+        "salaryMin": j.get("salaryMin"),
+        "salaryMax": j.get("salaryMax"),
+    }), f"yêu cầu tuyển dụng {j['title']}")
+    requests_of_job[j["key"]] = d["requestId"]
+print(f"   + {len(requests_of_job)} yêu cầu tuyển dụng (DM gửi)")
 
 # ---------- 4) Bộ tiêu chí (APPROVED ngay — chính là phiếu chấm phỏng vấn) ----------
 # Chỉ bóc thứ PHẢI HỎI MỚI BIẾT: bằng cấp/chứng chỉ không lên phiếu chấm (docs 5.18).
@@ -418,26 +431,47 @@ CRITERIA = {
     "lead": [("Kinh nghiệm quản lý đội nhóm", 3), ("Năng lực đàm phán hợp đồng lớn", 3),
              ("Khả năng lập kế hoạch doanh số", 2), ("Kỹ năng đào tạo nhân viên", 2)],
 }
+# DM ra đề tiêu chí NGAY TRÊN yêu cầu (gõ tay -> APPROVED luôn, không gọi AI: seed phải chạy
+# được cả khi không có Ollama). Ở luồng thật đây là chỗ bấm "AI bóc tiêu chí".
 for key, items in CRITERIA.items():
     for name, w in items:
-        must(*call("POST", f"/jobs/{jobs[key]}/criteria", token=hr,
+        must(*call("POST", f"/recruitment-requests/{requests_of_job[key]}/criteria", token=dm,
                    body={"name": name, "weight": w, "maxScore": 10}), f"tiêu chí {name}")
-print(f"   + {sum(len(v) for v in CRITERIA.values())} tiêu chí APPROVED cho {len(CRITERIA)} job")
+print(f"   + {sum(len(v) for v in CRITERIA.values())} tiêu chí do DM ra đề trên {len(CRITERIA)} yêu cầu")
 
-# ---------- 5) Yêu cầu tuyển dụng (DM ra đề -> HR duyệt) ----------
-req_be = must(*call("POST", "/recruitment-requests", token=dm, body={
-    "title": "Bổ sung 2 Lập trình viên Backend cho dự án ERP",
-    "department": "Phòng Kỹ thuật", "quantity": 2, "employmentType": "Toàn thời gian",
-    "experienceYearsMin": 2,
-    "description": "Dự án ERP mở rộng phạm vi, đội backend hiện tại quá tải từ tháng 6.",
-    "requirements": "2 năm kinh nghiệm .NET Core\nThành thạo SQL Server\nƯu tiên biết Docker",
-    "benefits": "Lương tháng 13, bảo hiểm PVI, 2 ngày remote/tuần",
-    "salaryMin": 18000000, "salaryMax": 30000000}), "yêu cầu tuyển dụng Backend")["requestId"]
-must(*call("POST", f"/recruitment-requests/{req_be}/review", token=hr,
-           body={"approve": True, "note": "Đã duyệt, đăng tin trong tuần này."}), "duyệt yêu cầu")
-must(*call("POST", f"/recruitment-requests/{req_be}/convert", token=hr,
-           body={"jobId": jobs["be"]}), "convert yêu cầu -> job")
+# Giám đốc duyệt yêu cầu (V047) — sau bước này nhân sự mới tạo được tin.
+for key, rid in requests_of_job.items():
+    must(*call("POST", f"/recruitment-requests/{rid}/review", token=director,
+               body={"approve": True, "note": "Đồng ý tuyển, nhân sự đăng tin."}),
+         f"Giám đốc duyệt yêu cầu {rid}")
+print(f"   + Giám đốc đã duyệt {len(requests_of_job)} yêu cầu")
 
+# Nhân sự tạo tin TỪ yêu cầu — bộ tiêu chí đã chốt tự chuyển sang tin, thành phiếu chấm phỏng vấn.
+jobs = {}
+for j in JOBS_DEF:
+    body = {k: v for k, v in j.items() if k != "key"}
+    body["deadline"] = time.strftime("%Y-%m-%dT23:59:59", time.gmtime(time.time() + 30 * 86400))
+    body["currency"] = "VND"
+    body["recruitmentRequestId"] = requests_of_job[j["key"]]
+    d = must(*call("POST", "/jobs", token=hr, body=body), f"tạo job {j['title']}")
+    jobs[j["key"]] = d["jobId"]
+    print(f"   + Job {d['jobId']}: {j['title']}")
+
+# Kiểm luôn tại đây: tin nào không có phiếu chấm thì mọi thứ phía sau (chấm phỏng vấn, đề xuất
+# tuyển) seed ra vẫn "chạy" nhưng dữ liệu demo sai — hỏng kiểu im lặng, đắt hơn nhiều so với dừng.
+for key, jid in jobs.items():
+    got = must(*call("GET", f"/jobs/{jid}/criteria", token=hr), f"tiêu chí job {jid}")
+    if len(got) != len(CRITERIA[key]):
+        raise SystemExit(f"LỖI: job {jid} ({key}) nhận {len(got)}/{len(CRITERIA[key])} tiêu chí "
+                         f"từ yêu cầu {requests_of_job[key]} — bộ tiêu chí không chuyển sang.")
+print(f"   + Đã chuyển đủ tiêu chí sang cả {len(jobs)} tin tuyển dụng")
+
+# ---------- 5) Yêu cầu tuyển dụng CHƯA thành tin ----------
+# Các yêu cầu đã CONVERTED nằm ở mục 3 — từ V056 mỗi tin tuyển dụng đều sinh ra từ một yêu cầu.
+# Ở đây thêm những yêu cầu dừng lại ở hai trạng thái còn lại, để màn Yêu cầu tuyển dụng có đủ
+# cả ba trạng thái lúc demo.
+#
+# Cửa duyệt là GIÁM ĐỐC, không phải nhân sự (V047) — dùng token=hr ở đây sẽ ăn 403.
 for body in [
     {"title": "Tuyển 3 Nhân viên Kinh doanh khu vực miền Bắc", "department": "Phòng Kinh doanh",
      "quantity": 3, "employmentType": "Toàn thời gian", "experienceYearsMin": 1,
@@ -456,10 +490,10 @@ req_no = must(*call("POST", "/recruitment-requests", token=dm, body={
     "title": "Tuyển thêm 2 Thực tập sinh Thiết kế", "department": "Phòng Marketing",
     "quantity": 2, "employmentType": "Thực tập",
     "description": "Hỗ trợ thiết kế ấn phẩm cho chiến dịch cuối năm."}), "yêu cầu bị từ chối")["requestId"]
-must(*call("POST", f"/recruitment-requests/{req_no}/review", token=hr,
+must(*call("POST", f"/recruitment-requests/{req_no}/review", token=director,
            body={"approve": False, "note": "Chưa có ngân sách quý này, xem lại vào quý sau."}),
      "từ chối yêu cầu")
-print("   + Yêu cầu tuyển dụng: 1 đã convert · 2 chờ duyệt · 1 bị từ chối")
+print(f"   + Yêu cầu tuyển dụng: {len(requests_of_job)} đã thành tin · 2 chờ duyệt · 1 bị từ chối")
 
 # ---------- 6) Ứng viên nộp CV qua career site ----------
 # plan: new | screening | reject_new | reject_screen | invited | booked | scored

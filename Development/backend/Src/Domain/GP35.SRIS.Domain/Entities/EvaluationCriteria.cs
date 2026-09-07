@@ -12,8 +12,20 @@ public class EvaluationCriteria : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
 
     [Column("company_id")]
     public long CompanyId { get; set; }
+    /// <summary>
+    /// Vị trí sở hữu bộ tiêu chí. NULL khi bộ tiêu chí còn nằm ở Yêu cầu tuyển dụng —
+    /// job chưa tồn tại (V056). Được điền lúc nhân sự tạo tin từ yêu cầu đã duyệt.
+    /// </summary>
     [Column("job_id")]
-    public long JobId { get; set; }
+    public long? JobId { get; set; }
+
+    /// <summary>
+    /// Yêu cầu tuyển dụng đã sinh ra bộ tiêu chí này (V056). GIỮ NGUYÊN sau khi job được tạo
+    /// — nó là dấu vết nguồn, trả lời "bộ tiêu chí của vị trí này ra đời từ đề bài nào".
+    /// NULL với tiêu chí tạo trực tiếp trên job (đường cũ, và mọi dòng có trước V056).
+    /// </summary>
+    [Column("request_id")]
+    public long? RequestId { get; set; }
     [Column("name")]
     public string Name { get; set; } = null!;
     [Column("description")]

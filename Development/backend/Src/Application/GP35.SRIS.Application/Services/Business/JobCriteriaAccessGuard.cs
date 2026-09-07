@@ -82,6 +82,36 @@ internal static class JobCriteriaAccessGuard
                 "Chỉ Trưởng bộ phận phụ trách vị trí này mới được duyệt bộ tiêu chí của nó.");
     }
 
+    /// <summary>
+    /// Cửa SOẠN + DUYỆT cho bộ tiêu chí còn nằm ở YÊU CẦU TUYỂN DỤNG (V056) — job chưa tồn tại
+    /// nên không có <c>Job.department_manager_id</c> để đối chiếu.
+    ///
+    /// <para>Ở đây soạn và duyệt là MỘT cửa, khác hẳn phía job: yêu cầu tuyển dụng chỉ Trưởng bộ
+    /// phận tạo được (<c>[WithRole(DepartmentManager)]</c> trên RecruitmentRequestController), nên
+    /// người ra đề cũng chính là người duyệt. Bắt họ tự "gửi duyệt" cho chính mình rồi tự bấm
+    /// duyệt là thêm một nút không kiểm soát thêm được gì — đó là lý do đường này bỏ qua PENDING.
+    /// Cửa PENDING của V055 vẫn còn nguyên cho bộ tiêu chí sửa TRÊN JOB, nơi nhân sự soạn hộ.</para>
+    ///
+    /// <para>Chủ sở hữu là <c>RecruitmentRequest.created_by</c>, không phải role: một công ty có
+    /// nhiều Trưởng bộ phận và đề bài của bộ phận này không phải việc của bộ phận kia.</para>
+    /// </summary>
+    public static async Task EnsureCanEditRequestCriteriaAsync(
+        IRecruitmentRequestRepo requestRepo, IContextData contextData, long companyId, long requestId)
+    {
+        var request = await requestRepo.GetByIdAsync(companyId, requestId)
+            ?? throw Error(HttpStatusCode.NotFound, "NOT_FOUND",
+                $"Không tìm thấy yêu cầu tuyển dụng (request_id={requestId}).");
+
+        if (string.Equals(contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (request.CreatedBy is long chuNhan && chuNhan == contextData.UserId)
+            return;
+
+        throw Error(HttpStatusCode.Forbidden, "FORBIDDEN",
+            "Chỉ người tạo yêu cầu tuyển dụng này mới được ra đề bộ tiêu chí cho nó.");
+    }
+
     private static BaseException Error(HttpStatusCode status, string code, string msg) => new(msg)
     {
         ErrorCode = code, ErrorMessage = msg, HttpStatus = (int)status

@@ -38,6 +38,62 @@ public class EvaluationCriteriaController : ControllerBase
         _criteriaService = criteriaService;
     }
 
+    // ===================== V056: bộ tiêu chí trên YÊU CẦU TUYỂN DỤNG =====================
+    // Trưởng bộ phận ra đề NGAY LÚC mô tả vị trí, trước khi job tồn tại. Ràng buộc "đúng yêu cầu
+    // của mình" nằm ở tầng service (JobCriteriaAccessGuard.EnsureCanEditRequestCriteriaAsync) —
+    // [WithRole] ở đầu controller chỉ biết role, không biết yêu cầu này của ai.
+    // ĐỌC để mở: Giám đốc cần nhìn bộ tiêu chí khi duyệt yêu cầu, nhân sự cần nhìn trước khi
+    // tạo tin — nên GET không gác gì thêm.
+
+    /// <summary>Tiêu chí của một yêu cầu tuyển dụng (gồm cả DRAFT — FE phân biệt qua status).</summary>
+    [HttpGet("api/recruitment-requests/{requestId:long}/criteria")]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
+    public async Task<IActionResult> GetByRequest(long requestId, [FromQuery] bool includeInactive = false)
+    {
+        return Ok(await _criteriaService.GetByRequestAsync(_contextData.CompanyId, requestId, includeInactive));
+    }
+
+    /// <summary>Thêm 1 tiêu chí gõ tay cho yêu cầu tuyển dụng (-> APPROVED luôn).</summary>
+    [HttpPost("api/recruitment-requests/{requestId:long}/criteria")]
+    public async Task<IActionResult> CreateForRequest(long requestId, [FromBody] CriteriaInputDto dto)
+    {
+        return Ok(await _criteriaService.CreateForRequestAsync(_contextData.CompanyId, requestId, dto));
+    }
+
+    /// <summary>
+    /// XẾP HÀNG lượt AI bóc tiêu chí từ chính nội dung yêu cầu tuyển dụng. Trả 202 ngay —
+    /// cùng khuôn chạy nền với đường bóc từ tin tuyển dụng (V037).
+    /// </summary>
+    [HttpPost("api/recruitment-requests/{requestId:long}/criteria/extract")]
+    public async Task<IActionResult> ExtractForRequest(long requestId)
+    {
+        var status = await _criteriaService.RequestExtractForRequestAsync(
+            _contextData.CompanyId, requestId, _contextData.UserId);
+        return Accepted(status);
+    }
+
+    /// <summary>Trạng thái lượt bóc gần nhất của yêu cầu — FE hỏi lại tới khi <c>running=false</c>.</summary>
+    [HttpGet("api/recruitment-requests/{requestId:long}/criteria/extract-status")]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.DepartmentManager, RoleConstants.Director)]
+    public async Task<IActionResult> ExtractStatusForRequest(long requestId)
+    {
+        return Ok(await _criteriaService.GetExtractStatusForRequestAsync(_contextData.CompanyId, requestId));
+    }
+
+    /// <summary>
+    /// Trưởng bộ phận chốt bộ tiêu chí ngay trên yêu cầu: DRAFT -> APPROVED, MỘT nút.
+    /// Không có bước "gửi duyệt" như bên job (V055) vì ở đây người ra đề chính là người duyệt.
+    /// </summary>
+    [HttpPost("api/recruitment-requests/{requestId:long}/criteria/approve")]
+    public async Task<IActionResult> ApproveForRequest(long requestId)
+    {
+        var approved = await _criteriaService.ApproveForRequestAsync(
+            _contextData.CompanyId, requestId, _contextData.UserId);
+        return Ok(new { approved });
+    }
+
+    // ===================== hết khối V056 =====================
+
     /// <summary>Thêm 1 tiêu chí cho job (người gõ trực tiếp -> APPROVED luôn).</summary>
     [HttpPost("api/jobs/{jobId:long}/criteria")]
     public async Task<IActionResult> Create(long jobId, [FromBody] CriteriaInputDto dto)

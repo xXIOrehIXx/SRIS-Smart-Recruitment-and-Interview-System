@@ -2,8 +2,12 @@ using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
-/// <summary>Một lượt bóc worker vừa giành được — đủ để worker tự set tenant rồi chạy.</summary>
-public record ClaimedExtraction(long ExtractionId, long CompanyId, long JobId);
+/// <summary>
+/// Một lượt bóc worker vừa giành được — đủ để worker tự set tenant rồi chạy.
+/// Đúng MỘT trong <paramref name="JobId"/> / <paramref name="RequestId"/> có giá trị (V056,
+/// ràng buộc CK_CritExtract_job_xor_request ở tầng DB).
+/// </summary>
+public record ClaimedExtraction(long ExtractionId, long CompanyId, long? JobId, long? RequestId);
 
 /// <summary>
 /// Hàng đợi bóc tiêu chí (V037). Một dòng / một job: xin bóc lại là ghi đè trạng thái cũ.
@@ -17,6 +21,12 @@ public interface ICriteriaExtractionRepo : IBaseRepo<long, CriteriaExtraction>
 
     /// <summary>Trạng thái lượt bóc gần nhất của job. Null = job này chưa bao giờ bóc.</summary>
     Task<CriteriaExtraction?> GetByJobAsync(long companyId, long jobId);
+
+    /// <summary>Xếp hàng một lượt bóc cho YÊU CẦU TUYỂN DỤNG (V056). Ghi đè lượt cũ như bên job.</summary>
+    Task<CriteriaExtraction> EnqueueForRequestAsync(long companyId, long requestId, long requestedBy);
+
+    /// <summary>Trạng thái lượt bóc gần nhất của một yêu cầu tuyển dụng (V056).</summary>
+    Task<CriteriaExtraction?> GetByRequestAsync(long companyId, long requestId);
 
     /// <summary>
     /// Worker giành MỘT lượt PENDING và chuyển sang RUNNING trong cùng một câu lệnh

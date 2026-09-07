@@ -145,9 +145,30 @@ Nhãn dùng chung ở FE `components/ApplicationStateTag.jsx` — **đừng khai
 Trang trạng thái của ỨNG VIÊN giữ bộ nhãn RIÊNG, trung tính ("Đã nhận hồ sơ / Đang xem xét / Phỏng vấn / Kết quả") — ứng viên không cần biết hồ sơ đang nằm trên bàn ai. 6 state vẫn là chuyện nội bộ.
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)
-DM tạo Yêu cầu tuyển dụng (tùy chọn) → **Giám đốc duyệt yêu cầu** (V047) → Human Resource tạo Job
-→ AI bóc tiêu chí `DRAFT` → nhân sự rà rồi gửi `PENDING` → **Trưởng bộ phận duyệt** `APPROVED`
-(V055) → **bộ tiêu chí đó là phiếu chấm phỏng vấn** (interviewer chấm, 5.7).
+**Viết lại 07/09/2026 (V056).** Bộ tiêu chí ra đời NGAY TRÊN Yêu cầu tuyển dụng, không phải trên Job:
+
+```
+DM tạo Yêu cầu tuyển dụng (BẮT BUỘC, không còn tùy chọn)
+  → AI bóc tiêu chí TỪ CHÍNH yêu cầu đó        → DRAFT
+  → DM sửa rồi CHỐT (một nút, KHÔNG qua PENDING — người ra đề chính là người duyệt)
+  → Giám đốc duyệt yêu cầu (V047)
+  → nhân sự tạo tin TỪ yêu cầu đã duyệt        → bộ tiêu chí CHUYỂN sang job
+  → Interviewer chấm theo đúng bộ đó
+```
+
+Lý do gộp: mô tả vị trí và ra đề tiêu chí vốn là MỘT việc, do CÙNG một người (DM) làm, dựa trên
+CÙNG một văn bản. Tách ra hai màn ở hai thời điểm thì đến vòng phỏng vấn mới phát hiện vị trí
+chưa có phiếu chấm.
+
+**Hệ quả bắt buộc nhớ:** `POST /api/jobs` đòi `recruitmentRequestId` của một yêu cầu đã duyệt và
+CHƯA gắn tin (`JobService.EnsureConvertibleRequestAsync`). Không còn đường tạo tin thẳng.
+Endpoint `POST /api/recruitment-requests/{id}/convert` đã XOÁ: việc gắn yêu cầu ↔ tin nằm trong
+chính lượt tạo tin (`AttachRequestAsync`), cùng lượt đó chuyển bộ tiêu chí. Đừng tách lại thành
+hai bước — tách ra là có khoảng thời gian tin đã đăng mà chưa có phiếu chấm, và bước sau hỏng
+thì không ai biết (FE cũ gọi nó "best-effort").
+
+Tiêu chí sửa THẲNG TRÊN JOB vẫn còn (job cũ, hoặc chỉnh sau khi đã đăng tin) và đường đó GIỮ
+NGUYÊN cửa `PENDING` của V055, vì ở đó nhân sự soạn hộ nên cần người khác duyệt.
 
 **V055 (07/09/2026) — bộ tiêu chí phải qua cửa duyệt của Trưởng bộ phận.**
 Vòng đời giờ có BA trạng thái: `DRAFT` → (người soạn bấm *Gửi Trưởng bộ phận duyệt*) `PENDING`
@@ -307,8 +328,18 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
 3. **Multi-round interview = DỮ LIỆU trong state INTERVIEW** (`InterviewSchedule.round_number`),
    KHÔNG thêm state INTERVIEW_1/_2. Sơ đồ 6 state/8 transition giữ nguyên.
 
-4. **Tiêu chí (EvaluationCriteria):** AI bóc → `DRAFT` → gửi `PENDING` → DM chốt `APPROVED`.
-   AI KHÔNG quyết tiêu chí, và từ V055 **người soạn cũng không tự chốt**.
+4. **Tiêu chí (EvaluationCriteria):** AI KHÔNG quyết tiêu chí. Có HAI chỗ neo (V056):
+
+   **a) Trên YÊU CẦU TUYỂN DỤNG** (đường chính, job chưa tồn tại): `DRAFT` → DM chốt `APPROVED`,
+   MỘT nút, không qua `PENDING`. Cửa quyền là `RecruitmentRequest.created_by`
+   (`JobCriteriaAccessGuard.EnsureCanEditRequestCriteriaAsync`, Admin bypass) — không phải role,
+   vì công ty có nhiều DM và đề bài của bộ phận này không phải việc của bộ phận kia.
+   Dòng tiêu chí lúc này mang `request_id`, `job_id = NULL`. Tạo tin thì `MoveToJobAsync` điền
+   `job_id` và GIỮ `request_id` làm dấu vết nguồn — CHUYỂN chứ không nhân bản, vì nhân bản thì
+   sửa một bên không sang bên kia và `InterviewScore` trỏ vào bản nào cũng thành câu hỏi phải tra.
+   Chỉ dòng **ĐÃ DUYỆT** mới được chuyển: nháp DM chưa chốt không được lặng lẽ thành phiếu chấm.
+
+   **b) Trên JOB** (đường cũ, giữ nguyên V055): `DRAFT` → `PENDING` → DM chốt `APPROVED`.
    Hai cửa KHÁC NHAU, đừng gộp lại:
    - **SOẠN** (`EnsureCanEditAsync` — CRUD / bóc AI / `submit` / áp khuôn): nhân sự (toàn công ty)
      + **Trưởng bộ phận phụ trách ĐÚNG vị trí đó** (V052) + Admin.

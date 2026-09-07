@@ -50,4 +50,27 @@ public interface IEvaluationCriteriaRepo : IBaseRepo<long, EvaluationCriteria>
 
     /// <summary>Ghi chú trả về gần nhất của bộ tiêu chí (dòng có reviewed_at mới nhất). Null nếu chưa từng bị trả.</summary>
     Task<EvaluationCriteria?> GetLatestReviewedAsync(long companyId, long jobId);
+
+    // ---- V056: bộ tiêu chí còn nằm ở YÊU CẦU TUYỂN DỤNG (job chưa tồn tại) ----
+
+    /// <summary>Tiêu chí của một yêu cầu tuyển dụng. Xem <see cref="GetByJobAsync"/> cho ý nghĩa hai cờ.</summary>
+    Task<IReadOnlyList<EvaluationCriteria>> GetByRequestAsync(
+        long companyId, long requestId, bool activeOnly, bool approvedOnly = true);
+
+    /// <summary>Xoá tiêu chí DRAFT của yêu cầu (trước khi AI bóc lại — tránh trùng lặp).</summary>
+    Task<int> DeleteDraftsByRequestAsync(long companyId, long requestId);
+
+    /// <summary>
+    /// Trưởng bộ phận chốt bộ tiêu chí NGAY TRÊN yêu cầu: DRAFT -> APPROVED (V056).
+    /// KHÔNG đi qua PENDING — ở đường này người ra đề cũng chính là người duyệt, xem
+    /// <c>JobCriteriaAccessGuard.EnsureCanEditRequestCriteriaAsync</c>.
+    /// </summary>
+    Task<int> ApproveForRequestAsync(long companyId, long requestId, long userId);
+
+    /// <summary>
+    /// CHUYỂN bộ tiêu chí đã duyệt của yêu cầu sang job vừa tạo (V056): điền job_id, GIỮ
+    /// request_id làm dấu vết nguồn. Chỉ chuyển dòng chưa có job_id — gọi hai lần không nhân đôi.
+    /// Trả số dòng đã chuyển.
+    /// </summary>
+    Task<int> MoveToJobAsync(long companyId, long requestId, long jobId);
 }

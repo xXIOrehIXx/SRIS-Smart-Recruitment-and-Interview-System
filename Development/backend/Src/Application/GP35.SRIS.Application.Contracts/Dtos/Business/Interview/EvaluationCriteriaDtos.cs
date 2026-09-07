@@ -20,7 +20,12 @@ public class CriteriaUpdateDto
 public class CriteriaDto
 {
     public long CriteriaId { get; set; }
-    public long JobId { get; set; }
+
+    /// <summary>Null khi bộ tiêu chí còn nằm ở Yêu cầu tuyển dụng — job chưa tồn tại (V056).</summary>
+    public long? JobId { get; set; }
+
+    /// <summary>Yêu cầu tuyển dụng đã sinh ra tiêu chí này (V056). Giữ nguyên sau khi job được tạo.</summary>
+    public long? RequestId { get; set; }
     public string Name { get; set; } = null!;
     public decimal Weight { get; set; }
     public decimal MaxScore { get; set; }
@@ -59,7 +64,11 @@ public class CriteriaRequestChangesDto
 /// </summary>
 public class CriteriaExtractionStatusDto
 {
-    public long JobId { get; set; }
+    /// <summary>Null nếu lượt bóc này chạy trên Yêu cầu tuyển dụng thay vì tin tuyển dụng (V056).</summary>
+    public long? JobId { get; set; }
+
+    /// <summary>Yêu cầu tuyển dụng của lượt bóc (V056). Đúng một trong hai trường có giá trị.</summary>
+    public long? RequestId { get; set; }
 
     /// <summary>PENDING | RUNNING | DONE | FAILED | NONE (job này chưa bao giờ bóc).</summary>
     public string Status { get; set; } = "NONE";

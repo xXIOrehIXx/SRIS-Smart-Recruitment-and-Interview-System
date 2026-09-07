@@ -23,6 +23,4 @@ public interface IRecruitmentRequestService : IBaseService
     /// <summary>Human Resource duyệt: APPROVED / REJECTED (kèm note, ghi ai duyệt).</summary>
     Task<RecruitmentRequestDto> ReviewAsync(long companyId, long userId, long requestId, ReviewRequestDto dto);
 
-    /// <summary>Human Resource đã tạo Job từ yêu cầu -> CONVERTED + job_id.</summary>
-    Task<RecruitmentRequestDto> ConvertAsync(long companyId, long userId, long requestId, ConvertRequestDto dto);
 }

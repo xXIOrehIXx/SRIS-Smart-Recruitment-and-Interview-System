@@ -640,13 +640,37 @@ export const recruitmentRequestAPI = {
   cancel: (id) =>
     api.delete(`/recruitment-requests/${id}`),
 
-  // Human Resource duyệt: approve=false bắt buộc note
+  // GIÁM ĐỐC duyệt (V047 — không phải nhân sự): approve=false bắt buộc note
   review: (id, approve, note) =>
     api.post(`/recruitment-requests/${id}/review`, { approve, note }),
 
-  // Human Resource gắn job đã tạo từ yêu cầu → CONVERTED
-  convert: (id, jobId) =>
-    api.post(`/recruitment-requests/${id}/convert`, { jobId }),
+  // V056: KHÔNG còn `convert`. Yêu cầu tự chuyển sang CONVERTED bên trong lượt tạo tin
+  // (jobsAPI.create nhận recruitmentRequestId) — chính lượt đó cũng chuyển bộ tiêu chí đã
+  // duyệt sang tin. Gọi thành hai bước thì có khoảng thời gian tin đã tồn tại mà chưa có
+  // phiếu chấm, và bước sau hỏng thì không ai biết.
+};
+
+/**
+ * Bộ tiêu chí ra đề NGAY TRÊN yêu cầu tuyển dụng (V056) — trước khi tin tuyển dụng tồn tại.
+ * Trưởng bộ phận vừa mô tả vị trí vừa ra đề, rồi chốt một nút (không có bước "gửi duyệt" như
+ * bên job: ở đây người ra đề chính là người duyệt).
+ */
+export const requestCriteriaAPI = {
+  list: (requestId) =>
+    api.get(`/recruitment-requests/${requestId}/criteria`),
+
+  add: (requestId, data) =>
+    api.post(`/recruitment-requests/${requestId}/criteria`, data),
+
+  // Xếp hàng lượt AI bóc — trả 202 ngay, worker nền mới gọi model (cùng khuôn V037).
+  extract: (requestId) =>
+    api.post(`/recruitment-requests/${requestId}/criteria/extract`),
+
+  extractStatus: (requestId) =>
+    api.get(`/recruitment-requests/${requestId}/criteria/extract-status`),
+
+  approve: (requestId) =>
+    api.post(`/recruitment-requests/${requestId}/criteria/approve`),
 };
 
 // ==================== PUBLIC CAREER SITE ====================
