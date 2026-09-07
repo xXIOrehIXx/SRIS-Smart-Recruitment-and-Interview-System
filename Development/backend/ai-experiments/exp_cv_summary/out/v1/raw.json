@@ -1,0 +1,192 @@
+[
+  {
+    "id": "C01_khong_ghi_so_nam",
+    "luot": [
+      {
+        "summary": "TRẦN QUỐC HƯNG là một ứng viên có kinh nghiệm 5 năm trong lĩnh vực lập trình Backend, với chuyên môn về C# và ASP.NET Core. Anh từng làm việc tại Công ty CP Giải pháp Phần mềm Tân Việt (03/2019 đến nay) và Công ty TNHH Phần mềm Minh Long (07/2017 đến 02/2019), nơi đã phát triển hệ thống quản lý đơn hàng, thiết kế REST API, tối ưu SQL Server và xử lý sự cố hiệu năng. Anh cũng có kỹ năng sử dụng SQL Server, viết stored procedure, JWT, và có thể là ứng viên phù hợp với vị trí Lập trình viên Backend (.NET) đang tuyển dụng.",
+        "json_hop_le": true,
+        "giay": 4.1,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"TRẦN QUỐC HƯNG là một ứng viên có kinh nghiệm 5 năm trong lĩnh vực lập trình Backend, với chuyên môn về C# và ASP.NET Core. Anh từng làm việc tại Công ty CP Giải pháp Phần mềm Tân Việt (03/2019 đến nay) và Công ty TNHH Phần mềm Minh Long (07/2017 đến 02/2019), nơi đã phát triển hệ thống quản lý đơn hàng, thiết kế REST API, tối ưu SQL Server và xử lý sự cố hiệu năng. Anh cũng có kỹ năng sử dụng SQL Server, viết stored procedure, JWT, và có thể là ứng viên phù hợp với vị trí Lập trình viên Backend (.NET) đang tuyển dụng.\"\n}"
+      },
+      {
+        "summary": "TRẦN QUỐC HƯNG là một ứng viên có kinh nghiệm 5 năm trong lĩnh vực lập trình Backend, với chuyên môn về C# và ASP.NET Core. Anh từng làm việc tại Công ty CP Giải pháp Phần mềm Tân Việt (03/2019 đến nay) và Công ty TNHH Phần mềm Minh Long (07/2017 đến 02/2019), nơi đã phát triển hệ thống quản lý đơn hàng, thiết kế REST API, tối ưu SQL Server và xử lý sự cố hiệu năng. Anh cũng có kỹ năng sử dụng SQL Server, viết stored procedure, JWT, và có thể là ứng viên phù hợp với vị trí Lập trình viên Backend (.NET) đang tuyển dụng.",
+        "json_hop_le": true,
+        "giay": 3.81,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"TRẦN QUỐC HƯNG là một ứng viên có kinh nghiệm 5 năm trong lĩnh vực lập trình Backend, với chuyên môn về C# và ASP.NET Core. Anh từng làm việc tại Công ty CP Giải pháp Phần mềm Tân Việt (03/2019 đến nay) và Công ty TNHH Phần mềm Minh Long (07/2017 đến 02/2019), nơi đã phát triển hệ thống quản lý đơn hàng, thiết kế REST API, tối ưu SQL Server và xử lý sự cố hiệu năng. Anh cũng có kỹ năng sử dụng SQL Server, viết stored procedure, JWT, và có thể là ứng viên phù hợp với vị trí Lập trình viên Backend (.NET) đang tuyển dụng.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C02_ketoan_khop",
+    "luot": [
+      {
+        "summary": "Lê Thị Mai Hương là ứng viên có 6 năm kinh nghiệm làm Kế toán tổng hợp tại Công ty CP Thương mại Đại Phúc, với trách nhiệm hạch toán nghiệp vụ, lập báo cáo thuế và tài chính, làm việc với kiểm toán và cơ quan thuế. Cô tốt nghiệp cử nhân Kế toán từ Đại học Kinh tế Quốc dân, thành thạo phần mềm MISA và Excel, nắm vững quy định thuế hiện hành.",
+        "json_hop_le": true,
+        "giay": 2.52,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Lê Thị Mai Hương là ứng viên có 6 năm kinh nghiệm làm Kế toán tổng hợp tại Công ty CP Thương mại Đại Phúc, với trách nhiệm hạch toán nghiệp vụ, lập báo cáo thuế và tài chính, làm việc với kiểm toán và cơ quan thuế. Cô tốt nghiệp cử nhân Kế toán từ Đại học Kinh tế Quốc dân, thành thạo phần mềm MISA và Excel, nắm vững quy định thuế hiện hành.\"\n}"
+      },
+      {
+        "summary": "Lê Thị Mai Hương là ứng viên có 6 năm kinh nghiệm làm Kế toán tổng hợp tại Công ty CP Thương mại Đại Phúc, với trách nhiệm hạch toán nghiệp vụ, lập báo cáo thuế và tài chính, làm việc với kiểm toán và cơ quan thuế. Cô tốt nghiệp cử nhân Kế toán từ Đại học Kinh tế Quốc dân, thành thạo phần mềm MISA và Excel, nắm vững quy định thuế hiện hành.",
+        "json_hop_le": true,
+        "giay": 2.32,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Lê Thị Mai Hương là ứng viên có 6 năm kinh nghiệm làm Kế toán tổng hợp tại Công ty CP Thương mại Đại Phúc, với trách nhiệm hạch toán nghiệp vụ, lập báo cáo thuế và tài chính, làm việc với kiểm toán và cơ quan thuế. Cô tốt nghiệp cử nhân Kế toán từ Đại học Kinh tế Quốc dân, thành thạo phần mềm MISA và Excel, nắm vững quy định thuế hiện hành.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C03_fresher_mong",
+    "luot": [
+      {
+        "summary": "NGUYỄN HOÀNG LONG là sinh viên mới tốt nghiệp ngành Ứng dụng phần mềm, có kinh nghiệm thực tế với ReactJS thông qua đồ án tốt nghiệp. Anh có kỹ năng cơ bản về HTML, CSS, JavaScript và Git. Dù chưa có kinh nghiệm làm việc chuyên sâu, nhưng anh thể hiện mong muốn học hỏi và phát triển trong lĩnh vực lập trình web.",
+        "json_hop_le": true,
+        "giay": 2.23,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"NGUYỄN HOÀNG LONG là sinh viên mới tốt nghiệp ngành Ứng dụng phần mềm, có kinh nghiệm thực tế với ReactJS thông qua đồ án tốt nghiệp. Anh có kỹ năng cơ bản về HTML, CSS, JavaScript và Git. Dù chưa có kinh nghiệm làm việc chuyên sâu, nhưng anh thể hiện mong muốn học hỏi và phát triển trong lĩnh vực lập trình web.\"\n}"
+      },
+      {
+        "summary": "NGUYỄN HOÀNG LONG là sinh viên mới tốt nghiệp ngành Ứng dụng phần mềm, có kinh nghiệm làm đồ án tốt nghiệp sử dụng ReactJS và Bootstrap để xây dựng giao diện website bán đồ thể thao. Anh có kỹ năng cơ bản về HTML, CSS, JavaScript và Git, nhưng chưa có kinh nghiệm thực tế chuyên sâu trong lĩnh vực lập trình frontend.",
+        "json_hop_le": false,
+        "giay": 2.13,
+        "loi": null,
+        "raw": "```json\n{\n  \"summary\": \"NGUYỄN HOÀNG LONG là sinh viên mới tốt nghiệp ngành Ứng dụng phần mềm, có kinh nghiệm làm đồ án tốt nghiệp sử dụng ReactJS và Bootstrap để xây dựng giao diện website bán đồ thể thao. Anh có kỹ năng cơ bản về HTML, CSS, JavaScript và Git, nhưng chưa có kinh nghiệm thực tế chuyên sâu trong lĩnh vực lập trình frontend.\"\n}\n```"
+      }
+    ]
+  },
+  {
+    "id": "C04_trai_nganh",
+    "luot": [
+      {
+        "summary": "CV của Phạm Đức Thắng thể hiện kinh nghiệm làm việc trong lĩnh vực kinh doanh, bao gồm 3 năm làm chuyên viên kinh doanh tại Công ty CP Bất động sản Thành Đô và 2 năm làm nhân viên bán hàng tại Công ty TNHH Phân phối Hàng tiêu dùng Bình Minh. Anh có kinh nghiệm tư vấn, bán sản phẩm, xây dựng và chăm sóc khách hàng, cùng với kỹ năng đàm phán, sử dụng phần mềm CRM và Excel. Tuy nhiên, CV không có kinh nghiệm lập trình, đặc biệt là C# / ASP.NET Core, SQL Server hay REST API, do đó không phù hợp với vị trí Lập trình viên Backend (.NET) đang được tuyển dụng.",
+        "json_hop_le": true,
+        "giay": 3.87,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"CV của Phạm Đức Thắng thể hiện kinh nghiệm làm việc trong lĩnh vực kinh doanh, bao gồm 3 năm làm chuyên viên kinh doanh tại Công ty CP Bất động sản Thành Đô và 2 năm làm nhân viên bán hàng tại Công ty TNHH Phân phối Hàng tiêu dùng Bình Minh. Anh có kinh nghiệm tư vấn, bán sản phẩm, xây dựng và chăm sóc khách hàng, cùng với kỹ năng đàm phán, sử dụng phần mềm CRM và Excel. Tuy nhiên, CV không có kinh nghiệm lập trình, đặc biệt là C# / ASP.NET Core, SQL Server hay REST API, do đó không phù hợp với vị trí Lập trình viên Backend (.NET) đang được tuyển dụng.\"\n}"
+      },
+      {
+        "summary": "CV của Phạm Đức Thắng thể hiện kinh nghiệm làm việc trong lĩnh vực kinh doanh, bao gồm 3 năm làm chuyên viên kinh doanh tại Công ty CP Bất động sản Thành Đô và 2 năm làm nhân viên bán hàng tại Công ty TNHH Phân phối Hàng tiêu dùng Bình Minh. Anh có kinh nghiệm tư vấn, bán sản phẩm, xây dựng và chăm sóc khách hàng, cùng với kỹ năng đàm phán, sử dụng phần mềm CRM và Excel. Tuy nhiên, CV không có kinh nghiệm lập trình, đặc biệt là C# / ASP.NET Core, SQL Server hay REST API, nên không phù hợp với vị trí Lập trình viên Backend (.NET) đang được tuyển dụng.",
+        "json_hop_le": true,
+        "giay": 3.7,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"CV của Phạm Đức Thắng thể hiện kinh nghiệm làm việc trong lĩnh vực kinh doanh, bao gồm 3 năm làm chuyên viên kinh doanh tại Công ty CP Bất động sản Thành Đô và 2 năm làm nhân viên bán hàng tại Công ty TNHH Phân phối Hàng tiêu dùng Bình Minh. Anh có kinh nghiệm tư vấn, bán sản phẩm, xây dựng và chăm sóc khách hàng, cùng với kỹ năng đàm phán, sử dụng phần mềm CRM và Excel. Tuy nhiên, CV không có kinh nghiệm lập trình, đặc biệt là C# / ASP.NET Core, SQL Server hay REST API, nên không phù hợp với vị trí Lập trình viên Backend (.NET) đang được tuyển dụng.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C05_nhay_viec_nhieu_moc",
+    "luot": [
+      {
+        "summary": "Đỗ Thị Thanh Vân có kinh nghiệm 2 năm trong lĩnh vực chăm sóc khách hàng, bao gồm làm nhân viên chăm sóc khách hàng tại VietTravel và tư vấn viên khóa học tại Trung tâm Anh ngữ Sao Mai. Cô có kỹ năng giao tiếp, xử lý khiếu nại, sử dụng Word và Excel cơ bản, và tiếng Anh giao tiếp (TOEIC 600). CV phù hợp với yêu cầu công việc chăm sóc khách hàng tại tổng đài.",
+        "json_hop_le": true,
+        "giay": 2.79,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Đỗ Thị Thanh Vân có kinh nghiệm 2 năm trong lĩnh vực chăm sóc khách hàng, bao gồm làm nhân viên chăm sóc khách hàng tại VietTravel và tư vấn viên khóa học tại Trung tâm Anh ngữ Sao Mai. Cô có kỹ năng giao tiếp, xử lý khiếu nại, sử dụng Word và Excel cơ bản, và tiếng Anh giao tiếp (TOEIC 600). CV phù hợp với yêu cầu công việc chăm sóc khách hàng tại tổng đài.\"\n}"
+      },
+      {
+        "summary": "Đỗ Thị Thanh Vân có kinh nghiệm 2 năm trong lĩnh vực chăm sóc khách hàng, bao gồm làm nhân viên chăm sóc khách hàng tại VietTravel và tư vấn viên khóa học tại Trung tâm Anh ngữ Sao Mai. Cô có kỹ năng giao tiếp, xử lý khiếu nại, sử dụng Word và Excel cơ bản, và tiếng Anh giao tiếp (TOEIC 600). CV phù hợp với yêu cầu công việc chăm sóc khách hàng tại tổng đài.",
+        "json_hop_le": true,
+        "giay": 2.59,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Đỗ Thị Thanh Vân có kinh nghiệm 2 năm trong lĩnh vực chăm sóc khách hàng, bao gồm làm nhân viên chăm sóc khách hàng tại VietTravel và tư vấn viên khóa học tại Trung tâm Anh ngữ Sao Mai. Cô có kỹ năng giao tiếp, xử lý khiếu nại, sử dụng Word và Excel cơ bản, và tiếng Anh giao tiếp (TOEIC 600). CV phù hợp với yêu cầu công việc chăm sóc khách hàng tại tổng đài.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C06_text_pdf_lon_xon",
+    "luot": [
+      {
+        "summary": "CV ứng viên VÕ HOÀNG MINH có kinh nghiệm 2 năm trong vận hành máy CNC, từng làm việc tại Công ty TNHH Cơ Khí Chính Xác Đạiphát và Công ty CP Cơ Khí Thanh Công. Anh có kỹ năng vận hành máy phay CNC 3 trục, máy tiện CNC, đọc bản vẽ kỹ thuật, sử dụng thước cặp và panme để kiểm tra sản phẩm. Ngoài ra, ứng viên còn có khả năng làm việc theo ca và sử dụng AutoCAD 2D cơ bản.",
+        "json_hop_le": true,
+        "giay": 3.02,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"CV ứng viên VÕ HOÀNG MINH có kinh nghiệm 2 năm trong vận hành máy CNC, từng làm việc tại Công ty TNHH Cơ Khí Chính Xác Đạiphát và Công ty CP Cơ Khí Thanh Công. Anh có kỹ năng vận hành máy phay CNC 3 trục, máy tiện CNC, đọc bản vẽ kỹ thuật, sử dụng thước cặp và panme để kiểm tra sản phẩm. Ngoài ra, ứng viên còn có khả năng làm việc theo ca và sử dụng AutoCAD 2D cơ bản.\"\n}"
+      },
+      {
+        "summary": "CV ứng viên VÕ HOÀNG MINH có kinh nghiệm 2 năm trong vận hành máy CNC, từng làm việc tại Công ty TNHH Cơ Khí Chính Xác Đạt Phát và Công ty CP Cơ Khí Thanh Công. Anh có kỹ năng vận hành máy phay CNC 3 trục, máy tiện CNC, đọc bản vẽ kỹ thuật, sử dụng thước cặp và panme để kiểm tra sản phẩm. Ngoài ra, ứng viên còn có kiến thức cơ bản về AutoCAD 2D và làm việc theo ca.",
+        "json_hop_le": true,
+        "giay": 2.78,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"CV ứng viên VÕ HOÀNG MINH có kinh nghiệm 2 năm trong vận hành máy CNC, từng làm việc tại Công ty TNHH Cơ Khí Chính Xác Đạt Phát và Công ty CP Cơ Khí Thanh Công. Anh có kỹ năng vận hành máy phay CNC 3 trục, máy tiện CNC, đọc bản vẽ kỹ thuật, sử dụng thước cặp và panme để kiểm tra sản phẩm. Ngoài ra, ứng viên còn có kiến thức cơ bản về AutoCAD 2D và làm việc theo ca.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C07_song_ngu",
+    "luot": [
+      {
+        "summary": "NGUYEN THI PHUONG LINH là ứng viên có 2 năm kinh nghiệm trong lĩnh vực Digital Marketing, hiện đang làm Digital Marketing Executive tại ABC Digital Agency. Cô có kinh nghiệm chạy quảng cáo Google Ads và Facebook Ads cho các khách hàng e-commerce với ngân sách lên đến 300 triệu VND/tháng. Linh cũng có khả năng đo lường hiệu quả chiến dịch bằng Google Analytics 4 và tạo báo cáo định kỳ. Ngoài ra, cô còn có kỹ năng thiết kế nội dung quảng cáo với Canva và có chứng chỉ IELTS 7.0. Trong quá khứ, Linh từng làm Marketing Intern tại Công ty CP Thương Mại Việt Phát.",
+        "json_hop_le": true,
+        "giay": 3.66,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"NGUYEN THI PHUONG LINH là ứng viên có 2 năm kinh nghiệm trong lĩnh vực Digital Marketing, hiện đang làm Digital Marketing Executive tại ABC Digital Agency. Cô có kinh nghiệm chạy quảng cáo Google Ads và Facebook Ads cho các khách hàng e-commerce với ngân sách lên đến 300 triệu VND/tháng. Linh cũng có khả năng đo lường hiệu quả chiến dịch bằng Google Analytics 4 và tạo báo cáo định kỳ. Ngoài ra, cô còn có kỹ năng thiết kế nội dung quảng cáo với Canva và có chứng chỉ IELTS 7.0. Trong quá khứ, Linh từng làm Marketing Intern tại Công ty CP Thương Mại Việt Phát.\"\n}"
+      },
+      {
+        "summary": "NGUYEN THI PHUONG LINH là ứng viên có 2 năm kinh nghiệm trong lĩnh vực Digital Marketing, hiện đang làm Digital Marketing Executive tại ABC Digital Agency. Cô có kinh nghiệm chạy quảng cáo Google Ads và Facebook Ads cho các khách hàng e-commerce với ngân sách lên đến 300 triệu VND/tháng. Linh cũng có khả năng đo lường hiệu quả chiến dịch bằng Google Analytics 4 và tạo báo cáo định kỳ. Ngoài ra, cô còn có kỹ năng thiết kế nội dung quảng cáo với Canva và có chứng chỉ IELTS 7.0. Trong quá khứ, Linh từng làm Marketing Intern tại Công ty CP Thương Mại Việt Phát, nơi cô phụ trách viết bài cho fanpage và website.",
+        "json_hop_le": true,
+        "giay": 3.77,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"NGUYEN THI PHUONG LINH là ứng viên có 2 năm kinh nghiệm trong lĩnh vực Digital Marketing, hiện đang làm Digital Marketing Executive tại ABC Digital Agency. Cô có kinh nghiệm chạy quảng cáo Google Ads và Facebook Ads cho các khách hàng e-commerce với ngân sách lên đến 300 triệu VND/tháng. Linh cũng có khả năng đo lường hiệu quả chiến dịch bằng Google Analytics 4 và tạo báo cáo định kỳ. Ngoài ra, cô còn có kỹ năng thiết kế nội dung quảng cáo với Canva và có chứng chỉ IELTS 7.0. Trong quá khứ, Linh từng làm Marketing Intern tại Công ty CP Thương Mại Việt Phát, nơi cô phụ trách viết bài cho fanpage và website.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C08_thanh_tich_nhieu_so",
+    "luot": [
+      {
+        "summary": "BÙI TRUNG KIÊN hiện là Trưởng nhóm Kinh doanh với hơn 4 năm kinh nghiệm, trong đó có 2 năm làm quản lý đội nhóm. Anh có kinh nghiệm xây dựng và triển khai chỉ tiêu doanh số, đạt kết quả vượt chỉ tiêu trong nhiều năm. Anh cũng có kỹ năng đàm phán và trình bày tốt. Trước đó, anh từng làm Nhân viên Kinh doanh tại Công ty TNHH Thương mại Tân Á và đạt thành tích vượt chỉ tiêu cá nhân trong 3 năm liên tiếp.",
+        "json_hop_le": true,
+        "giay": 3.07,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"BÙI TRUNG KIÊN hiện là Trưởng nhóm Kinh doanh với hơn 4 năm kinh nghiệm, trong đó có 2 năm làm quản lý đội nhóm. Anh có kinh nghiệm xây dựng và triển khai chỉ tiêu doanh số, đạt kết quả vượt chỉ tiêu trong nhiều năm. Anh cũng có kỹ năng đàm phán và trình bày tốt. Trước đó, anh từng làm Nhân viên Kinh doanh tại Công ty TNHH Thương mại Tân Á và đạt thành tích vượt chỉ tiêu cá nhân trong 3 năm liên tiếp.\"\n}"
+      },
+      {
+        "summary": "BÙI TRUNG KIÊN hiện đang là Trưởng nhóm Kinh doanh tại Công ty CP Thiết bị Công nghiệp Hòa Phát Group với 3 năm kinh nghiệm. Ông có kinh nghiệm quản lý đội nhóm 12 nhân viên, xây dựng và đạt vượt chỉ tiêu doanh số, đồng thời có kỹ năng đàm phán và trình bày tốt. Trước đó, ông từng làm Nhân viên Kinh doanh tại Công ty TNHH Thương mại Tân Á với 3 năm liên tục vượt chỉ tiêu cá nhân. Ông tốt nghiệp Cử nhân Marketing từ Đại học Thương mại.",
+        "json_hop_le": true,
+        "giay": 2.98,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"BÙI TRUNG KIÊN hiện đang là Trưởng nhóm Kinh doanh tại Công ty CP Thiết bị Công nghiệp Hòa Phát Group với 3 năm kinh nghiệm. Ông có kinh nghiệm quản lý đội nhóm 12 nhân viên, xây dựng và đạt vượt chỉ tiêu doanh số, đồng thời có kỹ năng đàm phán và trình bày tốt. Trước đó, ông từng làm Nhân viên Kinh doanh tại Công ty TNHH Thương mại Tân Á với 3 năm liên tục vượt chỉ tiêu cá nhân. Ông tốt nghiệp Cử nhân Marketing từ Đại học Thương mại.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C09_khoang_trong_su_nghiep",
+    "luot": [
+      {
+        "summary": "Trịnh Thu Hà là ứng viên có kinh nghiệm 4 năm trong lĩnh vực Nhân sự, đặc biệt là mảng C&B (lương thưởng, bảo hiểm). Cô từng làm Chuyên viên Nhân sự tại Công ty TNHH May mặc Tiến Thành từ 09/2022 đến nay, chịu trách nhiệm tính lương, quản lý bảo hiểm xã hội và cập nhật nội quy lao động. Trước đó, cô làm Nhân viên Nhân sự tại Công ty CP Cơ khí Hải Phòng từ 05/2016 đến 07/2020. Trình độ học vấn là cử nhân Quản trị nhân lực. Kỹ năng nổi bật bao gồm Excel (hàm nâng cao), phần mềm chấm công, và nắm vững quy định BHXH và Bộ luật Lao động 2019.",
+        "json_hop_le": true,
+        "giay": 4.42,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Trịnh Thu Hà là ứng viên có kinh nghiệm 4 năm trong lĩnh vực Nhân sự, đặc biệt là mảng C&B (lương thưởng, bảo hiểm). Cô từng làm Chuyên viên Nhân sự tại Công ty TNHH May mặc Tiến Thành từ 09/2022 đến nay, chịu trách nhiệm tính lương, quản lý bảo hiểm xã hội và cập nhật nội quy lao động. Trước đó, cô làm Nhân viên Nhân sự tại Công ty CP Cơ khí Hải Phòng từ 05/2016 đến 07/2020. Trình độ học vấn là cử nhân Quản trị nhân lực. Kỹ năng nổi bật bao gồm Excel (hàm nâng cao), phần mềm chấm công, và nắm vững quy định BHXH và Bộ luật Lao động 2019.\"\n}"
+      },
+      {
+        "summary": "Trịnh Thu Hà là ứng viên có kinh nghiệm 4 năm trong lĩnh vực Nhân sự, đặc biệt là mảng C&B (lương thưởng, bảo hiểm). Cô từng làm Chuyên viên Nhân sự tại Công ty TNHH May mặc Tiến Thành từ 09/2022 đến nay, đảm nhiệm công tác tính lương, quản lý bảo hiểm xã hội và cập nhật nội quy lao động. Trước đó, cô làm Nhân viên Nhân sự tại Công ty CP Cơ khí Hải Phòng (2016–2020). Hà có bằng Cử nhân Quản trị nhân lực và thành thạo Excel, phần mềm chấm công, cũng như nắm vững quy định BHXH và Luật Lao động 2019.",
+        "json_hop_le": true,
+        "giay": 3.76,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Trịnh Thu Hà là ứng viên có kinh nghiệm 4 năm trong lĩnh vực Nhân sự, đặc biệt là mảng C&B (lương thưởng, bảo hiểm). Cô từng làm Chuyên viên Nhân sự tại Công ty TNHH May mặc Tiến Thành từ 09/2022 đến nay, đảm nhiệm công tác tính lương, quản lý bảo hiểm xã hội và cập nhật nội quy lao động. Trước đó, cô làm Nhân viên Nhân sự tại Công ty CP Cơ khí Hải Phòng (2016–2020). Hà có bằng Cử nhân Quản trị nhân lực và thành thạo Excel, phần mềm chấm công, cũng như nắm vững quy định BHXH và Luật Lao động 2019.\"\n}"
+      }
+    ]
+  },
+  {
+    "id": "C10_liet_ke_cong_nghe",
+    "luot": [
+      {
+        "summary": "Đinh Văn Tùng là một ứng viên có kinh nghiệm 2 năm làm lập trình viên tại Công ty TNHH Gia công phần mềm Nam Việt, tham gia các dự án outsourcing cho khách hàng Nhật Bản. Anh có kiến thức về C#, ASP.NET Core, SQL Server và am hiểu các công nghệ như Docker, Kubernetes, Jenkins, GitLab CI, AWS, Azure. Ngoài ra, anh còn có kỹ năng với các công nghệ khác như Java, Spring Boot, NodeJS, ReactJS, Angular, MongoDB, Redis, Kafka, RabbitMQ, Elasticsearch.",
+        "json_hop_le": true,
+        "giay": 3.05,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Đinh Văn Tùng là một ứng viên có kinh nghiệm 2 năm làm lập trình viên tại Công ty TNHH Gia công phần mềm Nam Việt, tham gia các dự án outsourcing cho khách hàng Nhật Bản. Anh có kiến thức về C#, ASP.NET Core, SQL Server và am hiểu các công nghệ như Docker, Kubernetes, Jenkins, GitLab CI, AWS, Azure. Ngoài ra, anh còn có kỹ năng với các công nghệ khác như Java, Spring Boot, NodeJS, ReactJS, Angular, MongoDB, Redis, Kafka, RabbitMQ, Elasticsearch.\"\n}"
+      },
+      {
+        "summary": "Đinh Văn Tùng là một ứng viên có kinh nghiệm 2 năm làm lập trình viên tại Công ty TNHH Gia công phần mềm Nam Việt, tham gia các dự án outsourcing cho khách hàng Nhật Bản. Anh có kiến thức về C#, ASP.NET Core, SQL Server và am hiểu các công nghệ như Docker, Kubernetes, Jenkins, GitLab CI, AWS, Azure. Ngoài ra, anh còn có kỹ năng với các công nghệ khác như Java, Spring Boot, NodeJS, ReactJS, Angular, MongoDB, Redis, Kafka, RabbitMQ, Elasticsearch.",
+        "json_hop_le": true,
+        "giay": 2.89,
+        "loi": null,
+        "raw": "{\n  \"summary\": \"Đinh Văn Tùng là một ứng viên có kinh nghiệm 2 năm làm lập trình viên tại Công ty TNHH Gia công phần mềm Nam Việt, tham gia các dự án outsourcing cho khách hàng Nhật Bản. Anh có kiến thức về C#, ASP.NET Core, SQL Server và am hiểu các công nghệ như Docker, Kubernetes, Jenkins, GitLab CI, AWS, Azure. Ngoài ra, anh còn có kỹ năng với các công nghệ khác như Java, Spring Boot, NodeJS, ReactJS, Angular, MongoDB, Redis, Kafka, RabbitMQ, Elasticsearch.\"\n}"
+      }
+    ]
+  }
+]
