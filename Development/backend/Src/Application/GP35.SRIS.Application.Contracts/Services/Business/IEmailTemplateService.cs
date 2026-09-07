@@ -1,4 +1,4 @@
-﻿using GP35.SRIS.Application.Contracts.Dtos.EmailTemplate;
+using GP35.SRIS.Application.Contracts.Dtos.EmailTemplate;
 
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
@@ -10,8 +10,13 @@ public interface IEmailTemplateService : IBaseService
     /// <summary>
     /// Tạo bộ mẫu email dựng sẵn cho công ty (chỉ thêm loại còn thiếu, không đè mẫu đã sửa).
     /// Trả số mẫu vừa thêm. Gọi lúc mở tài khoản công ty và từ nút trên trang Mẫu Email.
+    /// <para>
+    /// <paramref name="forNewCompany"/> = true cho luồng ĐĂNG KÝ: request chạy ẩn danh nên chưa
+    /// có tenant trong SESSION_CONTEXT, phải insert dưới tenant hệ thống thì RLS mới cho qua.
+    /// Nút trên trang Mẫu Email nằm trong request đã đăng nhập -> để false.
+    /// </para>
     /// </summary>
-    Task<int> EnsureDefaultsAsync(long companyId);
+    Task<int> EnsureDefaultsAsync(long companyId, bool forNewCompany = false);
 
     Task<EmailTemplateDto> CreateAsync(long companyId, EmailTemplateUpsertDto dto);
     Task<EmailTemplateDto> UpdateAsync(long companyId, long templateId, EmailTemplateUpsertDto dto);

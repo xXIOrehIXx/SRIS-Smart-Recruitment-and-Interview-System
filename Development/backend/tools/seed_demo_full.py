@@ -7,9 +7,10 @@ Khác `seed_demo.py` (bộ nhỏ, 3 job / 6 ứng viên, tên job có hậu tố
 bộ này dựng nguyên một công ty như thật để demo trước hội đồng —
   - 6 phòng ban (Phòng Kỹ thuật gán DM -> job phòng này DM quyết tuyển)
   - 5 tài khoản nội bộ: HR / 3 Interviewer / DM  (mật khẩu chung: demo123456)
+  - 11 Yêu cầu tuyển dụng: 8 đã thành tin · 2 chờ Giám đốc duyệt · 1 bị từ chối
   - 8 tin tuyển dụng JD đầy đủ (mô tả + yêu cầu + phúc lợi + lương + số lượng),
-    1 tin đã đóng, mỗi tin có bộ tiêu chí APPROVED = phiếu chấm phỏng vấn
-  - 4 Yêu cầu tuyển dụng: 2 chờ duyệt · 1 đã duyệt & convert · 1 bị từ chối
+    1 tin đã đóng. Từ V056 MỖI TIN sinh ra từ một Yêu cầu đã duyệt, và bộ tiêu chí
+    DM chốt trên Yêu cầu tự chuyển sang tin = phiếu chấm phỏng vấn
   - ~37 ứng viên nộp CV PDF qua career site, phủ HẾT 6 state:
     NEW · SCREENING · INTERVIEW · OFFER · HIRED · REJECTED
   - Phỏng vấn: pool slot dùng chung (có slot đã đặt + slot còn trống + người được
@@ -23,8 +24,9 @@ Chạy:
                                  [--tag t2]      # hậu tố email user nội bộ khi chạy lại
                                  [--inbox mail@gmail.com]  # hộp thư nhận magic link thật
 
-Yêu cầu: backend + MinIO đang chạy. KHÔNG cần AI service (tiêu chí seed gõ tay,
-APPROVED ngay, không gọi /extract-criteria).
+Yêu cầu: backend + MinIO đang chạy. KHÔNG cần AI service — tiêu chí seed gõ tay trên
+Yêu cầu tuyển dụng (APPROVED ngay), không gọi AI. Ở luồng thật thì chỗ đó là nút
+"AI bóc tiêu chí" trong màn Yêu cầu tuyển dụng.
 
 Chạy lại lần 2 trên cùng DB: nhớ đổi --tag, nếu không email user nội bộ sẽ trùng
 (email UNIQUE toàn hệ thống từ V028) — script sẽ tự đăng nhập lại user cũ nếu trùng.
@@ -440,6 +442,10 @@ for key, items in CRITERIA.items():
 print(f"   + {sum(len(v) for v in CRITERIA.values())} tiêu chí do DM ra đề trên {len(CRITERIA)} yêu cầu")
 
 # Giám đốc duyệt yêu cầu (V047) — sau bước này nhân sự mới tạo được tin.
+#
+# Bản trên main tới đây còn tạo riêng một yêu cầu rồi gọi /convert để gắn vào job có sẵn.
+# V056 bỏ hẳn đoạn đó: /convert không còn, và thứ tự đã đảo — yêu cầu có TRƯỚC, tin sinh ra
+# TỪ nó (mỗi tin một yêu cầu), nên không còn job nào để gắn ngược vào.
 for key, rid in requests_of_job.items():
     must(*call("POST", f"/recruitment-requests/{rid}/review", token=director,
                body={"approve": True, "note": "Đồng ý tuyển, nhân sự đăng tin."}),
@@ -871,5 +877,6 @@ Dữ liệu: {len(JOBS_DEF)} tin tuyển dụng · {len(CANDS)} ứng viên
   - Lịch phỏng vấn: nhân sự đặt buổi trực tiếp (ứng viên + panel + giờ), có buổi đã chấm xong
   - Interviewer -> phiếu chấm; DM -> Đề xuất tuyển; Giám đốc -> Duyệt đề xuất (chốt lương)
   - Offer: 2 chờ trả lời · 4 đã nhận việc · 1 từ chối
-  - Yêu cầu tuyển dụng: 2 chờ duyệt · 1 đã convert · 1 bị từ chối
+  - Yêu cầu tuyển dụng: 8 đã thành tin · 2 chờ Giám đốc duyệt · 1 bị từ chối
+  - Màn Yêu cầu tuyển dụng (DM): mở một yêu cầu -> thấy bộ tiêu chí đã chốt của nó
 ============================================================""")
