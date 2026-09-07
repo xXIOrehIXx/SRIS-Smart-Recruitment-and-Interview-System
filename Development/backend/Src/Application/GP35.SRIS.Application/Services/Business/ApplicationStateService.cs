@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Pipeline;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -25,6 +25,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
 
     private readonly IApplicationRepo _appRepo;
     private readonly IJobRepo _jobRepo;
+    private readonly IEvaluationCriteriaRepo _criteriaRepo;
     private readonly IActivityLogRepo _activityLogRepo;
     private readonly INotificationService _notify;
     private readonly IInterviewPanelService _panel;
@@ -35,6 +36,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     {
         _appRepo = serviceProvider.GetRequiredService<IApplicationRepo>();
         _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
+        _criteriaRepo = serviceProvider.GetRequiredService<IEvaluationCriteriaRepo>();
         _activityLogRepo = serviceProvider.GetRequiredService<IActivityLogRepo>();
         _notify = serviceProvider.GetRequiredService<INotificationService>();
         _panel = serviceProvider.GetRequiredService<IInterviewPanelService>();
@@ -91,7 +93,7 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
             if (!ApplicationStateMachine.IsForwardAllowed(from, toState))
                 throw Conflict($"Không thể chuyển {from} → {toState} (forward-only — 5.8).");
 
-            await EnforceGuardsAsync(companyId, applicationId, from, toState);
+            await EnforceGuardsAsync(companyId, applicationId, app.JobId, from, toState);
 
             if (string.Equals(toState, ApplicationState.Hired, StringComparison.OrdinalIgnoreCase))
                 hiredAt = now;
@@ -280,13 +282,30 @@ public class ApplicationStateService : BaseService<ApplicationStateService>, IAp
     }
 
     /// <summary>Kiểm guard cần dữ liệu trước khi tiến.</summary>
-    private async Task EnforceGuardsAsync(long companyId, long applicationId, string from, string to)
+    private async Task EnforceGuardsAsync(
+        long companyId, long applicationId, long jobId, string from, string to)
     {
         if (ApplicationStateMachine.RequiresGuardG2(from, to))
         {
             var submitted = await _appRepo.CountSubmittedInterviewScoresAsync(companyId, applicationId);
             if (submitted < 1)
                 throw Conflict("Guard G2 chưa đạt: cần ít nhất 1 phiếu chấm phỏng vấn đã nộp.");
+        }
+
+        // G3: vào vòng phỏng vấn thì phải có phiếu chấm để mà chấm.
+        if (ApplicationStateMachine.RequiresApprovedCriteria(from, to))
+        {
+            var approved = await _criteriaRepo.GetByJobAsync(
+                companyId, jobId, activeOnly: true, approvedOnly: true);
+
+            // Câu báo lỗi nói với ĐÚNG người đang bấm: cửa này chỉ Trưởng bộ phận đi qua được
+            // (EnsureCanDecideAsync), mà thêm tiêu chí cũng là việc của họ — nên chỉ thẳng chỗ làm
+            // thay vì báo trống không "thiếu tiêu chí".
+            if (approved.Count == 0)
+                throw Conflict(
+                    "Vị trí này chưa có tiêu chí đánh giá nào được duyệt, nên người phỏng vấn sẽ " +
+                    "không có gì để chấm. Vào màn Tiêu Chí của vị trí, bấm \"AI bóc tiêu chí\" " +
+                    "hoặc tự thêm, rồi duyệt bộ tiêu chí trước khi đưa ứng viên vào vòng phỏng vấn.");
         }
     }
 

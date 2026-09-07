@@ -297,9 +297,22 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
    RLS được ép ở tầng DB qua `SESSION_CONTEXT('CompanyId')` — phải set lại
    **đầu MỖI request** (bẫy connection pooling). Quên = rò dữ liệu xuyên tenant.
 
-2. **State machine guard:** INTERVIEW→OFFER cần G2 (≥1 phiếu chấm `status='SUBMITTED'`).
-   Check guard trước khi transition. (G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 khớp tài liệu cũ.)
-   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`). Ranh giới là chữ **TUYỂN**:
+2. **State machine guard:** hai guard DỮ LIỆU, cả hai nằm ở `EnforceGuardsAsync`:
+   - **G2** — `INTERVIEW→OFFER` cần ≥1 phiếu chấm `status='SUBMITTED'`.
+     (G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 khớp tài liệu cũ.)
+   - **G3** (07/09/2026) — `SCREENING→INTERVIEW` cần vị trí có ≥1 tiêu chí **đã duyệt còn hiệu
+     lực**. Đó chính là phiếu chấm người phỏng vấn sắp dùng; không có nó thì họ mở phiếu ra và
+     thấy trống, lúc ứng viên đã ngồi trong phòng. Lỗ hổng này ĐO ĐƯỢC trước khi vá: DM gửi Yêu
+     cầu tuyển dụng mà bỏ trống phần tiêu chí → Giám đốc duyệt → nhân sự đăng tin → ứng viên nộp
+     CV → DM duyệt vào phỏng vấn, cả chuỗi trả 200.
+     G3 **chỉ gác đường VÀO phỏng vấn**, KHÔNG gác `SCREENING→REJECTED`: loại một hồ sơ không cần
+     tiêu chí nào, chặn cả đường đó thì hồ sơ rác kẹt lại vì lý do chẳng liên quan.
+     Không có Admin bypass — đây là guard về **dữ liệu đủ hay chưa**, không phải về thẩm quyền,
+     và Admin cũng không chấm nổi bằng một phiếu trống.
+
+   Check guard trước khi transition.
+   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`), chạy TRƯỚC guard dữ liệu.
+   Ranh giới là chữ **TUYỂN**:
    "đồng ý tuyển" là của Giám đốc, "đóng hồ sơ không tuyển" thuộc về người đã trực tiếp xét ứng
    viên ở chặng đó (siết 17/08/2026).
    - `NEW→SCREENING` và `NEW→REJECTED`: **nhân sự**, không gác. Sàng lọc vòng đầu là việc của họ
