@@ -494,3 +494,7 @@ ai-service/.venv/
 # Config local cua tung dev (de-len appsettings.json). KHONG commit; copy tu file .example.
 appsettings.Development.json
 !appsettings.Development.json.example
+# Ban sao thu cong cua config local (vd .bak-teamdb khi doi connection string tam thoi).
+# Chung mang nguyen mat khau SA + SMTP nen tuyet doi khong duoc len git.
+appsettings.Development.json.*
+!appsettings.Development.json.example

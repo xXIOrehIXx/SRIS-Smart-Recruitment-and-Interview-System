@@ -424,7 +424,9 @@ for key, items in CRITERIA.items():
                    body={"name": name, "weight": w, "maxScore": 10}), f"tiêu chí {name}")
 print(f"   + {sum(len(v) for v in CRITERIA.values())} tiêu chí APPROVED cho {len(CRITERIA)} job")
 
-# ---------- 5) Yêu cầu tuyển dụng (DM ra đề -> HR duyệt) ----------
+# ---------- 5) Yêu cầu tuyển dụng (DM ra đề -> GIÁM ĐỐC duyệt) ----------
+# V047: cửa duyệt Yêu cầu tuyển dụng là Giám đốc, KHÔNG phải HR (endpoint /review trả 403
+# "Yêu cầu: Director" cho token Recruiter). HR vẫn là người /convert yêu cầu đã duyệt -> job.
 req_be = must(*call("POST", "/recruitment-requests", token=dm, body={
     "title": "Bổ sung 2 Lập trình viên Backend cho dự án ERP",
     "department": "Phòng Kỹ thuật", "quantity": 2, "employmentType": "Toàn thời gian",
@@ -433,7 +435,7 @@ req_be = must(*call("POST", "/recruitment-requests", token=dm, body={
     "requirements": "2 năm kinh nghiệm .NET Core\nThành thạo SQL Server\nƯu tiên biết Docker",
     "benefits": "Lương tháng 13, bảo hiểm PVI, 2 ngày remote/tuần",
     "salaryMin": 18000000, "salaryMax": 30000000}), "yêu cầu tuyển dụng Backend")["requestId"]
-must(*call("POST", f"/recruitment-requests/{req_be}/review", token=hr,
+must(*call("POST", f"/recruitment-requests/{req_be}/review", token=director,
            body={"approve": True, "note": "Đã duyệt, đăng tin trong tuần này."}), "duyệt yêu cầu")
 must(*call("POST", f"/recruitment-requests/{req_be}/convert", token=hr,
            body={"jobId": jobs["be"]}), "convert yêu cầu -> job")
@@ -456,7 +458,7 @@ req_no = must(*call("POST", "/recruitment-requests", token=dm, body={
     "title": "Tuyển thêm 2 Thực tập sinh Thiết kế", "department": "Phòng Marketing",
     "quantity": 2, "employmentType": "Thực tập",
     "description": "Hỗ trợ thiết kế ấn phẩm cho chiến dịch cuối năm."}), "yêu cầu bị từ chối")["requestId"]
-must(*call("POST", f"/recruitment-requests/{req_no}/review", token=hr,
+must(*call("POST", f"/recruitment-requests/{req_no}/review", token=director,
            body={"approve": False, "note": "Chưa có ngân sách quý này, xem lại vào quý sau."}),
      "từ chối yêu cầu")
 print("   + Yêu cầu tuyển dụng: 1 đã convert · 2 chờ duyệt · 1 bị từ chối")

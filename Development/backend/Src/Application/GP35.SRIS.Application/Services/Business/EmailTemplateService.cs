@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.EmailTemplate;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Repos;
@@ -32,7 +32,7 @@ public class EmailTemplateService : BaseService<EmailTemplateService>, IEmailTem
         return ToDto(t);
     }
 
-    public async Task<int> EnsureDefaultsAsync(long companyId)
+    public async Task<int> EnsureDefaultsAsync(long companyId, bool forNewCompany = false)
     {
         // Chỉ thêm loại CÒN THIẾU — không bao giờ ghi đè mẫu người dùng đã sửa.
         var existing = (await _repo.GetListAsync(companyId))
@@ -45,7 +45,7 @@ public class EmailTemplateService : BaseService<EmailTemplateService>, IEmailTem
         {
             if (existing.Contains(seed.Type)) continue;
 
-            await _repo.InsertAsync(companyId, new TemplateEntity
+            var seedRow = new TemplateEntity
             {
                 Type = seed.Type,
                 Name = seed.Name,
@@ -54,7 +54,13 @@ public class EmailTemplateService : BaseService<EmailTemplateService>, IEmailTem
                 // ONBOARDING còn nhiều chỗ [điền tay] -> để TẮT, người tuyển dụng sửa xong mới bật.
                 // Các loại còn lại nội dung đã đủ dùng ngay.
                 IsActive = !string.Equals(seed.Type, EmailTemplateType.Onboarding, StringComparison.OrdinalIgnoreCase)
-            });
+            };
+
+            if (forNewCompany)
+                await _repo.InsertForNewCompanyAsync(companyId, seedRow);
+            else
+                await _repo.InsertAsync(companyId, seedRow);
+
             added++;
         }
 
