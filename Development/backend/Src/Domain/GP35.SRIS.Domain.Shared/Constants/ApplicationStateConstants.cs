@@ -57,6 +57,20 @@ public static class ApplicationStateMachine
         Eq(from, ApplicationState.Interview) && Eq(to, ApplicationState.Offer);
 
     /// <summary>
+    /// Guard G3 (07/09/2026): đưa ứng viên VÀO vòng phỏng vấn thì vị trí phải có sẵn bộ tiêu chí
+    /// ĐÃ DUYỆT — đó chính là phiếu chấm người phỏng vấn sẽ dùng.
+    ///
+    /// <para>Không có nó thì lỗ hổng đo được thật: Trưởng bộ phận gửi Yêu cầu tuyển dụng mà bỏ
+    /// trống phần tiêu chí, Giám đốc duyệt, nhân sự đăng tin — cả chuỗi chạy trơn tru tới lúc
+    /// người phỏng vấn mở phiếu chấm ra và thấy trống. Lúc đó ứng viên đã ngồi trong phòng.</para>
+    ///
+    /// <para>CHỈ gác đường VÀO phỏng vấn, KHÔNG gác đường sang REJECTED: loại một hồ sơ không cần
+    /// tiêu chí nào cả, chặn nó chỉ khiến hồ sơ rác kẹt lại vì một lý do không liên quan.</para>
+    /// </summary>
+    public static bool RequiresApprovedCriteria(string from, string to) =>
+        Eq(from, ApplicationState.Screening) && Eq(to, ApplicationState.Interview);
+
+    /// <summary>
     /// Hồ sơ đã sang bước quyết định (OFFER / HIRED / REJECTED) -> KHÓA phiếu chấm phỏng vấn.
     /// Trước đó (kể cả khi phiếu đã SUBMITTED) interviewer vẫn sửa điểm / bổ sung note được:
     /// nộp phiếu chỉ là "mở blind", không phải chốt sổ. Chốt sổ là lúc người quyết đã dùng điểm đó.
