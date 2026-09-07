@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -85,9 +85,10 @@ public class OfferService : BaseService<OfferService>, IOfferService
         if (benefitText.Length > MaxBenefitsLength)
             benefitText = benefitText[..MaxBenefitsLength];
 
-        // Điều khoản Giám đốc đã chốt khi duyệt đề xuất tuyển (V043) — đây mới là con số THẬT
-        // của lá thư. Lấy khoảng lương của tin tuyển dụng làm mặc định là mời sai mức người
-        // đã duyệt, và nhân sự phải quay lại hỏi Giám đốc "rốt cuộc chốt bao nhiêu".
+        // Mức lương trên phiếu đề xuất Giám đốc ĐÃ DUYỆT (V043; từ V053 phiếu chỉ còn một ô
+        // lương — duyệt là gật đầu đúng con số đó) — đây mới là con số THẬT của lá thư. Lấy
+        // khoảng lương của tin tuyển dụng làm mặc định là mời sai mức người đã duyệt, và nhân sự
+        // phải quay lại hỏi Giám đốc "rốt cuộc chốt bao nhiêu".
         var approved = await _proposalRepo.GetApprovedByApplicationAsync(companyId, applicationId);
 
         // Người KÝ mặc định = GIÁM ĐỐC đã duyệt tuyển, không phải nhân sự đang gõ thư (V047,
@@ -115,11 +116,13 @@ public class OfferService : BaseService<OfferService>, IOfferService
             ReportingTo = NameOrEmail(manager),
             EmploymentType = job?.EmploymentType,
             WorkLocation = job?.Location,
-            SalaryAmount = approved?.ApprovedSalary ?? job?.SalaryMax ?? job?.SalaryMin,
+            SalaryAmount = approved?.ProposedSalary ?? job?.SalaryMax ?? job?.SalaryMin,
             Currency = string.IsNullOrWhiteSpace(job?.Currency) ? "VND" : job!.Currency,
             SalaryPeriod = SalaryPeriods.Month,
-            StartDate = approved?.ApprovedStartDate,
-            TermsFromDirector = approved?.ApprovedSalary is not null || approved?.ApprovedStartDate is not null,
+            // Ngày vào làm KHÔNG có sẵn: Giám đốc không chốt ngày (24/08/2026). Nhân sự gọi cho
+            // ứng viên hỏi ngày họ đi làm được rồi điền — để trống ở đây là đúng, đừng đoán hộ.
+            StartDate = null,
+            TermsFromDirector = approved?.ProposedSalary is not null,
             Benefits = benefitText.Length == 0 ? null : benefitText,
             Terms = OfferLetterPdfGenerator.DefaultTerms,
             SignerName = NameOrEmail(signer),
@@ -152,6 +155,13 @@ public class OfferService : BaseService<OfferService>, IOfferService
         // Ô nào để trống thì lấy mặc định từ Job/Company — người soạn không phải gõ lại.
         var defaults = await GetLetterDefaultsAsync(companyId, applicationId);
 
+        if (defaults.TermsFromDirector && dto.SalaryAmount is { } typed
+            && typed != defaults.SalaryAmount)
+        {
+            _logger.Warning("MakeOffer: bỏ qua mức lương {Typed} client gửi lên cho hồ sơ {AppId} — " +
+                "giữ mức {Approved} Giám đốc đã chốt.", typed, applicationId, defaults.SalaryAmount);
+        }
+
         var now = DateTime.UtcNow;
         var ttlDays = dto.ExpiresInDays is int d && d > 0 ? d : DefaultOfferTtlDays;
         var offer = new OfferDetail
@@ -169,7 +179,11 @@ public class OfferService : BaseService<OfferService>, IOfferService
             EmploymentType = Pick(dto.EmploymentType, defaults.EmploymentType),
             WorkLocation = Pick(dto.WorkLocation, defaults.WorkLocation),
 
-            SalaryAmount = dto.SalaryAmount,
+            // Mức lương là quyết định của GIÁM ĐỐC (V043) — nhân sự SOẠN thư mời chứ không mặc
+            // cả lại. Có số Giám đốc chốt thì lấy đúng số đó, kể cả khi client gửi lên số khác:
+            // ô này đã khoá trên form, đây là chốt chặn phía server cho mọi đường gọi khác.
+            // Chưa qua đề xuất nào (Admin tự đẩy hồ sơ sang bước Quyết định) thì mới lấy số nhập tay.
+            SalaryAmount = defaults.TermsFromDirector ? defaults.SalaryAmount : dto.SalaryAmount,
             Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "VND" : dto.Currency.Trim().ToUpperInvariant(),
             SalaryPeriod = NormalizeSalaryPeriod(dto.SalaryPeriod),
             Bonus = Trim(dto.Bonus),
@@ -180,7 +194,6 @@ public class OfferService : BaseService<OfferService>, IOfferService
             HrContactEmail = Pick(dto.HrContactEmail, defaults.HrContactEmail),
             SignerName = Pick(dto.SignerName, defaults.SignerName),
             SignerTitle = Pick(dto.SignerTitle, defaults.SignerTitle),
-            CandidateAddress = Trim(dto.CandidateAddress),
             Note = Trim(dto.Note)
         };
         offer.OfferId = await _offerRepo.InsertAsync(companyId, offer);
@@ -305,7 +318,6 @@ public class OfferService : BaseService<OfferService>, IOfferService
             LetterDate = o.SentAt ?? o.CreatedAt ?? DateTime.UtcNow,
 
             CandidateName = candidateName,
-            CandidateAddress = o.CandidateAddress,
 
             JobTitle = o.JobTitle,
             Department = o.Department,
@@ -353,7 +365,6 @@ public class OfferService : BaseService<OfferService>, IOfferService
         HrContactEmail = o.HrContactEmail,
         SignerName = o.SignerName,
         SignerTitle = o.SignerTitle,
-        CandidateAddress = o.CandidateAddress,
         Note = o.Note,
 
         DecidedBy = o.DecidedBy,

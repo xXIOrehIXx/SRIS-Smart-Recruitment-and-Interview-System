@@ -8,9 +8,10 @@ import {
   PlusOutlined, CheckSquareOutlined, EditOutlined, DeleteOutlined,
   ReloadOutlined, CheckCircleOutlined, StarOutlined,
   EyeOutlined, SearchOutlined, RobotOutlined, MinusCircleOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined, SendOutlined, RollbackOutlined, ClockCircleOutlined
 } from '@ant-design/icons';
 import { criteriaAPI, jobsAPI } from '../../services/api';
+import { useAuth, ROLES } from '../../contexts/AuthContext';
 import { weightPercentMap, weightPercents } from '../../utils/criteriaWeight';
 import './css/Criteria.css';
 
@@ -106,6 +107,22 @@ const Criteria = () => {
   const [addCriterionModalOpen, setAddCriterionModalOpen] = useState(false);
   const [editCriterionModalOpen, setEditCriterionModalOpen] = useState(false);
   const [selectedCriterion, setSelectedCriterion] = useState(null);
+  const [requestChangesOpen, setRequestChangesOpen] = useState(false);
+  const [requestChangesNote, setRequestChangesNote] = useState('');
+
+  // Trưởng bộ phận chỉ ra đề cho vị trí MÌNH phụ trách (24/08/2026) và không sửa thư viện
+  // template dùng chung. Backend chặn thật (JobCriteriaAccessGuard + [WithRole]); ở đây chỉ
+  // lọc dropdown và ẩn nút để họ không bấm vào thứ chắc chắn nhận 403.
+  const { user } = useAuth();
+  const isDeptManager = user?.role === ROLES.DEPARTMENT_MANAGER;
+  const canManageTemplates = !isDeptManager;
+
+  const visibleJobs = useMemo(() => {
+    if (!isDeptManager) return jobs;
+    // userId từ JWT có thể là chuỗi -> so sánh sau khi ép số.
+    const myId = Number(user?.userId);
+    return jobs.filter((j) => Number(j.departmentManagerId) === myId);
+  }, [jobs, isDeptManager, user?.userId]);
 
   const [templateForm] = Form.useForm();
   const [editTemplateForm] = Form.useForm();
@@ -165,6 +182,21 @@ const Criteria = () => {
   // ===== Luồng AI: đề xuất bản nháp → người duyệt chốt =====
 
   const draftCount = jobCriteria.filter(c => c.status === 'DRAFT').length;
+  const pendingCount = jobCriteria.filter(c => c.status === 'PENDING').length;
+
+  // Ghi chú Trưởng bộ phận để lại khi trả bộ tiêu chí về — mọi dòng mang cùng giá trị (V055).
+  const reviewNote = jobCriteria.find(c => c.reviewNote)?.reviewNote || null;
+
+  // V055: SOẠN và DUYỆT là hai cửa khác nhau. Chỉ Trưởng bộ phận phụ trách vị trí (và Admin)
+  // duyệt được; nhân sự soạn xong phải GỬI cho họ. Backend chặn thật (JobCriteriaAccessGuard) —
+  // ở đây chỉ ẩn nút để nhân sự không bấm vào thứ chắc chắn nhận 403.
+  const selectedJobRow = useMemo(
+    () => jobs.find(j => Number(j.jobId) === Number(selectedJob)) || null,
+    [jobs, selectedJob]
+  );
+  const isAdmin = user?.role === ROLES.ADMIN;
+  const canApproveCriteria = isAdmin
+    || (isDeptManager && Number(selectedJobRow?.departmentManagerId) === Number(user?.userId));
 
   // Bóc tiêu chí chạy NỀN: bấm xong chỉ xếp hàng, worker gọi Local LLM (hàng chục giây trên CPU).
   // Người dùng đi làm việc khác, màn này hỏi lại trạng thái tới khi xong.
@@ -191,7 +223,9 @@ const Criteria = () => {
       if ((status.criteriaCount ?? 0) === 0) {
         message.info('AI không tìm thấy tiêu chí nào mới — danh sách hiện có đã bao trùm những gì bóc được từ tin tuyển dụng.', 6);
       } else {
-        message.success(`AI đã đề xuất ${status.criteriaCount} tiêu chí — rà lại rồi bấm Duyệt.`);
+        message.success(
+          `AI đã đề xuất ${status.criteriaCount} tiêu chí — rà lại rồi gửi Trưởng bộ phận duyệt.`
+        );
       }
       fetchJobCriteria(jobId);
       return;
@@ -270,15 +304,54 @@ const Criteria = () => {
     }
   };
 
+  const handleSubmitForReview = async () => {
+    try {
+      setSubmitting(true);
+      const response = await criteriaAPI.submitForReview(selectedJob);
+      message.success(
+        `Đã gửi ${response.data?.submitted ?? draftCount} tiêu chí cho Trưởng bộ phận duyệt. `
+        + 'Bộ tiêu chí tạm khoá sửa cho tới khi họ trả lời.'
+      );
+      fetchJobCriteria(selectedJob);
+    } catch (error) {
+      console.error('Error submitting criteria for review:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể gửi bộ tiêu chí đi duyệt.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleApprove = async () => {
     try {
       setSubmitting(true);
       const response = await criteriaAPI.approve(selectedJob);
-      message.success(`Đã duyệt ${response.data?.approved ?? draftCount} tiêu chí — phiếu chấm phỏng vấn đã sẵn sàng.`);
+      message.success(`Đã duyệt ${response.data?.approved ?? pendingCount} tiêu chí — phiếu chấm phỏng vấn đã sẵn sàng.`);
       fetchJobCriteria(selectedJob);
     } catch (error) {
       console.error('Error approving criteria:', error);
       message.error(error?.response?.data?.userMsg || 'Không thể duyệt bộ tiêu chí.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Trả về nháp: lý do BẮT BUỘC — trả về mà không nói gì thì người soạn chỉ biết gửi lại y nguyên.
+  const handleRequestChanges = async () => {
+    const note = (requestChangesNote || '').trim();
+    if (!note) {
+      message.warning('Hãy ghi rõ cần sửa gì trước khi trả bộ tiêu chí về.');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const response = await criteriaAPI.requestChanges(selectedJob, note);
+      message.success(`Đã trả ${response.data?.returned ?? pendingCount} tiêu chí về cho người soạn kèm ghi chú.`);
+      setRequestChangesOpen(false);
+      setRequestChangesNote('');
+      fetchJobCriteria(selectedJob);
+    } catch (error) {
+      console.error('Error requesting changes on criteria:', error);
+      message.error(error?.response?.data?.userMsg || 'Không thể trả bộ tiêu chí về.');
     } finally {
       setSubmitting(false);
     }
@@ -511,37 +584,61 @@ const Criteria = () => {
       width: 130,
       render: (_, record) => (
         <Space direction="vertical" size={2}>
-          {record.status === 'DRAFT'
-            ? <Tag color="gold">Chờ duyệt</Tag>
-            : <Tag color="success">Đã duyệt</Tag>}
+          {record.status === 'DRAFT' && <Tag color="gold">Bản nháp</Tag>}
+          {record.status === 'PENDING' && (
+            <Tag icon={<ClockCircleOutlined />} color="processing">Chờ TBP duyệt</Tag>
+          )}
+          {record.status === 'APPROVED' && <Tag color="success">Đã duyệt</Tag>}
           {record.source === 'AI_EXTRACTED' && (
             <Tag icon={<RobotOutlined />} color="purple" style={{ fontSize: 11 }}>AI đề xuất</Tag>
           )}
         </Space>
       ),
-      filters: [{ text: 'Chờ duyệt', value: 'DRAFT' }, { text: 'Đã duyệt', value: 'APPROVED' }],
+      filters: [
+        { text: 'Bản nháp', value: 'DRAFT' },
+        { text: 'Chờ TBP duyệt', value: 'PENDING' },
+        { text: 'Đã duyệt', value: 'APPROVED' },
+      ],
       onFilter: (value, record) => record.status === value,
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 110,
-      render: (_, record) => (
-        <Space size={4}>
-          <Tooltip title="Sửa">
-            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditCriterion(record)} />
-          </Tooltip>
-          <Popconfirm
-            title="Gỡ tiêu chí này khỏi vị trí?"
-            onConfirm={() => handleRemoveFromJob(record.criteriaId)}
-            okText="Gỡ"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
+      render: (_, record) => {
+        // Đang chờ duyệt thì khoá sửa/gỡ — nếu không Trưởng bộ phận duyệt một bản đang chạy
+        // (backend chặn thật, đây chỉ để nút không mời người dùng bấm vào lỗi 400).
+        const locked = record.status === 'PENDING';
+        const lockHint = 'Đang chờ Trưởng bộ phận duyệt — nhờ họ bấm "Yêu cầu chỉnh sửa" để sửa tiếp';
+        return (
+          <Space size={4}>
+            <Tooltip title={locked ? lockHint : 'Sửa'}>
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                disabled={locked}
+                onClick={() => openEditCriterion(record)}
+              />
+            </Tooltip>
+            {locked ? (
+              <Tooltip title={lockHint}>
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} disabled />
+              </Tooltip>
+            ) : (
+              <Popconfirm
+                title="Gỡ tiêu chí này khỏi vị trí?"
+                onConfirm={() => handleRemoveFromJob(record.criteriaId)}
+                okText="Gỡ"
+                cancelText="Hủy"
+                okButtonProps={{ danger: true }}
+              >
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -581,6 +678,8 @@ const Criteria = () => {
           <Tooltip title="Xem chi tiết">
             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
           </Tooltip>
+          {!canManageTemplates ? null : (
+          <>
           <Tooltip title="Chỉnh sửa">
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => openEditTemplate(record)} />
           </Tooltip>
@@ -594,6 +693,8 @@ const Criteria = () => {
           >
             <Button type="text" size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
+          </>
+          )}
         </Space>
       ),
     },
@@ -717,7 +818,7 @@ const Criteria = () => {
               style={{ width: 280 }}
               showSearch
               optionFilterProp="label"
-              options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
+              options={visibleJobs.map(job => ({ value: job.jobId, label: job.title }))}
               allowClear
             />
             {selectedJob && (
@@ -743,27 +844,82 @@ const Criteria = () => {
             )}
           </div>
 
+          {/* Trưởng bộ phận đã trả bộ tiêu chí về — hiện lý do NGAY, vì đó là việc phải làm tiếp. */}
+          {selectedJob && reviewNote && draftCount > 0 && (
+            <Alert
+              type="error"
+              showIcon
+              icon={<RollbackOutlined />}
+              style={{ marginBottom: 16 }}
+              message="Trưởng bộ phận đã trả bộ tiêu chí về để chỉnh sửa"
+              description={<Text>{reviewNote}</Text>}
+            />
+          )}
+
+          {/* Bước 1 — người soạn: rà xong thì GỬI. Không còn nút Duyệt ở đây (V055). */}
           {selectedJob && draftCount > 0 && (
             <Alert
               type="warning"
               showIcon
               icon={<RobotOutlined />}
               style={{ marginBottom: 16 }}
-              message={`AI đã đề xuất ${draftCount} tiêu chí đang chờ bạn duyệt`}
-              description="Rà lại từng dòng (sửa/gỡ nếu cần) rồi bấm Duyệt. Chỉ tiêu chí ĐÃ DUYỆT mới vào phiếu chấm phỏng vấn — AI không tự quyết."
+              message={`${draftCount} tiêu chí đang ở bản nháp`}
+              description="Rà lại từng dòng (sửa/gỡ nếu cần) rồi gửi Trưởng bộ phận duyệt. Chỉ tiêu chí ĐÃ DUYỆT mới vào phiếu chấm phỏng vấn — AI không tự quyết."
               action={
                 <Popconfirm
-                  title={`Duyệt toàn bộ ${draftCount} tiêu chí?`}
-                  description="Sau khi duyệt, bộ tiêu chí này trở thành phiếu chấm phỏng vấn của vị trí."
-                  onConfirm={handleApprove}
-                  okText="Duyệt"
+                  title={`Gửi ${draftCount} tiêu chí cho Trưởng bộ phận duyệt?`}
+                  description="Sau khi gửi, bộ tiêu chí tạm khoá sửa cho tới khi họ duyệt hoặc trả về."
+                  onConfirm={handleSubmitForReview}
+                  okText="Gửi duyệt"
                   cancelText="Để sau"
                 >
-                  <Button type="primary" icon={<CheckCircleOutlined />} loading={submitting}>
-                    Duyệt {draftCount} tiêu chí
+                  <Button type="primary" icon={<SendOutlined />} loading={submitting}>
+                    Gửi Trưởng bộ phận duyệt
                   </Button>
                 </Popconfirm>
               }
+            />
+          )}
+
+          {/* Bước 2 — đang chờ duyệt. Người soạn chỉ THẤY; Trưởng bộ phận thấy kèm 2 nút. */}
+          {selectedJob && pendingCount > 0 && (
+            <Alert
+              type="info"
+              showIcon
+              icon={<ClockCircleOutlined />}
+              style={{ marginBottom: 16 }}
+              message={
+                canApproveCriteria
+                  ? `${pendingCount} tiêu chí đang chờ bạn duyệt`
+                  : `${pendingCount} tiêu chí đã gửi, đang chờ Trưởng bộ phận duyệt`
+              }
+              description={
+                canApproveCriteria
+                  ? 'Duyệt là bộ tiêu chí này trở thành phiếu chấm phỏng vấn của vị trí. Chưa ưng thì trả về kèm ghi chú để người soạn sửa.'
+                  : 'Bộ tiêu chí tạm khoá sửa trong lúc chờ. Cần sửa tiếp thì nhờ Trưởng bộ phận bấm "Yêu cầu chỉnh sửa".'
+              }
+              action={canApproveCriteria ? (
+                <Space>
+                  <Button
+                    icon={<RollbackOutlined />}
+                    loading={submitting}
+                    onClick={() => { setRequestChangesNote(''); setRequestChangesOpen(true); }}
+                  >
+                    Yêu cầu chỉnh sửa
+                  </Button>
+                  <Popconfirm
+                    title={`Duyệt toàn bộ ${pendingCount} tiêu chí?`}
+                    description="Sau khi duyệt, bộ tiêu chí này trở thành phiếu chấm phỏng vấn của vị trí."
+                    onConfirm={handleApprove}
+                    okText="Duyệt"
+                    cancelText="Để sau"
+                  >
+                    <Button type="primary" icon={<CheckCircleOutlined />} loading={submitting}>
+                      Duyệt {pendingCount} tiêu chí
+                    </Button>
+                  </Popconfirm>
+                </Space>
+              ) : null}
             />
           )}
 
@@ -808,14 +964,16 @@ const Criteria = () => {
               style={{ width: 240 }}
               allowClear
             />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setCreateModalOpen(true)}
-              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-            >
-              Tạo Template Mới
-            </Button>
+            {canManageTemplates && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setCreateModalOpen(true)}
+                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+              >
+                Tạo Template Mới
+              </Button>
+            )}
           </div>
           <Table
             columns={templateColumns}
@@ -838,6 +996,14 @@ const Criteria = () => {
           <Text type="secondary">
             AI đề xuất tiêu chí từ tin tuyển dụng → người duyệt chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn
           </Text>
+          {isDeptManager && (
+            <div style={{ marginTop: 4 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Bạn đang xem các vị trí do mình phụ trách — bộ tiêu chí bạn chốt ở đây chính là phiếu
+                chấm người phỏng vấn sẽ dùng.
+              </Text>
+            </div>
+          )}
         </div>
         <Button
           icon={<ReloadOutlined />}
@@ -851,6 +1017,34 @@ const Criteria = () => {
       <Card className="main-card" bordered={false}>
         <Tabs items={tabItems} />
       </Card>
+
+      {/* Trưởng bộ phận trả bộ tiêu chí về — lý do BẮT BUỘC (V055): trả về mà không nói vì sao
+          thì người soạn chỉ biết gửi lại y nguyên. */}
+      <Modal
+        title={<span><RollbackOutlined style={{ marginRight: 8 }} />Yêu cầu chỉnh sửa bộ tiêu chí</span>}
+        open={requestChangesOpen}
+        onCancel={() => setRequestChangesOpen(false)}
+        onOk={handleRequestChanges}
+        okText="Trả về để sửa"
+        cancelText="Hủy"
+        confirmLoading={submitting}
+        destroyOnClose
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Bộ tiêu chí quay lại bản nháp để người soạn sửa rồi gửi lại — đây không phải là huỷ bỏ."
+        />
+        <Input.TextArea
+          rows={4}
+          maxLength={1000}
+          showCount
+          placeholder="Cần sửa gì? Ví dụ: bỏ tiêu chí bằng cấp, thêm tiêu chí về kinh nghiệm làm việc nhóm."
+          value={requestChangesNote}
+          onChange={(e) => setRequestChangesNote(e.target.value)}
+        />
+      </Modal>
 
       {/* Modal: thêm tiêu chí thủ công cho vị trí */}
       <Modal
@@ -905,7 +1099,7 @@ const Criteria = () => {
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
-              message="Tiêu chí này đang chờ duyệt — sửa xong vẫn cần bấm Duyệt ở ngoài danh sách."
+              message="Tiêu chí này còn là bản nháp — sửa xong vẫn cần gửi Trưởng bộ phận duyệt ở ngoài danh sách."
             />
           )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

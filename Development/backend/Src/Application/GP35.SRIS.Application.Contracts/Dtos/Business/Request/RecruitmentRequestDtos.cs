@@ -32,11 +32,8 @@ public class ReviewRequestDto
     public string? Note { get; set; }
 }
 
-/// <summary>Human Resource đánh dấu đã tạo Job từ yêu cầu -> CONVERTED + truy vết job_id.</summary>
-public class ConvertRequestDto
-{
-    public long JobId { get; set; }
-}
+// ConvertRequestDto đã bỏ ở V056: yêu cầu chuyển sang CONVERTED bên trong chính lượt TẠO TIN
+// (POST /api/jobs nhận recruitmentRequestId), cùng lượt đó chuyển bộ tiêu chí đã chốt sang tin.
 
 public class RecruitmentRequestDto
 {

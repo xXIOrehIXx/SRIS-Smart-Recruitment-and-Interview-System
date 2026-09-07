@@ -1,4 +1,4 @@
-﻿using GP35.SRIS.Domain.Entities;
+using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
@@ -128,6 +128,19 @@ public interface ISchedulingRepo : IBaseRepo<long, InterviewSchedule>
     Task<long> ManualConfirmAsync(
         long companyId, long jobId, long applicationId, IReadOnlyList<long> interviewerIds,
         DateTime startTime, int roundNumber, string? roundName, long? createdBy);
+
+    /// <summary>
+    /// Sửa 1 buổi ĐÃ CHỐT tại chỗ: đổi giờ khung, thay panel của khung, đổi tên vòng (tên vòng nằm
+    /// ở pool — cột <c>InterviewSchedule.round_name</c> đã bỏ ở V032), tăng <c>reschedule_count</c>.
+    /// Tất cả trong 1 transaction.
+    ///
+    /// <para>KHÔNG hủy rồi đặt lại: schedule_id giữ nguyên nên phiếu chấm interviewer đã lưu
+    /// (InterviewScore trỏ theo schedule_id) không mồ côi, và buổi không bị đếm hai lần khi tính
+    /// số vòng. Đây cũng là lý do không dùng lại <c>ManualConfirmAsync</c> cho việc dời lịch.</para>
+    /// </summary>
+    Task RescheduleAsync(
+        long companyId, long scheduleId, long poolId, long slotId, DateTime newStartTime,
+        IReadOnlyList<long> interviewerIds, string? roundName);
 
     // ---------- Chấm điểm (5.7) ----------
 

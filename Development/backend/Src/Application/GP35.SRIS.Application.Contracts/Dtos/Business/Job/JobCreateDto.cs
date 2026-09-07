@@ -9,6 +9,17 @@ public class JobCreateDto
     [MaxLength(300)]
     public string Title { get; set; } = null!;
 
+    /// <summary>
+    /// Yêu cầu tuyển dụng ĐÃ ĐƯỢC GIÁM ĐỐC DUYỆT mà tin này sinh ra từ đó — BẮT BUỘC (V056).
+    ///
+    /// <para>Mọi tin tuyển dụng phải đi qua yêu cầu tuyển dụng: đó là chỗ Trưởng bộ phận ra đề
+    /// bộ tiêu chí, và tạo tin chính là lúc bộ tiêu chí đó chuyển sang thành phiếu chấm phỏng
+    /// vấn. Cho tạo tin thẳng thì lại có những vị trí không có phiếu chấm, đúng thứ luồng này
+    /// sinh ra để bỏ.</para>
+    /// </summary>
+    [Required(ErrorMessage = "Tin tuyển dụng phải được tạo từ một yêu cầu tuyển dụng đã duyệt.")]
+    public long? RecruitmentRequestId { get; set; }
+
     /// <summary>Mô tả công việc (JD). Cần có để hệ thống chấm điểm CV bằng vector.</summary>
     public string? JdText { get; set; }
 

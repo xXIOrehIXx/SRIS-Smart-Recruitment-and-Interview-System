@@ -15,6 +15,9 @@ import {
   Statistic,
   message,
   Alert,
+  Collapse,
+  Tag,
+  Spin,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -25,7 +28,7 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { dashboardAPI, applicationAPI, cvAPI, usersAPI } from '../../services/api';
+import { dashboardAPI, applicationAPI, cvAPI, usersAPI, jobsAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import '../Dashboard.css';
@@ -64,6 +67,10 @@ const ScreeningApproval = () => {
   const [appDetail, setAppDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [cvLoading, setCvLoading] = useState(false);
+  // Tin tuyển dụng của hồ sơ đang mở — DM đọc CV để so với YÊU CẦU CHÍNH HỌ ĐẶT RA, mà tin đăng
+  // thường viết cả tuần trước; bắt họ nhớ hoặc mở tab khác là chỗ dễ duyệt nhầm nhất của màn này.
+  const [jobDetail, setJobDetail] = useState(null);
+  const [jobLoading, setJobLoading] = useState(false);
 
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -139,6 +146,24 @@ const ScreeningApproval = () => {
       message.error(apiMessage(error, 'Không tải được chi tiết hồ sơ'));
     } finally {
       setDetailLoading(false);
+    }
+    loadJob(record.jobId);
+  };
+
+  // JD tải RIÊNG (không chặn phần hồ sơ) và chỉ tải lại khi đổi sang vị trí khác — lướt vài ứng
+  // viên cùng một tin thì không gọi lại API mỗi lần mở.
+  const loadJob = async (jobId) => {
+    if (!jobId || jobDetail?.jobId === jobId) return;
+    setJobDetail(null);
+    setJobLoading(true);
+    try {
+      const res = await jobsAPI.getById(jobId);
+      setJobDetail(res.data || null);
+    } catch (error) {
+      console.error(error);
+      setJobDetail(null);
+    } finally {
+      setJobLoading(false);
     }
   };
 
@@ -410,6 +435,51 @@ const ScreeningApproval = () => {
                 </Space>
               </Descriptions.Item>
             </Descriptions>
+
+            {/* Tin tuyển dụng của chính vị trí này — mở gọn ngay dưới CV để đọc song song.
+                Đóng sẵn: người quen việc chỉ cần CV, người cần đối chiếu thì bấm một cái là ra,
+                không phải mở tab Tin tuyển dụng rồi mất chỗ đang đọc. */}
+            <Collapse
+              size="small"
+              style={{ marginTop: 16 }}
+              items={[{
+                key: 'jd',
+                label: <Text strong>Mô tả công việc — yêu cầu bạn đã đặt ra cho vị trí này</Text>,
+                children: jobLoading ? (
+                  <div style={{ textAlign: 'center', padding: 16 }}><Spin /></div>
+                ) : !jobDetail ? (
+                  <Text type="secondary">Không tải được tin tuyển dụng của vị trí này.</Text>
+                ) : (
+                  <>
+                    <Space wrap size={4} style={{ marginBottom: 8 }}>
+                      {jobDetail.experienceLevel && <Tag>{jobDetail.experienceLevel}</Tag>}
+                      {jobDetail.employmentType && <Tag>{jobDetail.employmentType}</Tag>}
+                      {jobDetail.location && <Tag>{jobDetail.location}</Tag>}
+                      {jobDetail.salary && <Tag color="green">{jobDetail.salary}</Tag>}
+                    </Space>
+                    {(jobDetail.requirements || []).length > 0 && (
+                      <>
+                        <Text strong>Yêu cầu ứng viên</Text>
+                        <ul style={{ margin: '6px 0 12px 20px' }}>
+                          {jobDetail.requirements.map((r, i) => <li key={i}>{r}</li>)}
+                        </ul>
+                      </>
+                    )}
+                    {(jobDetail.skills || []).length > 0 && (
+                      <div style={{ marginBottom: 12 }}>
+                        <Text strong>Kỹ năng: </Text>
+                        <Space wrap size={4}>
+                          {jobDetail.skills.map((k, i) => <Tag key={i}>{k}</Tag>)}
+                        </Space>
+                      </div>
+                    )}
+                    {jobDetail.jdText
+                      ? <Text style={{ whiteSpace: 'pre-wrap' }}>{jobDetail.jdText}</Text>
+                      : <Text type="secondary">Tin này không có phần mô tả chi tiết.</Text>}
+                  </>
+                ),
+              }]}
+            />
           </div>
         )}
       </Modal>

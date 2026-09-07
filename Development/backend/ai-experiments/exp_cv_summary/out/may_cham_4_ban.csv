@@ -1,0 +1,5 @@
+﻿ver,ten,so_tin,json_hop_le_%,dung_khuon_3_5_cau_%,tin_co_so_la,tong_so_la,ti_le_sao_rong_tb,tin_nhac_dinh_dang,moc_bo_sot_%,so_cau_tb,on_dinh_tb,giay_tb
+V1,"V1 — bảo tóm tắt, không luật, không ép định dạng",10,100.0,90.0,3,4,0.067,0,48.6,3.4,0.866,3.3
+V2,V2 — V1 + ràng buộc JSON schema,10,100.0,40.0,3,3,0.166,0,45.9,9.4,1.0,8.2
+V3,V3 — V2 + luật chống bịa,10,100.0,80.0,5,5,0.0,0,37.8,4.8,0.869,5.4
+V4,V4 — V3 + luật riêng của bản tóm tắt  (PRODUCTION),10,100.0,90.0,2,2,0.0,0,51.4,3.4,0.822,7.9

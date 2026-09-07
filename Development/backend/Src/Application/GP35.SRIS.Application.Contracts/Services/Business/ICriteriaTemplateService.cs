@@ -13,6 +13,12 @@ public interface ICriteriaTemplateService : IBaseService
     /// <summary>Danh sách khuôn (rút gọn, kèm số dòng). includeInactive=false chỉ trả khuôn đang bật.</summary>
     Task<IReadOnlyList<CriteriaTemplateSummaryDto>> GetAllAsync(long companyId, bool includeInactive = false);
 
+    /// <summary>
+    /// Nạp bộ khuôn dựng sẵn cho công ty CHƯA có khuôn nào (kể cả khuôn đã ẩn). Trả số khuôn đã thêm.
+    /// Gọi ngầm khi liệt kê — công ty mới mở màn Tiêu Chí là có sẵn thư viện để áp.
+    /// </summary>
+    Task<int> EnsureDefaultsAsync(long companyId);
+
     /// <summary>1 khuôn kèm dòng. Null nếu không tồn tại trong company.</summary>
     Task<CriteriaTemplateDto?> GetByIdAsync(long companyId, long templateId);
 

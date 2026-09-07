@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Interview;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -200,6 +200,89 @@ public class InterviewScheduleService : BaseService<InterviewScheduleService>, I
             EndTime = r.EndTime,
             CandidateName = r.CandidateName
         }).ToList();
+    }
+
+    public async Task RescheduleAsync(
+        long companyId, long userId, long scheduleId, RescheduleInterviewDto dto)
+    {
+        var schedule = await _schedulingRepo.GetScheduleByIdAsync(companyId, scheduleId)
+            ?? throw NotFound($"Không tìm thấy buổi phỏng vấn (schedule_id={scheduleId}).");
+
+        if (!string.Equals(schedule.Status, InterviewScheduleStatus.Confirmed, StringComparison.OrdinalIgnoreCase))
+            throw Conflict("Buổi phỏng vấn này đã bị hủy — hãy đặt buổi mới thay vì sửa buổi đã hủy.");
+
+        if (schedule.PoolId is not long poolId || schedule.ConfirmedSlotId is not long slotId)
+            throw Conflict("Buổi phỏng vấn này không gắn với khung giờ nào — không sửa được.");
+
+        var app = await _appRepo.GetByIdAsync(companyId, schedule.ApplicationId)
+            ?? throw NotFound($"Không tìm thấy hồ sơ (application_id={schedule.ApplicationId}).");
+
+        // Hồ sơ đã rời vòng phỏng vấn thì buổi này là chuyện đã qua — cùng luật với lúc đặt.
+        if (!string.Equals(app.CurrentState, ApplicationState.Interview, StringComparison.OrdinalIgnoreCase))
+            throw Conflict(NotApprovedReason(app.CurrentState));
+
+        if (dto.InterviewerIds is null || dto.InterviewerIds.Count == 0)
+            throw Bad("Phải chọn ít nhất 1 người phỏng vấn.");
+        if (dto.InterviewerIds.Count > InterviewPanel.MaxSize)
+            throw Bad($"Tối đa {InterviewPanel.MaxSize} người phỏng vấn cho một buổi.");
+        if (dto.InterviewerIds.Distinct().Count() != dto.InterviewerIds.Count)
+            throw Bad("Danh sách người phỏng vấn bị trùng.");
+
+        await EnsureInterviewersAssignedAsync(companyId, schedule.ApplicationId, dto.InterviewerIds);
+
+        // Giờ local naive như lúc đặt (xem BookAsync) — so với DateTime.Now, không phải UtcNow.
+        if (dto.StartTime <= DateTime.Now)
+            throw Bad($"Thời điểm {dto.StartTime:HH:mm dd/MM/yyyy} đã ở quá khứ " +
+                      $"(bây giờ là {DateTime.Now:HH:mm dd/MM/yyyy}). Hãy chọn thời điểm sau hiện tại.");
+
+        var panel = dto.InterviewerIds.Distinct().ToList();
+        var roundName = Normalize(dto.Name);
+
+        // Chống trùng giờ, BỎ QUA chính buổi đang sửa — không loại trừ thì mỗi lần bấm Lưu mà giữ
+        // nguyên giờ (chỉ đổi người) là hệ thống báo ứng viên bận vì đụng chính buổi này.
+        var myBusyAt = await _schedulingRepo.FindCandidateBusyAtAsync(
+            companyId, schedule.ApplicationId, dto.StartTime, InterviewTiming.MinGap,
+            excludeScheduleId: scheduleId);
+        if (myBusyAt is DateTime busyAt)
+            throw Conflict(
+                $"Ứng viên đã có buổi phỏng vấn đúng lúc {busyAt:HH:mm dd/MM/yyyy} — " +
+                "chọn giờ khác cho buổi này.");
+
+        var busy = await _schedulingRepo.FindBusyInterviewerAsync(
+            companyId, panel, dto.StartTime, InterviewTiming.MinGap, excludeSlotId: slotId);
+        if (busy is not null)
+        {
+            var name = (await _userRepo.GetNamesByIdsAsync(companyId, new List<long> { busy.InterviewerId }))
+                .Select(u => u.FullName ?? u.Email)
+                .FirstOrDefault() ?? $"#{busy.InterviewerId}";
+            throw Conflict(
+                $"{name} đã có buổi phỏng vấn đúng lúc {busy.StartTime:HH:mm dd/MM/yyyy} — " +
+                "chọn giờ khác hoặc bỏ người này khỏi buổi.");
+        }
+
+        var oldStart = (await _schedulingRepo.GetSlotAsync(companyId, slotId))?.StartTime;
+
+        await _schedulingRepo.RescheduleAsync(
+            companyId, scheduleId, poolId, slotId, dto.StartTime, panel, roundName);
+
+        await _activityLogRepo.InsertAsync(companyId, new ActivityLog
+        {
+            ApplicationId = schedule.ApplicationId,
+            UserId = userId > 0 ? userId : null,
+            Action = "INTERVIEW_RESCHEDULED",
+            Detail = oldStart is DateTime from && from != dto.StartTime
+                ? $"Vòng {schedule.RoundNumber}: dời {from:HH:mm dd/MM/yyyy} -> " +
+                  $"{dto.StartTime:HH:mm dd/MM/yyyy}, {panel.Count} người phỏng vấn."
+                : $"Vòng {schedule.RoundNumber}: cập nhật buổi {dto.StartTime:HH:mm dd/MM/yyyy}, " +
+                  $"{panel.Count} người phỏng vấn."
+        });
+
+        // Gửi lại đúng mẫu xác nhận (kèm .ics giờ mới) — ứng viên cần một thư nói giờ CHỐT hiện
+        // tại, không phải thư "đã hủy" rồi một thư mời mới.
+        await _notify.SendInterviewConfirmedAsync(companyId, schedule.ApplicationId, dto.StartTime);
+
+        _logger.Information("Scheduling: sửa buổi schedule={ScheduleId} app={AppId} -> {Start:o} panel={Panel}.",
+            scheduleId, schedule.ApplicationId, dto.StartTime, panel.Count);
     }
 
     public async Task CancelAsync(long companyId, long userId, long scheduleId, CancelInterviewDto dto)

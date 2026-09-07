@@ -31,7 +31,7 @@ vi.mock('axios', () => {
 import axios from 'axios';
 import {
   authAPI, jobsAPI, cvAPI, applicationAPI, interviewAPI, candidateAPI,
-  offerAPI, criteriaAPI, dashboardAPI, usersAPI, recruitmentRequestAPI,
+  offerAPI, criteriaAPI, dashboardAPI, usersAPI, recruitmentRequestAPI, requestCriteriaAPI,
   hiringProposalAPI,
 } from './api';
 
@@ -204,8 +204,8 @@ describe('hiringProposalAPI', () => {
     expect(apiInst.get).toHaveBeenCalledWith('/hiring-proposals');
   });
 
-  test('decide gửi quyết định + điều khoản chốt', () => {
-    const data = { approve: true, note: 'OK', approvedSalary: 14000000, approvedStartDate: null };
+  test('decide gửi quyết định (không còn mức lương chốt — V053)', () => {
+    const data = { approve: true, note: 'OK' };
     hiringProposalAPI.decide(77, data);
     expect(apiInst.post).toHaveBeenCalledWith('/hiring-proposals/77/decision', data);
   });
@@ -251,15 +251,39 @@ describe('đường dẫn từng bị sai', () => {
   });
 });
 
+describe('requestCriteriaAPI (V056 — tiêu chí ra đề trên yêu cầu tuyển dụng)', () => {
+  test('bóc AI chạy nền: POST xếp hàng, GET hỏi lại trạng thái', () => {
+    requestCriteriaAPI.extract(4);
+    expect(apiInst.post).toHaveBeenCalledWith('/recruitment-requests/4/criteria/extract');
+
+    requestCriteriaAPI.extractStatus(4);
+    expect(apiInst.get).toHaveBeenCalledWith('/recruitment-requests/4/criteria/extract-status');
+  });
+
+  test('chốt bộ tiêu chí: MỘT nút, không có bước gửi duyệt như bên job', () => {
+    requestCriteriaAPI.approve(4);
+    expect(apiInst.post).toHaveBeenCalledWith('/recruitment-requests/4/criteria/approve');
+  });
+
+  test('thêm tay một tiêu chí', () => {
+    requestCriteriaAPI.add(4, { name: 'Kỹ năng đàm phán', weight: 3, maxScore: 10 });
+    expect(apiInst.post).toHaveBeenCalledWith(
+      '/recruitment-requests/4/criteria',
+      { name: 'Kỹ năng đàm phán', weight: 3, maxScore: 10 }
+    );
+  });
+});
+
 describe('recruitmentRequestAPI (5.17)', () => {
   test('review gửi { approve, note }', () => {
     recruitmentRequestAPI.review(1, false, 'Chưa cần vị trí này');
     expect(apiInst.post).toHaveBeenCalledWith('/recruitment-requests/1/review', { approve: false, note: 'Chưa cần vị trí này' });
   });
 
-  test('convert gắn jobId để truy vết', () => {
-    recruitmentRequestAPI.convert(1, 17);
-    expect(apiInst.post).toHaveBeenCalledWith('/recruitment-requests/1/convert', { jobId: 17 });
+  // V056: `convert` đã bỏ — lượt tạo tin tự gắn yêu cầu và chuyển bộ tiêu chí sang tin.
+  // Giữ test này để không ai vô tình thêm lại đường thứ hai.
+  test('KHÔNG còn convert (tạo tin tự gắn yêu cầu — V056)', () => {
+    expect(recruitmentRequestAPI.convert).toBeUndefined();
   });
 
   test('update PUT thẳng vào yêu cầu (DM sửa đề bài khi còn PENDING)', () => {

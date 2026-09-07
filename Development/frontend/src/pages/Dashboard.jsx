@@ -16,10 +16,11 @@ import {
   VideoCameraOutlined,
   CloseCircleOutlined,
   EyeOutlined,
+  AuditOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { dashboardAPI, interviewAPI, jobsAPI, applicationAPI, recruitmentRequestAPI } from '../services/api';
+import { dashboardAPI, interviewAPI, jobsAPI, applicationAPI, recruitmentRequestAPI, hiringProposalAPI } from '../services/api';
 import dayjs from 'dayjs';
 import ApplicationStateTag, { APPLICATION_STATE_LABELS } from '../components/ApplicationStateTag';
 import './Dashboard.css';
@@ -44,6 +45,9 @@ const Dashboard = () => {
   // DM: yêu cầu tuyển dụng thật (đếm KPI + bảng chờ duyệt)
   const [requests, setRequests] = useState([]);
 
+  // Giám đốc: hai hàng đợi mình phải bấm (đề xuất tuyển + yêu cầu mở vị trí).
+  const [proposals, setProposals] = useState([]);
+
   // Interviewer states
   const [upcomingInterviews, setUpcomingInterviews] = useState([]);
   const [pendingGrading, setPendingGrading] = useState([]);
@@ -56,6 +60,10 @@ const Dashboard = () => {
   const isAdmin = role === ROLES.ADMIN;
   const isDeptManager = role === ROLES.DEPARTMENT_MANAGER;
   const isInterviewer = role === ROLES.INTERVIEWER;
+  // Giám đốc có phạm vi TOÀN CÔNG TY (V043) — số liệu giống Admin, nên dùng chung khối hiển thị.
+  // Trước 24/08/2026 màn này không có nhánh nào cho Director: đăng nhập vào chỉ thấy trang trắng.
+  const isDirector = role === ROLES.DIRECTOR;
+  const isCompanyWide = isAdmin || isDirector;
 
   useEffect(() => {
     if (isInterviewer) {
@@ -63,7 +71,8 @@ const Dashboard = () => {
     } else {
       fetchDashboard();
       fetchJobs();
-      if (isDeptManager) fetchRequests();
+      if (isDeptManager || isDirector) fetchRequests();
+      if (isDirector) fetchProposals();
     }
   }, [selectedJob, isInterviewer]);
 
@@ -73,6 +82,15 @@ const Dashboard = () => {
       setRequests(response.data || []);
     } catch (error) {
       console.error('Error fetching recruitment requests:', error);
+    }
+  };
+
+  const fetchProposals = async () => {
+    try {
+      const response = await hiringProposalAPI.getList();
+      setProposals(response.data || []);
+    } catch (error) {
+      console.error('Error fetching hiring proposals:', error);
     }
   };
 
@@ -238,6 +256,18 @@ const Dashboard = () => {
 
   const stats = React.useMemo(() => {
     const summary = dashboardData?.summary || {};
+    // Giám đốc nhìn hai hàng đợi của MÌNH trước, rồi mới tới kết quả chung: dashboard của người
+    // quyết phải trả lời "hôm nay tôi phải bấm gì", không phải "công ty đang thế nào".
+    if (isDirector) {
+      const pendingProposals = proposals.filter((p) => p.status === 'PENDING').length;
+      const pendingRequests = requests.filter((r) => r.status === 'PENDING').length;
+      return [
+        { title: 'Đề Xuất Chờ Duyệt', value: pendingProposals, icon: <AuditOutlined />, color: '#faad14' },
+        { title: 'Yêu Cầu Mở Vị Trí Chờ Duyệt', value: pendingRequests, icon: <FileTextOutlined />, color: MATCHA_GREEN },
+        { title: 'Ứng Viên Đã Tuyển', value: summary.hired || 0, icon: <UserOutlined />, color: '#52c41a' },
+        { title: 'Tỷ Lệ Chấp Nhận Offer', value: summary.offerAcceptanceRatePct ?? 0, suffix: '%', icon: <TrophyOutlined />, color: '#1890ff' },
+      ];
+    }
     if (isAdmin) {
       return [
         { title: 'Tổng Hồ Sơ Ứng Tuyển', value: summary.totalApplications || 0, icon: <FileTextOutlined />, color: MATCHA_GREEN },
@@ -266,7 +296,8 @@ const Dashboard = () => {
       ];
     }
     return [];
-  }, [dashboardData, requests, isAdmin, isDeptManager, isInterviewer, interviewerStats, pendingGrading.length]);
+  }, [dashboardData, requests, proposals, isAdmin, isDeptManager, isDirector, isInterviewer,
+      interviewerStats, pendingGrading.length]);
 
   const funnelData = dashboardData?.funnel || [];
   const maxFunnel = Math.max(...funnelData.map(f => f.count), 1);
@@ -280,6 +311,23 @@ const Dashboard = () => {
   }
 
   const renderHeaderActions = () => {
+    if (isDirector) {
+      return (
+        <div className="header-actions">
+          <Select
+            placeholder="Chọn vị trí"
+            allowClear
+            style={{ width: 200 }}
+            value={selectedJob}
+            onChange={setSelectedJob}
+            options={jobs.map(job => ({ value: job.jobId, label: job.title }))}
+          />
+          <Button type="primary" onClick={() => navigate('/director/proposals')}>
+            Duyệt Đề Xuất Tuyển
+          </Button>
+        </div>
+      );
+    }
     if (isAdmin || isDeptManager) {
       return (
         <div className="header-actions">
@@ -312,6 +360,7 @@ const Dashboard = () => {
   };
 
   const getTitle = () => {
+    if (isDirector) return 'Dashboard - Giám Đốc';
     if (isAdmin) return 'Trang Chủ';
     if (isDeptManager) return 'Dashboard - Trưởng Phòng';
     if (isInterviewer) return 'Interviewer Dashboard';
@@ -319,13 +368,14 @@ const Dashboard = () => {
   };
 
   const getSubTitle = () => {
+    if (isDirector) return 'Những việc chờ bạn quyết và kết quả tuyển dụng toàn công ty';
     if (isAdmin) return 'Tổng quan hệ thống tuyển dụng';
     if (isDeptManager) return 'Tổng quan yêu cầu tuyển dụng và quyết định hiring';
     if (isInterviewer) return 'Welcome back! Here\'s your interview schedule.';
     return '';
   };
 
-  const pageTitleClass = isAdmin ? 'admin-dashboard' : isDeptManager ? 'dept-dashboard' : 'interviewer-dashboard';
+  const pageTitleClass = isCompanyWide ? 'admin-dashboard' : isDeptManager ? 'dept-dashboard' : 'interviewer-dashboard';
 
   return (
     <div className={`dashboard-page ${pageTitleClass}`}>
@@ -363,7 +413,39 @@ const Dashboard = () => {
         ))}
       </Row>
 
-      {isAdmin && (
+      {isDirector && (
+        <Card className="dashboard-card" bordered={false} style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <Title level={5}>Đề Xuất Tuyển Chờ Bạn Duyệt</Title>
+            <Button type="link" onClick={() => navigate('/director/proposals')}>Xem tất cả <RightOutlined /></Button>
+          </div>
+          <Table
+            columns={[
+              { title: 'Ứng viên', dataIndex: 'candidateName', key: 'candidateName',
+                render: (text, record) => (
+                  <div>
+                    <Text strong>{text}</Text><br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>{record.candidateEmail}</Text>
+                  </div>
+                ) },
+              { title: 'Vị trí', dataIndex: 'jobTitle', key: 'jobTitle' },
+              { title: 'Trưởng bộ phận đề xuất', dataIndex: 'createdByName', key: 'createdByName',
+                render: (v) => v || '-' },
+              { title: 'Mức lương đề xuất', dataIndex: 'proposedSalary', key: 'proposedSalary',
+                render: (v) => (v ? `${Number(v).toLocaleString('vi-VN')} đ` : '-') },
+              { title: 'Ngày gửi', dataIndex: 'createdAt', key: 'createdAt',
+                render: (v) => (v ? dayjs(v).format('DD/MM/YYYY') : '-') },
+            ]}
+            dataSource={proposals.filter((p) => p.status === 'PENDING')}
+            rowKey="proposalId"
+            pagination={false}
+            locale={{ emptyText: 'Không có đề xuất nào đang chờ bạn duyệt' }}
+            onRow={() => ({ onClick: () => navigate('/director/proposals'), style: { cursor: 'pointer' } })}
+          />
+        </Card>
+      )}
+
+      {isCompanyWide && (
         <>
           <Row gutter={[20, 20]}>
             <Col xs={24} lg={8}>
@@ -392,7 +474,11 @@ const Dashboard = () => {
               <Card className="dashboard-card" bordered={false}>
                 <div className="card-header">
                   <Title level={5}>Ứng Viên Ứng Tuyển Gần Đây</Title>
-                  <Button type="link" onClick={() => navigate('/human-resource/jobs')}>Xem tất cả <RightOutlined /></Button>
+                  {/* Giám đốc KHÔNG có màn tin tuyển dụng / hồ sơ của nhân sự (hasPermission chặn),
+                      nên link phải trỏ về khu của họ — không thì bấm xong bị đá về trang chủ. */}
+                  {!isDirector && (
+                    <Button type="link" onClick={() => navigate('/human-resource/jobs')}>Xem tất cả <RightOutlined /></Button>
+                  )}
                 </div>
                 <Table
                   columns={[
@@ -407,7 +493,10 @@ const Dashboard = () => {
                   rowKey="applicationId"
                   pagination={false}
                   className="applications-table"
-                  onRow={(record) => ({ onClick: () => navigate(`/human-resource/candidates/${record.applicationId}`), style: { cursor: 'pointer' } })}
+                  onRow={(record) => (isDirector ? {} : {
+                    onClick: () => navigate(`/human-resource/candidates/${record.applicationId}`),
+                    style: { cursor: 'pointer' },
+                  })}
                 />
               </Card>
             </Col>

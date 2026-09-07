@@ -1,4 +1,4 @@
-﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Request;
+using GP35.SRIS.Application.Contracts.Dtos.Business.Request;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
@@ -85,14 +85,10 @@ public class RecruitmentRequestController : ControllerBase
         return Ok(await _requestService.ReviewAsync(_contextData.CompanyId, _contextData.UserId, requestId, dto));
     }
 
-    /// <summary>
-    /// Human Resource gắn Job đã tạo từ yêu cầu: { jobId } → CONVERTED (truy vết đề bài → job).
-    /// Chỉ gắn được cho yêu cầu ĐÃ ĐƯỢC GIÁM ĐỐC DUYỆT (xem <c>ConvertAsync</c>).
-    /// </summary>
-    [HttpPost("{requestId:long}/convert")]
-    [WithRole(RoleConstants.HumanResource)]
-    public async Task<IActionResult> Convert(long requestId, [FromBody] ConvertRequestDto dto)
-    {
-        return Ok(await _requestService.ConvertAsync(_contextData.CompanyId, _contextData.UserId, requestId, dto));
-    }
+    // V056: KHÔNG còn endpoint "convert". Yêu cầu chuyển sang CONVERTED bên trong chính lượt
+    // TẠO TIN (POST /api/jobs nhận recruitmentRequestId) — cùng lượt đó chuyển bộ tiêu chí đã
+    // chốt sang tin, biến nó thành phiếu chấm phỏng vấn.
+    //
+    // Đừng mở lại đường riêng: tách thành hai bước thì tồn tại một khoảng tin đã đăng nhưng
+    // chưa có phiếu chấm, mà bước sau hỏng thì không ai biết — nó chạy "best-effort" ở FE.
 }

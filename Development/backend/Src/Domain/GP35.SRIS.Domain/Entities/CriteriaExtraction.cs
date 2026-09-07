@@ -21,8 +21,13 @@ public class CriteriaExtraction : BaseEntity<long>, IHasCreateInfo, IHasModifyIn
     [Column("company_id")]
     public long CompanyId { get; set; }
 
+    /// <summary>Lượt bóc từ tin tuyển dụng. NULL nếu lượt này bóc từ Yêu cầu tuyển dụng (V056).</summary>
     [Column("job_id")]
-    public long JobId { get; set; }
+    public long? JobId { get; set; }
+
+    /// <summary>Lượt bóc từ Yêu cầu tuyển dụng (V056). Đúng MỘT trong hai cột có giá trị.</summary>
+    [Column("request_id")]
+    public long? RequestId { get; set; }
 
     /// <summary>PENDING | RUNNING | DONE | FAILED (hằng số ở <c>ExtractionStatus</c>).</summary>
     [Column("status")]

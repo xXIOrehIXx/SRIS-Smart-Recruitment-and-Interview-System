@@ -1,0 +1,11 @@
+﻿id,json_hop_le,so_cau,dung_khuon_3_5_cau,so_luong_so_la,so_la,ti_le_sao_rong,nhac_dinh_dang,so_moc_thieu,so_moc_phai_co,so_ky_tu,on_dinh,giay
+C01_khong_ghi_so_nam,True,4,True,0,,0.0,False,1,4,554,1.0,8.98
+C02_ketoan_khop,True,2,False,0,,0.0,False,0,5,351,1.0,8.65
+C03_fresher_mong,True,3,True,0,,0.0,False,2,3,321,0.643,4.63
+C04_trai_nganh,True,3,True,1,4,0.0,False,3,3,327,0.586,6.64
+C05_nhay_viec_nhieu_moc,True,3,True,0,,0.0,False,2,3,284,1.0,7.59
+C06_text_pdf_lon_xon,True,3,True,0,,0.0,False,0,3,312,0.43,8.26
+C07_song_ngu,True,4,True,0,,0.0,False,2,4,507,0.591,7.35
+C08_thanh_tich_nhieu_so,True,5,True,0,,0.0,False,3,4,535,1.0,11.11
+C09_khoang_trong_su_nghiep,True,3,True,1,4,0.0,False,3,4,328,0.968,7.85
+C10_liet_ke_cong_nghe,True,4,True,0,,0.0,False,3,4,452,1.0,7.75

@@ -170,8 +170,6 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
         {
             to.Item().Text(Has(m.CandidateName) ? m.CandidateName! : "Quý ứng viên")
                 .Bold().LineHeight(TightLine);
-            if (Has(m.CandidateAddress))
-                to.Item().Text(m.CandidateAddress!).LineHeight(TightLine);
         });
     }
 

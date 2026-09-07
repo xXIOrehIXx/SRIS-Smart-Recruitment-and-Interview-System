@@ -182,10 +182,10 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
-| POST | `/api/applications/{applicationId}/hiring-proposal` | DM | đề xuất — body `{ note?, proposedSalary?, proposedStartDate? }`. Đòi hồ sơ ở INTERVIEW + ≥1 phiếu chấm đã nộp + đúng DM của vị trí |
+| POST | `/api/applications/{applicationId}/hiring-proposal` | DM | đề xuất — body `{ note?, proposedSalary }` (**lương BẮT BUỘC**, V053). Đòi hồ sơ ở INTERVIEW + ≥1 phiếu chấm đã nộp + đúng DM của vị trí |
 | GET | `/api/applications/{applicationId}/hiring-proposals` | DM/Dir/Rec | lịch sử đề xuất của 1 hồ sơ (gồm lần bị từ chối) |
 | GET | `/api/hiring-proposals` | Dir/DM/Rec | hàng đợi — `?status=PENDING\|APPROVED\|REJECTED` |
-| POST | `/api/hiring-proposals/{proposalId}/decision` | **Dir** | quyết — body `{ approve, note?, approvedSalary?, approvedStartDate? }`. Duyệt → transition INTERVIEW→OFFER |
+| POST | `/api/hiring-proposals/{proposalId}/decision` | **Dir** | quyết — body `{ approve, note? }` (**note BẮT BUỘC khi `approve=false`**, V053). Duyệt → transition INTERVIEW→OFFER với ĐÚNG `proposedSalary` trên phiếu; Giám đốc không có ô lương riêng |
 
 ## 12. Chấm phỏng vấn — `InterviewScoring`
 | Method | Path | Role | Ghi chú |

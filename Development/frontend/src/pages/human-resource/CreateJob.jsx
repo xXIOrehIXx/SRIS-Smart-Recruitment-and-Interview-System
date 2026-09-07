@@ -369,16 +369,11 @@ const CreateJob = () => {
     }
   };
 
-  // Đánh dấu yêu cầu -> CONVERTED sau khi tạo job (best-effort, không chặn flow)
-  const linkToRequest = async (jobId) => {
-    if (!requestId || !jobId) return;
-    try {
-      await recruitmentRequestAPI.convert(requestId, jobId);
-    } catch (error) {
-      console.error("Error linking job to request:", error);
-      message.warning("Job đã tạo nhưng chưa gắn được vào yêu cầu tuyển dụng.");
-    }
-  };
+  // V056: KHÔNG còn bước "convert" riêng sau khi tạo job. Bản thân lượt tạo tin đã nhận
+  // recruitmentRequestId, tự đánh dấu yêu cầu là CONVERTED và CHUYỂN bộ tiêu chí đã duyệt
+  // sang tin. Gọi hai lượt như trước thì lượt sau luôn hỏng (yêu cầu đã CONVERTED rồi), và
+  // tệ hơn: bộ tiêu chí gắn hay không gắn được là chuyện xảy ra bên trong lượt tạo tin, không
+  // phải một việc "best-effort" làm sau.
 
   const fetchJobDetails = async (jobId) => {
     try {
@@ -518,8 +513,7 @@ const CreateJob = () => {
       } else {
         // Tin mới lưu nháp -> Draft: chưa hiện trên trang tuyển dụng công khai
         // (career site chỉ lấy tin Open).
-        const res = await jobsAPI.create({ ...data, status: "Draft" });
-        await linkToRequest(res.data?.jobId);
+        await jobsAPI.create({ ...data, status: "Draft", recruitmentRequestId: Number(requestId) });
         message.success("Lưu nháp thành công — tin CHƯA hiển thị trên trang tuyển dụng.");
         navigate("/human-resource/jobs");
       }
@@ -562,8 +556,7 @@ const CreateJob = () => {
         message.success("Cập nhật và đăng tin thành công! Tin đã hiển thị trên trang tuyển dụng.");
         // Giữ nguyên trang edit để user có thể chỉnh tiếp — KHÔNG navigate (giống handleSaveDraft).
       } else {
-        const res = await jobsAPI.create(data);
-        await linkToRequest(res.data?.jobId);
+        await jobsAPI.create({ ...data, recruitmentRequestId: Number(requestId) });
         message.success("Tin tuyển dụng đã được đăng thành công!");
         navigate("/human-resource/jobs");
       }
@@ -923,6 +916,38 @@ const CreateJob = () => {
         }}
       >
         <Spin size="large" />
+      </div>
+    );
+  }
+
+  // V056: tin tuyển dụng LUÔN sinh ra từ một yêu cầu tuyển dụng đã được Giám đốc duyệt — đó là
+  // chỗ Trưởng bộ phận ra đề bộ tiêu chí, và tạo tin chính là lúc bộ tiêu chí đó thành phiếu
+  // chấm phỏng vấn. Backend chặn thật (JobService.EnsureConvertibleRequestAsync); ở đây chặn
+  // sớm để người dùng không điền hết một form dài rồi mới ăn lỗi ở nút cuối.
+  if (!isEditMode && !requestId) {
+    return (
+      <div className="create-job-page">
+        <div className="page-header">
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/human-resource/jobs")}>
+            Quay lại
+          </Button>
+        </div>
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginTop: 24 }}
+          message="Tin tuyển dụng được tạo từ Yêu cầu tuyển dụng"
+          description={
+            "Trưởng bộ phận gửi yêu cầu và ra đề bộ tiêu chí đánh giá, Giám đốc duyệt, rồi bạn "
+            + "đăng tin từ yêu cầu đó — bộ tiêu chí sẽ tự trở thành phiếu chấm phỏng vấn của vị trí. "
+            + "Mở danh sách yêu cầu đã duyệt và bấm \"Đăng tin\" trên yêu cầu bạn muốn."
+          }
+          action={
+            <Button type="primary" onClick={() => navigate("/human-resource/requests")}>
+              Xem yêu cầu tuyển dụng
+            </Button>
+          }
+        />
       </div>
     );
   }

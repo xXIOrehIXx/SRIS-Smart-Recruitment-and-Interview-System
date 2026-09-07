@@ -38,7 +38,6 @@ public class MakeOfferDto
     public string? SignerName { get; set; }          // null -> tên người ra offer
     public string? SignerTitle { get; set; }
 
-    public string? CandidateAddress { get; set; }    // in ở đầu thư, gõ tay (CV không lưu địa chỉ)
     public string? Note { get; set; }                // lời nhắn thêm, in cuối phần điều khoản
 
     /// <summary>Hạn xác nhận in trên thư + TTL link xem thư. null -> 7 ngày.</summary>
@@ -72,12 +71,15 @@ public class OfferLetterDefaultsDto
     public string? Currency { get; set; }
     public string? SalaryPeriod { get; set; }
 
-    /// <summary>Ngày vào làm Giám đốc đã chốt (null nếu Giám đốc không ghi).</summary>
+    /// <summary>
+    /// LUÔN null (24/08/2026): Giám đốc không chốt ngày vào làm nữa. Nhân sự gọi ứng viên hỏi
+    /// ngày họ đi làm được rồi tự điền. Giữ trường lại để FE cũ không vỡ khi đọc.
+    /// </summary>
     public DateTime? StartDate { get; set; }
 
     /// <summary>
-    /// True khi lương/ngày vào làm ở trên đến từ quyết định của Giám đốc — form cảnh báo nhân sự
-    /// rằng đây là điều khoản đã chốt, sửa tay là lệch với thứ Giám đốc duyệt.
+    /// True khi mức lương ở trên là mức GIÁM ĐỐC ĐÃ CHỐT. Form khoá ô lương lại (nhân sự soạn
+    /// thư, không mặc cả lại) và server cũng ép cùng số đó khi lưu thư mời.
     /// </summary>
     public bool TermsFromDirector { get; set; }
 
@@ -122,7 +124,6 @@ public class OfferDto
     public string? HrContactEmail { get; set; }
     public string? SignerName { get; set; }
     public string? SignerTitle { get; set; }
-    public string? CandidateAddress { get; set; }
     public string? Note { get; set; }
 
     public long? DecidedBy { get; set; }

@@ -278,6 +278,11 @@ export const interviewAPI = {
   bookInterview: (applicationId, data) =>
     api.post(`/applications/${applicationId}/interviews`, data),
 
+  // Sửa buổi ĐÃ chốt: { interviewerIds, startTime, name? }. Giữ nguyên scheduleId nên phiếu
+  // chấm đã có không mất; BE gửi lại email xác nhận kèm .ics giờ mới.
+  updateInterview: (scheduleId, data) =>
+    api.put(`/interview-schedules/${scheduleId}`, data),
+
   cancelInterview: (scheduleId, reason) =>
     api.post(`/interview-schedules/${scheduleId}/cancel`, { reason }),
 
@@ -347,10 +352,12 @@ export const interviewAPI = {
 // ==================== ĐỀ XUẤT TUYỂN (DM đề xuất → Giám đốc quyết) ====================
 
 // docs 5.14 (V043): Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển — họ đề xuất "nên tuyển người
-// này"; Giám đốc duyệt và chốt điều khoản (lương, ngày vào làm) để nhân sự soạn thư mời.
+// này" KÈM MỨC LƯƠNG; Giám đốc duyệt đúng mức đó hoặc trả phiếu về để DM sửa (V053).
 // Duyệt đề xuất chính là hành động đẩy hồ sơ sang bước Quyết định (OFFER).
+// Ngày vào làm KHÔNG nằm ở đây (24/08/2026): nhân sự gọi ứng viên chốt ngày onboard rồi điền
+// vào thư mời (offerAPI.create -> startDate).
 export const hiringProposalAPI = {
-  // DM đề xuất: { note?, proposedSalary?, proposedStartDate? }
+  // DM đề xuất: { note?, proposedSalary } — mức lương BẮT BUỘC (V053)
   create: (applicationId, data) =>
     api.post(`/applications/${applicationId}/hiring-proposal`, data),
 
@@ -362,7 +369,9 @@ export const hiringProposalAPI = {
   getList: (status) =>
     api.get(`/hiring-proposals${status ? `?status=${status}` : ''}`),
 
-  // Giám đốc quyết: { approve, note?, approvedSalary?, approvedStartDate? }
+  // Giám đốc quyết: { approve, note? } — note BẮT BUỘC khi approve=false (V053).
+  // Không còn approvedSalary: duyệt = gật đầu đúng mức trên phiếu; muốn mức khác thì trả phiếu
+  // về kèm ghi chú, DM sửa proposedSalary rồi gửi lại.
   decide: (proposalId, data) =>
     api.post(`/hiring-proposals/${proposalId}/decision`, data),
 };
@@ -447,9 +456,18 @@ export const criteriaAPI = {
   extractStatus: (jobId) =>
     api.get(`/jobs/${jobId}/criteria/extract-status`),
 
-  // Chốt bộ tiêu chí DRAFT → ACTIVE
+  // Người soạn gửi bộ tiêu chí cho Trưởng bộ phận duyệt: DRAFT → PENDING (V055).
+  // Sau bước này bộ tiêu chí khoá sửa cho tới khi Trưởng bộ phận trả lời.
+  submitForReview: (jobId) =>
+    api.post(`/jobs/${jobId}/criteria/submit`),
+
+  // Trưởng bộ phận CHỐT: PENDING → APPROVED. Nhân sự gọi vào đây nhận 403 (V055).
   approve: (jobId) =>
     api.post(`/jobs/${jobId}/criteria/approve`),
+
+  // Trưởng bộ phận trả về cho người soạn sửa: PENDING → DRAFT kèm lý do (bắt buộc).
+  requestChanges: (jobId, note) =>
+    api.post(`/jobs/${jobId}/criteria/request-changes`, { note }),
 
 
   applyTemplateToJob: (templateId, jobId) =>
@@ -622,13 +640,37 @@ export const recruitmentRequestAPI = {
   cancel: (id) =>
     api.delete(`/recruitment-requests/${id}`),
 
-  // Human Resource duyệt: approve=false bắt buộc note
+  // GIÁM ĐỐC duyệt (V047 — không phải nhân sự): approve=false bắt buộc note
   review: (id, approve, note) =>
     api.post(`/recruitment-requests/${id}/review`, { approve, note }),
 
-  // Human Resource gắn job đã tạo từ yêu cầu → CONVERTED
-  convert: (id, jobId) =>
-    api.post(`/recruitment-requests/${id}/convert`, { jobId }),
+  // V056: KHÔNG còn `convert`. Yêu cầu tự chuyển sang CONVERTED bên trong lượt tạo tin
+  // (jobsAPI.create nhận recruitmentRequestId) — chính lượt đó cũng chuyển bộ tiêu chí đã
+  // duyệt sang tin. Gọi thành hai bước thì có khoảng thời gian tin đã tồn tại mà chưa có
+  // phiếu chấm, và bước sau hỏng thì không ai biết.
+};
+
+/**
+ * Bộ tiêu chí ra đề NGAY TRÊN yêu cầu tuyển dụng (V056) — trước khi tin tuyển dụng tồn tại.
+ * Trưởng bộ phận vừa mô tả vị trí vừa ra đề, rồi chốt một nút (không có bước "gửi duyệt" như
+ * bên job: ở đây người ra đề chính là người duyệt).
+ */
+export const requestCriteriaAPI = {
+  list: (requestId) =>
+    api.get(`/recruitment-requests/${requestId}/criteria`),
+
+  add: (requestId, data) =>
+    api.post(`/recruitment-requests/${requestId}/criteria`, data),
+
+  // Xếp hàng lượt AI bóc — trả 202 ngay, worker nền mới gọi model (cùng khuôn V037).
+  extract: (requestId) =>
+    api.post(`/recruitment-requests/${requestId}/criteria/extract`),
+
+  extractStatus: (requestId) =>
+    api.get(`/recruitment-requests/${requestId}/criteria/extract-status`),
+
+  approve: (requestId) =>
+    api.post(`/recruitment-requests/${requestId}/criteria/approve`),
 };
 
 // ==================== PUBLIC CAREER SITE ====================

@@ -145,9 +145,50 @@ Nhãn dùng chung ở FE `components/ApplicationStateTag.jsx` — **đừng khai
 Trang trạng thái của ỨNG VIÊN giữ bộ nhãn RIÊNG, trung tính ("Đã nhận hồ sơ / Đang xem xét / Phỏng vấn / Kết quả") — ứng viên không cần biết hồ sơ đang nằm trên bàn ai. 6 state vẫn là chuyện nội bộ.
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)
-DM tạo Yêu cầu tuyển dụng (tùy chọn) → **Giám đốc duyệt yêu cầu** (V047) → Human Resource tạo Job
-→ AI bóc tiêu chí `DRAFT` → người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng vấn**
-(interviewer chấm, 5.7).
+**Viết lại 07/09/2026 (V056).** Bộ tiêu chí ra đời NGAY TRÊN Yêu cầu tuyển dụng, không phải trên Job:
+
+```
+DM tạo Yêu cầu tuyển dụng (BẮT BUỘC, không còn tùy chọn)
+  → AI bóc tiêu chí TỪ CHÍNH yêu cầu đó        → DRAFT
+  → DM sửa rồi CHỐT (một nút, KHÔNG qua PENDING — người ra đề chính là người duyệt)
+  → Giám đốc duyệt yêu cầu (V047)
+  → nhân sự tạo tin TỪ yêu cầu đã duyệt        → bộ tiêu chí CHUYỂN sang job
+  → Interviewer chấm theo đúng bộ đó
+```
+
+Lý do gộp: mô tả vị trí và ra đề tiêu chí vốn là MỘT việc, do CÙNG một người (DM) làm, dựa trên
+CÙNG một văn bản. Tách ra hai màn ở hai thời điểm thì đến vòng phỏng vấn mới phát hiện vị trí
+chưa có phiếu chấm.
+
+**Hệ quả bắt buộc nhớ:** `POST /api/jobs` đòi `recruitmentRequestId` của một yêu cầu đã duyệt và
+CHƯA gắn tin (`JobService.EnsureConvertibleRequestAsync`). Không còn đường tạo tin thẳng.
+Endpoint `POST /api/recruitment-requests/{id}/convert` đã XOÁ: việc gắn yêu cầu ↔ tin nằm trong
+chính lượt tạo tin (`AttachRequestAsync`), cùng lượt đó chuyển bộ tiêu chí. Đừng tách lại thành
+hai bước — tách ra là có khoảng thời gian tin đã đăng mà chưa có phiếu chấm, và bước sau hỏng
+thì không ai biết (FE cũ gọi nó "best-effort").
+
+Tiêu chí sửa THẲNG TRÊN JOB vẫn còn (job cũ, hoặc chỉnh sau khi đã đăng tin) và đường đó GIỮ
+NGUYÊN cửa `PENDING` của V055, vì ở đó nhân sự soạn hộ nên cần người khác duyệt.
+
+**V055 (07/09/2026) — bộ tiêu chí phải qua cửa duyệt của Trưởng bộ phận.**
+Vòng đời giờ có BA trạng thái: `DRAFT` → (người soạn bấm *Gửi Trưởng bộ phận duyệt*) `PENDING`
+→ DM bấm duyệt thành `APPROVED`, hoặc DM *Yêu cầu chỉnh sửa* → về `DRAFT` kèm `review_note`
+(lý do BẮT BUỘC). Đang `PENDING` thì KHOÁ SỬA — không khoá thì DM duyệt một bản đang chạy.
+**Nhân sự KHÔNG duyệt được nữa** (`EnsureCanApproveAsync`, 403): trước V055 ai soạn được thì
+cũng tự chốt được, nên cửa duyệt không tồn tại trên thực tế và DM — người ra đề — có thể chưa
+từng nhìn bộ tiêu chí đang làm phiếu chấm cho vị trí của mình. Cửa SOẠN (`extract` / CRUD /
+`submit`) giữ nguyên quyền cũ của V052.
+Chỉ LUỒNG AI BÓC đi qua cửa này: tiêu chí gõ tay và tiêu chí áp từ khuôn mẫu vẫn vào thẳng
+`APPROVED` — người dùng tự viết ra thì không cần ai duyệt lại chữ của chính họ.
+
+**V052 (24/08/2026) — Trưởng bộ phận RA ĐỀ tiêu chí.** Màn Tiêu Chí (`/criteria`) mở cho cả DM:
+họ bấm AI bóc tiêu chí, sửa/thêm/gỡ dòng, chốt bộ tiêu chí và áp khuôn mẫu — nhưng **chỉ trên
+vị trí `Job.department_manager_id` = chính họ** (`JobCriteriaAccessGuard`, Admin bypass). Nhân sự
+giữ nguyên quyền cũ (công ty nhỏ hay nhờ nhân sự nhập hộ). Thư viện khuôn mẫu cấp company thì DM
+chỉ ĐỌC + áp vào job, không sửa/ẩn — khuôn dùng chung cả công ty.
+Thư viện có sẵn 9 khuôn dựng sẵn (`CriteriaTemplateDefaults`, nạp lần đầu công ty mở màn Tiêu Chí
+— cùng khuôn với `EmailTemplateDefaults`), trải các nhóm vị trí công ty nhỏ hay tuyển chứ không
+riêng IT.
 
 > **SÀNG LỌC CV BẰNG AI QUAY LẠI SCOPE (chốt 16/08/2026 — V044).** Ở màn chi tiết ứng
 > viên, người tuyển dụng bấm một nút để AI đọc CV và đối chiếu với tin tuyển dụng: tóm
@@ -204,6 +245,14 @@ Hệ thống chống trùng giờ + gửi email xác nhận kèm .ics. Lưu tr�
 (pool 1 khung CLOSED + slot BOOKED + schedule CONFIRMED) nên phiếu chấm không phải đổi.
 Lý do bỏ: chờ ứng viên bấm link chậm hơn một cuộc gọi.
 
+**Sửa buổi đã chốt (24/08/2026):** `PUT /api/interview-schedules/{id}` — nhân sự dời giờ / đổi
+người phỏng vấn / đổi tên vòng NGAY TRÊN buổi đó (`SchedulingRepo.RescheduleAsync`), chạy lại đủ
+bộ luật của lúc đặt (hồ sơ còn ở INTERVIEW, panel nằm trong danh sách DM chỉ định, giờ ở tương
+lai, không trùng — có loại trừ chính buổi đang sửa) rồi gửi lại email xác nhận kèm .ics.
+`schedule_id` GIỮ NGUYÊN: hủy-rồi-đặt-lại làm ứng viên nhận thư báo hủy và bỏ mồ côi phiếu chấm
+đã lưu của buổi cũ, chỉ để đổi một con số giờ. Vòng (`round_number`) không sửa được — muốn bỏ hẳn
+một vòng thì hủy buổi.
+
 **V045 (16/08/2026) — nhân sự chốt GIỜ, Trưởng bộ phận chốt NGƯỜI.** Panel không còn là
 dropdown toàn công ty: DM chỉ định ai được gặp từng ứng viên (bảng `ApplicationInterviewer`),
 nhân sự đặt buổi chỉ chọn được trong danh sách đó. Chỉ định đi KÈM hành động duyệt vào vòng
@@ -218,11 +267,25 @@ Hai cửa có người gác, HAI người KHÁC NHAU:
    KHÔNG ai đi qua cửa này (403, kể cả HR) — vì thế đăng tin (Status=Open) bắt buộc có DM.
 2. `INTERVIEW→OFFER` + rời OFFER — **GIÁM ĐỐC** quyết tuyển (phạm vi toàn công ty). DM KHÔNG
    đủ thẩm quyền: họ gửi **phiếu Đề xuất tuyển** (`HiringProposal`, V043), Giám đốc duyệt —
-   chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm mức lương + ngày vào làm đã chốt.
+   chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm **mức lương ghi trên phiếu**.
    Không duyệt ≠ loại ứng viên: hồ sơ ở lại INTERVIEW, DM đề xuất lại được.
+   **Một phiếu = MỘT con số lương (V053 — 25/08/2026):** `approved_salary` đã xoá. DM đề xuất kèm
+   mức lương (BẮT BUỘC), Giám đốc **duyệt đúng mức đó hoặc trả phiếu về**: không ưng thì
+   `approve=false` + `note` (BẮT BUỘC ở nhánh này) ghi rõ muốn bao nhiêu → DM sửa `proposed_salary`
+   → gửi lại → duyệt. Đừng thêm lại ô "lương chốt" cho Giám đốc: hai ô cho cùng một khoản tiền thì
+   nhân sự không biết lấy số nào, còn DM không bao giờ thấy vì sao mức mình đề xuất bị đổi — trong
+   khi cửa "chưa duyệt" đã sẵn có và nó ghi lại được cả lý do.
+   **Giám đốc quyết TIỀN, không quyết NGÀY (V051 — 24/08/2026):** `proposed_start_date` /
+   `approved_start_date` đã xoá khỏi phiếu đề xuất. Ngày vào làm là kết quả một cuộc gọi giữa
+   nhân sự và ứng viên (ứng viên còn phải báo trước cho chỗ cũ), nên nó được nhập ở THƯ MỜI
+   (`OfferDetail.start_date`). Đừng thêm lại: bắt DM đoán ngày từ trước cả tuần thì duyệt muộn
+   vài ngày là ngày rơi vào quá khứ và chính hệ thống chặn không cho duyệt.
 
-Human Resource sàng lọc (`NEW→SCREENING`), **đặt lịch** cho người đã duyệt, soạn thư mời theo
-điều khoản Giám đốc chốt — không chọn người, không quyết. Đặt lịch đòi hồ sơ ĐÃ ở INTERVIEW.
+Human Resource sàng lọc (`NEW→SCREENING`), **đặt lịch** (và sửa lịch) cho người đã duyệt, soạn
+thư mời theo điều khoản Giám đốc chốt — không chọn người, không quyết. **Ô lương trong thư mời
+KHOÁ** khi hồ sơ đã qua đề xuất tuyển: `MakeOfferAsync` lấy `ProposedSalary` của phiếu Giám đốc
+ĐÃ DUYỆT, bỏ qua số client gửi lên (FE cũng disable ô đó). Ngày vào làm thì ngược lại — ô đó CỐ Ý
+để trống, không đoán hộ: nó là kết quả cuộc gọi giữa nhân sự và ứng viên. Đặt lịch đòi hồ sơ ĐÃ ở INTERVIEW.
 Interviewer chỉ chấm (input). Admin bypass cả hai cửa.
 DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn người gặp · đề xuất tuyển.
 
@@ -234,9 +297,22 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
    RLS được ép ở tầng DB qua `SESSION_CONTEXT('CompanyId')` — phải set lại
    **đầu MỖI request** (bẫy connection pooling). Quên = rò dữ liệu xuyên tenant.
 
-2. **State machine guard:** INTERVIEW→OFFER cần G2 (≥1 phiếu chấm `status='SUBMITTED'`).
-   Check guard trước khi transition. (G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 khớp tài liệu cũ.)
-   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`). Ranh giới là chữ **TUYỂN**:
+2. **State machine guard:** hai guard DỮ LIỆU, cả hai nằm ở `EnforceGuardsAsync`:
+   - **G2** — `INTERVIEW→OFFER` cần ≥1 phiếu chấm `status='SUBMITTED'`.
+     (G1 không còn — thuộc nhánh quiz đã loại; giữ tên G2 khớp tài liệu cũ.)
+   - **G3** (07/09/2026) — `SCREENING→INTERVIEW` cần vị trí có ≥1 tiêu chí **đã duyệt còn hiệu
+     lực**. Đó chính là phiếu chấm người phỏng vấn sắp dùng; không có nó thì họ mở phiếu ra và
+     thấy trống, lúc ứng viên đã ngồi trong phòng. Lỗ hổng này ĐO ĐƯỢC trước khi vá: DM gửi Yêu
+     cầu tuyển dụng mà bỏ trống phần tiêu chí → Giám đốc duyệt → nhân sự đăng tin → ứng viên nộp
+     CV → DM duyệt vào phỏng vấn, cả chuỗi trả 200.
+     G3 **chỉ gác đường VÀO phỏng vấn**, KHÔNG gác `SCREENING→REJECTED`: loại một hồ sơ không cần
+     tiêu chí nào, chặn cả đường đó thì hồ sơ rác kẹt lại vì lý do chẳng liên quan.
+     Không có Admin bypass — đây là guard về **dữ liệu đủ hay chưa**, không phải về thẩm quyền,
+     và Admin cũng không chấm nổi bằng một phiếu trống.
+
+   Check guard trước khi transition.
+   Ngoài guard dữ liệu còn **guard NGƯỜI** (`EnsureCanDecideAsync`), chạy TRƯỚC guard dữ liệu.
+   Ranh giới là chữ **TUYỂN**:
    "đồng ý tuyển" là của Giám đốc, "đóng hồ sơ không tuyển" thuộc về người đã trực tiếp xét ứng
    viên ở chặng đó (siết 17/08/2026).
    - `NEW→SCREENING` và `NEW→REJECTED`: **nhân sự**, không gác. Sàng lọc vòng đầu là việc của họ
@@ -265,7 +341,33 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
 3. **Multi-round interview = DỮ LIỆU trong state INTERVIEW** (`InterviewSchedule.round_number`),
    KHÔNG thêm state INTERVIEW_1/_2. Sơ đồ 6 state/8 transition giữ nguyên.
 
-4. **Tiêu chí (EvaluationCriteria):** AI bóc → `DRAFT` → người duyệt chốt. AI KHÔNG quyết tiêu chí.
+4. **Tiêu chí (EvaluationCriteria):** AI KHÔNG quyết tiêu chí. Có HAI chỗ neo (V056):
+
+   **a) Trên YÊU CẦU TUYỂN DỤNG** (đường chính, job chưa tồn tại): `DRAFT` → DM chốt `APPROVED`,
+   MỘT nút, không qua `PENDING`. Cửa quyền là `RecruitmentRequest.created_by`
+   (`JobCriteriaAccessGuard.EnsureCanEditRequestCriteriaAsync`, Admin bypass) — không phải role,
+   vì công ty có nhiều DM và đề bài của bộ phận này không phải việc của bộ phận kia.
+   Dòng tiêu chí lúc này mang `request_id`, `job_id = NULL`. Tạo tin thì `MoveToJobAsync` điền
+   `job_id` và GIỮ `request_id` làm dấu vết nguồn — CHUYỂN chứ không nhân bản, vì nhân bản thì
+   sửa một bên không sang bên kia và `InterviewScore` trỏ vào bản nào cũng thành câu hỏi phải tra.
+   Chỉ dòng **ĐÃ DUYỆT** mới được chuyển: nháp DM chưa chốt không được lặng lẽ thành phiếu chấm.
+
+   **b) Trên JOB** (đường cũ, giữ nguyên V055): `DRAFT` → `PENDING` → DM chốt `APPROVED`.
+   Hai cửa KHÁC NHAU, đừng gộp lại:
+   - **SOẠN** (`EnsureCanEditAsync` — CRUD / bóc AI / `submit` / áp khuôn): nhân sự (toàn công ty)
+     + **Trưởng bộ phận phụ trách ĐÚNG vị trí đó** (V052) + Admin.
+   - **DUYỆT** (`EnsureCanApproveAsync` — `approve` / `request-changes`): **CHỈ Trưởng bộ phận phụ
+     trách vị trí đó** + Admin. Nhân sự nhận 403. Mở lại cho nhân sự là xoá luôn cửa duyệt —
+     đó đúng là thứ V055 sinh ra để đóng.
+
+   Cả hai nằm ở `JobCriteriaAccessGuard` — đừng gác bằng mỗi `[WithRole]`, attribute chỉ biết
+   role chứ không biết vị trí này của bộ phận nào. ĐỌC thì để mở (Giám đốc, DM khác cùng nhìn khi
+   bàn về ứng viên).
+   Dòng `PENDING` **khoá sửa** (`EnsureNotUnderReview`): không khoá thì người duyệt bấm duyệt lúc
+   10h00 một bản đã khác bản họ đọc lúc 9h55. Muốn sửa tiếp thì nhờ DM trả về nháp.
+   `review_note` bắt buộc ở nhánh trả về — trả về mà không nói vì sao thì người soạn chỉ biết gửi
+   lại y nguyên. Ghi chú lưu trên TỪNG DÒNG (cả bộ luôn cập nhật cùng một câu UPDATE); đọc ra thì
+   lấy dòng có `reviewed_at` mới nhất — xem đầu file `V055__criteria_pending_review.sql`.
    Tiêu chí đã duyệt dùng cho phiếu chấm phỏng vấn. Một tiêu chí CHỈ CÒN `name` + `weight` +
    `max_score` — `criteria_type` (HARD/SOFT), `cv_matchable`, `keywords` đã xoá hẳn ở V038
    (mô hình dữ liệu của máy chấm CV, chết theo tính năng). Đừng thêm lại.

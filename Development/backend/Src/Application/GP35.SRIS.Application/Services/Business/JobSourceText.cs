@@ -45,4 +45,28 @@ public static class JobSourceText
 
         return sb.ToString().Trim();
     }
+
+    /// <summary>
+    /// Cùng việc, nhưng nguồn là YÊU CẦU TUYỂN DỤNG (V056) — nơi bộ tiêu chí ra đời trước cả job.
+    ///
+    /// <para>Dùng ĐÚNG những tiêu đề mục của <see cref="Build"/>: prompt bóc tiêu chí dựa vào
+    /// ranh giới "[Mô tả công việc]" / "[Yêu cầu ứng viên]" để phân biệt đầu việc với yêu cầu.
+    /// Đổi nhãn ở đây là bóc từ yêu cầu tuyển dụng cho ra kết quả khác bóc từ tin tuyển dụng dù
+    /// nội dung y hệt, mà hai đường đó phải cho cùng một bộ tiêu chí.</para>
+    ///
+    /// <para><c>benefits</c> cố ý KHÔNG đưa vào: phúc lợi không chấm điểm ứng viên được, và
+    /// prompt đã phải dặn riêng một câu để model bỏ qua nó.</para>
+    /// </summary>
+    public static string BuildFromRequest(string? description, string? requirements)
+    {
+        var sb = new StringBuilder();
+
+        if (!string.IsNullOrWhiteSpace(description))
+            sb.Append("[Mô tả công việc]\n").Append(description.Trim()).Append("\n\n");
+
+        if (!string.IsNullOrWhiteSpace(requirements))
+            sb.Append("[Yêu cầu ứng viên]\n").Append(requirements.Trim()).Append('\n');
+
+        return sb.ToString().Trim();
+    }
 }

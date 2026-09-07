@@ -118,12 +118,13 @@ public sealed class CriteriaExtractionWorker : BackgroundService
 
             var service = scope.ServiceProvider.GetRequiredService<IEvaluationCriteriaService>();
 
-            _logger.Information("CriteriaExtractionWorker: bắt đầu bóc job {JobId} (company={Co}).",
-                claimed.JobId, claimed.CompanyId);
+            _logger.Information("CriteriaExtractionWorker: bắt đầu bóc job={JobId} request={ReqId} " +
+                "(company={Co}).", claimed.JobId, claimed.RequestId, claimed.CompanyId);
 
             // RunExtractionAsync tự nuốt mọi lỗi và tự đóng dòng DONE/FAILED — worker không
             // cần try/catch quanh nó, và quan trọng hơn: không có đường nào để dòng kẹt RUNNING.
-            await service.RunExtractionAsync(claimed.CompanyId, claimed.JobId, claimed.ExtractionId, ct);
+            await service.RunExtractionAsync(claimed.CompanyId, claimed.JobId, claimed.RequestId,
+                claimed.ExtractionId, ct);
         }
 
         return true;

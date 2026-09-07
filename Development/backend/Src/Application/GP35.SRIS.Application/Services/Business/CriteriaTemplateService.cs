@@ -4,6 +4,7 @@ using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
+using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,11 +15,15 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
 {
     private readonly ICriteriaTemplateRepo _templateRepo;
     private readonly IEvaluationCriteriaRepo _criteriaRepo;
+    private readonly IJobRepo _jobRepo;
+    private readonly IContextData _contextData;
 
     public CriteriaTemplateService(IServiceProvider serviceProvider) : base(serviceProvider)
     {
         _templateRepo = serviceProvider.GetRequiredService<ICriteriaTemplateRepo>();
         _criteriaRepo = serviceProvider.GetRequiredService<IEvaluationCriteriaRepo>();
+        _jobRepo = serviceProvider.GetRequiredService<IJobRepo>();
+        _contextData = serviceProvider.GetRequiredService<IContextData>();
     }
 
     public async Task<CriteriaTemplateDto> CreateAsync(long companyId, CriteriaTemplateInputDto dto)
@@ -35,6 +40,8 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
     public async Task<IReadOnlyList<CriteriaTemplateSummaryDto>> GetAllAsync(
         long companyId, bool includeInactive = false)
     {
+        await EnsureDefaultsAsync(companyId);
+
         var templates = await _templateRepo.GetAllAsync(companyId, activeOnly: !includeInactive);
         var counts = await _templateRepo.GetItemCountsAsync(companyId);
 
@@ -46,6 +53,39 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
             Active = t.Active,
             ItemCount = counts.TryGetValue(t.TemplateId, out var c) ? c : 0
         }).ToList();
+    }
+
+    /// <summary>
+    /// Nạp thư viện dựng sẵn cho công ty chưa có khuôn nào.
+    ///
+    /// <para>Điều kiện là "KHÔNG có dòng nào, kể cả đã ẩn" chứ không phải "không có khuôn đang
+    /// bật": ẩn khuôn là xoá mềm (active = 0), nên nếu chỉ đếm khuôn đang bật thì công ty dọn sạch
+    /// thư viện xong mở lại màn Tiêu Chí là bộ mẫu mọc lại — và mọc thành bản TRÙNG TÊN, vì bảng
+    /// không có unique theo tên.</para>
+    /// </summary>
+    public async Task<int> EnsureDefaultsAsync(long companyId)
+    {
+        var existing = await _templateRepo.GetAllAsync(companyId, activeOnly: false);
+        if (existing.Count > 0) return 0;
+
+        foreach (var seed in CriteriaTemplateDefaults.All)
+        {
+            var order = 0;
+            var items = seed.Items.Select(i => new CriteriaTemplateItem
+            {
+                Name = i.Name,
+                Weight = i.Weight,
+                MaxScore = i.MaxScore,
+                DisplayOrder = order++
+            }).ToList();
+
+            await _templateRepo.InsertWithItemsAsync(
+                companyId,
+                new CriteriaTemplate { Name = seed.Name, Description = seed.Description },
+                items);
+        }
+
+        return CriteriaTemplateDefaults.All.Count;
     }
 
     public async Task<CriteriaTemplateDto?> GetByIdAsync(long companyId, long templateId)
@@ -73,6 +113,9 @@ public class CriteriaTemplateService : BaseService<CriteriaTemplateService>, ICr
 
     public async Task<IReadOnlyList<CriteriaDto>> ApplyToJobAsync(long companyId, long templateId, long jobId)
     {
+        // Áp khuôn là GHI thẳng vào bộ tiêu chí của vị trí -> cùng cửa quyền với bóc/duyệt tiêu chí.
+        await JobCriteriaAccessGuard.EnsureCanEditAsync(_jobRepo, _contextData, companyId, jobId);
+
         var found = await _templateRepo.GetByIdAsync(companyId, templateId)
             ?? throw NotFound($"Không tìm thấy khuôn tiêu chí (template_id={templateId}).");
 

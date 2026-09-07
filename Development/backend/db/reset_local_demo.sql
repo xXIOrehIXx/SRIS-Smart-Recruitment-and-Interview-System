@@ -1,4 +1,4 @@
-﻿/* =============================================================================
+/* =============================================================================
    DỌN DB LOCAL VỀ 1 CÔNG TY DEMO SẠCH  (chỉ chạy trên máy dev — KHÔNG chạy trên DB team)
 
    Làm gì:
@@ -46,6 +46,15 @@ BEGIN TRY
     DELETE FROM dbo.InterviewSchedule;
     DELETE FROM dbo.InterviewSlot;
     DELETE FROM dbo.InterviewSlotPool;
+
+    -- Ba bảng dưới đây ra đời SAU khi script này được viết (V043 HiringProposal, V044
+    -- CvScreening, V045 ApplicationInterviewer, V047 PanelSummary) và đều trỏ vào Application.
+    -- Thiếu chúng thì DELETE Application chết vì khoá ngoại, và cả script rollback — đúng lỗi
+    -- gặp ngày 07/09/2026. Thêm bảng mới tham chiếu Application thì nhớ bổ sung vào đây.
+    DELETE FROM dbo.HiringProposal;
+    DELETE FROM dbo.PanelSummary;
+    DELETE FROM dbo.CvScreening;
+    DELETE FROM dbo.ApplicationInterviewer;
 
     DELETE FROM dbo.MagicLinkToken;
     DELETE FROM dbo.ActivityLog;
