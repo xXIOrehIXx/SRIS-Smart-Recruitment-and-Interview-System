@@ -81,6 +81,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         var existing = await _criteriaRepo.GetByIdAsync(companyId, criteriaId)
             ?? throw NotFound($"Không tìm thấy tiêu chí (criteria_id={criteriaId}).");
         await EnsureCanEditAsync(companyId, existing.JobId);
+        EnsureNotUnderReview(existing);
 
         await _criteriaRepo.UpdateAsync(companyId, criteriaId, dto.Name.Trim(), dto.Weight, dto.MaxScore,
             dto.Active);
@@ -295,15 +296,51 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         FinishedAt = e.FinishedAt
     };
 
-    public async Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId)
+    public async Task<int> SubmitForReviewAsync(long companyId, long jobId, long userId)
     {
         await EnsureCanEditAsync(companyId, jobId);
 
-        var approved = await _criteriaRepo.ApproveDraftsAsync(companyId, jobId, userId);
-        if (approved == 0)
-            throw Bad("Job không có tiêu chí DRAFT nào để duyệt.");
+        var submitted = await _criteriaRepo.SubmitDraftsAsync(companyId, jobId, userId);
+        if (submitted == 0)
+            throw Bad("Vị trí này không có tiêu chí nháp nào để gửi duyệt.");
 
-        _logger.Information("ApproveDrafts: user={UserId} duyệt {N} tiêu chí của job={JobId}.",
+        _logger.Information("SubmitCriteria: user={UserId} gửi {N} tiêu chí của job={JobId} cho Trưởng bộ phận duyệt.",
+            userId, submitted, jobId);
+
+        return submitted;
+    }
+
+    public async Task<int> RequestChangesAsync(long companyId, long jobId, long userId, string? note)
+    {
+        // Người trả về phải là người duyệt được — trả về cũng là một quyết định trên bộ tiêu chí.
+        await EnsureCanApproveAsync(companyId, jobId);
+
+        note = note?.Trim();
+        if (string.IsNullOrWhiteSpace(note))
+            throw Bad("Hãy ghi rõ cần sửa gì trước khi trả bộ tiêu chí về — " +
+                      "trả về mà không nói lý do thì người soạn chỉ biết gửi lại y nguyên.");
+
+        var returned = await _criteriaRepo.RequestChangesAsync(companyId, jobId, userId, note!);
+        if (returned == 0)
+            throw Bad("Vị trí này không có bộ tiêu chí nào đang chờ duyệt.");
+
+        _logger.Information("RequestChanges: user={UserId} trả {N} tiêu chí của job={JobId} về nháp.",
+            userId, returned, jobId);
+
+        return returned;
+    }
+
+    public async Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId)
+    {
+        // V055: cửa DUYỆT là của Trưởng bộ phận, KHÔNG phải của người soạn.
+        await EnsureCanApproveAsync(companyId, jobId);
+
+        var approved = await _criteriaRepo.ApprovePendingAsync(companyId, jobId, userId);
+        if (approved == 0)
+            throw Bad("Vị trí này không có bộ tiêu chí nào đang chờ duyệt. " +
+                      "Người soạn phải bấm \"Gửi Trưởng bộ phận duyệt\" trước.");
+
+        _logger.Information("ApproveCriteria: user={UserId} duyệt {N} tiêu chí của job={JobId}.",
             userId, approved, jobId);
 
         // Chốt tiêu chí = mở màn sàng lọc: hồ sơ còn ở "Hồ sơ mới" của job này tự sang "Sàng lọc"
@@ -356,6 +393,7 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         var existing = await _criteriaRepo.GetByIdAsync(companyId, criteriaId)
             ?? throw NotFound($"Không tìm thấy tiêu chí (criteria_id={criteriaId}).");
         await EnsureCanEditAsync(companyId, existing.JobId);
+        EnsureNotUnderReview(existing);
         await _criteriaRepo.DeactivateAsync(companyId, existing.CriteriaId);
     }
 
@@ -367,6 +405,22 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
     /// </summary>
     private Task EnsureCanEditAsync(long companyId, long jobId) =>
         JobCriteriaAccessGuard.EnsureCanEditAsync(_jobRepo, _contextData, companyId, jobId);
+
+    /// <summary>Cửa DUYỆT — chỉ Trưởng bộ phận của vị trí đó (Admin bypass). Xem <see cref="JobCriteriaAccessGuard"/>.</summary>
+    private Task EnsureCanApproveAsync(long companyId, long jobId) =>
+        JobCriteriaAccessGuard.EnsureCanApproveAsync(_jobRepo, _contextData, companyId, jobId);
+
+    /// <summary>
+    /// Bộ tiêu chí đã gửi đi thì KHOÁ SỬA cho tới khi Trưởng bộ phận trả lời. Không khoá thì họ
+    /// duyệt một bản đang chạy: bấm duyệt lúc 10h00 mà nội dung đã khác bản họ đọc lúc 9h55.
+    /// Muốn sửa tiếp thì nhờ họ bấm "Yêu cầu chỉnh sửa" để bộ tiêu chí về lại nháp.
+    /// </summary>
+    private static void EnsureNotUnderReview(EvaluationCriteria c)
+    {
+        if (string.Equals(c.Status, CriteriaStatus.Pending, StringComparison.OrdinalIgnoreCase))
+            throw Bad("Bộ tiêu chí đang chờ Trưởng bộ phận duyệt nên tạm khoá sửa. " +
+                      "Nhờ họ bấm \"Yêu cầu chỉnh sửa\" để trả về nháp nếu cần sửa tiếp.");
+    }
 
     /// <summary>
     /// Gộp mô tả công việc + yêu cầu ứng viên + kỹ năng thành 1 văn bản cho AI đọc — prompt bóc
@@ -397,7 +451,10 @@ public class EvaluationCriteriaService : BaseService<EvaluationCriteriaService>,
         MaxScore = c.MaxScore,
         Active = c.Active,
         Status = c.Status,
-        Source = c.Source
+        Source = c.Source,
+        SubmittedAt = c.SubmittedAt,
+        ReviewedAt = c.ReviewedAt,
+        ReviewNote = c.ReviewNote
     };
 
     private static BaseException Bad(string msg) => new(msg)

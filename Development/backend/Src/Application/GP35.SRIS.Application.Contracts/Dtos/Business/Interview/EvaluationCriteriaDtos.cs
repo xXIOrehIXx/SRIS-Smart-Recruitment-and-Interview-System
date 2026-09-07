@@ -25,10 +25,33 @@ public class CriteriaDto
     public decimal Weight { get; set; }
     public decimal MaxScore { get; set; }
     public bool Active { get; set; }
-    /// <summary>DRAFT (AI bóc, chờ duyệt) | APPROVED (đã chốt — mới dùng để chấm).</summary>
+    /// <summary>
+    /// DRAFT (đang soạn) | PENDING (đã gửi, chờ Trưởng bộ phận duyệt) | APPROVED (đã chốt —
+    /// mới dùng để chấm).
+    /// </summary>
     public string Status { get; set; } = "APPROVED";
     /// <summary>MANUAL | AI_EXTRACTED — audit "tiêu chí từ đâu ra" (5.18).</summary>
     public string Source { get; set; } = "MANUAL";
+
+    // ---- V055: cửa duyệt của Trưởng bộ phận ----
+
+    /// <summary>Lúc gửi Trưởng bộ phận duyệt. Null nếu chưa gửi lần nào.</summary>
+    public DateTime? SubmittedAt { get; set; }
+
+    /// <summary>Lúc Trưởng bộ phận xử lý gần nhất (duyệt hoặc trả về).</summary>
+    public DateTime? ReviewedAt { get; set; }
+
+    /// <summary>
+    /// Lý do Trưởng bộ phận trả bộ tiêu chí về nháp — FE hiện ngay trên màn Tiêu Chí để người
+    /// soạn biết phải sửa gì. Xoá khi gửi lại hoặc khi được duyệt.
+    /// </summary>
+    public string? ReviewNote { get; set; }
+}
+
+/// <summary>Trưởng bộ phận trả bộ tiêu chí về nháp — <c>Note</c> BẮT BUỘC (V055).</summary>
+public class CriteriaRequestChangesDto
+{
+    public string? Note { get; set; }
 }
 
 /// <summary>

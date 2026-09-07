@@ -32,12 +32,28 @@ public interface IEvaluationCriteriaService : IBaseService
     /// <summary>
     /// Worker gọi: thật sự chạy một lượt bóc đã giành được, rồi tự đóng trạng thái DONE/FAILED.
     /// KHÔNG ném lỗi ra ngoài — mọi thất bại được ghi vào chính dòng hàng đợi để người dùng đọc.
-    /// AI KHÔNG quyết tiêu chí: kết quả là DRAFT, người duyệt chốt qua <see cref="ApproveDraftsAsync"/>.
+    /// AI KHÔNG quyết tiêu chí: kết quả là DRAFT, người soạn gửi duyệt qua
+    /// <see cref="SubmitForReviewAsync"/>, Trưởng bộ phận chốt qua <see cref="ApproveDraftsAsync"/>.
     /// </summary>
     Task RunExtractionAsync(long companyId, long jobId, long extractionId, CancellationToken ct = default);
 
-    /// <summary>Người duyệt chốt: mọi DRAFT của job -> APPROVED (ghi ai duyệt, lúc nào). Trả số tiêu chí được duyệt.</summary>
+    /// <summary>
+    /// Người soạn gửi bộ tiêu chí cho Trưởng bộ phận duyệt: mọi DRAFT của job -> PENDING (V055).
+    /// Trả số dòng đã gửi.
+    /// </summary>
+    Task<int> SubmitForReviewAsync(long companyId, long jobId, long userId);
+
+    /// <summary>
+    /// Trưởng bộ phận CHỐT: mọi PENDING của job -> APPROVED (ghi ai duyệt, lúc nào).
+    /// Trả số tiêu chí được duyệt. Nhân sự KHÔNG qua được cửa này (V055).
+    /// </summary>
     Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId);
+
+    /// <summary>
+    /// Trưởng bộ phận trả bộ tiêu chí về nháp kèm lý do: PENDING -> DRAFT (V055).
+    /// <paramref name="note"/> bắt buộc. Trả số dòng đã trả về.
+    /// </summary>
+    Task<int> RequestChangesAsync(long companyId, long jobId, long userId, string? note);
 
     /// <summary>Gỡ 1 tiêu chí khỏi job (soft — active=0).</summary>
     Task DeactivateAsync(long companyId, long criteriaId);

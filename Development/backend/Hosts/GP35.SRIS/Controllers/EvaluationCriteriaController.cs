@@ -16,6 +16,11 @@ namespace GP35.SRIS.Controllers;
 /// mình, nên bóc tiêu chí bằng AI và chốt bộ tiêu chí là việc của họ. Nhân sự giữ nguyên quyền cũ
 /// (công ty nhỏ hay nhờ nhân sự nhập hộ). Ràng buộc "đúng vị trí mình phụ trách" của DM nằm ở
 /// tầng service — <c>JobCriteriaAccessGuard</c>, không phải ở đây, vì attribute này chỉ biết role.</para>
+///
+/// <para><b>V055 (07/09/2026) — SOẠN và DUYỆT là hai cửa khác nhau:</b>
+/// <c>extract</c> / CRUD / <c>submit</c> là cửa SOẠN (nhân sự + DM của vị trí + Admin);
+/// <c>approve</c> / <c>request-changes</c> là cửa DUYỆT và chỉ Trưởng bộ phận của vị trí đó đi
+/// qua được. Vòng đời: DRAFT -> (gửi) PENDING -> APPROVED, hoặc PENDING -> DRAFT kèm lý do.</para>
 /// </summary>
 [ApiController]
 [Authorize]
@@ -85,12 +90,39 @@ public class EvaluationCriteriaController : ControllerBase
         return Ok(await _criteriaService.GetExtractStatusAsync(_contextData.CompanyId, jobId));
     }
 
-    /// <summary>Người duyệt chốt bộ tiêu chí: mọi DRAFT của job -> APPROVED (ghi audit ai duyệt).</summary>
+    /// <summary>
+    /// Người soạn gửi bộ tiêu chí cho Trưởng bộ phận duyệt: mọi DRAFT của job -> PENDING (V055).
+    /// Sau bước này bộ tiêu chí KHOÁ SỬA cho tới khi Trưởng bộ phận trả lời.
+    /// </summary>
+    [HttpPost("api/jobs/{jobId:long}/criteria/submit")]
+    public async Task<IActionResult> Submit(long jobId)
+    {
+        var submitted = await _criteriaService.SubmitForReviewAsync(
+            _contextData.CompanyId, jobId, _contextData.UserId);
+        return Ok(new { submitted });
+    }
+
+    /// <summary>
+    /// Trưởng bộ phận CHỐT bộ tiêu chí: mọi PENDING của job -> APPROVED (ghi audit ai duyệt).
+    /// Từ đây bộ tiêu chí là phiếu chấm phỏng vấn. Nhân sự gọi vào đây sẽ nhận 403.
+    /// </summary>
     [HttpPost("api/jobs/{jobId:long}/criteria/approve")]
     public async Task<IActionResult> Approve(long jobId)
     {
         var approved = await _criteriaService.ApproveDraftsAsync(
             _contextData.CompanyId, jobId, _contextData.UserId);
         return Ok(new { approved });
+    }
+
+    /// <summary>
+    /// Trưởng bộ phận trả bộ tiêu chí về cho người soạn sửa: PENDING -> DRAFT kèm lý do (V055).
+    /// <c>note</c> BẮT BUỘC. Đây KHÔNG phải "loại bộ tiêu chí" — nó quay lại nháp và gửi lại được.
+    /// </summary>
+    [HttpPost("api/jobs/{jobId:long}/criteria/request-changes")]
+    public async Task<IActionResult> RequestChanges(long jobId, [FromBody] CriteriaRequestChangesDto dto)
+    {
+        var returned = await _criteriaService.RequestChangesAsync(
+            _contextData.CompanyId, jobId, _contextData.UserId, dto?.Note);
+        return Ok(new { returned });
     }
 }

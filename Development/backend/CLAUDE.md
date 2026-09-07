@@ -146,8 +146,19 @@ Trang trạng thái của ỨNG VIÊN giữ bộ nhãn RIÊNG, trung tính ("Đ�
 
 ### Luồng tiêu chí (trục xuyên suốt — 5.17, 5.18)
 DM tạo Yêu cầu tuyển dụng (tùy chọn) → **Giám đốc duyệt yêu cầu** (V047) → Human Resource tạo Job
-→ AI bóc tiêu chí `DRAFT` → người duyệt chốt → **bộ tiêu chí đó là phiếu chấm phỏng vấn**
-(interviewer chấm, 5.7).
+→ AI bóc tiêu chí `DRAFT` → nhân sự rà rồi gửi `PENDING` → **Trưởng bộ phận duyệt** `APPROVED`
+(V055) → **bộ tiêu chí đó là phiếu chấm phỏng vấn** (interviewer chấm, 5.7).
+
+**V055 (07/09/2026) — bộ tiêu chí phải qua cửa duyệt của Trưởng bộ phận.**
+Vòng đời giờ có BA trạng thái: `DRAFT` → (người soạn bấm *Gửi Trưởng bộ phận duyệt*) `PENDING`
+→ DM bấm duyệt thành `APPROVED`, hoặc DM *Yêu cầu chỉnh sửa* → về `DRAFT` kèm `review_note`
+(lý do BẮT BUỘC). Đang `PENDING` thì KHOÁ SỬA — không khoá thì DM duyệt một bản đang chạy.
+**Nhân sự KHÔNG duyệt được nữa** (`EnsureCanApproveAsync`, 403): trước V055 ai soạn được thì
+cũng tự chốt được, nên cửa duyệt không tồn tại trên thực tế và DM — người ra đề — có thể chưa
+từng nhìn bộ tiêu chí đang làm phiếu chấm cho vị trí của mình. Cửa SOẠN (`extract` / CRUD /
+`submit`) giữ nguyên quyền cũ của V052.
+Chỉ LUỒNG AI BÓC đi qua cửa này: tiêu chí gõ tay và tiêu chí áp từ khuôn mẫu vẫn vào thẳng
+`APPROVED` — người dùng tự viết ra thì không cần ai duyệt lại chữ của chính họ.
 
 **V052 (24/08/2026) — Trưởng bộ phận RA ĐỀ tiêu chí.** Màn Tiêu Chí (`/criteria`) mở cho cả DM:
 họ bấm AI bóc tiêu chí, sửa/thêm/gỡ dòng, chốt bộ tiêu chí và áp khuôn mẫu — nhưng **chỉ trên
@@ -296,12 +307,23 @@ DM đứng BA chốt: ra đề (Yêu cầu tuyển dụng — 5.17) · chọn ng
 3. **Multi-round interview = DỮ LIỆU trong state INTERVIEW** (`InterviewSchedule.round_number`),
    KHÔNG thêm state INTERVIEW_1/_2. Sơ đồ 6 state/8 transition giữ nguyên.
 
-4. **Tiêu chí (EvaluationCriteria):** AI bóc → `DRAFT` → người duyệt chốt. AI KHÔNG quyết tiêu chí.
-   Người được ghi vào bộ tiêu chí của một vị trí: nhân sự (toàn công ty) + **Trưởng bộ phận phụ
-   trách ĐÚNG vị trí đó** (V052) + Admin. Guard nằm ở `JobCriteriaAccessGuard`, dùng chung cho
-   CRUD tiêu chí / bóc AI / duyệt / áp khuôn — đừng gác bằng mỗi `[WithRole]`, attribute chỉ biết
+4. **Tiêu chí (EvaluationCriteria):** AI bóc → `DRAFT` → gửi `PENDING` → DM chốt `APPROVED`.
+   AI KHÔNG quyết tiêu chí, và từ V055 **người soạn cũng không tự chốt**.
+   Hai cửa KHÁC NHAU, đừng gộp lại:
+   - **SOẠN** (`EnsureCanEditAsync` — CRUD / bóc AI / `submit` / áp khuôn): nhân sự (toàn công ty)
+     + **Trưởng bộ phận phụ trách ĐÚNG vị trí đó** (V052) + Admin.
+   - **DUYỆT** (`EnsureCanApproveAsync` — `approve` / `request-changes`): **CHỈ Trưởng bộ phận phụ
+     trách vị trí đó** + Admin. Nhân sự nhận 403. Mở lại cho nhân sự là xoá luôn cửa duyệt —
+     đó đúng là thứ V055 sinh ra để đóng.
+
+   Cả hai nằm ở `JobCriteriaAccessGuard` — đừng gác bằng mỗi `[WithRole]`, attribute chỉ biết
    role chứ không biết vị trí này của bộ phận nào. ĐỌC thì để mở (Giám đốc, DM khác cùng nhìn khi
    bàn về ứng viên).
+   Dòng `PENDING` **khoá sửa** (`EnsureNotUnderReview`): không khoá thì người duyệt bấm duyệt lúc
+   10h00 một bản đã khác bản họ đọc lúc 9h55. Muốn sửa tiếp thì nhờ DM trả về nháp.
+   `review_note` bắt buộc ở nhánh trả về — trả về mà không nói vì sao thì người soạn chỉ biết gửi
+   lại y nguyên. Ghi chú lưu trên TỪNG DÒNG (cả bộ luôn cập nhật cùng một câu UPDATE); đọc ra thì
+   lấy dòng có `reviewed_at` mới nhất — xem đầu file `V055__criteria_pending_review.sql`.
    Tiêu chí đã duyệt dùng cho phiếu chấm phỏng vấn. Một tiêu chí CHỈ CÒN `name` + `weight` +
    `max_score` — `criteria_type` (HARD/SOFT), `cv_matchable`, `keywords` đã xoá hẳn ở V038
    (mô hình dữ liệu của máy chấm CV, chết theo tính năng). Đừng thêm lại.

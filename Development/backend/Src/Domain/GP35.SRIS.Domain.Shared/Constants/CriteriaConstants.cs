@@ -5,12 +5,23 @@ namespace GP35.SRIS.Domain.Shared.Constants;
 // 08/08/2026. Mọi tiêu chí giờ bình đẳng: một dòng phiếu chấm, cho điểm 0..MaxScore.
 
 /// <summary>
-/// Vòng đời tiêu chí (pattern DRAFT -> duyệt -> APPROVED). AI bóc ra DRAFT;
-/// người duyệt chốt. Phiếu chấm phỏng vấn CHỈ dùng tiêu chí APPROVED.
+/// Vòng đời tiêu chí: AI bóc ra DRAFT -> nhân sự sửa -> gửi PENDING -> Trưởng bộ phận chốt
+/// APPROVED (hoặc trả về DRAFT kèm ghi chú). Phiếu chấm phỏng vấn CHỈ dùng tiêu chí APPROVED.
+///
+/// <para>V055 (07/09/2026) thêm <see cref="Pending"/>: trước đó nhân sự vừa soạn vừa tự chốt
+/// được, nên Trưởng bộ phận — người ra đề — có thể chưa từng nhìn bộ tiêu chí đang được dùng
+/// làm phiếu chấm cho vị trí của mình.</para>
+///
+/// <para>Chỉ LUỒNG AI BÓC đi qua cửa này. Tiêu chí gõ tay và tiêu chí áp từ khuôn mẫu vẫn vào
+/// thẳng APPROVED: người dùng tự viết ra thì không cần ai duyệt lại chữ của chính họ.</para>
 /// </summary>
 public static class CriteriaStatus
 {
     public const string Draft = "DRAFT";
+
+    /// <summary>Đã gửi, đang chờ Trưởng bộ phận duyệt — KHOÁ SỬA để người duyệt không xem một bản đang chạy.</summary>
+    public const string Pending = "PENDING";
+
     public const string Approved = "APPROVED";
 }
 

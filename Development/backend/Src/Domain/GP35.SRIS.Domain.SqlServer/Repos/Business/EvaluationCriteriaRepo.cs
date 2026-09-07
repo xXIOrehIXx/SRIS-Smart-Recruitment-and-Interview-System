@@ -80,14 +80,55 @@ public class EvaluationCriteriaRepo : BaseRepo<long, EvaluationCriteria>, IEvalu
                 .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
     }
 
-    public async Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId)
+    public async Task<int> SubmitDraftsAsync(long companyId, long jobId, long userId)
     {
+        var now = DateTime.UtcNow;
         return await _db.EvaluationCriterias
-            .Where(c => c.JobId == jobId && c.Status == CriteriaStatus.Draft)
+            .Where(c => c.JobId == jobId && c.Active && c.Status == CriteriaStatus.Draft)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Status, CriteriaStatus.Pending)
+                .SetProperty(c => c.SubmittedBy, userId)
+                .SetProperty(c => c.SubmittedAt, now)
+                // Ghi chú trả về là của LƯỢT TRƯỚC. Giữ lại thì màn hình của Trưởng bộ phận hiện
+                // "đã trả về vì ..." ngay trên bộ vừa được sửa xong và gửi lại.
+                .SetProperty(c => c.ReviewNote, (string?)null)
+                .SetProperty(c => c.UpdatedAt, now));
+    }
+
+    public async Task<int> ApprovePendingAsync(long companyId, long jobId, long userId)
+    {
+        var now = DateTime.UtcNow;
+        return await _db.EvaluationCriterias
+            .Where(c => c.JobId == jobId && c.Active && c.Status == CriteriaStatus.Pending)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(c => c.Status, CriteriaStatus.Approved)
                 .SetProperty(c => c.ApprovedBy, userId)
-                .SetProperty(c => c.ApprovedAt, DateTime.UtcNow)
-                .SetProperty(c => c.UpdatedAt, DateTime.UtcNow));
+                .SetProperty(c => c.ApprovedAt, now)
+                .SetProperty(c => c.ReviewedBy, userId)
+                .SetProperty(c => c.ReviewedAt, now)
+                .SetProperty(c => c.ReviewNote, (string?)null)
+                .SetProperty(c => c.UpdatedAt, now));
+    }
+
+    public async Task<int> RequestChangesAsync(long companyId, long jobId, long userId, string note)
+    {
+        var now = DateTime.UtcNow;
+        return await _db.EvaluationCriterias
+            .Where(c => c.JobId == jobId && c.Active && c.Status == CriteriaStatus.Pending)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Status, CriteriaStatus.Draft)
+                .SetProperty(c => c.ReviewedBy, userId)
+                .SetProperty(c => c.ReviewedAt, now)
+                .SetProperty(c => c.ReviewNote, note)
+                .SetProperty(c => c.UpdatedAt, now));
+    }
+
+    public async Task<EvaluationCriteria?> GetLatestReviewedAsync(long companyId, long jobId)
+    {
+        return await _db.EvaluationCriterias
+            .AsNoTracking()
+            .Where(c => c.JobId == jobId && c.ReviewedAt != null)
+            .OrderByDescending(c => c.ReviewedAt)
+            .FirstOrDefaultAsync();
     }
 }

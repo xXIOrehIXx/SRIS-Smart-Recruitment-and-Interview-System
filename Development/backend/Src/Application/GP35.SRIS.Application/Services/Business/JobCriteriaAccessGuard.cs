@@ -21,6 +21,11 @@ namespace GP35.SRIS.Application.Services.Business;
 ///
 /// <para>Chỉ chặn GHI. ĐỌC để mở: bộ tiêu chí là thứ Giám đốc/nhân sự/DM khác cùng nhìn khi bàn
 /// về ứng viên, chặn đọc chỉ tạo ra màn hình trống không giải thích được.</para>
+///
+/// <para><b>V055 (07/09/2026) tách SOẠN khỏi DUYỆT.</b> <see cref="EnsureCanEditAsync"/> là cửa
+/// SOẠN (nhân sự + DM của vị trí + Admin, như cũ). <see cref="EnsureCanApproveAsync"/> là cửa
+/// DUYỆT và CHỈ Trưởng bộ phận của vị trí đó đi qua được — nhân sự soạn xong phải gửi cho họ.
+/// Trước đó ai soạn được thì cũng tự chốt được, nên cửa duyệt không tồn tại trên thực tế.</para>
 /// </summary>
 internal static class JobCriteriaAccessGuard
 {
@@ -43,6 +48,38 @@ internal static class JobCriteriaAccessGuard
         if (dmId != contextData.UserId)
             throw Error(HttpStatusCode.Forbidden, "FORBIDDEN",
                 "Chỉ Trưởng bộ phận phụ trách vị trí này mới được sửa bộ tiêu chí của nó.");
+    }
+
+    /// <summary>
+    /// Cửa DUYỆT bộ tiêu chí: chỉ Trưởng bộ phận phụ trách đúng vị trí đó (Admin bypass —
+    /// công ty nhỏ chạy bằng một tài khoản Admin duy nhất).
+    ///
+    /// <para>Nhân sự KHÔNG qua cửa này, kể cả khi chính họ là người ngồi nhập bộ tiêu chí: bộ
+    /// tiêu chí đã duyệt chính là phiếu chấm phỏng vấn, mà "hỏi ứng viên cái gì cho vị trí này"
+    /// là chuyên môn của bộ phận. Để nhân sự tự chốt thì cửa duyệt chỉ là một nút bấm thêm.</para>
+    /// </summary>
+    public static async Task EnsureCanApproveAsync(
+        IJobRepo jobRepo, IContextData contextData, long companyId, long jobId)
+    {
+        if (string.Equals(contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (!string.Equals(contextData.Role, RoleConstants.DepartmentManager, StringComparison.OrdinalIgnoreCase))
+            throw Error(HttpStatusCode.Forbidden, "FORBIDDEN",
+                "Chỉ Trưởng bộ phận phụ trách vị trí này mới được duyệt bộ tiêu chí. " +
+                "Hãy bấm \"Gửi Trưởng bộ phận duyệt\" để chuyển cho họ.");
+
+        var job = await jobRepo.GetByIdAsync(companyId, jobId)
+            ?? throw Error(HttpStatusCode.NotFound, "NOT_FOUND", $"Không tìm thấy Job (job_id={jobId}).");
+
+        if (job.DepartmentManagerId is not long dmId)
+            throw Error(HttpStatusCode.Forbidden, "FORBIDDEN",
+                "Tin tuyển dụng này chưa gán Trưởng bộ phận phụ trách nên chưa có ai duyệt được " +
+                "bộ tiêu chí. Hãy đề nghị bộ phận nhân sự gán người phụ trách trước.");
+
+        if (dmId != contextData.UserId)
+            throw Error(HttpStatusCode.Forbidden, "FORBIDDEN",
+                "Chỉ Trưởng bộ phận phụ trách vị trí này mới được duyệt bộ tiêu chí của nó.");
     }
 
     private static BaseException Error(HttpStatusCode status, string code, string msg) => new(msg)

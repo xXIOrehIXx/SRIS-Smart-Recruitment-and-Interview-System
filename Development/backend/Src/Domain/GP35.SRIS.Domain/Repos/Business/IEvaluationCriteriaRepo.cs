@@ -36,6 +36,18 @@ public interface IEvaluationCriteriaRepo : IBaseRepo<long, EvaluationCriteria>
     /// <summary>Vô hiệu 1 tiêu chí (soft — active=0; giữ để không phá kết quả chấm đã lưu). Trả số dòng.</summary>
     Task<int> DeactivateAsync(long companyId, long criteriaId);
 
-    /// <summary>Người duyệt chốt: DRAFT -> APPROVED, ghi ai duyệt lúc nào (audit 5.18).</summary>
-    Task<int> ApproveDraftsAsync(long companyId, long jobId, long userId);
+    /// <summary>Gửi duyệt (V055): DRAFT -> PENDING, xoá ghi chú trả về của lượt trước.</summary>
+    Task<int> SubmitDraftsAsync(long companyId, long jobId, long userId);
+
+    /// <summary>
+    /// Trưởng bộ phận chốt (V055): PENDING -> APPROVED, ghi ai duyệt lúc nào (audit 5.18).
+    /// Chỉ nhận PENDING — DRAFT chưa gửi thì không có gì để duyệt.
+    /// </summary>
+    Task<int> ApprovePendingAsync(long companyId, long jobId, long userId);
+
+    /// <summary>Trưởng bộ phận trả về (V055): PENDING -> DRAFT kèm lý do, để nhân sự sửa rồi gửi lại.</summary>
+    Task<int> RequestChangesAsync(long companyId, long jobId, long userId, string note);
+
+    /// <summary>Ghi chú trả về gần nhất của bộ tiêu chí (dòng có reviewed_at mới nhất). Null nếu chưa từng bị trả.</summary>
+    Task<EvaluationCriteria?> GetLatestReviewedAsync(long companyId, long jobId);
 }

@@ -456,9 +456,18 @@ export const criteriaAPI = {
   extractStatus: (jobId) =>
     api.get(`/jobs/${jobId}/criteria/extract-status`),
 
-  // Chốt bộ tiêu chí DRAFT → ACTIVE
+  // Người soạn gửi bộ tiêu chí cho Trưởng bộ phận duyệt: DRAFT → PENDING (V055).
+  // Sau bước này bộ tiêu chí khoá sửa cho tới khi Trưởng bộ phận trả lời.
+  submitForReview: (jobId) =>
+    api.post(`/jobs/${jobId}/criteria/submit`),
+
+  // Trưởng bộ phận CHỐT: PENDING → APPROVED. Nhân sự gọi vào đây nhận 403 (V055).
   approve: (jobId) =>
     api.post(`/jobs/${jobId}/criteria/approve`),
+
+  // Trưởng bộ phận trả về cho người soạn sửa: PENDING → DRAFT kèm lý do (bắt buộc).
+  requestChanges: (jobId, note) =>
+    api.post(`/jobs/${jobId}/criteria/request-changes`, { note }),
 
 
   applyTemplateToJob: (templateId, jobId) =>
