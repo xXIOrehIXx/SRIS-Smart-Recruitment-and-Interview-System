@@ -16,16 +16,30 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
         _db = serviceProvider.GetRequiredService<SrisDbContext>();
     }
 
-    public async Task<CriteriaExtraction> EnqueueAsync(long companyId, long jobId, long requestedBy)
+    public Task<CriteriaExtraction> EnqueueAsync(long companyId, long jobId, long requestedBy) =>
+        EnqueueAsync(companyId, jobId, null, requestedBy);
+
+    public Task<CriteriaExtraction> EnqueueForRequestAsync(long companyId, long requestId, long requestedBy) =>
+        EnqueueAsync(companyId, null, requestId, requestedBy);
+
+    /// <summary>
+    /// Xếp hàng một lượt bóc cho job HOẶC cho yêu cầu tuyển dụng. Chỉ mục lọc
+    /// UQ_CritExtract_job / UQ_CritExtract_request (V056) bảo đảm mỗi bên nhiều nhất một dòng
+    /// -> bấm bóc lại là GHI ĐÈ lượt cũ, không xếp hàng chồng lên nhau.
+    /// </summary>
+    private async Task<CriteriaExtraction> EnqueueAsync(
+        long companyId, long? jobId, long? requestId, long requestedBy)
     {
         var now = DateTime.UtcNow;
 
-        // UNIQUE(job_id) -> bấm bóc lại là ghi đè lượt cũ, không xếp hàng chồng lên nhau.
-        // Xoá sạch dấu vết lượt trước (error_code/criteria_count/finished_at) để FE không
-        // đọc nhầm kết quả cũ trong lúc lượt mới còn PENDING.
-        var existing = await _db.CriteriaExtractions.FirstOrDefaultAsync(e => e.JobId == jobId);
+        var existing = jobId is long j
+            ? await _db.CriteriaExtractions.FirstOrDefaultAsync(e => e.JobId == j)
+            : await _db.CriteriaExtractions.FirstOrDefaultAsync(e => e.RequestId == requestId);
+
         if (existing is not null)
         {
+            // Xoá sạch dấu vết lượt trước (error_code/criteria_count/finished_at) để FE không
+            // đọc nhầm kết quả cũ trong lúc lượt mới còn PENDING.
             existing.Status = ExtractionStatus.Pending;
             existing.ErrorCode = null;
             existing.ErrorMessage = null;
@@ -43,6 +57,7 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
         {
             CompanyId = companyId,
             JobId = jobId,
+            RequestId = requestId,
             Status = ExtractionStatus.Pending,
             RequestedBy = requestedBy,
             RequestedAt = now,
@@ -59,6 +74,13 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
         return await _db.CriteriaExtractions
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.JobId == jobId);
+    }
+
+    public async Task<CriteriaExtraction?> GetByRequestAsync(long companyId, long requestId)
+    {
+        return await _db.CriteriaExtractions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.RequestId == requestId);
     }
 
     public async Task<ClaimedExtraction?> ClaimNextPendingAsync(CancellationToken ct = default)
@@ -82,13 +104,16 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
                     "       updated_at = SYSUTCDATETIME() " +
                     "OUTPUT inserted.extraction_id AS ExtractionId, " +
                     "       inserted.company_id AS CompanyId, " +
-                    "       inserted.job_id AS JobId " +
+                    "       inserted.job_id AS JobId, " +
+                    "       inserted.request_id AS RequestId " +
                     "FROM dbo.CriteriaExtraction e WITH (READPAST) " +
                     "WHERE e.status = 'PENDING'")
                 .ToListAsync(ct);
 
             var row = rows.FirstOrDefault();
-            return row is null ? null : new ClaimedExtraction(row.ExtractionId, row.CompanyId, row.JobId);
+            return row is null
+                ? null
+                : new ClaimedExtraction(row.ExtractionId, row.CompanyId, row.JobId, row.RequestId);
         }, ct);
     }
 
@@ -124,6 +149,7 @@ public class CriteriaExtractionRepo : BaseRepo<long, CriteriaExtraction>, ICrite
     {
         public long ExtractionId { get; set; }
         public long CompanyId { get; set; }
-        public long JobId { get; set; }
+        public long? JobId { get; set; }
+        public long? RequestId { get; set; }
     }
 }

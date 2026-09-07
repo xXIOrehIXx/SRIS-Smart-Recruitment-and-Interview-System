@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
+import RequestCriteriaPanel from './RequestCriteriaPanel';
 import { recruitmentRequestAPI } from '../../services/api';
 import {
   employmentLabel,
@@ -566,6 +567,15 @@ const DeptRecruitmentRequests = () => {
                 </Descriptions.Item>
               </Descriptions>
             )}
+
+            {/* V056: bộ tiêu chí ra đề ngay tại đây, cùng lúc với việc mô tả vị trí.
+                Sửa được khi yêu cầu chưa thành tin — CONVERTED rồi thì bộ tiêu chí đã chuyển
+                sang tin và cửa quyền là cửa của tin (backend chặn thật, đây chỉ ẩn nút). */}
+            <RequestCriteriaPanel
+              requestId={selectedRequest.id}
+              status={selectedRequest.status}
+              canEdit={selectedRequest.status !== 'CONVERTED' && selectedRequest.status !== 'REJECTED'}
+            />
           </div>
         )}
       </Modal>

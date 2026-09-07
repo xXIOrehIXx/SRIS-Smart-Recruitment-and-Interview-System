@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Request;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -133,42 +133,11 @@ public class RecruitmentRequestService : BaseService<RecruitmentRequestService>,
         return await GetByIdAsync(companyId, requestId);
     }
 
-    public async Task<RecruitmentRequestDto> ConvertAsync(
-        long companyId, long userId, long requestId, ConvertRequestDto dto)
-    {
-        var request = await _requestRepo.GetByIdAsync(companyId, requestId)
-            ?? throw NotFound($"Không tìm thấy yêu cầu tuyển dụng (request_id={requestId}).");
-
-        // Đường tắt "tạo job = ngầm chấp thuận" CHỈ còn cho Admin (công ty nhỏ dùng 1 tài khoản,
-        // người tạo job cũng chính là chủ). Với nhân sự thì đường tắt đó là cửa sau đi vòng qua
-        // Giám đốc: duyệt yêu cầu là quyền của Giám đốc (V047), gắn job không được thay thế nó.
-        var isAdmin = string.Equals(_contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase);
-        var allowed = isAdmin
-            ? request.Status is "PENDING" or "APPROVED"
-            : request.Status is "APPROVED";
-        if (!allowed)
-            throw Conflict(request.Status == "PENDING"
-                ? "Yêu cầu này chưa được Giám đốc duyệt — chưa tạo được tin tuyển dụng từ nó."
-                : $"Yêu cầu ở trạng thái {request.Status} — không thể gắn job.");
-
-        var job = await _jobRepo.GetByIdAsync(companyId, dto.JobId)
-            ?? throw NotFound($"Không tìm thấy job (job_id={dto.JobId}).");
-
-        request.Status = "CONVERTED";
-        request.JobId = job.JobId;
-        if (request.ReviewedBy is null)
-        {
-            request.ReviewedBy = userId > 0 ? userId : null;
-            request.ReviewedAt = DateTime.UtcNow;
-        }
-        request.UpdatedAt = DateTime.UtcNow;
-        await _requestRepo.SaveAsync();
-
-        _logger.Information("RecruitmentRequest: yêu cầu id={RequestId} -> CONVERTED (job={JobId}).",
-            requestId, job.JobId);
-
-        return await GetByIdAsync(companyId, requestId);
-    }
+    // ConvertAsync đã bỏ ở V056. Việc "gắn job vào yêu cầu" giờ nằm trong chính lượt TẠO TIN
+    // (JobService.CreateAsync -> AttachRequestAsync): tin tuyển dụng luôn sinh ra từ một yêu cầu
+    // đã duyệt, và cùng lúc đó bộ tiêu chí Trưởng bộ phận đã chốt chuyển sang tin để thành phiếu
+    // chấm phỏng vấn. Tách lại thành hai bước là mở lại khoảng thời gian tin đã tồn tại mà chưa
+    // có phiếu chấm, và bước sau hỏng thì không ai biết.
 
     // ============================================================
 

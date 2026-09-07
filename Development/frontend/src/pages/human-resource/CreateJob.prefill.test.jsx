@@ -10,7 +10,8 @@ import CreateJob from './CreateJob';
 import { recruitmentRequestAPI } from '../../services/api';
 
 vi.mock('../../services/api', () => ({
-  recruitmentRequestAPI: { getById: vi.fn(), convert: vi.fn() },
+  // V056: không còn convert — lượt tạo tin nhận thẳng recruitmentRequestId.
+  recruitmentRequestAPI: { getById: vi.fn() },
   jobsAPI: { getById: vi.fn(), create: vi.fn(), update: vi.fn() },
   usersAPI: { getOptions: vi.fn() },
   departmentAPI: { getAll: vi.fn() },

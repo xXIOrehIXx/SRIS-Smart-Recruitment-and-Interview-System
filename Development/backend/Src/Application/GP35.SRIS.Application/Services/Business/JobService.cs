@@ -1,8 +1,11 @@
 using System.Net;
 using GP35.SRIS.Application.Contracts;
 using GP35.SRIS.Application.Contracts.Dtos;
+using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
+using GP35.SRIS.Domain.Shared.Constants;
+using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -26,6 +29,14 @@ public class JobService : BaseService<JobService>, IJobService
         var status = string.IsNullOrWhiteSpace(dto.Status) ? "Open" : dto.Status.Trim();
         var managerId = await ResolveDepartmentManagerAsync(companyId, dto.Department, dto.DepartmentManagerId);
         EnsureManagerWhenPublished(status, managerId);
+
+        // V056: tin tuyển dụng LUÔN sinh ra từ một yêu cầu tuyển dụng đã được Giám đốc duyệt.
+        // Kiểm TRƯỚC khi ghi job: tạo xong mới phát hiện yêu cầu không hợp lệ thì đã có một tin
+        // mồ côi nằm trong DB mà không có bộ tiêu chí nào.
+        //
+        // Đặt SAU các phép kiểm trên chính nội dung tin (tiêu đề, hạn nộp, người phụ trách): thiếu
+        // Trưởng bộ phận là lỗi cụ thể hơn, báo trước thì người dùng sửa đúng chỗ ngay.
+        var request = await EnsureConvertibleRequestAsync(companyId, dto.RecruitmentRequestId);
 
         var job = new Job
         {
@@ -52,6 +63,14 @@ public class JobService : BaseService<JobService>, IJobService
         // InsertAsync set company_id, lưu rồi đọc lại job_id (IDENTITY) + created_at (store-generated).
         await jobRepo.InsertAsync(companyId, job);
 
+        // Bộ tiêu chí Trưởng bộ phận đã chốt trên yêu cầu CHUYỂN sang tin vừa tạo — từ đây nó là
+        // phiếu chấm phỏng vấn của vị trí (V056). Đóng luôn yêu cầu: nó đã hoàn thành việc của mình.
+        //
+        // KHÔNG bọc try/catch nuốt lỗi như hai khối requirements/benefits bên dưới: một tin không
+        // có phiếu chấm là hỏng đúng thứ luồng này sinh ra để bảo đảm, và người tạo tin phải biết
+        // ngay chứ không phải phát hiện lúc interviewer mở phiếu chấm ra thấy trống.
+        await AttachRequestAsync(companyId, request, job.JobId, createdBy);
+
         // V020: lưu requirements + benefits (bảng 1-N). Mỗi cái chạy trong transaction riêng —
         // nếu 1 cái fail, cái kia vẫn commit; vẫn an toàn vì job đã được tạo.
         if (dto.Requirements is { Count: > 0 } && dto.Requirements.Any(r => !string.IsNullOrWhiteSpace(r)))
@@ -66,6 +85,70 @@ public class JobService : BaseService<JobService>, IJobService
         }
 
         return await ToDtoAsync(jobRepo, companyId, job.JobId);
+    }
+
+    /// <summary>
+    /// Yêu cầu tuyển dụng phải tồn tại, đã được duyệt, và CHƯA gắn tin nào (V056).
+    ///
+    /// <para>Admin đi qua được cả yêu cầu còn PENDING — cùng đường tắt mà
+    /// <c>RecruitmentRequestService.ConvertAsync</c> đã mở từ V047, vì công ty nhỏ chạy bằng một
+    /// tài khoản Admin thì người gửi yêu cầu cũng là người duyệt. Nhân sự thì KHÔNG: duyệt yêu
+    /// cầu là quyền của Giám đốc, tạo tin không được thay thế nó.</para>
+    /// </summary>
+    private async Task<RecruitmentRequest> EnsureConvertibleRequestAsync(long companyId, long? requestId)
+    {
+        if (requestId is not long id || id <= 0)
+            throw Bad("Tin tuyển dụng phải được tạo từ một yêu cầu tuyển dụng đã duyệt.");
+
+        var requestRepo = _serviceProvider.GetRequiredService<IRecruitmentRequestRepo>();
+        var request = await requestRepo.GetByIdAsync(companyId, id)
+            ?? throw Bad($"Không tìm thấy yêu cầu tuyển dụng (request_id={id}).");
+
+        var contextData = _serviceProvider.GetRequiredService<IContextData>();
+        var isAdmin = string.Equals(contextData.Role, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase);
+
+        var ok = isAdmin
+            ? request.Status is "PENDING" or "APPROVED"
+            : request.Status is "APPROVED";
+
+        if (!ok)
+            throw Bad(request.Status switch
+            {
+                "PENDING" => "Yêu cầu tuyển dụng này chưa được Giám đốc duyệt — chưa tạo được tin từ nó.",
+                "CONVERTED" => "Yêu cầu tuyển dụng này đã có tin tuyển dụng rồi.",
+                _ => $"Yêu cầu tuyển dụng đang ở trạng thái {request.Status} — không tạo được tin từ nó."
+            });
+
+        return request;
+    }
+
+    /// <summary>
+    /// Gắn tin vừa tạo vào yêu cầu (status CONVERTED + job_id) và CHUYỂN bộ tiêu chí đã duyệt
+    /// sang tin đó.
+    /// </summary>
+    private async Task AttachRequestAsync(long companyId, RecruitmentRequest request, long jobId, long userId)
+    {
+        var requestRepo = _serviceProvider.GetRequiredService<IRecruitmentRequestRepo>();
+        var criteriaService = _serviceProvider.GetRequiredService<IEvaluationCriteriaService>();
+
+        var moved = await criteriaService.AttachRequestCriteriaToJobAsync(companyId, request.RequestId, jobId);
+
+        request.Status = "CONVERTED";
+        request.JobId = jobId;
+        if (request.ReviewedBy is null)
+        {
+            request.ReviewedBy = userId > 0 ? userId : null;
+            request.ReviewedAt = DateTime.UtcNow;
+        }
+        request.UpdatedAt = DateTime.UtcNow;
+        await requestRepo.SaveAsync();
+
+        // Cảnh báo chứ không chặn: yêu cầu có thể đã duyệt từ trước khi có luồng tiêu chí, hoặc
+        // Trưởng bộ phận cố tình chưa ra đề. Tin vẫn tạo được, nhưng phải để lại vết trong log —
+        // "vị trí không có phiếu chấm" là thứ chỉ lộ ra ở tận vòng phỏng vấn.
+        if (moved == 0)
+            Serilog.Log.Warning("CreateJob: yêu cầu {RequestId} không có tiêu chí ĐÃ DUYỆT nào để chuyển " +
+                "sang job {JobId} — vị trí này hiện chưa có phiếu chấm phỏng vấn.", request.RequestId, jobId);
     }
 
     public async Task<IEnumerable<JobGetDto>> GetListAsync(long companyId)
