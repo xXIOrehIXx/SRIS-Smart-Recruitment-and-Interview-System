@@ -25,6 +25,7 @@ public class ApplicationStateServiceTests
     private readonly Mock<IActivityLogRepo> _logRepo = new();
     private readonly Mock<INotificationService> _notify = new();
     private readonly Mock<IJobRepo> _jobRepo = new();
+    private readonly Mock<IEvaluationCriteriaRepo> _criteriaRepo = new();
 
     /// <summary>
     /// V045: duyệt vào vòng phỏng vấn có thể kèm danh sách người phỏng vấn DM chỉ định. Các test ở
@@ -38,7 +39,13 @@ public class ApplicationStateServiceTests
     /// </summary>
     private readonly ContextDataStub _context = new() { UserId = UserId, Role = "Recruiter" };
 
-    private ApplicationStateService CreateService(string currentState, int submittedScores = 0)
+    /// <param name="jobHasApprovedCriteria">
+    /// Guard G3 (07/09/2026): SCREENING→INTERVIEW đòi vị trí có sẵn bộ tiêu chí ĐÃ DUYỆT.
+    /// Mặc định TRUE — đó là trạng thái bình thường của một vị trí đang tuyển, nên các test khác
+    /// giữ nguyên ý nghĩa. Đặt FALSE để dựng đúng ca vị trí chưa ai ra đề tiêu chí.
+    /// </param>
+    private ApplicationStateService CreateService(
+        string currentState, int submittedScores = 0, bool jobHasApprovedCriteria = true)
     {
         // Mock CÓ trạng thái: ghi state xong thì lần đọc sau phải thấy state mới, đúng như DB thật.
         // Cần cho AdvanceToAsync (đi nhiều bước liên tiếp) — mock trả state cố định sẽ báo lỗi giả.
@@ -65,12 +72,21 @@ public class ApplicationStateServiceTests
         _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
             .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "Test", Status = "Open" });
 
+        _criteriaRepo.Setup(r => r.GetByJobAsync(CompanyId, It.IsAny<long>(), true, true))
+            .ReturnsAsync(jobHasApprovedCriteria
+                ? new List<EvaluationCriteria>
+                {
+                    new() { CriteriaId = 1, JobId = 1, Name = "Kỹ năng chuyên môn", Status = "APPROVED" }
+                }
+                : new List<EvaluationCriteria>());
+
         var provider = TestHost.Build(s =>
         {
             s.AddSingleton(_appRepo.Object);
             s.AddSingleton(_logRepo.Object);
             s.AddSingleton(_notify.Object);
             s.AddSingleton(_jobRepo.Object);
+            s.AddSingleton(_criteriaRepo.Object);
             s.AddSingleton(_panel.Object);
             s.AddSingleton<IContextData>(_context);
         });
@@ -336,6 +352,48 @@ public class ApplicationStateServiceTests
     // ===== Duyệt vào vòng phỏng vấn: chỉ DM của job (5.8, chốt 15/08/2026) =====
 
     /// <summary>Human Resource (hay DM phòng khác) không được tự đưa ứng viên vào vòng phỏng vấn.</summary>
+    /// <summary>
+    /// Guard G3: vị trí chưa có tiêu chí đã duyệt thì KHÔNG đưa ứng viên vào vòng phỏng vấn được.
+    ///
+    /// <para>Lỗ hổng đo được thật trước khi có guard này: DM gửi Yêu cầu tuyển dụng mà bỏ trống
+    /// phần tiêu chí, Giám đốc duyệt, nhân sự đăng tin, ứng viên nộp CV, DM duyệt vào phỏng vấn —
+    /// cả chuỗi trả HTTP 200, và người phỏng vấn mở phiếu chấm ra thấy trống.</para>
+    /// </summary>
+    [Fact]
+    public async Task ScreeningToInterview_JobWithoutApprovedCriteria_Throws409()
+    {
+        var service = CreateService("SCREENING", jobHasApprovedCriteria: false);
+        // Gán DM = chính người đang bấm, để đi qua guard NGƯỜI và chạm được vào guard DỮ LIỆU.
+        // Guard người chạy trước (403), nên không gán thì test này đo nhầm cửa.
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = UserId });
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => service.TransitionAsync(CompanyId, UserId, AppId, "INTERVIEW", null));
+
+        Assert.Equal(409, ex.HttpStatus);
+        Assert.Contains("tiêu chí", ex.ErrorMessage);
+        _appRepo.Verify(r => r.TransitionStateAsync(
+            CompanyId, AppId, "INTERVIEW", It.IsAny<string?>(), It.IsAny<DateTime>(),
+            It.IsAny<DateTime?>(), It.IsAny<DateTime?>()), Times.Never);
+    }
+
+    /// <summary>
+    /// G3 CHỈ gác đường vào phỏng vấn. Loại một hồ sơ không cần tiêu chí nào — chặn cả đường đó
+    /// thì hồ sơ rác kẹt lại vì một lý do chẳng liên quan gì tới nó.
+    /// </summary>
+    [Fact]
+    public async Task RejectFromScreening_JobWithoutApprovedCriteria_StillAllowed()
+    {
+        var service = CreateService("SCREENING", jobHasApprovedCriteria: false);
+        _jobRepo.Setup(r => r.GetByIdAsync(CompanyId, It.IsAny<long>()))
+            .ReturnsAsync(new Job { JobId = 1, CompanyId = CompanyId, Title = "T", Status = "Open", DepartmentManagerId = UserId });
+
+        var result = await service.TransitionAsync(CompanyId, UserId, AppId, "REJECTED", null);
+
+        Assert.Equal("REJECTED", result.ToState);
+    }
+
     [Fact]
     public async Task ScreeningToInterview_ByOtherUser_Throws403()
     {

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -113,7 +113,7 @@ public class AuthService : BaseService<AuthService>, IAuthService
         try
         {
             var added = await _serviceProvider.GetRequiredService<IEmailTemplateService>()
-                .EnsureDefaultsAsync(companyId);
+                .EnsureDefaultsAsync(companyId, forNewCompany: true);
             _logger.Information("Register: tạo sẵn {Added} mẫu email cho công ty {CompanyId}.",
                 added, companyId);
         }

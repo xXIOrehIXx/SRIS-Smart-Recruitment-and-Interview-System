@@ -1,0 +1,93 @@
+{
+  "_doc": [
+    "10 cặp (CV, tin tuyển dụng) dùng để đo phần 'summary' của lượt sàng lọc CV.",
+    "CV do người làm đề tài SOẠN, không phải hồ sơ thật của ứng viên nào — vừa vì dữ liệu cá nhân,",
+    "vừa để cài được các ca bẫy có đáp án biết trước. Hạn chế này phải ghi trong báo cáo.",
+    "KHÔNG SỬA file này giữa các lần chạy: đổi bộ test thì các phiên bản prompt hết so được với nhau.",
+    "",
+    "Trường 'bay' ghi ca bẫy và đáp án đúng — dùng khi chấm tay, KHÔNG đưa vào prompt.",
+    "Trường 'moc_phai_co' là các dữ kiện một bản tóm tắt tốt phải nhắc tới (mẫu số của recall)."
+  ],
+
+  "cases": [
+    {
+      "id": "C01_khong_ghi_so_nam",
+      "bay": "CV chỉ có MỐC THỜI GIAN, không câu nào ghi 'x năm kinh nghiệm'. Prompt production cấm tự cộng ra số năm. Tóm tắt đúng phải nhắc mốc ('từ 2019'), tóm tắt sai sẽ tự chế ra 'khoảng 6 năm kinh nghiệm'.",
+      "moc_phai_co": ["Backend/.NET", "mốc thời gian 2019", "SQL Server", "Đại học Bách khoa Hà Nội"],
+      "jd": "Tuyển Lập trình viên Backend (.NET)\n\nMô tả công việc:\n- Phát triển và bảo trì API cho hệ thống quản lý bán hàng.\n- Tối ưu truy vấn cơ sở dữ liệu, xử lý sự cố hiệu năng.\n- Phối hợp với đội frontend và QA trong các đợt phát hành.\n\nYêu cầu:\n- Từ 3 năm kinh nghiệm lập trình C# / ASP.NET Core.\n- Thành thạo SQL Server, viết được stored procedure.\n- Hiểu về REST API và xác thực JWT.\n- Ưu tiên ứng viên biết Docker.\n\nQuyền lợi: lương thỏa thuận, thưởng tháng 13, bảo hiểm sức khỏe.",
+      "cv": "TRẦN QUỐC HƯNG\nLập trình viên Backend\nEmail: hungtq.dev@email.com | Điện thoại: 09xx xxx xxx | Hà Nội\n\nKINH NGHIỆM LÀM VIỆC\n\nCông ty CP Giải pháp Phần mềm Tân Việt — Lập trình viên Backend\n03/2019 đến nay\n- Phát triển và bảo trì hệ thống quản lý đơn hàng cho chuỗi 40 cửa hàng bán lẻ, viết bằng C# và ASP.NET Core.\n- Thiết kế REST API cho ứng dụng di động của công ty, xác thực bằng JWT, phân quyền theo vai trò.\n- Viết stored procedure và tối ưu chỉ mục trên SQL Server; rút thời gian chạy báo cáo cuối ngày từ 40 phút xuống 6 phút.\n- Tham gia trực hệ thống theo ca, xử lý sự cố hiệu năng trong giờ cao điểm.\n\nCông ty TNHH Phần mềm Minh Long — Lập trình viên\n07/2017 đến 02/2019\n- Viết module tính lương cho phần mềm nhân sự nội bộ bằng C# WinForms.\n- Chuyển dữ liệu từ hệ thống Excel cũ sang SQL Server.\n\nHỌC VẤN\nĐại học Bách khoa Hà Nội — Kỹ sư Công nghệ thông tin, 2013 - 2017.\n\nKỸ NĂNG\nC#, ASP.NET Core, SQL Server, Entity Framework, Git, đọc hiểu tài liệu tiếng Anh."
+    },
+
+    {
+      "id": "C02_ketoan_khop",
+      "bay": "Ca chuẩn, khớp yêu cầu. Dùng làm mốc so sánh: bậc prompt nào cũng phải làm được ca này. Tóm tắt sai ở đây là dấu hiệu bậc đó hỏng nặng.",
+      "moc_phai_co": ["kế toán tổng hợp", "6 năm / mốc 2019", "MISA", "báo cáo thuế", "Đại học Kinh tế Quốc dân"],
+      "jd": "Tuyển Kế toán tổng hợp\n\nMô tả công việc:\n- Hạch toán và kiểm tra chứng từ phát sinh hàng ngày.\n- Lập báo cáo thuế tháng/quý và báo cáo tài chính năm.\n- Làm việc với cơ quan thuế và đơn vị kiểm toán.\n\nYêu cầu:\n- Tốt nghiệp đại học chuyên ngành Kế toán / Tài chính.\n- Từ 3 năm kinh nghiệm ở vị trí kế toán tổng hợp.\n- Sử dụng thành thạo phần mềm kế toán (MISA hoặc tương đương) và Excel.\n- Nắm vững quy định thuế hiện hành.",
+      "cv": "LÊ THỊ MAI HƯƠNG\nKế toán tổng hợp\nEmail: huongltm@email.com | Điện thoại: 09xx xxx xxx | TP. Hồ Chí Minh\n\nKINH NGHIỆM LÀM VIỆC\n\nCông ty CP Thương mại Đại Phúc — Kế toán tổng hợp\n01/2019 đến nay (6 năm kinh nghiệm ở vị trí này)\n- Hạch toán toàn bộ nghiệp vụ phát sinh của công ty doanh thu khoảng 120 tỷ/năm.\n- Lập và nộp báo cáo thuế GTGT, TNCN hàng tháng; quyết toán thuế TNDN cuối năm.\n- Lập báo cáo tài chính năm, làm việc trực tiếp với đơn vị kiểm toán độc lập.\n- Giải trình số liệu với cơ quan thuế trong hai đợt thanh tra 2021 và 2023, không bị truy thu.\n\nCông ty TNHH Sản xuất Bao bì Hòa An — Kế toán viên\n08/2016 đến 12/2018\n- Theo dõi công nợ phải thu, phải trả và nhập xuất tồn kho nguyên vật liệu.\n\nHỌC VẤN\nĐại học Kinh tế Quốc dân — Cử nhân Kế toán, 2012 - 2016.\n\nKỸ NĂNG\nPhần mềm MISA, Excel (hàm nâng cao, pivot table), nắm vững Thông tư 200 và các quy định thuế hiện hành."
+    },
+
+    {
+      "id": "C03_fresher_mong",
+      "bay": "CV mỏng, gần như không có gì để kể. Bẫy 'sáo rỗng': prompt production cấm viết chung chung kiểu 'ứng viên có nhiều kinh nghiệm và tiềm năng'. Tóm tắt đúng phải NGẮN và nói thẳng là chưa có kinh nghiệm đi làm.",
+      "moc_phai_co": ["mới tốt nghiệp / chưa có kinh nghiệm", "Cao đẳng FPT", "đồ án tốt nghiệp"],
+      "jd": "Tuyển Lập trình viên Frontend (ReactJS)\n\nYêu cầu:\n- Từ 2 năm kinh nghiệm làm việc với ReactJS.\n- Thành thạo HTML, CSS, JavaScript ES6.\n- Có kinh nghiệm làm việc với REST API.\n- Ưu tiên ứng viên biết TypeScript.",
+      "cv": "NGUYỄN HOÀNG LONG\nSinh viên mới tốt nghiệp\nEmail: longnh2002@email.com | Điện thoại: 09xx xxx xxx | Đà Nẵng\n\nHỌC VẤN\nCao đẳng FPT Polytechnic Đà Nẵng — Ngành Ứng dụng phần mềm, 2021 - 2024. Điểm trung bình 3.1/4.\n\nĐỒ ÁN TỐT NGHIỆP\nWebsite bán đồ thể thao, làm nhóm 3 người trong 2 tháng. Em phụ trách phần giao diện, dùng ReactJS và Bootstrap, gọi API do bạn trong nhóm viết.\n\nKỸ NĂNG\nHTML, CSS, JavaScript cơ bản, ReactJS (mức đồ án), Git.\n\nMỤC TIÊU\nMong muốn tìm môi trường để học hỏi và phát triển bản thân trong lĩnh vực lập trình web."
+    },
+
+    {
+      "id": "C04_trai_nganh",
+      "bay": "CV kinh doanh nộp vào vị trí IT. Bẫy 'ép cho vừa': tóm tắt phải KỂ ĐÚNG ứng viên là dân kinh doanh, không được xoay câu chữ cho giống dân IT chỉ vì đang đối chiếu với tin IT.",
+      "moc_phai_co": ["nhân viên kinh doanh / bán hàng", "bất động sản", "không có nền tảng lập trình"],
+      "jd": "Tuyển Lập trình viên Backend (.NET)\n\nYêu cầu:\n- Từ 3 năm kinh nghiệm C# / ASP.NET Core.\n- Thành thạo SQL Server.\n- Hiểu về REST API và xác thực JWT.",
+      "cv": "PHẠM ĐỨC THẮNG\nChuyên viên Kinh doanh\nEmail: thangpd.sales@email.com | Điện thoại: 09xx xxx xxx | Hà Nội\n\nKINH NGHIỆM LÀM VIỆC\n\nCông ty CP Bất động sản Thành Đô — Chuyên viên Kinh doanh\n05/2021 đến nay\n- Tư vấn và bán sản phẩm căn hộ tại hai dự án khu vực phía Tây Hà Nội.\n- Doanh số cá nhân trung bình 8 giao dịch/năm, hai năm liền đạt danh hiệu nhân viên xuất sắc.\n- Xây dựng và chăm sóc tệp khách hàng khoảng 400 liên hệ trên phần mềm CRM của công ty.\n\nCông ty TNHH Phân phối Hàng tiêu dùng Bình Minh — Nhân viên bán hàng\n09/2018 đến 04/2021\n- Phụ trách kênh cửa hàng tạp hóa tại 3 quận nội thành, quản lý 60 điểm bán.\n\nHỌC VẤN\nĐại học Thương mại — Cử nhân Quản trị kinh doanh, 2014 - 2018.\n\nKỸ NĂNG\nĐàm phán, chăm sóc khách hàng, Excel, sử dụng phần mềm CRM, tiếng Anh giao tiếp cơ bản."
+    },
+
+    {
+      "id": "C05_nhay_viec_nhieu_moc",
+      "bay": "5 nơi làm việc trong 7 năm, nhiều mốc chồng nhau. Bẫy 'dựng sai dòng thời gian': tóm tắt phải giữ đúng nơi làm hiện tại và không trộn thành tích của công ty này sang công ty kia.",
+      "moc_phai_co": ["nơi làm hiện tại là Chăm sóc khách hàng ở VietTravel", "nhiều nơi làm việc", "tiếng Anh"],
+      "jd": "Tuyển Nhân viên Chăm sóc Khách hàng\n\nYêu cầu:\n- Từ 1 năm kinh nghiệm chăm sóc khách hàng hoặc tổng đài.\n- Giao tiếp tốt, kiên nhẫn, xử lý được khiếu nại.\n- Sử dụng được máy tính văn phòng.\n- Ưu tiên ứng viên giao tiếp được tiếng Anh.",
+      "cv": "ĐỖ THỊ THANH VÂN\nEmail: vandtt@email.com | Điện thoại: 09xx xxx xxx | TP. Hồ Chí Minh\n\nKINH NGHIỆM LÀM VIỆC\n\nCông ty Du lịch VietTravel — Nhân viên Chăm sóc khách hàng\n06/2023 đến nay\n- Trực tổng đài và hộp thư khiếu nại cho mảng tour nội địa, trung bình 60 cuộc gọi/ngày.\n- Xử lý khiếu nại hoàn hủy tour, phối hợp với bộ phận điều hành.\n\nNhà hàng Sen Vàng — Giám sát ca\n01/2022 đến 05/2023\n- Quản lý ca 8 nhân viên phục vụ, xử lý phàn nàn của khách tại chỗ.\n\nCông ty CP Bán lẻ Anh Khoa — Nhân viên bán hàng\n03/2021 đến 12/2021\n- Bán hàng tại cửa hàng điện máy.\n\nTrung tâm Anh ngữ Sao Mai — Tư vấn viên khóa học\n08/2019 đến 02/2021\n- Tư vấn khóa học cho phụ huynh, gọi điện chăm sóc học viên cũ.\n\nSiêu thị Co.opmart — Thu ngân\n05/2018 đến 07/2019\n\nHỌC VẤN\nCao đẳng Du lịch Sài Gòn — Ngành Quản trị dịch vụ du lịch, 2015 - 2018.\n\nKỸ NĂNG\nGiao tiếp, xử lý khiếu nại, Word, Excel cơ bản, tiếng Anh giao tiếp (TOEIC 600)."
+    },
+
+    {
+      "id": "C06_text_pdf_lon_xon",
+      "bay": "Text bóc từ PDF bị dính chữ, xuống dòng lung tung, mất dấu câu — đúng thứ PdfTextExtractor hay trả về. Prompt production dặn 'đừng nhận xét gì về định dạng'. Tóm tắt sai sẽ than phiền CV khó đọc thay vì kể nội dung.",
+      "moc_phai_co": ["kỹ sư cơ khí", "vận hành máy CNC", "Cao đẳng Kỹ thuật Cao Thắng"],
+      "jd": "Tuyển Kỹ thuật viên vận hành máy CNC\n\nYêu cầu:\n- Từ 2 năm kinh nghiệm vận hành máy CNC.\n- Đọc được bản vẽ kỹ thuật.\n- Biết sử dụng thước cặp, panme để kiểm tra sản phẩm.\n- Chấp nhận làm việc theo ca.",
+      "cv": "VÕHOÀNGMINH KỹsưCơkhí voh minh@email.com 09xxxxxxxx BìnhDương\nKINHNGHIỆM\nCÔNGTYTNHHCƠKHÍCHÍNHXÁCĐẠIPHÁT\nKỹthuậtviênvậnhànhCNC 04/2020-naytrựctiếpvậnhành\nmáyphayCNC3trụcvàmáytiệnCNCcalàmviệcluânphiên2ca\nlậpchươngtrìnhgiacôngđơngiảntrênmáyđọcbảnvẽcơkhí\nkiểmtrakíchthướcsảnphẩmbằngthướccặpvàpanme tỷlệ\nphếphẩmcatôiphụtráchdướimứckhoán2phầntrăm\nCÔNGTYCPCƠKHÍTHÀNHCÔNG côngnhânvậnhànhmáy\n06/2018-03/2020vậnhànhmáytiệnvạnnăngvàmáykhoanbàn\nHỌCVẤN CaođẳngKỹthuậtCaoThắng ngànhCơkhíchếtạo\n2015-2018\nKỸNĂNG đọcbảnvẽ vậnhànhCNC thướccặp panme\nlàmviệctheoca AutoCAD2Dcơbản"
+    },
+
+    {
+      "id": "C07_song_ngu",
+      "bay": "CV trộn tiếng Việt và tiếng Anh. Bẫy ngôn ngữ: prompt production yêu cầu summary VIẾT BẰNG TIẾNG VIỆT. Tóm tắt sai sẽ trả về tiếng Anh vì phần lớn CV là tiếng Anh.",
+      "moc_phai_co": ["Digital Marketing", "Google Ads / Facebook Ads", "mốc 2020", "Đại học Ngoại thương"],
+      "jd": "Tuyển Chuyên viên Marketing\n\nYêu cầu:\n- Từ 2 năm kinh nghiệm digital marketing.\n- Chạy được quảng cáo Google Ads và Facebook Ads.\n- Biết đo lường hiệu quả chiến dịch bằng Google Analytics.\n- Tiếng Anh đọc hiểu tốt.",
+      "cv": "NGUYEN THI PHUONG LINH\nDigital Marketing Executive\nEmail: linhntp.mkt@email.com | Phone: 09xx xxx xxx | Ha Noi\n\nPROFESSIONAL EXPERIENCE\n\nABC Digital Agency — Digital Marketing Executive\n09/2020 - Present\n- Planning and running performance campaigns on Google Ads and Facebook Ads for 6 e-commerce clients, monthly budget around 300 million VND in total.\n- Building weekly performance reports using Google Analytics 4 and Google Data Studio.\n- Phối hợp với đội thiết kế để sản xuất nội dung quảng cáo, trung bình 20 mẫu/tháng.\n- Best campaign: giảm chi phí trên mỗi đơn hàng 34% cho khách hàng ngành mỹ phẩm trong quý 2/2023.\n\nCong ty CP Thuong mai Viet Phat — Marketing Intern\n02/2020 - 08/2020\n- Viết bài cho fanpage và website công ty.\n\nEDUCATION\nForeign Trade University (Đại học Ngoại thương) — Bachelor of International Business, 2016 - 2020.\n\nSKILLS\nGoogle Ads, Facebook Ads Manager, Google Analytics 4, Canva, IELTS 7.0."
+    },
+
+    {
+      "id": "C08_thanh_tich_nhieu_so",
+      "bay": "CV dày đặc con số. Bẫy 'chép sai số': tóm tắt nào nhắc tới con số thì con số đó phải đúng y CV. Máy chấm dò được ca này (mọi số trong tóm tắt phải có trong CV).",
+      "moc_phai_co": ["Trưởng nhóm kinh doanh", "quản lý đội 12 người", "mốc 2021", "vượt chỉ tiêu"],
+      "jd": "Tuyển Trưởng nhóm Kinh doanh\n\nYêu cầu:\n- Từ 4 năm kinh nghiệm kinh doanh, trong đó ít nhất 2 năm quản lý đội nhóm.\n- Có kinh nghiệm xây dựng và triển khai chỉ tiêu doanh số.\n- Kỹ năng đàm phán và trình bày tốt.",
+      "cv": "BÙI TRUNG KIÊN\nTrưởng nhóm Kinh doanh\nEmail: kienbt.sales@email.com | Điện thoại: 09xx xxx xxx | Hà Nội\n\nKINH NGHIỆM LÀM VIỆC\n\nCông ty CP Thiết bị Công nghiệp Hòa Phát Group (nhà phân phối) — Trưởng nhóm Kinh doanh\n03/2021 đến nay\n- Quản lý đội 12 nhân viên kinh doanh khu vực miền Bắc.\n- Xây dựng chỉ tiêu doanh số quý cho từng thành viên; đội đạt 118% chỉ tiêu năm 2023 và 104% năm 2024.\n- Đàm phán và ký 27 hợp đồng phân phối với đại lý cấp 2 trong năm 2023.\n- Doanh số đội phụ trách năm 2024 đạt 46 tỷ đồng.\n\nCông ty TNHH Thương mại Tân Á — Nhân viên Kinh doanh\n08/2017 đến 02/2021\n- Phụ trách 45 khách hàng đại lý tại 5 tỉnh phía Bắc.\n- Ba năm liền vượt chỉ tiêu cá nhân, cao nhất là 131% năm 2020.\n\nHỌC VẤN\nĐại học Thương mại — Cử nhân Marketing, 2013 - 2017.\n\nKỸ NĂNG\nĐàm phán, xây dựng chỉ tiêu, quản lý đội nhóm, Excel, trình bày trước khách hàng."
+    },
+
+    {
+      "id": "C09_khoang_trong_su_nghiep",
+      "bay": "CV có khoảng trống 2 năm không đi làm (nghỉ chăm con) và bản thân CV nói rõ. Bẫy 'suy diễn': tóm tắt được phép nhắc khoảng trống vì CV có ghi, nhưng KHÔNG được tự suy ra lý do khác hay đánh giá tiêu cực.",
+      "moc_phai_co": ["nhân sự / C&B", "nghỉ 2 năm rồi quay lại", "mốc 2016", "Đại học Lao động Xã hội"],
+      "jd": "Tuyển Chuyên viên Nhân sự (C&B)\n\nYêu cầu:\n- Từ 3 năm kinh nghiệm mảng C&B (lương thưởng, bảo hiểm).\n- Nắm vững Luật Lao động và quy định bảo hiểm xã hội.\n- Thành thạo Excel.",
+      "cv": "TRỊNH THU HÀ\nChuyên viên Nhân sự\nEmail: hatt.hr@email.com | Điện thoại: 09xx xxx xxx | Hải Phòng\n\nKINH NGHIỆM LÀM VIỆC\n\nCông ty TNHH May mặc Tiến Thành — Chuyên viên Nhân sự C&B\n09/2022 đến nay\n- Tính lương hàng tháng cho 350 lao động, trong đó có lương sản phẩm theo chuyền.\n- Làm thủ tục tăng giảm bảo hiểm xã hội, giải quyết chế độ ốm đau thai sản.\n- Cập nhật nội quy lao động theo Bộ luật Lao động 2019.\n\n(Nghỉ việc chăm con nhỏ từ 08/2020 đến 08/2022.)\n\nCông ty CP Cơ khí Hải Phòng — Nhân viên Nhân sự\n05/2016 đến 07/2020\n- Chấm công, tính lương cho khối văn phòng 80 người.\n- Theo dõi hợp đồng lao động và hồ sơ nhân sự.\n\nHỌC VẤN\nĐại học Lao động Xã hội — Cử nhân Quản trị nhân lực, 2012 - 2016.\n\nKỸ NĂNG\nExcel (hàm nâng cao), phần mềm chấm công, nắm quy định BHXH và Bộ luật Lao động 2019."
+    },
+
+    {
+      "id": "C10_liet_ke_cong_nghe",
+      "bay": "CV liệt kê một rừng công nghệ nhưng phần kinh nghiệm chỉ nói chung chung. Bẫy 'suy diễn từ danh sách': tóm tắt không được biến dòng liệt kê thành 'có kinh nghiệm triển khai Kubernetes' khi CV chưa từng nói làm gì với nó.",
+      "moc_phai_co": ["lập trình viên", "mốc 2022", "công ty gia công phần mềm", "danh sách công nghệ tự liệt kê"],
+      "jd": "Tuyển Lập trình viên Backend (.NET)\n\nYêu cầu:\n- Từ 3 năm kinh nghiệm C# / ASP.NET Core.\n- Thành thạo SQL Server.\n- Ưu tiên biết Docker, Kubernetes, CI/CD.",
+      "cv": "ĐINH VĂN TÙNG\nSoftware Developer\nEmail: tungdv.it@email.com | Điện thoại: 09xx xxx xxx | Hà Nội\n\nKINH NGHIỆM LÀM VIỆC\n\nCông ty TNHH Gia công phần mềm Nam Việt — Lập trình viên\n06/2022 đến nay\n- Tham gia các dự án outsourcing cho khách hàng Nhật Bản.\n- Viết code theo tài liệu đặc tả do khách hàng cung cấp, sửa lỗi theo phiếu.\n- Tham gia họp hàng ngày với đội dự án.\n\nHỌC VẤN\nĐại học Công nghiệp Hà Nội — Kỹ sư Công nghệ thông tin, 2018 - 2022.\n\nKỸ NĂNG / CÔNG NGHỆ\nC#, ASP.NET Core, Java, Spring Boot, NodeJS, ReactJS, Angular, SQL Server, MySQL, MongoDB, Redis, Docker, Kubernetes, Jenkins, GitLab CI, AWS, Azure, Kafka, RabbitMQ, Elasticsearch."
+    }
+  ]
+}

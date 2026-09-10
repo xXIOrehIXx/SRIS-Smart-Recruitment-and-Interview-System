@@ -48,6 +48,31 @@ public class EmailTemplateRepo : BaseRepo<long, EmailTemplate>, IEmailTemplateRe
         return template.TemplateId;
     }
 
+    public async Task<long> InsertForNewCompanyAsync(long companyId, EmailTemplate template)
+    {
+        template.CompanyId = companyId;
+
+        // Đăng ký chạy ẩn danh -> SESSION_CONTEXT('CompanyId') chưa mang tenant mới -> RLS BLOCK
+        // chặn insert. Chạy dưới tenant hệ thống trong đúng lượt tạo bộ mẫu (V049).
+        return await _db.RunAsSystemAsync(async () =>
+        {
+            var entry = _db.EmailTemplates.Add(template);
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch
+            {
+                // EF giữ entity hỏng ở trạng thái Added: SaveChanges kế tiếp trong cùng request
+                // sẽ thử lại và chết lây. Người gọi coi bộ mẫu là best-effort nên phải trả change
+                // tracker về sạch trước khi ném lỗi ra.
+                entry.State = EntityState.Detached;
+                throw;
+            }
+            return template.TemplateId;
+        });
+    }
+
     public async Task<EmailTemplate?> UpdateAsync(long companyId, EmailTemplate template)
     {
         var existing = await _db.EmailTemplates

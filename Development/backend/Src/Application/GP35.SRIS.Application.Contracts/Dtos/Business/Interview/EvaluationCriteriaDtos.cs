@@ -20,15 +20,43 @@ public class CriteriaUpdateDto
 public class CriteriaDto
 {
     public long CriteriaId { get; set; }
-    public long JobId { get; set; }
+
+    /// <summary>Null khi bộ tiêu chí còn nằm ở Yêu cầu tuyển dụng — job chưa tồn tại (V056).</summary>
+    public long? JobId { get; set; }
+
+    /// <summary>Yêu cầu tuyển dụng đã sinh ra tiêu chí này (V056). Giữ nguyên sau khi job được tạo.</summary>
+    public long? RequestId { get; set; }
     public string Name { get; set; } = null!;
     public decimal Weight { get; set; }
     public decimal MaxScore { get; set; }
     public bool Active { get; set; }
-    /// <summary>DRAFT (AI bóc, chờ duyệt) | APPROVED (đã chốt — mới dùng để chấm).</summary>
+    /// <summary>
+    /// DRAFT (đang soạn) | PENDING (đã gửi, chờ Trưởng bộ phận duyệt) | APPROVED (đã chốt —
+    /// mới dùng để chấm).
+    /// </summary>
     public string Status { get; set; } = "APPROVED";
     /// <summary>MANUAL | AI_EXTRACTED — audit "tiêu chí từ đâu ra" (5.18).</summary>
     public string Source { get; set; } = "MANUAL";
+
+    // ---- V055: cửa duyệt của Trưởng bộ phận ----
+
+    /// <summary>Lúc gửi Trưởng bộ phận duyệt. Null nếu chưa gửi lần nào.</summary>
+    public DateTime? SubmittedAt { get; set; }
+
+    /// <summary>Lúc Trưởng bộ phận xử lý gần nhất (duyệt hoặc trả về).</summary>
+    public DateTime? ReviewedAt { get; set; }
+
+    /// <summary>
+    /// Lý do Trưởng bộ phận trả bộ tiêu chí về nháp — FE hiện ngay trên màn Tiêu Chí để người
+    /// soạn biết phải sửa gì. Xoá khi gửi lại hoặc khi được duyệt.
+    /// </summary>
+    public string? ReviewNote { get; set; }
+}
+
+/// <summary>Trưởng bộ phận trả bộ tiêu chí về nháp — <c>Note</c> BẮT BUỘC (V055).</summary>
+public class CriteriaRequestChangesDto
+{
+    public string? Note { get; set; }
 }
 
 /// <summary>
@@ -36,7 +64,11 @@ public class CriteriaDto
 /// </summary>
 public class CriteriaExtractionStatusDto
 {
-    public long JobId { get; set; }
+    /// <summary>Null nếu lượt bóc này chạy trên Yêu cầu tuyển dụng thay vì tin tuyển dụng (V056).</summary>
+    public long? JobId { get; set; }
+
+    /// <summary>Yêu cầu tuyển dụng của lượt bóc (V056). Đúng một trong hai trường có giá trị.</summary>
+    public long? RequestId { get; set; }
 
     /// <summary>PENDING | RUNNING | DONE | FAILED | NONE (job này chưa bao giờ bóc).</summary>
     public string Status { get; set; } = "NONE";
