@@ -1,0 +1,10 @@
+node_modules
+build
+.git
+.github
+.gitignore
+.prettierrc
+.prettierignore
+.husky
+.storybook
+*.md

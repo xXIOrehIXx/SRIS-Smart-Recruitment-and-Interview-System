@@ -1,28 +1,14 @@
 import React from "react";
 import { Layout, Button, Typography, Avatar } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
+import LogoIcon from "../../components/LogoIcon";
 
 const { Header, Footer } = Layout;
 const { Text } = Typography;
 
 /** Logo mặc định khi công ty chưa cấu hình logo riêng. */
 const FallbackMark = ({ size = 36 }) => (
-  <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="var(--brand-color, #5D8C3E)" />
-    <path
-      d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-      stroke="white"
-      strokeWidth="2"
-    />
-    <path
-      d="M20 22L24 26L28 22"
-      stroke="white"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path d="M24 18V26" stroke="white" strokeWidth="2" strokeLinecap="round" />
-  </svg>
+  <LogoIcon size={size} color="var(--brand-color, #5D8C3E)" />
 );
 
 const BrandMark = ({ brand, size = 36 }) =>
