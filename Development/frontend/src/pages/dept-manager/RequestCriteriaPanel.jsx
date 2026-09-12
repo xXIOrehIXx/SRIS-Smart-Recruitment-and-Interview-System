@@ -241,8 +241,10 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
       )}
 
       {/* Yêu cầu đã duyệt mà không có tiêu chí nào -> tin tạo ra sẽ KHÔNG có phiếu chấm.
-          Nói ngay ở đây, vì lúc đó mới phát hiện thì đã muộn. */}
-      {approvedCount === 0 && draftCount === 0 && status !== "REJECTED" && (
+          Nói ngay ở đây, vì lúc đó mới phát hiện thì đã muộn.
+          REJECTED/CANCELLED thì im: yêu cầu đã đóng, không còn tin nào sinh ra từ nó để mà thiếu. */}
+      {approvedCount === 0 && draftCount === 0
+        && status !== "REJECTED" && status !== "CANCELLED" && (
         <Alert
           type="warning"
           showIcon
