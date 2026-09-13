@@ -46,6 +46,14 @@ const { Option } = Select;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+// Trạng thái mà bộ tiêu chí KHÔNG còn ra đề được nữa (ẩn nút bóc/sửa ở RequestCriteriaPanel):
+//  - CONVERTED: tiêu chí đã chuyển sang tin, từ đây sửa ở màn Tiêu Chí của tin (V056).
+//  - REJECTED / CANCELLED: yêu cầu đã đóng, vĩnh viễn không thành tin -> bóc tiêu chí cho nó
+//    chỉ tốn một lượt Local LLM vào bộ chẳng ai chấm.
+// Backend (JobCriteriaAccessGuard.EnsureCanEditRequestCriteriaAsync) chỉ gác NGƯỜI TẠO, không
+// gác status — nên đây là chỗ duy nhất chặn, đừng bỏ.
+const CRITERIA_LOCKED_STATUSES = ['CONVERTED', 'REJECTED', 'CANCELLED'];
+
 const DeptRecruitmentRequests = () => {
   const navigate = useNavigate();
   // ?requestId= — vào thẳng yêu cầu vừa bấm ở Dashboard, khỏi phải dò lại trong bảng.
@@ -574,7 +582,7 @@ const DeptRecruitmentRequests = () => {
             <RequestCriteriaPanel
               requestId={selectedRequest.id}
               status={selectedRequest.status}
-              canEdit={selectedRequest.status !== 'CONVERTED' && selectedRequest.status !== 'REJECTED'}
+              canEdit={!CRITERIA_LOCKED_STATUSES.includes(selectedRequest.status)}
             />
           </div>
         )}

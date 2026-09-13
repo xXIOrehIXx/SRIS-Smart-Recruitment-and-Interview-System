@@ -1,4 +1,4 @@
-﻿using System.Net.Mime;
+using System.Net.Mime;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -76,6 +76,7 @@ services
   {
       options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
   });
+services.AddHealthChecks();
 services.AddSwaggerGen(c =>
 {
   c.SwaggerDoc("v1", new() { Title = "GP35.SRIS API", Version = "v1" });
@@ -189,6 +190,24 @@ app.UseMiddleware<CandidateTenantMiddleware>();
 
 // Career Site công khai (/api/public/{slug}): giải tenant từ slug TRƯỚC khi controller/DbContext tạo.
 app.UseMiddleware<CareerSiteTenantMiddleware>();
+
+app.MapHealthChecks("/healthz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+  ResponseWriter = async (context, report) =>
+  {
+    context.Response.ContentType = "application/json";
+    var buildTime = System.IO.File.Exists("buildtime.txt")
+        ? await System.IO.File.ReadAllTextAsync("buildtime.txt")
+        : "Unknown";
+
+    var json = JsonSerializer.Serialize(new
+    {
+      status = report.Status.ToString(),
+      buildTime = buildTime.Trim()
+    });
+    await context.Response.WriteAsync(json);
+  }
+});
 
 app.UseMiddleware<AuthMiddleware>();
 

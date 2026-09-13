@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons';
 import { candidateAPI } from '../../services/api';
 import './css/CandidateResponse.css';
+import LogoIcon from "../../components/LogoIcon";
 
 const { Header, Content, Footer } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -15,12 +16,7 @@ const MATCHA_GREEN = '#5D8C3E';
 
 const HeaderLogo = () => (
   <div className="header-logo">
-    <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-      <rect width="48" height="48" rx="12" fill={MATCHA_GREEN} />
-      <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z" stroke="white" strokeWidth="2.5" />
-      <path d="M20 22L24 26L28 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M24 18V26" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
+    <LogoIcon size={32} color={MATCHA_GREEN} />
     <span>SRIS</span>
   </div>
 );

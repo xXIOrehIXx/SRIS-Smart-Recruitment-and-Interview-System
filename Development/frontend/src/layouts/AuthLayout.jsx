@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Layout } from "antd";
 import "./css/AuthLayout.css";
+import LogoIcon from "../components/LogoIcon";
 
 const { Content } = Layout;
 
@@ -22,27 +23,7 @@ const AuthLayout = () => {
           {!isLoginPage && (
             <div className="auth-brand">
               <div className="brand-logo">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <rect width="48" height="48" rx="14" fill="#5D8C3E" />
-                  <path
-                    d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V32C34 33.1046 33.1046 34 32 34H16C14.8954 34 14 33.1046 14 32V16Z"
-                    stroke="white"
-                    strokeWidth="2.5"
-                  />
-                  <path
-                    d="M20 22L24 26L28 22"
-                    stroke="white"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M24 18V26"
-                    stroke="white"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <LogoIcon size={48} />
               </div>
               <h1 className="brand-name">SRIS</h1>
               <p className="brand-tagline">

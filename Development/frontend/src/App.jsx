@@ -11,6 +11,7 @@ import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/Dashboard";
+import Chat from "./pages/Chat";
 import SubAccountManagement from "./pages/admin/SubAccountManagement";
 import CreateAccount from "./pages/admin/CreateAccount";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
@@ -200,6 +201,7 @@ const App = () => {
       </Route>
 
       <Route path="/" element={<Home />} />
+      <Route path="/chat" element={<Chat />} />
       <Route path="/:slug/career" element={<Recruitment />} />
       {/* Chi tiết tin tuyển dụng — trang riêng (trước đây là modal trong danh sách) */}
       <Route path="/:slug/career/jobs/:jobId" element={<PublicJobDetail />} />
