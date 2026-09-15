@@ -178,26 +178,27 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             var placeholders = await BrandPlaceholdersAsync(companyId);
             placeholders["candidateName"] = info.CandidateName ?? "";
             placeholders["jobTitle"] = offer?.JobTitle ?? info.JobTitle ?? "";
-            // Ngày vào làm lấy từ thư mời đã gửi; chưa có thì để người tuyển dụng tự điền
-            // trong mẫu, KHÔNG in ngày bịa.
-            placeholders["startDate"] = offer?.StartDate is DateTime d ? d.ToString("dd/MM/yyyy") : "[ngày vào làm]";
-            placeholders["companyAddress"] = company?.Address ?? "[địa chỉ văn phòng]";
+            // Ngày vào làm lấy từ thư mời đã gửi. Thiếu (Admin tự đẩy hồ sơ qua, không có thư)
+            // thì nói thật là nhân sự sẽ xác nhận — KHÔNG in ngày bịa, cũng không để "[ngày...]"
+            // lọt tới tay ứng viên như một lỗi soạn thư.
+            placeholders["startDate"] = offer?.StartDate is DateTime d
+                ? d.ToString("dd/MM/yyyy")
+                : "bộ phận nhân sự sẽ xác nhận với bạn";
+            placeholders["companyAddress"] = Has(company?.Address)
+                ? company!.Address!
+                : "bộ phận nhân sự sẽ gửi bạn địa chỉ cụ thể";
             placeholders["hrEmail"] = offer?.HrContactEmail ?? company?.ContactEmail ?? "";
-            // Tên miền email nội bộ (V017) — dòng "cấp email @công-ty.com" trong mẫu.
+            // Tên miền email nội bộ (V017) — chỉ mẫu RIÊNG của công ty còn dùng ô này.
             placeholders["emailDomain"] = Has(company?.EmailDomain) ? company!.EmailDomain! : "[tên miền công ty]";
 
-            // Không có mẫu ACTIVE -> KHÔNG gửi. Mẫu mặc định đầy chỗ "[điền...]" chỉ để làm
-            // khung soạn thảo, gửi thẳng cho ứng viên thì phản tác dụng.
-            var rendered = await TryRenderTemplateAsync(companyId, EmailTemplateType.Onboarding, placeholders);
-            if (rendered is null)
-            {
-                _logger.Information(
-                    "Notify: công ty {CompanyId} chưa bật mẫu ONBOARDING — bỏ qua email onboarding (app={AppId}).",
-                    companyId, applicationId);
-                return;
-            }
+            // Không có mẫu ACTIVE -> gửi bản MẶC ĐỊNH, như mọi loại email khác. Trước 15/09/2026
+            // nhánh này im lặng bỏ qua (bản mặc định cũ đầy chỗ "[điền tay]" nên không gửi được),
+            // tức ứng viên trúng tuyển chỉ nhận mỗi thư "Chúc mừng" nếu công ty chưa kịp soạn mẫu.
+            var rendered = await TryRenderTemplateAsync(companyId, EmailTemplateType.Onboarding, placeholders)
+                ?? RenderBuiltIn(EmailTemplateType.Onboarding,
+                    OnboardingEmailDefault.Subject, OnboardingEmailDefault.Body, placeholders);
 
-            await _email.SendEmailAsync(rendered.Value.Subject, rendered.Value.Body, info.CandidateEmail, string.Empty);
+            await _email.SendEmailAsync(rendered.Subject, rendered.Body, info.CandidateEmail, string.Empty);
             _logger.Information("Notify: gửi email onboarding cho {Email} (app={AppId}).",
                 info.CandidateEmail, applicationId);
         }
@@ -354,6 +355,19 @@ public class NotificationService : BaseService<NotificationService>, INotificati
             _logger.Warning(ex, "Notify: lỗi tra template '{Type}' — dùng nội dung mặc định.", type);
             return null;
         }
+    }
+
+    /// <summary>
+    /// Render một nội dung mặc định CÓ SẴN trong code theo đúng đường của mẫu công ty: bọc vỏ
+    /// <see cref="EmailLayout"/> rồi thay placeholder — để thư mặc định trông y như thư từ mẫu.
+    /// </summary>
+    private (string Subject, string Body) RenderBuiltIn(
+        string type, string subject, string body, IReadOnlyDictionary<string, string> placeholders)
+    {
+        var renderedSubject = Render(subject, placeholders);
+        var renderedBody = Render(EmailLayout.Wrap(body), placeholders);
+        WarnLeftoverPlaceholders(type, renderedSubject, renderedBody);
+        return (renderedSubject, renderedBody);
     }
 
     /// <summary>

@@ -28,6 +28,17 @@ public class OfferController : ControllerBase
         _offerService = offerService;
     }
 
+    /// <summary>
+    /// Danh sách thư mời xuyên vị trí: hồ sơ chờ soạn thư (OFFER) + thư đã gửi, một lời gọi.
+    /// <c>?jobId=</c> để lọc một vị trí; bỏ trống = cả công ty. Route tuyệt đối (<c>~/</c>) vì
+    /// endpoint này không gắn với một hồ sơ như các endpoint còn lại của controller.
+    /// </summary>
+    [HttpGet("~/api/offers")]
+    public async Task<IActionResult> GetList([FromQuery] long? jobId = null)
+    {
+        return Ok(await _offerService.GetListAsync(_contextData.CompanyId, jobId));
+    }
+
     /// <summary>Giá trị gợi ý để mở sẵn form soạn thư (lấy từ Job + Company + hồ sơ).</summary>
     [HttpGet("defaults")]
     public async Task<IActionResult> GetDefaults(long applicationId)

@@ -229,6 +229,21 @@ public class OfferService : BaseService<OfferService>, IOfferService
         return offer is null ? null : Map(offer);
     }
 
+    public async Task<IReadOnlyList<OfferListItemDto>> GetListAsync(long companyId, long? jobId)
+    {
+        var rows = await _offerRepo.GetListAsync(companyId, jobId);
+        return rows.Select(r => new OfferListItemDto
+        {
+            ApplicationId = r.ApplicationId,
+            JobId = r.JobId,
+            JobTitle = r.JobTitle,
+            CandidateName = r.CandidateName,
+            CandidateEmail = r.CandidateEmail,
+            ApplicationState = r.ApplicationState,
+            Offer = r.Offer is null ? null : Map(r.Offer)
+        }).ToList();
+    }
+
     public async Task<(byte[] Content, string FileName)?> GetLetterPdfAsync(long companyId, long applicationId)
     {
         var offer = await _offerRepo.GetByApplicationAsync(companyId, applicationId);

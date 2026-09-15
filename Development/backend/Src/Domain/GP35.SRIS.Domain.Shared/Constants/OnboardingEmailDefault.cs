@@ -1,17 +1,18 @@
 namespace GP35.SRIS.Domain.Shared.Constants;
 
 /// <summary>
-/// Nội dung KHỞI ĐIỂM cho email onboarding (loại <see cref="EmailTemplateType.Onboarding"/>) —
-/// email chào mừng gửi khi hồ sơ sang HIRED, viết theo đúng cách các công ty đang gửi thật:
-/// chúc mừng → giờ làm việc → ngày/giờ/địa điểm buổi đầu (kèm chỗ gửi xe, thang máy) →
-/// nội dung onboarding → nội quy + kênh công ty → hồ sơ cần nộp → gửi ảnh → lời kết.
+/// Nội dung MẶC ĐỊNH của email onboarding (loại <see cref="EmailTemplateType.Onboarding"/>) —
+/// email chào mừng gửi kèm thư chúc mừng khi hồ sơ sang HIRED.
+///
+/// <para>Bản này GỬI ĐƯỢC NGAY (15/09/2026): chỉ dùng thông tin hệ thống tự có — ngày vào làm lấy
+/// từ thư mời, địa chỉ công ty, email nhân sự. Bản trước đầy chỗ "[điền tay]" (giờ check-in, chỗ
+/// gửi xe, link nội quy…) nên phải seed ở trạng thái TẮT, và công ty nào chưa kịp sửa thì ứng
+/// viên trúng tuyển KHÔNG nhận được thư chào mừng nào — với công ty nhỏ, gần như là không bao giờ.
+/// Công ty muốn thêm giờ làm, chỗ gửi xe, nội quy… thì soạn mẫu riêng ở màn Mẫu Email và bật lên;
+/// mẫu đang bật luôn thắng bản này.</para>
 ///
 /// <para>Chỉ là RUỘT thư — logo, vạch màu brand, chân trang do <see cref="EmailLayout"/> bọc
 /// lúc gửi. Người tuyển dụng soạn trong ô soạn thảo giàu định dạng, không nhìn thấy HTML khung.</para>
-///
-/// Các mục thực tế mỗi công ty một khác nên để trong [ngoặc vuông] cho người tuyển dụng điền
-/// một lần. Mẫu này seed ở trạng thái TẮT: chưa sửa xong mà gửi thì ứng viên nhận thư còn
-/// nguyên "[điền địa chỉ]".
 /// </summary>
 public static class OnboardingEmailDefault
 {
@@ -19,68 +20,41 @@ public static class OnboardingEmailDefault
 
     /// <summary>
     /// Placeholder hệ thống tự điền: {{candidateName}}, {{jobTitle}}, {{companyName}},
-    /// {{startDate}}, {{companyAddress}}, {{hrEmail}}, {{emailDomain}}.
+    /// {{startDate}}, {{companyAddress}}, {{hrEmail}} ({{emailDomain}} vẫn dùng được trong mẫu riêng).
     /// </summary>
     public const string Body = """
 <p>Chào <b>{{candidateName}}</b>,</p>
 
-<p>Đầu tiên xin chúc mừng bạn đã vượt qua vòng phỏng vấn vị trí <b>{{jobTitle}}</b> của
-{{companyName}} và cảm ơn bạn đã lựa chọn {{companyName}} là điểm dừng chân tiếp theo trên con
-đường phát triển nghề nghiệp của mình.</p>
+<p>Chúc mừng bạn chính thức gia nhập <b>{{companyName}}</b> ở vị trí <b>{{jobTitle}}</b>! Cảm ơn
+bạn đã chọn {{companyName}} là điểm dừng chân tiếp theo trên con đường phát triển nghề nghiệp
+của mình.</p>
 
-<p>Bộ phận nhân sự gửi tới bạn một số lưu ý nhỏ, giúp bạn tự tin và có được ấn tượng tốt đẹp
-nhất trong ngày làm việc đầu tiên:</p>
+<p>Bộ phận nhân sự gửi bạn một số thông tin để bạn chuẩn bị cho ngày làm việc đầu tiên:</p>
 
-<p><b>1. Thời gian làm việc tại {{companyName}}</b></p>
-<p>Thời gian làm việc linh hoạt ([8 tiếng mỗi ngày]) như sau:</p>
+<p><b>1. Ngày làm việc đầu tiên</b></p>
 <ul>
-  <li>Thời gian check in buổi sáng: từ [8h00] đến [9h00]</li>
-  <li>Thời gian check out buổi chiều: từ [17h30] đến [18h30]</li>
+  <li><b>Ngày bắt đầu:</b> {{startDate}}</li>
+  <li><b>Địa điểm:</b> {{companyAddress}}</li>
 </ul>
 
-<p><b>2. Ngày làm việc đầu tiên</b></p>
-<p>Bạn vui lòng có mặt tại công ty lúc <b>[9h00] ngày {{startDate}}</b>.</p>
-<p><b>Địa chỉ:</b> {{companyAddress}}</p>
-<p><b>Nơi gửi xe:</b></p>
+<p><b>2. Trong ngày đầu tiên, bạn sẽ</b></p>
 <ul>
-  <li>[Gửi xe dưới hầm B… của toà nhà — ghi rõ lối vào]</li>
-  <li><b><i>Chú ý:</i></b> [lưu ý riêng của toà nhà, ví dụ xe đạp và xe đạp điện không được xuống hầm]</li>
-  <li>[Chỗ gửi xe thay thế 1] · [Chỗ gửi xe thay thế 2]</li>
-</ul>
-<p><b>Thang máy:</b> [hướng dẫn lên văn phòng — tầng, có cần thẻ không]</p>
-
-<p><b>3. Một số nội dung onboarding</b></p>
-<ul>
-  <li>Giới thiệu công ty và các bộ phận liên quan.</li>
-  <li>Cấp máy móc, thiết bị, email nội bộ (@{{emailDomain}}).</li>
-  <li>Hoàn thành thủ tục onboarding dưới sự điều phối của bộ phận nhân sự.</li>
-  <li>Set up vân tay chấm công, chỗ ngồi, dự án,…</li>
+  <li>Được giới thiệu về công ty và các bộ phận liên quan.</li>
+  <li>Nhận máy móc, thiết bị và tài khoản làm việc.</li>
+  <li>Hoàn thành thủ tục nhận việc cùng bộ phận nhân sự.</li>
 </ul>
 
-<p><b>4. Để hiểu về công ty rõ hơn, bạn đọc qua nội quy nhé</b></p>
-<!-- Chỗ trống để dạng CHỮ, không phải <a href="[…]">: link chưa điền mà đã bọc thẻ <a> thì
-     trình duyệt hiểu "[dán liên kết nội quy]" là đường dẫn tương đối, ứng viên bấm vào ra trang
-     lỗi. Để dạng chữ thì người soạn nhìn thấy ngay là còn thiếu, mà lỡ quên cũng chỉ là chữ. -->
-<p>Nội quy {{companyName}}: [dán liên kết nội quy]</p>
-<p>Like và follow các kênh của công ty để cập nhật thông tin mới nhất:
-[link Facebook] · [link LinkedIn] · [link TikTok] · [link Website]</p>
-
-<p><b>5. Danh sách hồ sơ và thông tin cần cung cấp cho nhân sự</b></p>
+<p><b>3. Giấy tờ bạn nên mang theo</b></p>
 <ul>
-  <li>[Sơ yếu lý lịch có xác nhận địa phương]</li>
-  <li>[Bản sao công chứng: CCCD, bằng cấp, bảng điểm]</li>
-  <li>[Giấy khám sức khoẻ trong vòng 6 tháng, ảnh 3x4]</li>
+  <li>Căn cước công dân (bản gốc để đối chiếu).</li>
+  <li>Bản sao bằng cấp, chứng chỉ liên quan tới vị trí.</li>
+  <li>Thông tin tài khoản ngân hàng để nhận lương.</li>
 </ul>
-<p>Nộp bản cứng vào ngày đầu tiên đi làm.</p>
+<p>Nếu cần thêm giấy tờ nào khác, bộ phận nhân sự sẽ báo bạn trước ngày đi làm.</p>
 
-<p><b>6. Và cuối cùng</b></p>
-<p>Đừng quên gửi cho chúng mình một chiếc ảnh xinh xắn của bản thân để giới thiệu tới các đồng
-nghiệp khác, bằng cách trả lời email này trước <b>[15h ngày …]</b>.</p>
+<p>Mọi thắc mắc bạn cứ trả lời email này hoặc liên hệ bộ phận nhân sự: {{hrEmail}}</p>
 
-<p>Trên đây là một số ghi chú nhỏ dành cho bạn trước ngày làm việc đầu tiên. Hẹn gặp lại bạn vào
-ngày <b>{{startDate}}</b> tại <b>{{companyName}}</b>.</p>
-
-<p>Mọi thông tin thắc mắc vui lòng liên hệ bộ phận nhân sự: <a href="mailto:{{hrEmail}}">{{hrEmail}}</a></p>
+<p>Hẹn gặp bạn tại <b>{{companyName}}</b>!</p>
 
 <p><i><b>Trân trọng!</b></i></p>
 """;

@@ -18,6 +18,9 @@ import './css/OfferManagement.css';
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
+// Giá trị "Tất cả vị trí" trong ô chọn tin — không trùng được với jobId (số).
+const ALL_JOBS = 'all';
+
 /**
  * Quản lý THƯ MỜI NHẬN VIỆC (docs 5.15).
  *
@@ -31,16 +34,15 @@ const { TextArea } = Input;
 const OfferManagement = () => {
   const navigate = useNavigate();
 
-  // Tin tuyển dụng đang xem nằm trên URL (?jobId=), không giấu trong state: đi vào trang chi
-  // tiết một thư mời rồi bấm Back mà state nằm trong bộ nhớ thì component dựng lại từ đầu và
-  // nhảy về tin đầu danh sách — người dùng mất đúng chỗ họ đang đứng. Có trên URL thì Back,
-  // F5, hay gửi link cho đồng nghiệp đều về đúng tin đó.
+  // Tin tuyển dụng đang lọc nằm trên URL (?jobId=), không giấu trong state: đi vào trang chi
+  // tiết một thư mời rồi bấm Back mà state nằm trong bộ nhớ thì component dựng lại từ đầu —
+  // người dùng mất đúng chỗ họ đang đứng. Không có ?jobId= = xem TẤT CẢ vị trí (mặc định):
+  // nhân sự cần thấy mọi hồ sơ chờ soạn thư, không phải lần lượt mở từng tin để tìm.
   const [searchParams, setSearchParams] = useSearchParams();
   const jobIdParam = Number(searchParams.get('jobId')) || null;
 
   const [loading, setLoading] = useState(false);
-  const [offers, setOffers] = useState([]);
-  const [applications, setApplications] = useState([]);
+  const [rows, setRows] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(jobIdParam);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -58,110 +60,50 @@ const OfferManagement = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedJobId) {
-      fetchApplications(selectedJobId);
-      fetchOffers(selectedJobId);
-    } else {
-      setApplications([]);
-      setOffers([]);
-    }
+    fetchList(selectedJobId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedJobId]);
 
-  /** Đổi tin đang xem: cập nhật cả state lẫn URL. replace để Back không phải bấm qua từng tin đã chọn. */
+  /** Đổi tin đang lọc (null = tất cả): cập nhật cả state lẫn URL. replace để Back không phải bấm qua từng tin đã chọn. */
   const selectJob = (jobId) => {
     setSelectedJobId(jobId);
     setSearchParams(jobId ? { jobId: String(jobId) } : {}, { replace: true });
   };
 
+  // Giữ bộ lọc khi đi sang trang chi tiết rồi quay lại.
+  const listQuery = selectedJobId ? `?jobId=${selectedJobId}` : '';
+
   const fetchJobs = async () => {
     try {
       const response = await jobsAPI.getAll();
-      const jobList = response.data || [];
-      setJobs(jobList);
-
-      // Chỉ tự chọn tin đầu khi URL không chỉ định tin nào — có ?jobId= thì tôn trọng nó.
-      if (!selectedJobId && jobList.length > 0) {
-        selectJob(jobList[0].jobId || jobList[0].id);
-      }
+      setJobs(response.data || []);
     } catch (error) {
       console.error('Error fetching jobs:', error);
       message.error('Không thể tải danh sách công việc');
     }
   };
 
-  const fetchApplications = async (jobId = selectedJobId) => {
-    if (!jobId) {
-      setApplications([]);
-      return;
-    }
-
-    try {
-      const response = await applicationAPI.getAll(jobId);
-      const payload = response.data || {};
-      const apps = Array.isArray(payload) ? payload : payload.applications || [];
-      const selectedJob = jobs.find((job) => (job.jobId || job.id) === jobId) || null;
-
-      const offerableApps = apps
-        .map((app) => ({
-          ...app,
-          id: app.applicationId || app.id,
-          status: app.currentState || app.status,
-          candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
-          candidateEmail: app.candidateEmail || app.candidate?.email || '',
-          jobId: app.jobId || payload.jobId || jobId,
-          job: {
-            id: selectedJob?.jobId || selectedJob?.id || app.jobId || jobId,
-            title: selectedJob?.title || app.job?.title || app.jobTitle || 'N/A',
-          },
-          applicationStatus: app.currentState || app.status,
-          appliedAt: app.appliedAt || app.createdAt,
-        }))
-        // Cả REJECTED: ứng viên từ chối thư mời cũng phải còn thấy được trong danh sách.
-        .filter((app) => ['OFFER', 'HIRED', 'REJECTED'].includes(app.status));
-
-      setApplications(offerableApps);
-    } catch (error) {
-      console.error('Error fetching applications:', error);
-    }
-  };
-
-  const fetchOffers = async (jobId = selectedJobId) => {
-    if (!jobId) {
-      setOffers([]);
-      return;
-    }
-
+  /**
+   * MỘT lời gọi cho cả danh sách (GET /api/offers). Bản trước tải hồ sơ theo từng tin rồi gọi
+   * thêm GET .../offer cho TỪNG hồ sơ — không xem được nhiều tin cùng lúc, và mỗi lần mở trang
+   * là N+1 lời gọi. Backend chỉ trả hồ sơ đã tới bước thư mời, không kéo theo mọi hồ sơ bị loại.
+   */
+  const fetchList = async (jobId = selectedJobId) => {
     try {
       setLoading(true);
-      const appsResponse = await applicationAPI.getAll(jobId);
-      const payload = appsResponse.data || {};
-      const apps = Array.isArray(payload) ? payload : payload.applications || [];
-      const selectedJob = jobs.find((job) => (job.jobId || job.id) === jobId) || null;
-
-      const offerPromises = apps
-        .filter((app) => ['OFFER', 'HIRED', 'REJECTED'].includes(app.currentState || app.status))
-        .map(async (app) => {
-          try {
-            const offerRes = await offerAPI.getByApplication(app.applicationId || app.id);
-            const offer = offerRes.data;
-            return {
-              ...offer,
-              applicationId: app.applicationId || app.id,
-              candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
-              candidateEmail: app.candidateEmail || app.candidate?.email || '',
-              position: offer?.jobTitle || selectedJob?.title || app.jobTitle || 'N/A',
-              jobId: selectedJob?.jobId || selectedJob?.id || app.job?.id || app.jobId || jobId,
-              applicationStatus: app.currentState || app.status,
-              appliedAt: app.appliedAt || app.createdAt,
-            };
-          } catch {
-            // 404 = hồ sơ chưa gửi thư mời — bình thường, không phải lỗi.
-            return null;
-          }
-        });
-
-      const offersWithData = await Promise.all(offerPromises);
-      setOffers(offersWithData.filter(Boolean));
+      const res = await offerAPI.getList(jobId);
+      setRows((res.data || []).map((r) => ({
+        ...(r.offer || {}),
+        id: r.applicationId,
+        applicationId: r.applicationId,
+        jobId: r.jobId,
+        candidateName: r.candidateName,
+        candidateEmail: r.candidateEmail,
+        position: r.offer?.jobTitle || r.jobTitle,
+        // status = trạng thái THƯ (null = chưa soạn); applicationStatus = pha của hồ sơ.
+        status: r.offer?.status ?? null,
+        applicationStatus: r.applicationState,
+      })));
     } catch (error) {
       console.error('Error fetching offers:', error);
       message.error('Không thể tải danh sách thư mời');
@@ -207,7 +149,7 @@ const OfferManagement = () => {
       setSelectedApplication(null);
       // Gửi xong thì mở luôn TRANG chi tiết lá thư vừa gửi — người dùng cần đọc lại xem đã
       // gửi đi cái gì, và các nút chốt kết quả cũng nằm ở đó.
-      navigate(`/offers/${applicationId}?jobId=${selectedJobId}`);
+      navigate(`/offers/${applicationId}${listQuery}`);
     } catch (error) {
       console.error('Error creating offer:', error);
       // BE trả ErrorObjectCommon (userMsg/UserMsg), không phải `message`.
@@ -238,8 +180,7 @@ const OfferManagement = () => {
       message.success(accepted
         ? 'Đã ghi nhận ứng viên nhận việc (hồ sơ chuyển sang Trúng tuyển).'
         : 'Đã ghi nhận ứng viên từ chối (hồ sơ chuyển sang Từ chối).');
-      fetchApplications(selectedJobId);
-      fetchOffers(selectedJobId);
+      fetchList();
     } catch (error) {
       message.error(error?.response?.data?.userMsg || 'Không thể ghi nhận kết quả');
     }
@@ -377,7 +318,7 @@ const OfferManagement = () => {
                 type="text"
                 size="small"
                 icon={<EyeOutlined />}
-                onClick={() => navigate(`/offers/${record.applicationId}?jobId=${selectedJobId}`)}
+                onClick={() => navigate(`/offers/${record.applicationId}${listQuery}`)}
               />
             </Tooltip>
           )}
@@ -421,30 +362,16 @@ const OfferManagement = () => {
     },
   ];
 
-  const selectedJob = jobs.find((job) => (job.jobId || job.id) === selectedJobId) || null;
-
-  const tableData = applications.map((app) => {
-    const matchedOffer = offers.find((offer) => (offer.applicationId || offer.id) === (app.id || app.applicationId));
-    return {
-      ...app,
-      ...(matchedOffer || {}),
-      id: app.id,
-      applicationId: app.id,
-      candidateName: app.candidateName || app.candidate?.fullName || app.candidate?.name || 'N/A',
-      candidateEmail: app.candidateEmail || app.candidate?.email || '',
-      position: matchedOffer?.jobTitle || selectedJob?.title || app.job?.title || app.jobTitle || 'N/A',
-      jobId: app.jobId || selectedJobId,
-      status: matchedOffer ? matchedOffer.status : null,
-      applicationStatus: app.status,
-    };
-  });
-
-  const filteredData = tableData.filter((row) => {
+  const filteredData = rows.filter((row) => {
     const matchesSearch =
       (row.candidateName || '').toLowerCase().includes(searchText.toLowerCase()) ||
       (row.position || '').toLowerCase().includes(searchText.toLowerCase()) ||
       (row.candidateEmail || '').toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || row.status === statusFilter;
+    // "Chờ gửi thư" = đã duyệt tuyển mà chưa có thư — đúng danh sách việc nhân sự phải làm.
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'TO_SEND'
+        ? !row.status && row.applicationStatus === 'OFFER'
+        : row.status === statusFilter);
     return matchesSearch && matchesStatus;
   });
 
@@ -456,7 +383,7 @@ const OfferManagement = () => {
           <Text type="secondary">Soạn, gửi và theo dõi thư mời nhận việc cho ứng viên</Text>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => { fetchApplications(selectedJobId); fetchOffers(selectedJobId); }} loading={loading}>
+          <Button icon={<ReloadOutlined />} onClick={() => fetchList()} loading={loading}>
             Làm mới
           </Button>
         </Space>
@@ -466,14 +393,16 @@ const OfferManagement = () => {
         <div className="table-toolbar">
           <div className="toolbar-left">
             <Select
-              placeholder="Chọn công việc"
-              value={selectedJobId}
-              onChange={selectJob}
+              value={selectedJobId ?? ALL_JOBS}
+              onChange={(v) => selectJob(v === ALL_JOBS ? null : v)}
               style={{ width: 260 }}
-              options={jobs.map((job) => ({
-                value: job.jobId || job.id,
-                label: `${job.title} (${job.jobId || job.id})`,
-              }))}
+              options={[
+                { value: ALL_JOBS, label: 'Tất cả vị trí' },
+                ...jobs.map((job) => ({
+                  value: job.jobId || job.id,
+                  label: `${job.title} (${job.jobId || job.id})`,
+                })),
+              ]}
               showSearch
               optionFilterProp="label"
             />
@@ -491,6 +420,7 @@ const OfferManagement = () => {
               style={{ width: 170 }}
               options={[
                 { value: 'all', label: 'Tất cả trạng thái' },
+                { value: 'TO_SEND', label: 'Chờ gửi thư' },
                 { value: 'PENDING', label: 'Đã gửi thư' },
                 { value: 'ACCEPTED', label: 'Đã nhận việc' },
                 { value: 'DECLINED', label: 'Đã từ chối' },
