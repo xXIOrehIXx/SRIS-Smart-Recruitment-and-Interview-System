@@ -11,8 +11,9 @@ public record EmailTemplateSeed(string Type, string Name, string Subject, string
 /// và chân trang do <see cref="EmailLayout"/> bọc lúc gửi. Nhờ vậy người tuyển dụng soạn thư
 /// trong ô soạn thảo giàu định dạng mà không thấy — và không làm vỡ — khung HTML của email.</para>
 ///
-/// Thông tin riêng của từng công ty (giờ làm, chỗ gửi xe, nội quy) để trong [ngoặc vuông];
-/// riêng ONBOARDING seed ở trạng thái TẮT để không ai nhận thư còn nguyên chỗ trống.
+/// Mọi mẫu đều gửi được ngay và seed ở trạng thái BẬT — kể cả ONBOARDING (từ 15/09/2026 bản mặc
+/// định của nó thôi chứa chỗ "[điền tay]"; thông tin riêng như giờ làm, chỗ gửi xe, nội quy thì
+/// công ty tự thêm vào mẫu).
 ///
 /// <para><b>Chữ đậm: dừng ở <c>font-weight:bold</c> (700), đừng lên 800/900.</b> Từ 800 trở
 /// lên mail client chọn Arial Black, mà Arial Black không có Ư/Ơ/Ờ/Ậ/Ệ — nó mượn tạm Arial

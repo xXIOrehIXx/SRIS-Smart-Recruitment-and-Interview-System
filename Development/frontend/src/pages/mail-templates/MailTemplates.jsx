@@ -185,8 +185,8 @@ const MailTemplates = () => {
     setEditModalOpen(true);
   };
 
-  // Điền sẵn khung mẫu do backend giữ (hiện có cho ONBOARDING) — HR chỉ việc sửa
-  // các chỗ trong [ngoặc vuông] thay vì tự viết một email HTML từ số 0.
+  // Điền sẵn khung mẫu do backend giữ (hiện có cho ONBOARDING) — HR sửa thêm thông tin riêng
+  // của công ty (giờ làm, chỗ gửi xe, nội quy…) thay vì tự viết một email HTML từ số 0.
   const applyDefaultTemplate = async () => {
     const type = editForm.getFieldValue("type");
     if (!type) {
@@ -202,7 +202,7 @@ const MailTemplates = () => {
         return;
       }
       editForm.setFieldsValue({ body, subject: editForm.getFieldValue("subject") || subject });
-      message.success("Đã điền khung mẫu — sửa các chỗ trong [ngoặc vuông] cho đúng công ty bạn.");
+      message.success("Đã điền khung mẫu — bổ sung thông tin riêng của công ty bạn (giờ làm, chỗ gửi xe, nội quy…).");
     } catch (error) {
       console.error("getDefault error", error);
       message.error("Không lấy được mẫu có sẵn.");
