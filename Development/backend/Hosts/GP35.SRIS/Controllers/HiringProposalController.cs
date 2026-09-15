@@ -10,9 +10,9 @@ namespace GP35.SRIS.Controllers;
 
 /// <summary>
 /// Đề xuất tuyển (docs 5.14 — V043): Trưởng bộ phận đề xuất "nên tuyển người này" kèm mức
-/// lương, GIÁM ĐỐC duyệt hoặc trả lại phiếu. Duyệt = hồ sơ sang bước Quyết định (OFFER) và
-/// bộ phận nhân sự soạn thư mời theo đúng mức lương trên phiếu đã duyệt (nhân sự chỉ điền
-/// ngày vào làm). Giám đốc muốn mức khác thì CHƯA DUYỆT + ghi rõ, DM sửa rồi gửi lại (V053).
+/// lương, GIÁM ĐỐC duyệt và chốt mức lương (giữ mức đề xuất hoặc sửa ngay — V057), hoặc trả
+/// lại phiếu. Duyệt = hồ sơ sang bước Quyết định (OFFER) và bộ phận nhân sự soạn thư mời theo
+/// đúng mức Giám đốc chốt (nhân sự chỉ điền ngày vào làm).
 /// </summary>
 [ApiController]
 [Authorize]
@@ -56,8 +56,8 @@ public class HiringProposalController : ControllerBase
     }
 
     /// <summary>
-    /// Giám đốc quyết: <c>{ approve, note? }</c>. Không duyệt thì <c>note</c> BẮT BUỘC — đó là
-    /// thứ Trưởng bộ phận đọc để sửa phiếu (V053).
+    /// Giám đốc quyết: <c>{ approve, note?, approvedSalary? }</c>. Duyệt mà bỏ trống
+    /// <c>approvedSalary</c> = giữ mức DM đề xuất (V057). Không duyệt thì <c>note</c> BẮT BUỘC.
     /// Duyệt -> hồ sơ sang OFFER; không duyệt -> hồ sơ Ở LẠI bước Phỏng vấn (KHÔNG loại ứng viên).
     /// </summary>
     [HttpPost("api/hiring-proposals/{proposalId:long}/decision")]

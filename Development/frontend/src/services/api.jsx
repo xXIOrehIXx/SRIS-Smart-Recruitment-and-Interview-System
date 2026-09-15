@@ -352,7 +352,7 @@ export const interviewAPI = {
 // ==================== ĐỀ XUẤT TUYỂN (DM đề xuất → Giám đốc quyết) ====================
 
 // docs 5.14 (V043): Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển — họ đề xuất "nên tuyển người
-// này" KÈM MỨC LƯƠNG; Giám đốc duyệt đúng mức đó hoặc trả phiếu về để DM sửa (V053).
+// này" KÈM MỨC LƯƠNG; Giám đốc duyệt và chốt mức lương (giữ hoặc sửa — V057), hoặc trả phiếu về.
 // Duyệt đề xuất chính là hành động đẩy hồ sơ sang bước Quyết định (OFFER).
 // Ngày vào làm KHÔNG nằm ở đây (24/08/2026): nhân sự gọi ứng viên chốt ngày onboard rồi điền
 // vào thư mời (offerAPI.create -> startDate).
@@ -369,9 +369,8 @@ export const hiringProposalAPI = {
   getList: (status) =>
     api.get(`/hiring-proposals${status ? `?status=${status}` : ''}`),
 
-  // Giám đốc quyết: { approve, note? } — note BẮT BUỘC khi approve=false (V053).
-  // Không còn approvedSalary: duyệt = gật đầu đúng mức trên phiếu; muốn mức khác thì trả phiếu
-  // về kèm ghi chú, DM sửa proposedSalary rồi gửi lại.
+  // Giám đốc quyết: { approve, note?, approvedSalary? } — note BẮT BUỘC khi approve=false.
+  // approvedSalary bỏ trống = giữ mức DM đề xuất (V057); thư mời dùng mức chốt này.
   decide: (proposalId, data) =>
     api.post(`/hiring-proposals/${proposalId}/decision`, data),
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Typography, Table, Tag, Button, Space, Modal, Descriptions, Avatar, Input,
-  Row, Col, Statistic, message, Spin, Segmented, Alert,
+  InputNumber, Row, Col, Statistic, message, Spin, Segmented, Alert,
 } from 'antd';
 import {
   CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, SearchOutlined,
@@ -34,12 +34,12 @@ const STATUS_TAG = {
  * Duyệt đề xuất tuyển — màn của GIÁM ĐỐC (docs 5.14, V043 — chốt 15/08/2026).
  *
  * Trưởng bộ phận đọc kết luận hội đồng phỏng vấn rồi đề xuất "nên tuyển người này" KÈM mức
- * lương; Giám đốc là người quyết. Duyệt ở đây = hồ sơ sang bước Quyết định với đúng mức lương
- * trên phiếu — bộ phận nhân sự lấy con số đó soạn thư mời, không phải hỏi lại.
+ * lương; Giám đốc là người quyết. Duyệt ở đây = hồ sơ sang bước Quyết định với mức lương
+ * Giám đốc CHỐT — bộ phận nhân sự lấy con số đó soạn thư mời, không phải hỏi lại.
  *
- * V053 (25/08/2026): màn này KHÔNG còn ô "lương chốt". Giám đốc không mặc cả bằng cách gõ đè
- * một con số khác — không ưng thì "Chưa duyệt" + ghi rõ muốn bao nhiêu, trưởng bộ phận sửa
- * phiếu rồi gửi lại. Nhờ vậy mỗi phiếu chỉ có một con số lương và DM luôn biết vì sao bị trả về.
+ * V057 (15/09/2026, đảo V053): ô "lương chốt" quay lại, điền sẵn mức trưởng bộ phận đề xuất.
+ * Giám đốc ưng thì bấm duyệt luôn, không ưng thì sửa số rồi duyệt — không phải trả phiếu về
+ * chờ trưởng bộ phận gõ hộ đúng con số mình đã biết.
  */
 const HiringProposals = () => {
   const navigate = useNavigate();
@@ -58,6 +58,7 @@ const HiringProposals = () => {
   const [decisionOpen, setDecisionOpen] = useState(false);
   const [approving, setApproving] = useState(true);
   const [decisionNote, setDecisionNote] = useState('');
+  const [salary, setSalary] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchProposals = async (status = statusFilter) => {
@@ -123,14 +124,20 @@ const HiringProposals = () => {
     setSelected(record);
     setApproving(approve);
     setDecisionNote('');
+    // Điền sẵn mức trưởng bộ phận đề xuất — Giám đốc gật đầu hoặc sửa ngay tại chỗ (V057).
+    setSalary(record.proposedSalary ?? null);
     setDecisionOpen(true);
   };
 
   const submitDecision = async () => {
-    // Chưa duyệt thì PHẢI nói vì sao (V053): phiếu quay về bàn Trưởng bộ phận và ghi chú này là
-    // thứ duy nhất họ đọc được để biết sửa gì — thường là mức lương bạn muốn.
+    // Chưa duyệt thì PHẢI nói vì sao: phiếu quay về bàn trưởng bộ phận và ghi chú này là thứ
+    // duy nhất họ đọc được để biết phải bổ sung gì.
     if (!approving && !decisionNote.trim()) {
-      message.warning('Ghi rõ vì sao chưa duyệt (VD: mức lương tối đa của vị trí này) để trưởng bộ phận sửa lại.');
+      message.warning('Ghi rõ vì sao chưa duyệt để trưởng bộ phận biết phải bổ sung gì.');
+      return;
+    }
+    if (approving && !(salary > 0)) {
+      message.warning('Nhập mức lương chốt — đó là con số thư mời sẽ dùng.');
       return;
     }
     try {
@@ -138,6 +145,7 @@ const HiringProposals = () => {
       await hiringProposalAPI.decide(selected.proposalId, {
         approve: approving,
         note: decisionNote.trim() || null,
+        approvedSalary: approving ? salary : null,
       });
       message.success(approving
         ? `Đã duyệt tuyển ${selected.candidateName} — bộ phận nhân sự sẽ soạn thư mời.`
@@ -251,7 +259,7 @@ const HiringProposals = () => {
         <div>
           <Title level={3} className="page-title">Duyệt Đề Xuất Tuyển</Title>
           <Text type="secondary">
-            Trưởng bộ phận đề xuất kèm mức lương — bạn duyệt hoặc trả phiếu về để họ sửa
+            Trưởng bộ phận đề xuất kèm mức lương — bạn quyết tuyển và chốt mức lương
           </Text>
         </div>
       </div>
@@ -260,8 +268,8 @@ const HiringProposals = () => {
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Duyệt là chốt tuyển — và chốt luôn mức lương trên phiếu"
-        description="Duyệt xong hồ sơ sang bước Quyết định, bộ phận nhân sự soạn thư mời theo ĐÚNG mức lương trên phiếu (họ chỉ điền thêm ngày vào làm sau khi gọi ứng viên). Mức lương chưa ổn thì bấm 'Chưa duyệt' và ghi rõ bạn muốn bao nhiêu: ứng viên KHÔNG bị loại, trưởng bộ phận sửa phiếu rồi gửi lại cho bạn duyệt."
+        message="Duyệt là chốt tuyển — và chốt luôn mức lương"
+        description="Lúc duyệt, ô lương điền sẵn mức trưởng bộ phận đề xuất: giữ nguyên hoặc sửa thành mức bạn muốn rồi duyệt. Bộ phận nhân sự soạn thư mời theo ĐÚNG mức bạn chốt (họ chỉ điền thêm ngày vào làm sau khi gọi ứng viên). Chưa muốn tuyển thì bấm 'Chưa duyệt': ứng viên KHÔNG bị loại, trưởng bộ phận bổ sung căn cứ rồi đề xuất lại."
       />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -381,9 +389,11 @@ const HiringProposals = () => {
                   {selected.decidedByName ? ` · ${selected.decidedByName}` : ''}
                   {selected.decidedAt ? ` · ${dayjs(selected.decidedAt).format('DD/MM/YYYY HH:mm')}` : ''}
                 </Descriptions.Item>
-                <Descriptions.Item label={selected.status === 'APPROVED' ? 'Lương đã duyệt' : 'Lương trên phiếu'}>
-                  {money(selected.proposedSalary)}
-                </Descriptions.Item>
+                {selected.status === 'APPROVED' && (
+                  <Descriptions.Item label="Lương chốt">
+                    {money(selected.approvedSalary ?? selected.proposedSalary)}
+                  </Descriptions.Item>
+                )}
                 <Descriptions.Item label="Ghi chú quyết định" span={2}>
                   {selected.decisionNote || <Text type="secondary">Không ghi</Text>}
                 </Descriptions.Item>
@@ -469,22 +479,37 @@ const HiringProposals = () => {
           <strong>{selected?.jobTitle}</strong>?
         </p>
 
-        {/* Không có ô lương ở đây nữa (V053, 25/08/2026): duyệt = gật đầu ĐÚNG mức trên phiếu.
-            Muốn mức khác thì bấm "Chưa duyệt" và ghi con số mình muốn — trưởng bộ phận sửa phiếu
-            rồi gửi lại. Hai ô lương cho cùng một khoản tiền chỉ làm nhân sự không biết lấy số nào,
-            còn trưởng bộ phận thì chẳng bao giờ biết vì sao mức mình đề xuất bị đổi.
-            Cũng không có ô ngày vào làm (24/08/2026): nhân sự gọi ứng viên hỏi ngày rồi điền vào thư mời. */}
-        <Alert
-          type={approving ? 'success' : 'warning'}
-          showIcon
-          style={{ marginTop: 12 }}
-          message={approving
-            ? `Duyệt mức lương ${money(selected?.proposedSalary)}`
-            : `Trả phiếu về cho ${selected?.createdByName || 'trưởng bộ phận'}`}
-          description={approving
-            ? 'Đây là con số thư mời sẽ dùng — bộ phận nhân sự không sửa được. Muốn mức khác thì đóng lại và bấm "Chưa duyệt".'
-            : `Mức đang đề xuất: ${money(selected?.proposedSalary)}. Ứng viên KHÔNG bị loại — hồ sơ ở lại bước Phỏng vấn, trưởng bộ phận sửa rồi gửi lại.`}
-        />
+        {/* Ô lương chốt (V057): điền sẵn mức đề xuất, Giám đốc sửa được ngay. Mức đề xuất vẫn giữ
+            trên phiếu nên trưởng bộ phận thấy cả hai con số. Không có ô ngày vào làm (24/08/2026):
+            nhân sự gọi ứng viên hỏi ngày rồi điền vào thư mời. */}
+        {approving ? (
+          <div style={{ marginTop: 12 }}>
+            <Text strong>Mức lương chốt <span style={{ color: 'red' }}>*</span>:</Text>
+            <InputNumber
+              style={{ width: '100%', marginTop: 6 }}
+              value={salary}
+              onChange={setSalary}
+              min={0}
+              step={1000000}
+              placeholder="VD: 15000000"
+              formatter={(v) => (v ? `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
+              parser={(v) => (v || '').replace(/,/g, '')}
+              addonAfter="₫"
+            />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Trưởng bộ phận đề xuất {money(selected?.proposedSalary)}. Giữ nguyên hoặc sửa thành mức
+              bạn muốn — đây là con số thư mời sẽ dùng, bộ phận nhân sự không sửa được.
+            </Text>
+          </div>
+        ) : (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginTop: 12 }}
+            message={`Trả phiếu về cho ${selected?.createdByName || 'trưởng bộ phận'}`}
+            description="Ứng viên KHÔNG bị loại — hồ sơ ở lại bước Phỏng vấn, trưởng bộ phận bổ sung căn cứ rồi đề xuất lại. Chỉ vướng mức lương thì không cần trả về: bấm 'Duyệt tuyển' và sửa mức lương ở đó."
+          />
+        )}
 
         <div style={{ marginTop: 16 }}>
           <Text strong>
@@ -495,16 +520,11 @@ const HiringProposals = () => {
             rows={3}
             placeholder={approving
               ? 'VD: gửi thư mời trong hôm nay, nhấn mạnh chế độ đào tạo.'
-              : 'VD: khung lương vị trí này tối đa 14 triệu — sửa lại 14tr rồi gửi lại tôi duyệt.'}
+              : 'VD: chờ so với ứng viên phỏng vấn tuần sau rồi quyết.'}
             value={decisionNote}
             onChange={(e) => setDecisionNote(e.target.value)}
             style={{ marginTop: 8 }}
           />
-          {!approving && (
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Trưởng bộ phận chỉ đọc được đúng dòng này — ghi rõ mức lương (hoặc điều kiện) bạn muốn.
-            </Text>
-          )}
         </div>
       </Modal>
     </div>
