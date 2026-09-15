@@ -27,6 +27,12 @@ public interface IOfferService : IBaseService
     /// <summary>Offer của 1 hồ sơ (null nếu chưa gửi thư mời).</summary>
     Task<OfferDto?> GetByApplicationAsync(long companyId, long applicationId);
 
+    /// <summary>
+    /// Danh sách hồ sơ đã tới bước thư mời (chờ soạn thư + đã gửi), MỘT lời gọi cho cả công ty.
+    /// <paramref name="jobId"/> null = mọi vị trí.
+    /// </summary>
+    Task<IReadOnlyList<OfferListItemDto>> GetListAsync(long companyId, long? jobId);
+
     /// <summary>File PDF thư mời của 1 hồ sơ (bản Portal xem lại). Null nếu chưa có offer.</summary>
     Task<(byte[] Content, string FileName)?> GetLetterPdfAsync(long companyId, long applicationId);
 

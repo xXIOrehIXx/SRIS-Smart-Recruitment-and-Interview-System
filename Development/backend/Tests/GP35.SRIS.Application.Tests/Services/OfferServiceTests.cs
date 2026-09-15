@@ -76,6 +76,29 @@ public class OfferServiceTests
     }
 
     [Fact]
+    public async Task GetListAsync_Maps_Rows_With_And_Without_Offer()
+    {
+        // Danh sách xuyên vị trí: hồ sơ chờ soạn thư (chưa có OfferDetail) phải ra Offer = null,
+        // không phải một thư rỗng — FE dựa vào đó để hiện nút "Soạn thư mời".
+        var svc = CreateService();
+        _offerRepo.Setup(r => r.GetListAsync(1L, null)).ReturnsAsync(new List<OfferListRow>
+        {
+            new(5, 7, "Kế toán tổng hợp", "Nguyễn Văn A", "a@example.com", "OFFER", null),
+            new(6, 8, "Bếp chính", "Trần Thị B", "b@example.com", "HIRED",
+                new OfferDetail { OfferId = 9, ApplicationId = 6, Status = "ACCEPTED", Currency = "VND", SalaryAmount = 15_000_000 })
+        });
+
+        var list = await svc.GetListAsync(1L, null);
+
+        Assert.Equal(2, list.Count);
+        Assert.Null(list[0].Offer);
+        Assert.Equal("OFFER", list[0].ApplicationState);
+        Assert.Equal("Kế toán tổng hợp", list[0].JobTitle);
+        Assert.Equal("ACCEPTED", list[1].Offer!.Status);
+        Assert.Equal(15_000_000, list[1].Offer!.SalaryAmount);
+    }
+
+    [Fact]
     public async Task MakeOfferAsync_Should_Throw_Conflict_If_Offer_Already_Exists()
     {
         // Arrange

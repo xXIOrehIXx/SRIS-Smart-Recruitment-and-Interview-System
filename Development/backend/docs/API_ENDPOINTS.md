@@ -203,6 +203,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 ## 13. Thư mời nhận việc — `applications/{applicationId}/offer` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
+| GET | `/api/offers?jobId=` | Rec | danh sách thư mời XUYÊN vị trí (bỏ trống `jobId` = cả công ty): hồ sơ đang ở OFFER (`offer = null` = chờ soạn thư) + hồ sơ đã có thư. Chờ soạn thư xếp đầu |
 | GET | `/api/applications/{applicationId}/offer/defaults` | Rec/DM | giá trị điền sẵn form soạn thư (từ Job + Company) |
 | POST | `/api/applications/{applicationId}/offer` | Rec/DM | soạn + gửi thư mời (0..1 / application); tự phát link OFFER_RESPONSE |
 | GET | `/api/applications/{applicationId}/offer` | Rec/DM | xem offer |

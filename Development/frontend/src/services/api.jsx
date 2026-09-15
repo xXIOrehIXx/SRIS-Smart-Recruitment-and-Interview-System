@@ -396,6 +396,11 @@ export const candidateAPI = {
 // ==================== OFFER ====================
 
 export const offerAPI = {
+  // Danh sách thư mời xuyên vị trí — hồ sơ chờ soạn thư (offer = null) + thư đã gửi, MỘT lời
+  // gọi. jobId bỏ trống = cả công ty.
+  getList: (jobId) =>
+    api.get(`/offers${jobId ? `?jobId=${jobId}` : ''}`),
+
   // Giá trị điền sẵn cho form soạn thư (lấy từ Job + Company + hồ sơ)
   getDefaults: (applicationId) =>
     api.get(`/applications/${applicationId}/offer/defaults`),
