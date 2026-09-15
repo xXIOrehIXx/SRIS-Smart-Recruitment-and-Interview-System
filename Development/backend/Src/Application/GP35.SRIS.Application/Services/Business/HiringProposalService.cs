@@ -15,13 +15,14 @@ namespace GP35.SRIS.Application.Services.Business;
 /// Đề xuất tuyển (docs 5.14 — chốt 15/08/2026 sau bảo vệ hội đồng).
 ///
 /// Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển: họ đọc kết luận hội đồng phỏng vấn rồi ĐỀ XUẤT
-/// kèm mức lương; GIÁM ĐỐC duyệt hoặc trả lại phiếu. Duyệt đề xuất chính là hành động
-/// đẩy hồ sơ INTERVIEW→OFFER — hai việc đi cùng nhau nên không có cảnh "đã duyệt mà card
-/// vẫn nằm ở cột Phỏng vấn".
+/// kèm mức lương; GIÁM ĐỐC duyệt (và chốt mức lương) hoặc trả lại phiếu. Duyệt đề xuất chính
+/// là hành động đẩy hồ sơ INTERVIEW→OFFER — hai việc đi cùng nhau nên không có cảnh "đã duyệt
+/// mà card vẫn nằm ở cột Phỏng vấn".
 ///
-/// V053 (25/08/2026): Giám đốc KHÔNG gõ đè một mức lương khác lên phiếu nữa. Cửa "chưa duyệt"
-/// đã đủ để mặc cả: chưa duyệt + ghi rõ muốn bao nhiêu -> DM sửa mức đề xuất -> gửi lại -> duyệt.
-/// Nhờ vậy mỗi phiếu chỉ có MỘT con số lương, và DM luôn nhìn thấy vì sao mức của mình bị đổi.
+/// V057 (15/09/2026, đảo V053): Giám đốc SỬA ĐƯỢC mức lương ngay lúc duyệt. Bản V053 bắt họ
+/// "chưa duyệt" + ghi con số rồi chờ DM gửi lại — một vòng đi-về chỉ để người có quyền quyết
+/// được quyết. Mức đề xuất vẫn giữ nguyên trên phiếu nên DM vẫn thấy mình đề xuất bao nhiêu,
+/// Giám đốc chốt bao nhiêu.
 /// </summary>
 public class HiringProposalService : BaseService<HiringProposalService>, IHiringProposalService
 {
@@ -70,11 +71,10 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         if (await _proposalRepo.GetPendingByApplicationAsync(companyId, applicationId) is not null)
             throw Conflict("Hồ sơ này đã có một đề xuất đang chờ Giám đốc duyệt.");
 
-        // Mức lương BẮT BUỘC (V053): Giám đốc chỉ duyệt hoặc trả lại phiếu, không gõ mức khác —
-        // phiếu không có số thì Giám đốc chẳng duyệt được điều khoản nào, và thư mời lại rơi về
-        // cảnh nhân sự tự điền lương.
+        // Mức lương BẮT BUỘC (V053): đó là căn cứ của bộ phận để Giám đốc chốt — phiếu trống thì
+        // Giám đốc phải tự nghĩ ra một con số mà không biết người phụ trách vị trí đánh giá ra sao.
         if (dto.ProposedSalary is not decimal salary || salary <= 0)
-            throw Bad("Nhập mức lương đề xuất — đó là con số Giám đốc duyệt và thư mời sẽ dùng.");
+            throw Bad("Nhập mức lương đề xuất — đó là căn cứ để Giám đốc chốt lương trong thư mời.");
 
         var proposal = new HiringProposal
         {
@@ -113,10 +113,14 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         var now = DateTime.UtcNow;
 
         // CHƯA duyệt thì phải nói vì sao: phiếu quay về bàn Trưởng bộ phận, và ghi chú này là
-        // thứ DUY NHẤT họ đọc được để biết sửa gì rồi gửi lại (V053). Thường là mức lương —
-        // Giám đốc không còn ô "lương chốt" để tự sửa nữa, nên phải viết ra con số mình muốn.
+        // thứ DUY NHẤT họ đọc được để biết phải bổ sung gì trước khi đề xuất lại.
         if (!dto.Approve && note is null)
-            throw Bad("Chưa duyệt thì phải ghi lý do — Trưởng bộ phận cần biết sửa gì (VD: mức lương tối đa của vị trí này) để đề xuất lại.");
+            throw Bad("Chưa duyệt thì phải ghi lý do — Trưởng bộ phận cần biết vì sao để bổ sung rồi đề xuất lại.");
+
+        // Bỏ trống = gật đầu đúng mức DM đề xuất; nhập số = Giám đốc chốt mức khác (V057).
+        var approvedSalary = dto.ApprovedSalary ?? proposal.ProposedSalary;
+        if (dto.Approve && approvedSalary is not > 0)
+            throw Bad("Nhập mức lương chốt — đó là con số thư mời sẽ dùng.");
 
         if (dto.Approve)
         {
@@ -126,9 +130,9 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
             await _stateService.TransitionAsync(
                 companyId, userId, proposal.ApplicationId, ApplicationState.Offer, note);
 
-            // Duyệt = gật đầu ĐÚNG con số đang nằm trên phiếu. Không có ô "lương chốt" riêng để
-            // Giám đốc gõ đè (V053): muốn mức khác thì chưa duyệt + ghi rõ, DM sửa rồi gửi lại.
             proposal.Status = StatusApproved;
+            // Mức đề xuất GIỮ NGUYÊN (DM còn thấy mình đã đề xuất bao nhiêu); thư mời đọc mức chốt.
+            proposal.ApprovedSalary = approvedSalary;
         }
         else
         {
@@ -202,12 +206,14 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         ApplicationId = row.Proposal.ApplicationId,
         Status = row.Proposal.Status,
 
+        ProposalNote = row.Proposal.ProposalNote,
         ProposedSalary = row.Proposal.ProposedSalary,
         CreatedBy = row.Proposal.CreatedBy,
         CreatedByName = row.CreatedByName,
         CreatedAt = row.Proposal.CreatedAt,
 
         DecisionNote = row.Proposal.DecisionNote,
+        ApprovedSalary = row.Proposal.ApprovedSalary,
         DecidedBy = row.Proposal.DecidedBy,
         DecidedByName = row.DecidedByName,
         DecidedAt = row.Proposal.DecidedAt,

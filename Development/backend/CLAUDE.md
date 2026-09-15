@@ -267,14 +267,14 @@ Hai cửa có người gác, HAI người KHÁC NHAU:
    KHÔNG ai đi qua cửa này (403, kể cả HR) — vì thế đăng tin (Status=Open) bắt buộc có DM.
 2. `INTERVIEW→OFFER` + rời OFFER — **GIÁM ĐỐC** quyết tuyển (phạm vi toàn công ty). DM KHÔNG
    đủ thẩm quyền: họ gửi **phiếu Đề xuất tuyển** (`HiringProposal`, V043), Giám đốc duyệt —
-   chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm **mức lương ghi trên phiếu**.
-   Không duyệt ≠ loại ứng viên: hồ sơ ở lại INTERVIEW, DM đề xuất lại được.
-   **Một phiếu = MỘT con số lương (V053 — 25/08/2026):** `approved_salary` đã xoá. DM đề xuất kèm
-   mức lương (BẮT BUỘC), Giám đốc **duyệt đúng mức đó hoặc trả phiếu về**: không ưng thì
-   `approve=false` + `note` (BẮT BUỘC ở nhánh này) ghi rõ muốn bao nhiêu → DM sửa `proposed_salary`
-   → gửi lại → duyệt. Đừng thêm lại ô "lương chốt" cho Giám đốc: hai ô cho cùng một khoản tiền thì
-   nhân sự không biết lấy số nào, còn DM không bao giờ thấy vì sao mức mình đề xuất bị đổi — trong
-   khi cửa "chưa duyệt" đã sẵn có và nó ghi lại được cả lý do.
+   chính hành động duyệt đó đẩy hồ sơ sang OFFER kèm **mức lương Giám đốc chốt**.
+   Không duyệt ≠ loại ứng viên: hồ sơ ở lại INTERVIEW, DM đề xuất lại được (`note` BẮT BUỘC ở nhánh này).
+   **Giám đốc CHỐT lương khi duyệt (V057 — 15/09/2026, đảo V053):** DM đề xuất kèm mức lương
+   (`proposed_salary`, BẮT BUỘC); lúc duyệt, ô lương điền sẵn mức đó — Giám đốc giữ nguyên hoặc sửa
+   ngay (`approvedSalary`, bỏ trống = giữ mức đề xuất) → lưu `approved_salary`. Hai cột có vai trò
+   KHÁC nhau: `proposed_salary` là đề xuất (lịch sử, DM còn thấy mình đề xuất bao nhiêu),
+   `approved_salary` là con số DUY NHẤT thư mời dùng. Đừng quay về V053 ("chỉ duyệt đúng mức DM ghi,
+   muốn khác thì trả phiếu về"): đó là một vòng đi-về chỉ để DM gõ hộ con số Giám đốc đã biết.
    **Giám đốc quyết TIỀN, không quyết NGÀY (V051 — 24/08/2026):** `proposed_start_date` /
    `approved_start_date` đã xoá khỏi phiếu đề xuất. Ngày vào làm là kết quả một cuộc gọi giữa
    nhân sự và ứng viên (ứng viên còn phải báo trước cho chỗ cũ), nên nó được nhập ở THƯ MỜI
@@ -283,7 +283,7 @@ Hai cửa có người gác, HAI người KHÁC NHAU:
 
 Human Resource sàng lọc (`NEW→SCREENING`), **đặt lịch** (và sửa lịch) cho người đã duyệt, soạn
 thư mời theo điều khoản Giám đốc chốt — không chọn người, không quyết. **Ô lương trong thư mời
-KHOÁ** khi hồ sơ đã qua đề xuất tuyển: `MakeOfferAsync` lấy `ProposedSalary` của phiếu Giám đốc
+KHOÁ** khi hồ sơ đã qua đề xuất tuyển: `MakeOfferAsync` lấy `ApprovedSalary` của phiếu Giám đốc
 ĐÃ DUYỆT, bỏ qua số client gửi lên (FE cũng disable ô đó). Ngày vào làm thì ngược lại — ô đó CỐ Ý
 để trống, không đoán hộ: nó là kết quả cuộc gọi giữa nhân sự và ứng viên. Đặt lịch đòi hồ sơ ĐÃ ở INTERVIEW.
 Interviewer chỉ chấm (input). Admin bypass cả hai cửa.

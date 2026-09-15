@@ -189,17 +189,38 @@ public class HiringProposalServiceTests
             new DecideProposalDto { Approve = true, Note = "Đồng ý tuyển" });
 
         Assert.Equal("APPROVED", result.Status);
-        // Duyệt = gật đầu ĐÚNG mức trên phiếu — không có ô lương thứ hai để ghi đè (V053).
-        Assert.Equal(15_000_000, CurrentProposal.ProposedSalary);
+        // Bỏ trống mức chốt = gật đầu với mức DM đề xuất, không phải xoá trắng.
+        Assert.Equal(15_000_000, CurrentProposal.ApprovedSalary);
         Assert.Equal(DirectorUserId, CurrentProposal.DecidedBy);
         _stateService.Verify(s => s.TransitionAsync(
             CompanyId, DirectorUserId, AppId, "OFFER", "Đồng ý tuyển", false), Times.Once);
     }
 
     /// <summary>
-    /// V053: Giám đốc không gõ đè mức lương khác nữa — cửa mặc cả là "chưa duyệt KÈM lý do".
-    /// Không ghi lý do thì phiếu quay về mà Trưởng bộ phận không biết phải sửa gì.
+    /// V057: Giám đốc chốt mức khác NGAY lúc duyệt — không phải trả phiếu về chờ DM gõ lại.
+    /// Mức đề xuất giữ nguyên để DM còn thấy mình đã đề xuất bao nhiêu.
     /// </summary>
+    [Fact]
+    public async Task Decide_Approve_WithOwnSalary_KeepsProposalAndSetsApproved()
+    {
+        var service = CreateService();
+        CurrentProposal = new HiringProposal
+        {
+            ProposalId = ProposalId, CompanyId = CompanyId, ApplicationId = AppId, Status = "PENDING",
+            ProposedSalary = 15_000_000
+        };
+        _proposalRepo.Setup(r => r.GetByIdAsync(CompanyId, ProposalId)).ReturnsAsync(() => CurrentProposal);
+        _context.Role = RoleConstants.Director;
+
+        var result = await service.DecideAsync(CompanyId, DirectorUserId, ProposalId,
+            new DecideProposalDto { Approve = true, ApprovedSalary = 13_000_000 });
+
+        Assert.Equal(13_000_000, CurrentProposal.ApprovedSalary);
+        Assert.Equal(15_000_000, CurrentProposal.ProposedSalary);
+        Assert.Equal(13_000_000, result.ApprovedSalary);
+    }
+
+    /// <summary>Không ghi lý do thì phiếu quay về mà Trưởng bộ phận không biết vì sao.</summary>
     [Fact]
     public async Task Decide_Reject_WithoutNote_Throws400()
     {
