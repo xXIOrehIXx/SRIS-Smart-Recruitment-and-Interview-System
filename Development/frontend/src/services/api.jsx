@@ -661,6 +661,16 @@ export const requestCriteriaAPI = {
   add: (requestId, data) =>
     api.post(`/recruitment-requests/${requestId}/criteria`, data),
 
+  // Sửa/gỡ dùng CHUNG endpoint với tiêu chí của tin: đường đi theo criteria_id, và backend
+  // (EnsureCanEditCriterionAsync) tự chọn cửa quyền theo chỗ dòng đang neo — job_id thì gác
+  // theo tin, request_id thì gác theo người tạo yêu cầu. Đặt tên riêng ở đây để chỗ gọi bên
+  // màn Yêu cầu tuyển dụng không phải đọc "updateJobCriteria" trên một dòng chưa có job nào.
+  update: (criteriaId, data) =>
+    api.put(`/evaluation-criteria/${criteriaId}`, data),
+
+  remove: (criteriaId) =>
+    api.delete(`/evaluation-criteria/${criteriaId}`),
+
   // Xếp hàng lượt AI bóc — trả 202 ngay, worker nền mới gọi model (cùng khuôn V037).
   extract: (requestId) =>
     api.post(`/recruitment-requests/${requestId}/criteria/extract`),
