@@ -88,14 +88,14 @@ const RULES = {
  * cvMatchable, keywords) thuộc về tính năng máy chấm CV đã cắt khỏi scope — xoá ở V038.
  * Đừng hiện lại nhãn kỹ thuật nào lên màn hình mà người làm tuyển dụng không hành động được.
  */
-const Criteria = () => {
+const Criteria = ({ preselectedJobId }) => {
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [jobCriteria, setJobCriteria] = useState([]);
   // Trọng số thô không đọc được nếu không biết tổng — quy sang tỉ trọng % (utils dùng chung).
   const jobWeightPct = useMemo(() => weightPercentMap(jobCriteria, 'criteriaId'), [jobCriteria]);
   const [jobs, setJobs] = useState([]);
-  const [selectedJob, setSelectedJob] = useState(null);
+  const [selectedJob, setSelectedJob] = useState(preselectedJobId || null);
   const [searchText, setSearchText] = useState('');
 
   // Modal states
@@ -811,16 +811,18 @@ const Criteria = () => {
       children: (
         <>
           <div style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Select
-              placeholder="Chọn vị trí"
-              value={selectedJob}
-              onChange={(val) => setSelectedJob(val)}
-              style={{ width: 280 }}
-              showSearch
-              optionFilterProp="label"
-              options={visibleJobs.map(job => ({ value: job.jobId, label: job.title }))}
-              allowClear
-            />
+            {!preselectedJobId && (
+              <Select
+                placeholder="Chọn vị trí"
+                value={selectedJob}
+                onChange={(val) => setSelectedJob(val)}
+                style={{ width: 280 }}
+                showSearch
+                optionFilterProp="label"
+                options={visibleJobs.map(job => ({ value: job.jobId, label: job.title }))}
+                allowClear
+              />
+            )}
             {selectedJob && (
               <>
                 <Tooltip title="AI đọc tin tuyển dụng và đề xuất bộ tiêu chí — bạn duyệt rồi mới dùng được. Chạy nền: bấm xong có thể làm việc khác.">
@@ -989,32 +991,34 @@ const Criteria = () => {
   ];
 
   return (
-    <div className="criteria-page">
-      <div className="page-header">
-        <div>
-          <Title level={3} className="page-title">Tiêu Chí Đánh Giá</Title>
-          <Text type="secondary">
-            AI đề xuất tiêu chí từ tin tuyển dụng → người duyệt chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn
-          </Text>
-          {isDeptManager && (
-            <div style={{ marginTop: 4 }}>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Bạn đang xem các vị trí do mình phụ trách — bộ tiêu chí bạn chốt ở đây chính là phiếu
-                chấm người phỏng vấn sẽ dùng.
-              </Text>
-            </div>
-          )}
+    <div className={preselectedJobId ? "" : "criteria-page"}>
+      {!preselectedJobId && (
+        <div className="page-header">
+          <div>
+            <Title level={3} className="page-title">Tiêu Chí Đánh Giá</Title>
+            <Text type="secondary">
+              AI đề xuất tiêu chí từ tin tuyển dụng → người duyệt chốt → bộ tiêu chí đó thành phiếu chấm phỏng vấn
+            </Text>
+            {isDeptManager && (
+              <div style={{ marginTop: 4 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Bạn đang xem các vị trí do mình phụ trách — bộ tiêu chí bạn chốt ở đây chính là phiếu
+                  chấm người phỏng vấn sẽ dùng.
+                </Text>
+              </div>
+            )}
+          </div>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => { fetchTemplates(); if (selectedJob) fetchJobCriteria(selectedJob); }}
+            loading={loading}
+          >
+            Làm mới
+          </Button>
         </div>
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => { fetchTemplates(); if (selectedJob) fetchJobCriteria(selectedJob); }}
-          loading={loading}
-        >
-          Làm mới
-        </Button>
-      </div>
+      )}
 
-      <Card className="main-card" bordered={false}>
+      <Card className={preselectedJobId ? "" : "main-card"} bordered={!preselectedJobId} style={preselectedJobId ? { padding: 0 } : {}}>
         <Tabs items={tabItems} />
       </Card>
 

@@ -26,7 +26,6 @@ import {
   UserOutlined,
   TeamOutlined,
   DollarOutlined,
-  CalendarOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';

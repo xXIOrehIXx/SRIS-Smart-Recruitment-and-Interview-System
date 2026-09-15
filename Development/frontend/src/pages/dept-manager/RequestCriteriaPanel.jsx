@@ -4,7 +4,7 @@ import {
   Space, Table, Tag, Typography, message,
 } from "antd";
 import {
-  CheckCircleOutlined, PlusOutlined, RobotOutlined,
+  CheckCircleOutlined, PlusOutlined, RobotOutlined, EditOutlined, DeleteOutlined
 } from "@ant-design/icons";
 import { requestCriteriaAPI } from "../../services/api";
 
@@ -30,7 +30,9 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
   const [busy, setBusy] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [editItem, setEditItem] = useState(null);
   const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
 
   const pollRef = useRef(null);
   const aliveRef = useRef(true);
@@ -141,6 +143,41 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
     }
   };
 
+  const handleUpdate = async (values) => {
+    if (!editItem) return;
+    try {
+      setBusy(true);
+      await requestCriteriaAPI.update(editItem.criteriaId, {
+        name: values.name.trim(),
+        weight: values.weight,
+        maxScore: editItem.maxScore || 10,
+      });
+      message.success("Đã cập nhật tiêu chí.");
+      setEditItem(null);
+      editForm.resetFields();
+      fetchItems();
+    } catch (error) {
+      console.error("Error updating criterion:", error);
+      message.error(error?.response?.data?.userMsg || "Không cập nhật được tiêu chí.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async (criteriaId) => {
+    try {
+      setBusy(true);
+      await requestCriteriaAPI.delete(criteriaId);
+      message.success("Đã xóa tiêu chí.");
+      fetchItems();
+    } catch (error) {
+      console.error("Error deleting criterion:", error);
+      message.error(error?.response?.data?.userMsg || "Không xóa được tiêu chí.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleApprove = async () => {
     try {
       setBusy(true);
@@ -184,6 +221,39 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
           : <Tag color="gold">Bản nháp</Tag>,
     },
   ];
+
+  if (canEdit) {
+    columns.push({
+      title: "Thao tác",
+      key: "action",
+      width: 100,
+      align: "center",
+      render: (_, r) => (
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditItem(r);
+              editForm.setFieldsValue({
+                name: r.name,
+                weight: r.weight,
+              });
+            }}
+          />
+          <Popconfirm
+            title="Xóa tiêu chí?"
+            onConfirm={() => handleDelete(r.criteriaId)}
+            okText="Xóa"
+            cancelText="Hủy"
+            placement="topLeft"
+          >
+            <Button type="text" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    });
+  }
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -282,6 +352,35 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleAdd} initialValues={{ weight: 2 }}>
+          <Form.Item
+            name="name"
+            label="Tên tiêu chí"
+            rules={[{ required: true, message: "Nhập tên tiêu chí" }]}
+          >
+            <Input placeholder="Ví dụ: Kinh nghiệm quản lý đội nhóm" />
+          </Form.Item>
+          <Form.Item
+            name="weight"
+            label="Trọng số"
+            tooltip="Tiêu chí quan trọng gấp mấy lần tiêu chí thường"
+            rules={[{ required: true, message: "Nhập trọng số" }]}
+          >
+            <InputNumber min={1} max={5} style={{ width: "100%" }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Sửa tiêu chí"
+        open={!!editItem}
+        onCancel={() => { setEditItem(null); editForm.resetFields(); }}
+        onOk={() => editForm.submit()}
+        confirmLoading={busy}
+        okText="Lưu"
+        cancelText="Hủy"
+        destroyOnClose
+      >
+        <Form form={editForm} layout="vertical" onFinish={handleUpdate}>
           <Form.Item
             name="name"
             label="Tên tiêu chí"

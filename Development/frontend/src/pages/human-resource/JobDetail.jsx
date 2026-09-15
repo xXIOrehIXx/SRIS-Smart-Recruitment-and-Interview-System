@@ -15,11 +15,12 @@ import {
   ThunderboltOutlined,
   FileExcelOutlined
 } from '@ant-design/icons';
-import { jobsAPI, applicationAPI, cvAPI } from '../../services/api';
+import { jobsAPI, applicationAPI, cvAPI, criteriaAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { canRejectAtState, rejectOwnerLabel } from '../../utils/decisionRights';
 import ApplicationStateTag, { APPLICATION_STATE_LABELS } from '../../components/ApplicationStateTag';
 import FitScoreTag from '../../components/FitScoreTag';
+
 import './css/JobDetail.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -34,6 +35,7 @@ const JobDetail = () => {
   const [loading, setLoading] = useState(true);
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [jobCriteria, setJobCriteria] = useState([]);
 
   // Thứ tự danh sách ứng viên. Mặc định 'fit' — màn này là chỗ người tuyển dụng CHỌN đọc
   // hồ sơ nào trước, nên mở ra đã thấy ngay hồ sơ AI cho là khớp nhất. Vẫn đổi được về
@@ -95,8 +97,12 @@ const JobDetail = () => {
 
   const fetchJobDetails = async () => {
     try {
-      const response = await jobsAPI.getById(jobId);
-      setJob(response.data);
+      const [jobRes, criteriaRes] = await Promise.all([
+        jobsAPI.getById(jobId),
+        criteriaAPI.getByJob(jobId).catch(() => ({ data: [] }))
+      ]);
+      setJob(jobRes.data);
+      setJobCriteria(criteriaRes.data || []);
     } catch (error) {
       console.error('Error fetching job details:', error);
       message.error('Không thể tải thông tin tin tuyển dụng');
@@ -464,6 +470,25 @@ const JobDetail = () => {
               )) || 'N/A'}
             </Descriptions.Item>
           </Descriptions>
+        </div>
+      ),
+    },
+    {
+      key: 'criteria',
+      label: 'Tiêu Chí Đánh Giá',
+      children: (
+        <div style={{ marginTop: 16 }}>
+          <Table
+            dataSource={jobCriteria}
+            rowKey="criteriaId"
+            pagination={false}
+            columns={[
+              { title: 'Tên tiêu chí', dataIndex: 'name', key: 'name' },
+              { title: 'Trọng số', dataIndex: 'weight', key: 'weight', width: 100 },
+              { title: 'Điểm tối đa', dataIndex: 'maxScore', key: 'maxScore', width: 120 }
+            ]}
+            locale={{ emptyText: 'Vị trí này không có tiêu chí đánh giá nào.' }}
+          />
         </div>
       ),
     },

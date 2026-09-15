@@ -662,6 +662,12 @@ export const requestCriteriaAPI = {
   add: (requestId, data) =>
     api.post(`/recruitment-requests/${requestId}/criteria`, data),
 
+  update: (criteriaId, data) =>
+    api.put(`/evaluation-criteria/${criteriaId}`, data),
+
+  delete: (criteriaId) =>
+    api.delete(`/evaluation-criteria/${criteriaId}`),
+
   // Xếp hàng lượt AI bóc — trả 202 ngay, worker nền mới gọi model (cùng khuôn V037).
   extract: (requestId) =>
     api.post(`/recruitment-requests/${requestId}/criteria/extract`),
