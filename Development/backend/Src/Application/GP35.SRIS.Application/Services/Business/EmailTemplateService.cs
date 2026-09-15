@@ -51,9 +51,9 @@ public class EmailTemplateService : BaseService<EmailTemplateService>, IEmailTem
                 Name = seed.Name,
                 Subject = seed.Subject,
                 Body = seed.Body,
-                // ONBOARDING còn nhiều chỗ [điền tay] -> để TẮT, người tuyển dụng sửa xong mới bật.
-                // Các loại còn lại nội dung đã đủ dùng ngay.
-                IsActive = !string.Equals(seed.Type, EmailTemplateType.Onboarding, StringComparison.OrdinalIgnoreCase)
+                // Mọi mẫu seed đều BẬT — kể cả ONBOARDING từ 15/09/2026, khi bản mặc định của nó
+                // thôi chứa chỗ "[điền tay]" (xem OnboardingEmailDefault).
+                IsActive = true
             };
 
             if (forNewCompany)

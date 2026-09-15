@@ -134,6 +134,24 @@ public class OfferDto
     public DateTime? RespondedAt { get; set; }
 }
 
+/// <summary>
+/// 1 dòng danh sách Thư mời (xuyên vị trí). <see cref="Offer"/> null = hồ sơ đã được Giám đốc
+/// duyệt tuyển (OFFER) nhưng nhân sự chưa soạn thư.
+/// </summary>
+public class OfferListItemDto
+{
+    public long ApplicationId { get; set; }
+    public long JobId { get; set; }
+    public string JobTitle { get; set; } = null!;
+    public string CandidateName { get; set; } = null!;
+    public string CandidateEmail { get; set; } = null!;
+
+    /// <summary>OFFER (chờ soạn thư / chờ trả lời) · HIRED · REJECTED.</summary>
+    public string ApplicationState { get; set; } = null!;
+
+    public OfferDto? Offer { get; set; }
+}
+
 /// <summary>Kết quả gửi thư mời: offer vừa tạo + link xem thư PDF để gửi ứng viên (token gốc 1 lần).</summary>
 public class MakeOfferResultDto
 {

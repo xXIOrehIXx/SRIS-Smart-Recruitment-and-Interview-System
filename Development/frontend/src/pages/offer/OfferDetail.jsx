@@ -37,10 +37,10 @@ const OfferDetail = () => {
   const [application, setApplication] = useState(null);
   const [acting, setActing] = useState(false);
 
-  // Quay lại ĐÚNG tin tuyển dụng vừa xem. Danh sách thư mời lọc theo từng tin, nên trả về
-  // "/offers" trơn là nó tự chọn tin đầu bảng — người dùng bấm Back xong không thấy ứng viên
-  // mình vừa mở đâu nữa. Ưu tiên jobId trên URL, thiếu thì lấy từ chính hồ sơ.
-  const jobId = searchParams.get('jobId') || application?.jobId;
+  // Quay lại ĐÚNG bộ lọc vừa xem: có ?jobId= thì về tin đó, không có thì về danh sách TẤT CẢ
+  // vị trí (mặc định của màn Thư mời). Không đoán jobId từ hồ sơ nữa — người đang xem tất cả mà
+  // bấm Back lại bị thả vào một tin lẻ thì mất luôn các hồ sơ khác vừa thấy.
+  const jobId = searchParams.get('jobId');
   const backToList = () => navigate(jobId ? `/offers?jobId=${jobId}` : '/offers');
 
   const fetchAll = useCallback(async () => {

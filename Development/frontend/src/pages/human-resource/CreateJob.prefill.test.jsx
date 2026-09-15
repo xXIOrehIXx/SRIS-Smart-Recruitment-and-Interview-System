@@ -203,16 +203,15 @@ test('?edit -> quyền lợi có sẵn được đổ vào ô nhập', async () 
  * điền sẵn. Ba ca dưới giữ đúng ranh giới — nhất là ca SỬA tin, điền sẵn ở đó là đè mất
  * quyền lợi người dùng đã chỉnh riêng cho tin đó.
  */
-test('tạo tin mới -> điền sẵn quyền lợi mặc định của công ty', async () => {
+// V056: tin MỚI chỉ còn một đường sinh ra — từ Yêu cầu tuyển dụng (?requestId). Hai ca "tạo
+// tin mới" dưới đây vì thế đi qua yêu cầu, không mở /create trơn nữa (mở trơn là màn chặn).
+test('tạo tin từ yêu cầu (DM không ghi quyền lợi) -> điền sẵn quyền lợi mặc định của công ty', async () => {
   companyAPI.get.mockResolvedValue({
     data: { defaultBenefits: ['Thưởng lương tháng 13', 'Đóng BHXH đầy đủ'] },
   });
+  recruitmentRequestAPI.getById.mockResolvedValue({ data: { ...REQUEST, benefits: '' } });
 
-  render(
-    <MemoryRouter initialEntries={['/human-resource/jobs/create']}>
-      <CreateJob />
-    </MemoryRouter>
-  );
+  await renderFromRequest();
 
   await waitFor(() =>
     expect(screen.getByDisplayValue('Thưởng lương tháng 13')).toBeInTheDocument()
@@ -247,16 +246,34 @@ test('?edit -> KHÔNG chèn quyền lợi mặc định vào tin đã đăng', a
   expect(screen.queryByDisplayValue('Đóng BHXH đầy đủ')).not.toBeInTheDocument();
 });
 
-test('tạo tin mới -> có ô nhập yêu cầu ứng viên kèm gợi ý nghề phổ thông', async () => {
-  render(
-    <MemoryRouter initialEntries={['/human-resource/jobs/create']}>
-      <CreateJob />
-    </MemoryRouter>
-  );
+test('tạo tin từ yêu cầu (DM không ghi yêu cầu) -> có ô nhập yêu cầu ứng viên kèm gợi ý nghề phổ thông', async () => {
+  recruitmentRequestAPI.getById.mockResolvedValue({ data: { ...REQUEST, requirements: '' } });
+
+  await renderFromRequest();
 
   await waitFor(() =>
     expect(
       screen.getByPlaceholderText('VD: Tốt nghiệp Cao đẳng trở lên')
     ).toBeInTheDocument()
   );
+});
+
+/**
+ * V056: không còn đường tạo tin thẳng. Mở /create không kèm ?requestId thì chỉ thấy lời chỉ
+ * đường sang danh sách yêu cầu — không có form, để người dùng không điền hết một form dài rồi
+ * mới ăn lỗi ở nút cuối (backend chặn thật ở JobService.EnsureConvertibleRequestAsync).
+ */
+test('mở /create không kèm yêu cầu -> màn chỉ đường, không có form', async () => {
+  render(
+    <MemoryRouter initialEntries={['/human-resource/jobs/create']}>
+      <CreateJob />
+    </MemoryRouter>
+  );
+
+  expect(
+    await screen.findByText('Tin tuyển dụng được tạo từ Yêu cầu tuyển dụng')
+  ).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Xem yêu cầu tuyển dụng' })).toBeInTheDocument();
+  expect(screen.queryByPlaceholderText('VD: Tốt nghiệp Cao đẳng trở lên')).not.toBeInTheDocument();
+  expect(recruitmentRequestAPI.getById).not.toHaveBeenCalled();
 });

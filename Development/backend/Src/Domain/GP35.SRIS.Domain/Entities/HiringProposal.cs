@@ -5,12 +5,11 @@ namespace GP35.SRIS.Domain.Entities;
 
 /// <summary>
 /// Phiếu ĐỀ XUẤT TUYỂN (V043, chốt 15/08/2026) — Trưởng bộ phận đọc kết luận hội đồng phỏng vấn
-/// rồi đề xuất "nên tuyển người này" KÈM mức lương; GIÁM ĐỐC duyệt hoặc trả lại phiếu.
-///
-/// Trên phiếu chỉ có MỘT con số lương (<see cref="ProposedSalary"/>): Giám đốc KHÔNG gõ đè
-/// mức khác (bỏ approved_salary — V053, 25/08/2026). Không ưng thì CHƯA DUYỆT kèm
-/// <see cref="DecisionNote"/> nói rõ muốn bao nhiêu, DM sửa phiếu rồi gửi lại. Ngày vào làm
-/// cũng KHÔNG nằm ở đây (bỏ 24/08/2026): nhân sự chốt ngày với ứng viên rồi điền vào thư mời.
+/// rồi đề xuất "nên tuyển người này" KÈM mức lương; GIÁM ĐỐC duyệt và CHỐT mức lương
+/// (<see cref="ApprovedSalary"/> — giữ nguyên mức đề xuất hoặc sửa ngay lúc duyệt), hoặc trả
+/// phiếu về. V057 (15/09/2026) đảo lại V053: bắt Giám đốc trả phiếu về chỉ để DM gõ hộ con số
+/// họ đã biết là một vòng đi-về thừa. Ngày vào làm KHÔNG nằm ở đây (bỏ 24/08/2026): nhân sự
+/// chốt ngày với ứng viên rồi điền vào thư mời.
 ///
 /// Đối xứng với <see cref="RecruitmentRequest"/>: đầu quy trình DM ra đề — nhân sự duyệt;
 /// cuối quy trình DM đề xuất — Giám đốc duyệt.
@@ -37,7 +36,7 @@ public class HiringProposal : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     [Column("proposal_note")]
     public string? ProposalNote { get; set; }
 
-    /// <summary>Mức lương đề xuất — phiếu được duyệt thì đây LÀ mức thư mời dùng (V053).</summary>
+    /// <summary>Mức lương DM đề xuất (bắt buộc). Chỉ là đề xuất — thư mời đọc <see cref="ApprovedSalary"/>.</summary>
     [Column("proposed_salary")]
     public decimal? ProposedSalary { get; set; }
 
@@ -52,11 +51,18 @@ public class HiringProposal : BaseEntity<long>, IHasCreateInfo, IHasCompanyInfo
     // ----- Quyết định của Giám đốc -----
 
     /// <summary>
-    /// Ghi chú quyết định. Khi CHƯA duyệt thì đây là kênh DUY NHẤT Giám đốc nói cho Trưởng bộ
-    /// phận biết phải sửa gì (thường là mức lương) — vì vậy bắt buộc nhập ở nhánh đó (V053).
+    /// Ghi chú quyết định. Bắt buộc khi CHƯA duyệt: phiếu quay về bàn Trưởng bộ phận và đây là
+    /// thứ họ đọc để biết vì sao.
     /// </summary>
     [Column("decision_note")]
     public string? DecisionNote { get; set; }
+
+    /// <summary>
+    /// Mức lương Giám đốc CHỐT khi duyệt (V057) — có thể khác mức đề xuất; là con số DUY NHẤT
+    /// thư mời dùng. Chỉ có giá trị khi phiếu APPROVED.
+    /// </summary>
+    [Column("approved_salary")]
+    public decimal? ApprovedSalary { get; set; }
 
     /// <summary>Giám đốc quyết.</summary>
     [Column("decided_by")]

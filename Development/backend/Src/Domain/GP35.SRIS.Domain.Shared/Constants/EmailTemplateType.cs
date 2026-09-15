@@ -17,8 +17,8 @@ public static class EmailTemplateType
 
     /// <summary>
     /// Email chào mừng + hướng dẫn ngày đầu đi làm, gửi khi hồ sơ sang HIRED.
-    /// KHÁC <see cref="Hired"/> (thông báo kết quả): loại này chứa thông tin thực tế của công
-    /// ty nên chỉ gửi khi người tuyển dụng đã soạn mẫu — xem <see cref="OnboardingEmailDefault"/>.
+    /// KHÁC <see cref="Hired"/> (thông báo kết quả) — hai thư đi cùng lúc. Không có mẫu riêng đang
+    /// bật thì gửi bản mặc định <see cref="OnboardingEmailDefault"/> (chỉ dùng dữ liệu hệ thống có).
     /// </summary>
     public const string Onboarding = "ONBOARDING";
 

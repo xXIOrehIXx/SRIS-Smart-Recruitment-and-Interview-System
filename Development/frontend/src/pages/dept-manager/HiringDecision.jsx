@@ -188,6 +188,14 @@ const HiringDecision = () => {
 
   const money = (v) => (v == null ? '—' : `${Number(v).toLocaleString('vi-VN')} ₫`);
 
+  /// Phiếu đã duyệt: Giám đốc có thể chốt mức khác mức đề xuất (V057) — nói rõ khi hai số lệch.
+  const approvedSalaryLabel = (proposal) => {
+    const approved = proposal.approvedSalary ?? proposal.proposedSalary;
+    return approved !== proposal.proposedSalary
+      ? `Giám đốc đã duyệt, chốt mức ${money(approved)} (bạn đề xuất ${money(proposal.proposedSalary)})`
+      : `Giám đốc đã duyệt mức ${money(approved)}`;
+  };
+
   /// Tóm tắt 1 dòng: "2/3 nên tuyển" — đủ để lướt bảng, chi tiết xem trong modal.
   const verdictSummary = (record) => {
     if (!record.totalSubmitted) return <Text type="secondary">—</Text>;
@@ -344,8 +352,8 @@ const HiringDecision = () => {
 
   const openProposeModal = (record) => {
     setSelectedRecord(record);
-    // Đề xuất LẠI thì điền sẵn phiếu cũ (V053): Giám đốc trả phiếu về thường chỉ vì một con số —
-    // bắt gõ lại toàn bộ căn cứ chỉ để sửa mức lương là ép người ta viết lại từ đầu.
+    // Đề xuất LẠI thì điền sẵn phiếu cũ: thường chỉ cần bổ sung vài dòng căn cứ, bắt gõ lại
+    // toàn bộ là ép người ta viết lại từ đầu.
     setApproveNote(record?.status === 'REJECTED' ? (record.proposal?.proposalNote || '') : '');
     setProposedSalary(record?.status === 'REJECTED' ? (record.proposal?.proposedSalary ?? null) : null);
     setApproveModalOpen(true);
@@ -356,10 +364,10 @@ const HiringDecision = () => {
    * định được nữa. Giám đốc duyệt đề xuất thì hệ thống mới đẩy hồ sơ sang OFFER.
    */
   const handlePropose = async () => {
-    // Mức lương BẮT BUỘC (V053): Giám đốc chỉ duyệt hoặc trả phiếu về chứ không tự điền mức —
-    // phiếu trống thì chẳng có gì để duyệt, và thư mời lại rơi về cảnh nhân sự tự quyết lương.
+    // Mức lương BẮT BUỘC (V053): đó là căn cứ của bộ phận, điền sẵn vào ô lương khi Giám đốc
+    // duyệt — phiếu trống thì Giám đốc phải tự nghĩ một con số từ đầu.
     if (!(proposedSalary > 0)) {
-      message.warning('Nhập mức lương đề xuất — đó là con số Giám đốc duyệt và thư mời sẽ dùng.');
+      message.warning('Nhập mức lương đề xuất — đó là căn cứ để Giám đốc chốt lương.');
       return;
     }
     try {
@@ -536,9 +544,8 @@ const HiringDecision = () => {
               </div>
             </div>
 
-            {/* Phiếu đã gửi: hiện nguyên văn lời Giám đốc. Trước V053 màn này chỉ hiện cái tag
-                "Giám đốc chưa duyệt" mà không nói vì sao — mà giờ đó là kênh DUY NHẤT Giám đốc
-                báo mức lương họ muốn, nên giấu đi là bắt trưởng bộ phận đi hỏi miệng. */}
+            {/* Phiếu đã gửi: hiện nguyên văn lời Giám đốc và mức lương họ CHỐT (V057 — có thể khác
+                mức đề xuất; hiện cả hai để trưởng bộ phận thấy mức của mình đã bị đổi). */}
             {selectedRecord.proposal && (
               <Alert
                 type={selectedRecord.status === 'REJECTED' ? 'warning'
@@ -549,8 +556,8 @@ const HiringDecision = () => {
                   selectedRecord.status === 'REJECTED'
                     ? `Giám đốc chưa duyệt${selectedRecord.proposal.decidedByName ? ` — ${selectedRecord.proposal.decidedByName}` : ''}`
                     : selectedRecord.status === 'APPROVED'
-                      ? `Giám đốc đã duyệt mức ${money(selectedRecord.proposal.proposedSalary)}`
-                      : `Đang chờ Giám đốc duyệt mức ${money(selectedRecord.proposal.proposedSalary)}`
+                      ? approvedSalaryLabel(selectedRecord.proposal)
+                      : `Đang chờ Giám đốc duyệt — bạn đề xuất ${money(selectedRecord.proposal.proposedSalary)}`
                 }
                 description={
                   <>
@@ -561,7 +568,7 @@ const HiringDecision = () => {
                     )}
                     {selectedRecord.status === 'REJECTED' && (
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        Ứng viên chưa bị loại — sửa mức lương / bổ sung căn cứ rồi bấm "Đề xuất lại".
+                        Ứng viên chưa bị loại — bổ sung căn cứ rồi bấm "Đề xuất lại".
                         {!selectedRecord.proposal.decisionNote && ' (Giám đốc không ghi lý do — hỏi lại trực tiếp.)'}
                       </Text>
                     )}
@@ -749,8 +756,7 @@ const HiringDecision = () => {
           <strong>{selectedRecord?.position}</strong>. Giám đốc sẽ đọc đề xuất này rồi quyết.
         </p>
 
-        {/* Đề xuất LẠI: đặt lời nhắn của Giám đốc ngay trên ô nhập, vì đó chính là thứ phải sửa
-            (V053 — Giám đốc không tự đổi mức lương nữa mà trả phiếu về kèm con số họ muốn). */}
+        {/* Đề xuất LẠI: đặt lời nhắn của Giám đốc ngay trên ô nhập, vì đó chính là thứ phải sửa. */}
         {selectedRecord?.status === 'REJECTED' && selectedRecord?.proposal?.decisionNote && (
           <Alert
             type="warning"
@@ -788,8 +794,8 @@ const HiringDecision = () => {
             addonAfter="₫"
           />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Giám đốc duyệt ĐÚNG con số này (thư mời lấy y nguyên) hoặc trả phiếu về kèm mức họ
-            muốn — lúc đó bạn sửa ở đây rồi gửi lại.
+            Giám đốc thấy con số này điền sẵn khi duyệt, giữ nguyên hoặc chốt mức khác — thư mời
+            dùng mức Giám đốc chốt.
           </Text>
         </div>
 

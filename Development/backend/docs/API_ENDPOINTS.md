@@ -185,7 +185,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 | POST | `/api/applications/{applicationId}/hiring-proposal` | DM | đề xuất — body `{ note?, proposedSalary }` (**lương BẮT BUỘC**, V053). Đòi hồ sơ ở INTERVIEW + ≥1 phiếu chấm đã nộp + đúng DM của vị trí |
 | GET | `/api/applications/{applicationId}/hiring-proposals` | DM/Dir/Rec | lịch sử đề xuất của 1 hồ sơ (gồm lần bị từ chối) |
 | GET | `/api/hiring-proposals` | Dir/DM/Rec | hàng đợi — `?status=PENDING\|APPROVED\|REJECTED` |
-| POST | `/api/hiring-proposals/{proposalId}/decision` | **Dir** | quyết — body `{ approve, note? }` (**note BẮT BUỘC khi `approve=false`**, V053). Duyệt → transition INTERVIEW→OFFER với ĐÚNG `proposedSalary` trên phiếu; Giám đốc không có ô lương riêng |
+| POST | `/api/hiring-proposals/{proposalId}/decision` | **Dir** | quyết — body `{ approve, note?, approvedSalary? }` (**note BẮT BUỘC khi `approve=false`**). Duyệt → transition INTERVIEW→OFFER; `approvedSalary` bỏ trống = giữ `proposedSalary` (V057). Thư mời dùng `approvedSalary` |
 
 ## 12. Chấm phỏng vấn — `InterviewScoring`
 | Method | Path | Role | Ghi chú |
@@ -203,6 +203,7 @@ văn từ CV) · `missing[]` · `fitScore` 0-100 · `decision` PROCEED/CONSIDER/
 ## 13. Thư mời nhận việc — `applications/{applicationId}/offer` (Rec/DM)
 | Method | Path | Role | Ghi chú |
 |---|---|---|---|
+| GET | `/api/offers?jobId=` | Rec | danh sách thư mời XUYÊN vị trí (bỏ trống `jobId` = cả công ty): hồ sơ đang ở OFFER (`offer = null` = chờ soạn thư) + hồ sơ đã có thư. Chờ soạn thư xếp đầu |
 | GET | `/api/applications/{applicationId}/offer/defaults` | Rec/DM | giá trị điền sẵn form soạn thư (từ Job + Company) |
 | POST | `/api/applications/{applicationId}/offer` | Rec/DM | soạn + gửi thư mời (0..1 / application); tự phát link OFFER_RESPONSE |
 | GET | `/api/applications/{applicationId}/offer` | Rec/DM | xem offer |

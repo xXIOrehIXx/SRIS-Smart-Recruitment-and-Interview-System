@@ -352,7 +352,7 @@ export const interviewAPI = {
 // ==================== ĐỀ XUẤT TUYỂN (DM đề xuất → Giám đốc quyết) ====================
 
 // docs 5.14 (V043): Trưởng bộ phận KHÔNG đủ thẩm quyền tuyển — họ đề xuất "nên tuyển người
-// này" KÈM MỨC LƯƠNG; Giám đốc duyệt đúng mức đó hoặc trả phiếu về để DM sửa (V053).
+// này" KÈM MỨC LƯƠNG; Giám đốc duyệt và chốt mức lương (giữ hoặc sửa — V057), hoặc trả phiếu về.
 // Duyệt đề xuất chính là hành động đẩy hồ sơ sang bước Quyết định (OFFER).
 // Ngày vào làm KHÔNG nằm ở đây (24/08/2026): nhân sự gọi ứng viên chốt ngày onboard rồi điền
 // vào thư mời (offerAPI.create -> startDate).
@@ -369,9 +369,8 @@ export const hiringProposalAPI = {
   getList: (status) =>
     api.get(`/hiring-proposals${status ? `?status=${status}` : ''}`),
 
-  // Giám đốc quyết: { approve, note? } — note BẮT BUỘC khi approve=false (V053).
-  // Không còn approvedSalary: duyệt = gật đầu đúng mức trên phiếu; muốn mức khác thì trả phiếu
-  // về kèm ghi chú, DM sửa proposedSalary rồi gửi lại.
+  // Giám đốc quyết: { approve, note?, approvedSalary? } — note BẮT BUỘC khi approve=false.
+  // approvedSalary bỏ trống = giữ mức DM đề xuất (V057); thư mời dùng mức chốt này.
   decide: (proposalId, data) =>
     api.post(`/hiring-proposals/${proposalId}/decision`, data),
 };
@@ -397,6 +396,11 @@ export const candidateAPI = {
 // ==================== OFFER ====================
 
 export const offerAPI = {
+  // Danh sách thư mời xuyên vị trí — hồ sơ chờ soạn thư (offer = null) + thư đã gửi, MỘT lời
+  // gọi. jobId bỏ trống = cả công ty.
+  getList: (jobId) =>
+    api.get(`/offers${jobId ? `?jobId=${jobId}` : ''}`),
+
   // Giá trị điền sẵn cho form soạn thư (lấy từ Job + Company + hồ sơ)
   getDefaults: (applicationId) =>
     api.get(`/applications/${applicationId}/offer/defaults`),
@@ -662,10 +666,16 @@ export const requestCriteriaAPI = {
   add: (requestId, data) =>
     api.post(`/recruitment-requests/${requestId}/criteria`, data),
 
+  // Sửa/gỡ dùng CHUNG endpoint với tiêu chí của tin: đường đi theo criteria_id, và backend
+  // (EnsureCanEditCriterionAsync) tự chọn cửa quyền theo chỗ dòng đang neo — job_id thì gác
+  // theo tin, request_id thì gác theo người tạo yêu cầu. Đặt tên riêng ở đây để chỗ gọi bên
+  // màn Yêu cầu tuyển dụng không phải đọc "updateJobCriteria" trên một dòng chưa có job nào.
   update: (criteriaId, data) =>
     api.put(`/evaluation-criteria/${criteriaId}`, data),
 
   delete: (criteriaId) =>
+    api.delete(`/evaluation-criteria/${criteriaId}`),
+  remove: (criteriaId) =>
     api.delete(`/evaluation-criteria/${criteriaId}`),
 
   // Xếp hàng lượt AI bóc — trả 202 ngay, worker nền mới gọi model (cùng khuôn V037).

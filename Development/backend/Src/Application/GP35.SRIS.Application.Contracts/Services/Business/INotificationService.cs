@@ -16,9 +16,8 @@ public interface INotificationService : IBaseService
     Task SendResultAsync(long companyId, long applicationId, string toState);
 
     /// <summary>
-    /// Email chào mừng + hướng dẫn ngày đầu đi làm (gửi khi HIRED). CHỈ gửi khi công ty đã
-    /// soạn mẫu ONBOARDING và bật dùng — nội dung này toàn thông tin thực tế của công ty,
-    /// hệ thống không tự bịa được. Không có mẫu -> im lặng bỏ qua.
+    /// Email chào mừng + hướng dẫn ngày đầu đi làm (gửi khi HIRED, kèm thư kết quả). Dùng mẫu
+    /// ONBOARDING đang bật của công ty; không có thì gửi bản mặc định — LUÔN gửi, không bỏ qua.
     /// </summary>
     Task SendOnboardingAsync(long companyId, long applicationId);
 
