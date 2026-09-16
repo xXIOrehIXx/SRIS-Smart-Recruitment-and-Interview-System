@@ -4,7 +4,7 @@ import {
   Space, Table, Tag, Tooltip, Typography, message,
 } from "antd";
 import {
-  CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusOutlined, RobotOutlined,
+  CheckCircleOutlined, PlusOutlined, RobotOutlined, EditOutlined, DeleteOutlined
 } from "@ant-design/icons";
 import { requestCriteriaAPI } from "../../services/api";
 import { weightPercentMap } from "../../utils/criteriaWeight";
@@ -165,7 +165,7 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
   const handleDelete = async (record) => {
     try {
       setBusy(true);
-      await requestCriteriaAPI.remove(record.criteriaId);
+      await requestCriteriaAPI.delete(record.criteriaId);
       message.success("Đã xóa tiêu chí.");
       fetchItems();
     } catch (error) {
@@ -175,6 +175,7 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
       setBusy(false);
     }
   };
+
 
   const handleApprove = async () => {
     try {

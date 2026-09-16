@@ -40,7 +40,7 @@ import CandidateStatus from "./pages/candidate/CandidateStatus";
 import Analytics from "./pages/analytics/Analytics";
 import CvIntake from "./pages/human-resource/CvIntake";
 import MailTemplates from "./pages/mail-templates/MailTemplates";
-import Criteria from "./pages/criteria/Criteria";
+
 import CompanyBranding from "./pages/company/CompanyBranding";
 import Settings from "./pages/Settings";
 import "./App.css";
@@ -107,17 +107,7 @@ const App = () => {
         <Route path="/human-resource/cv-intake" element={<CvIntake />} />
       </Route>
 
-      {/* Tiêu chí đánh giá: nhân sự + Trưởng bộ phận (DM ra đề cho vị trí mình phụ trách —
-          24/08/2026). Backend mới là chỗ chặn thật (JobCriteriaAccessGuard). */}
-      <Route
-        element={
-          <ProtectedRoute allowedRoles={[ROLES.HUMAN_RESOURCE, ROLES.DEPARTMENT_MANAGER]}>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/criteria" element={<Criteria />} />
-      </Route>
+
 
       <Route
         element={

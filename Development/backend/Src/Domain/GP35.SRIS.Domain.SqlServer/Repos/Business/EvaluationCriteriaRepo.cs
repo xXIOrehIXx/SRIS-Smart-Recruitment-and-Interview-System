@@ -126,11 +126,11 @@ public class EvaluationCriteriaRepo : BaseRepo<long, EvaluationCriteria>, IEvalu
     public async Task<IReadOnlyList<EvaluationCriteria>> GetByRequestAsync(
         long companyId, long requestId, bool activeOnly, bool approvedOnly = true)
     {
-        // job_id == null: chỉ lấy tiêu chí CÒN ở yêu cầu. Bỏ điều kiện này thì sau khi job được
-        // tạo, màn yêu cầu và màn job cùng hiện một bộ và người dùng sửa ở đâu cũng được — trong
-        // khi từ lúc có job thì cửa quyền phải là cửa của job (Trưởng bộ phận phụ trách vị trí).
+        // Bỏ điều kiện c.JobId == null để người dùng xem lại Yêu cầu tuyển dụng
+        // sau khi tin đã tạo thì vẫn thấy danh sách tiêu chí. Cửa quyền chỉnh sửa
+        // ở frontend đã bị vô hiệu hoá khi trạng thái là CONVERTED.
         var q = _db.EvaluationCriterias.AsNoTracking()
-            .Where(c => c.RequestId == requestId && c.JobId == null);
+            .Where(c => c.RequestId == requestId);
         if (activeOnly) q = q.Where(c => c.Active);
         if (approvedOnly) q = q.Where(c => c.Status == CriteriaStatus.Approved);
         return await q.OrderBy(c => c.CriteriaId).ToListAsync();

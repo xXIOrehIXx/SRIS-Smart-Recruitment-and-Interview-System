@@ -63,7 +63,6 @@ export const ROLE_MENUS = {
     { key: '/human-resource/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
     { key: '/human-resource/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
-    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
     { key: '/human-resource/cv-intake', icon: 'InboxOutlined', label: 'Nhận Hồ Sơ' },
     { key: '/analytics', icon: 'BarChartOutlined', label: 'Báo Cáo' },
@@ -74,7 +73,6 @@ export const ROLE_MENUS = {
     { key: '/human-resource/jobs', icon: 'FileTextOutlined', label: 'Tin Tuyển Dụng' },
     { key: '/human-resource/requests', icon: 'FileAddOutlined', label: 'Yêu Cầu Tuyển Dụng' },
     { key: '/interviews/schedule', icon: 'CalendarOutlined', label: 'Lịch Phỏng Vấn' },
-    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
     { key: '/offers', icon: 'CheckSquareOutlined', label: 'Offers' },
     { key: '/human-resource/cv-intake', icon: 'InboxOutlined', label: 'Nhận Hồ Sơ' },
     { key: '/mail-templates', icon: 'MailOutlined', label: 'Mẫu Email' },
@@ -90,9 +88,6 @@ export const ROLE_MENUS = {
     // DM duyệt ai được vào phỏng vấn (SCREENING->INTERVIEW) và ĐỀ XUẤT tuyển; quyết định
     // cuối là của Giám đốc (V043). Human Resource sàng lọc, xếp lịch và soạn thư mời.
     { key: '/dept/screening', icon: 'SolutionOutlined', label: 'Duyệt Vào Phỏng Vấn' },
-    // DM RA ĐỀ: bóc tiêu chí bằng AI + chốt bộ tiêu chí cho vị trí bộ phận mình (24/08/2026).
-    // Backend chặn theo Job.department_manager_id, màn này chỉ lọc dropdown cho khỏi rối.
-    { key: '/criteria', icon: 'CheckSquareOutlined', label: 'Tiêu Chí' },
     { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Đề Xuất Tuyển' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],

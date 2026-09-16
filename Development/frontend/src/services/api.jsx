@@ -673,6 +673,8 @@ export const requestCriteriaAPI = {
   update: (criteriaId, data) =>
     api.put(`/evaluation-criteria/${criteriaId}`, data),
 
+  delete: (criteriaId) =>
+    api.delete(`/evaluation-criteria/${criteriaId}`),
   remove: (criteriaId) =>
     api.delete(`/evaluation-criteria/${criteriaId}`),
 
