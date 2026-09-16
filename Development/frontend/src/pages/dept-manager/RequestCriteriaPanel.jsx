@@ -198,20 +198,6 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
     }
   };
 
-  const handleDelete = async (criteriaId) => {
-    try {
-      setBusy(true);
-      await requestCriteriaAPI.delete(criteriaId);
-      message.success("Đã xóa tiêu chí.");
-      fetchItems();
-    } catch (error) {
-      console.error("Error deleting criterion:", error);
-      message.error(error?.response?.data?.userMsg || "Không xóa được tiêu chí.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const handleApprove = async () => {
     try {
       setBusy(true);
