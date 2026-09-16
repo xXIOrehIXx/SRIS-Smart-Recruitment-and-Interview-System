@@ -35,7 +35,6 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
   // hai form giống hệt nhau, tách ra chỉ để lệch nhau về sau.
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
-  const [editForm] = Form.useForm();
 
   const pollRef = useRef(null);
   const aliveRef = useRef(true);
@@ -166,7 +165,7 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
   const handleDelete = async (record) => {
     try {
       setBusy(true);
-      await requestCriteriaAPI.remove(record.criteriaId);
+      await requestCriteriaAPI.delete(record.criteriaId);
       message.success("Đã xóa tiêu chí.");
       fetchItems();
     } catch (error) {
@@ -177,26 +176,6 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
     }
   };
 
-  const handleUpdate = async (values) => {
-    if (!editItem) return;
-    try {
-      setBusy(true);
-      await requestCriteriaAPI.update(editItem.criteriaId, {
-        name: values.name.trim(),
-        weight: values.weight,
-        maxScore: editItem.maxScore || 10,
-      });
-      message.success("Đã cập nhật tiêu chí.");
-      setEditItem(null);
-      editForm.resetFields();
-      fetchItems();
-    } catch (error) {
-      console.error("Error updating criterion:", error);
-      message.error(error?.response?.data?.userMsg || "Không cập nhật được tiêu chí.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleApprove = async () => {
     try {
@@ -406,35 +385,6 @@ const RequestCriteriaPanel = ({ requestId, canEdit, status }) => {
             name="weight"
             label="Trọng số"
             tooltip="Tiêu chí quan trọng gấp mấy lần tiêu chí thường. Bảng hiển thị nó dưới dạng tỉ trọng % trên tổng cả bộ."
-            rules={[{ required: true, message: "Nhập trọng số" }]}
-          >
-            <InputNumber min={1} max={5} style={{ width: "100%" }} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title="Sửa tiêu chí"
-        open={!!editItem}
-        onCancel={() => { setEditItem(null); editForm.resetFields(); }}
-        onOk={() => editForm.submit()}
-        confirmLoading={busy}
-        okText="Lưu"
-        cancelText="Hủy"
-        destroyOnClose
-      >
-        <Form form={editForm} layout="vertical" onFinish={handleUpdate}>
-          <Form.Item
-            name="name"
-            label="Tên tiêu chí"
-            rules={[{ required: true, message: "Nhập tên tiêu chí" }]}
-          >
-            <Input placeholder="Ví dụ: Kinh nghiệm quản lý đội nhóm" />
-          </Form.Item>
-          <Form.Item
-            name="weight"
-            label="Trọng số"
-            tooltip="Tiêu chí quan trọng gấp mấy lần tiêu chí thường"
             rules={[{ required: true, message: "Nhập trọng số" }]}
           >
             <InputNumber min={1} max={5} style={{ width: "100%" }} />

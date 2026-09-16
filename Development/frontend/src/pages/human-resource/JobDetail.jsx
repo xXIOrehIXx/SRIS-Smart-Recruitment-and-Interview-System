@@ -457,7 +457,7 @@ const JobDetail = () => {
         <div className="job-info-content">
           <Descriptions column={1} bordered>
             <Descriptions.Item label="Mô tả công việc">
-              <Paragraph>{job?.description || 'N/A'}</Paragraph>
+              <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{job?.jdText || 'N/A'}</Paragraph>
             </Descriptions.Item>
             <Descriptions.Item label="Yêu cầu">
               {job?.requirements?.map((req, i) => (
@@ -533,7 +533,7 @@ const JobDetail = () => {
               <div className="job-info">
                 <Title level={3} className="job-title">{job?.title || 'N/A'}</Title>
                 <div className="job-tags">
-                  <Tag color="blue">{job?.jobType || job?.type || 'N/A'}</Tag>
+                  <Tag color="blue">{job?.employmentType || job?.jobType || job?.type || 'N/A'}</Tag>
                   {/* Backend trả "Open"/"Closed" (không phải "Active") */}
                   <Tag color={/^open$/i.test(job?.status) ? 'success' : 'default'}>
                     {/^open$/i.test(job?.status) ? 'Đang tuyển' : 'Đã đóng'}
