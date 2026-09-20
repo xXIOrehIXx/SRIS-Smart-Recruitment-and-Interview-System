@@ -46,7 +46,9 @@ public class HiringProposalController : ControllerBase
 
     /// <summary>
     /// Hàng đợi đề xuất của công ty (?status=PENDING|APPROVED|REJECTED). Giám đốc dùng để quyết;
-    /// DM/nhân sự xem để biết đề xuất của mình tới đâu.
+    /// DM/nhân sự xem để biết đề xuất của mình tới đâu. Bỏ trống status = cả lịch sử.
+    /// Trưởng bộ phận chỉ nhận phần của mình (vị trí mình phụ trách + phiếu mình viết) — phiếu
+    /// mang mức lương từng người, bộ phận này không đọc con số của bộ phận kia.
     /// </summary>
     [HttpGet("api/hiring-proposals")]
     [WithRole(RoleConstants.Director, RoleConstants.DepartmentManager, RoleConstants.HumanResource)]

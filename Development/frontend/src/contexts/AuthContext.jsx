@@ -89,12 +89,15 @@ export const ROLE_MENUS = {
     // cuối là của Giám đốc (V043). Human Resource sàng lọc, xếp lịch và soạn thư mời.
     { key: '/dept/screening', icon: 'SolutionOutlined', label: 'Duyệt Vào Phỏng Vấn' },
     { key: '/dept/hiring-decision', icon: 'AuditOutlined', label: 'Đề Xuất Tuyển' },
+    // Phiếu đã xong rơi khỏi màn trên (nó chỉ liệt kê hồ sơ đang ở bước Phỏng vấn) — xem lại ở đây.
+    { key: '/dept/proposal-history', icon: 'HistoryOutlined', label: 'Lịch Sử Đề Xuất' },
     { key: '/dept/create-request', icon: 'FileAddOutlined', label: 'Tạo Yêu Cầu Tuyển Dụng' },
   ],
   // Giám đốc chỉ có đúng việc của mình: duyệt hai cửa (mở vị trí, tuyển người) + nhìn số liệu.
   [ROLES.DIRECTOR]: [
     { key: '/director/requests', icon: 'FileAddOutlined', label: 'Duyệt Yêu Cầu Tuyển Dụng' },
     { key: '/director/proposals', icon: 'AuditOutlined', label: 'Duyệt Đề Xuất Tuyển' },
+    { key: '/director/proposal-history', icon: 'HistoryOutlined', label: 'Lịch Sử Quyết Định' },
     { key: '/director/dashboard', icon: 'DashboardOutlined', label: 'Dashboard' },
   ],
 };

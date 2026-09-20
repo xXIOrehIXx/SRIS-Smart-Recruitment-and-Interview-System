@@ -53,7 +53,7 @@ public class HiringProposalServiceTests
             });
 
         // Service đọc lại phiếu qua GetListAsync để trả DTO (kèm tên ứng viên/vị trí).
-        _proposalRepo.Setup(r => r.GetListAsync(CompanyId, It.IsAny<string?>()))
+        _proposalRepo.Setup(r => r.GetListAsync(CompanyId, It.IsAny<string?>(), It.IsAny<long?>()))
             .ReturnsAsync(() => new List<HiringProposalRow>
             {
                 new(CurrentProposal, "Ngô Thị Lan", null, "Trần Văn Nam", "nam@example.com",
@@ -301,5 +301,36 @@ public class HiringProposalServiceTests
 
         Assert.Equal("PENDING", CurrentProposal.Status);
         _proposalRepo.Verify(r => r.SaveAsync(), Times.Never);
+    }
+
+    // ===== Lịch sử đề xuất: ai thấy phần của ai =====
+
+    /// <summary>
+    /// Phiếu đề xuất mang mức lương của từng người. Màn lịch sử bày cả bảng ra, nên Trưởng bộ
+    /// phận phải được thu hẹp về phạm vi của mình — không thì họ đọc được lương bộ phận khác.
+    /// </summary>
+    [Fact]
+    public async Task GetList_AsDepartmentManager_ScopesToOwnJobs()
+    {
+        var service = CreateService();
+        _context.Role = RoleConstants.DepartmentManager;
+
+        await service.GetListAsync(CompanyId, null);
+
+        _proposalRepo.Verify(r => r.GetListAsync(CompanyId, null, DmUserId), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(RoleConstants.Director)]
+    [InlineData(RoleConstants.HumanResource)]
+    [InlineData(RoleConstants.Admin)]
+    public async Task GetList_AsDirectorOrHrOrAdmin_SeesWholeCompany(string role)
+    {
+        var service = CreateService();
+        _context.Role = role;
+
+        await service.GetListAsync(CompanyId, "APPROVED");
+
+        _proposalRepo.Verify(r => r.GetListAsync(CompanyId, "APPROVED", null), Times.Once);
     }
 }

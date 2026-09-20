@@ -162,8 +162,24 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
 
     public async Task<IReadOnlyList<HiringProposalDto>> GetListAsync(long companyId, string? status)
     {
-        var rows = await _proposalRepo.GetListAsync(companyId, Normalize(status)?.ToUpperInvariant());
+        var rows = await _proposalRepo.GetListAsync(
+            companyId, Normalize(status)?.ToUpperInvariant(), DepartmentManagerScope());
         return rows.Select(ToDto).ToList();
+    }
+
+    /// <summary>
+    /// Danh sách này là của CẢ công ty, mà mỗi phiếu mang một mức lương cụ thể — Trưởng bộ phận
+    /// chỉ được thấy phần của mình (vị trí mình phụ trách + phiếu mình đã viết). Giám đốc, nhân
+    /// sự và Admin xem toàn công ty: người quyết tuyển và người soạn thư mời cần nhìn hết.
+    /// Trước đây endpoint trả tất cả cho mọi role; màn DM cũ không lộ ra vì nó chỉ tra theo
+    /// applicationId của đúng phòng ban mình, nhưng màn lịch sử thì bày thẳng cả bảng.
+    /// </summary>
+    private long? DepartmentManagerScope()
+    {
+        if (_contextData.UserId <= 0) return null;
+        return string.Equals(_contextData.Role, RoleConstants.DepartmentManager, StringComparison.OrdinalIgnoreCase)
+            ? _contextData.UserId
+            : null;
     }
 
     public async Task<IReadOnlyList<HiringProposalDto>> GetByApplicationAsync(long companyId, long applicationId)

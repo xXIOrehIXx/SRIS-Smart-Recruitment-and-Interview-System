@@ -1,4 +1,4 @@
-using GP35.SRIS.Domain.Entities;
+﻿using GP35.SRIS.Domain.Entities;
 
 namespace GP35.SRIS.Domain.Repos;
 
@@ -33,8 +33,14 @@ public interface IHiringProposalRepo : IBaseRepo<long, HiringProposal>
     /// <summary>Tạo đề xuất, trả proposal_id.</summary>
     Task<long> InsertAsync(long companyId, HiringProposal proposal);
 
-    /// <summary>Danh sách đề xuất của công ty (mới nhất trước), lọc status tùy chọn.</summary>
-    Task<IReadOnlyList<HiringProposalRow>> GetListAsync(long companyId, string? status);
+    /// <summary>
+    /// Danh sách đề xuất của công ty (mới nhất trước), lọc status tùy chọn.
+    /// <paramref name="departmentManagerId"/> != null -> chỉ phiếu của vị trí người đó phụ
+    /// trách, cộng phiếu do chính họ viết (vị trí sang tay DM khác thì họ vẫn xem lại được
+    /// việc mình đã làm). Null = toàn công ty (Giám đốc, nhân sự, Admin).
+    /// </summary>
+    Task<IReadOnlyList<HiringProposalRow>> GetListAsync(
+        long companyId, string? status, long? departmentManagerId = null);
 
     /// <summary>Đề xuất theo id (đã lọc tenant). Null nếu không thuộc company.</summary>
     Task<HiringProposal?> GetByIdAsync(long companyId, long proposalId);

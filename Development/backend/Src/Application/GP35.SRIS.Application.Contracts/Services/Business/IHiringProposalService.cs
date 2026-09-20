@@ -14,7 +14,10 @@ public interface IHiringProposalService
     /// <summary>Giám đốc duyệt/từ chối. Duyệt -> hồ sơ sang OFFER kèm điều khoản đã chốt.</summary>
     Task<HiringProposalDto> DecideAsync(long companyId, long userId, long proposalId, DecideProposalDto dto);
 
-    /// <summary>Hàng đợi đề xuất của công ty (?status=PENDING để lọc).</summary>
+    /// <summary>
+    /// Hàng đợi/lịch sử đề xuất của công ty (status null = tất cả). Trưởng bộ phận được thu hẹp
+    /// về vị trí mình phụ trách + phiếu mình viết; Giám đốc/nhân sự/Admin xem toàn công ty.
+    /// </summary>
     Task<IReadOnlyList<HiringProposalDto>> GetListAsync(long companyId, string? status);
 
     /// <summary>Lịch sử đề xuất của 1 hồ sơ (mới nhất trước).</summary>
