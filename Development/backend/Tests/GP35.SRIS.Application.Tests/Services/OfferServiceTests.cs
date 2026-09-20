@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Application.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -6,6 +6,7 @@ using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Lib.Services.Pdf;
+using GP35.SRIS.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Serilog;
@@ -27,6 +28,8 @@ public class OfferServiceTests
     private readonly Mock<IOfferLetterPdfGenerator> _pdf = new();
     private readonly Mock<IBrandLogoFetcher> _logo = new();
     private readonly Mock<IActivityLogRepo> _activityLogRepo = new();
+    private readonly Mock<IOfferAttachmentRepo> _attachmentRepo = new();
+    private readonly Mock<IFileStorageService> _fileStorage = new();
     private readonly Mock<IContextData> _contextData = new();
     private readonly Mock<ILogger> _logger = new();
 
@@ -54,6 +57,8 @@ public class OfferServiceTests
             s.AddSingleton(_pdf.Object);
             s.AddSingleton(_logo.Object);
             s.AddSingleton(_activityLogRepo.Object);
+            s.AddSingleton(_attachmentRepo.Object);
+            s.AddSingleton(_fileStorage.Object);
             s.AddSingleton(_contextData.Object);
             s.AddSingleton(_logger.Object);
         });
@@ -325,5 +330,139 @@ public class OfferServiceTests
         _stateService.Verify(
             s => s.TransitionAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(),
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+    }
+
+    // ============================================================
+    // Bản scan hợp đồng đã ký (V058)
+    // ============================================================
+
+    private void SetupOfferSent() =>
+        _offerRepo.Setup(r => r.GetByApplicationAsync(1L, 100L))
+            .ReturnsAsync(new OfferDetail { OfferId = 10, ApplicationId = 100, Status = "PENDING" });
+
+    [Fact]
+    public async Task AddAttachmentAsync_Should_Throw_Conflict_If_No_Offer()
+    {
+        // File đính vào THƯ MỜI — chưa gửi thư thì không có gì để đính vào.
+        var svc = CreateService();
+        _offerRepo.Setup(r => r.GetByApplicationAsync(1L, 100L)).ReturnsAsync((OfferDetail?)null);
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => svc.AddAttachmentAsync(1L, 9L, 100L, "hop-dong.pdf", "application/pdf",
+                new byte[] { 1, 2, 3 }, null, null));
+
+        Assert.Equal("CONFLICT", ex.ErrorCode);
+    }
+
+    [Fact]
+    public async Task AddAttachmentAsync_Should_Reject_Unsupported_Extension()
+    {
+        // Danh sách trắng theo ĐUÔI FILE, không tin Content-Type client khai.
+        var svc = CreateService();
+        SetupOfferSent();
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => svc.AddAttachmentAsync(1L, 9L, 100L, "hop-dong.exe", "application/pdf",
+                new byte[] { 1, 2, 3 }, null, null));
+
+        Assert.Equal("BAD_REQUEST", ex.ErrorCode);
+        _fileStorage.Verify(f => f.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(),
+            It.IsAny<long>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddAttachmentAsync_Should_Reject_Oversize_File()
+    {
+        var svc = CreateService();
+        SetupOfferSent();
+
+        var ex = await Assert.ThrowsAsync<BaseException>(
+            () => svc.AddAttachmentAsync(1L, 9L, 100L, "scan.pdf", "application/pdf",
+                new byte[10 * 1024 * 1024 + 1], null, null));
+
+        Assert.Equal("BAD_REQUEST", ex.ErrorCode);
+    }
+
+    [Fact]
+    public async Task AddAttachmentAsync_Should_Store_File_And_Leave_Application_State_Alone()
+    {
+        // Lưu bằng chứng giấy tờ KHÔNG phải một quyết định: không đường nào được đụng current_state.
+        var svc = CreateService();
+        SetupOfferSent();
+        _attachmentRepo.Setup(r => r.InsertAsync(1L, It.IsAny<OfferAttachment>())).ReturnsAsync(55L);
+        _fileStorage.Setup(f => f.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(),
+                It.IsAny<long>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string name, Stream _, long size, string ct, CancellationToken _) =>
+                new StoredFileInfo(name, size, ct));
+        _fileStorage.Setup(f => f.GetPresignedUrlAsync(It.IsAny<string>(), It.IsAny<int>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("https://minio/scan.pdf");
+
+        var dto = await svc.AddAttachmentAsync(1L, 9L, 100L, @"C:\tam\hop dong.PDF", "application/pdf",
+            new byte[] { 1, 2, 3 }, "  bản ký 21/09  ", null);
+
+        Assert.Equal(55L, dto.AttachmentId);
+        Assert.Equal("SIGNED_CONTRACT", dto.Kind);
+        Assert.Equal("hop dong.PDF", dto.FileName);   // đường dẫn của client bị bóc đi
+        Assert.Equal("bản ký 21/09", dto.Note);
+        Assert.Equal("https://minio/scan.pdf", dto.FileUrl);
+
+        _attachmentRepo.Verify(r => r.InsertAsync(1L, It.Is<OfferAttachment>(
+            a => a.OfferId == 10 && a.ApplicationId == 100
+                 && a.FileUrl.StartsWith("offer-signed/1/100/")
+                 && a.MimeType == "application/pdf")), Times.Once);
+        _stateService.Verify(
+            s => s.TransitionAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddAttachmentAsync_Should_Not_Insert_Row_When_Storage_Fails()
+    {
+        // Ghi một dòng trỏ vào object không tồn tại = dựng sẵn bằng chứng giả.
+        var svc = CreateService();
+        SetupOfferSent();
+        _fileStorage.Setup(f => f.UploadAsync(It.IsAny<string>(), It.IsAny<Stream>(),
+                It.IsAny<long>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("minio down"));
+
+        await Assert.ThrowsAsync<IOException>(
+            () => svc.AddAttachmentAsync(1L, 9L, 100L, "scan.pdf", "application/pdf",
+                new byte[] { 1 }, null, null));
+
+        _attachmentRepo.Verify(r => r.InsertAsync(It.IsAny<long>(), It.IsAny<OfferAttachment>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAttachmentsAsync_Should_Keep_Row_When_Presigned_Url_Fails()
+    {
+        // Storage lỗi thì dòng vẫn hiện (người dùng biết CÓ bản scan), chỉ thiếu link.
+        var svc = CreateService();
+        _attachmentRepo.Setup(r => r.GetByApplicationAsync(1L, 100L)).ReturnsAsync(new List<OfferAttachment>
+        {
+            new() { AttachmentId = 7, ApplicationId = 100, FileName = "scan.pdf",
+                    FileUrl = "offer-signed/1/100/x.pdf", Kind = "SIGNED_CONTRACT" }
+        });
+        _fileStorage.Setup(f => f.GetPresignedUrlAsync(It.IsAny<string>(), It.IsAny<int>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("minio down"));
+
+        var list = await svc.GetAttachmentsAsync(1L, 100L);
+
+        var only = Assert.Single(list);
+        Assert.Equal("scan.pdf", only.FileName);
+        Assert.Null(only.FileUrl);
+    }
+
+    [Fact]
+    public async Task DeleteAttachmentAsync_Should_Refuse_Row_Of_Another_Application()
+    {
+        // attachment_id đoán được, nên phải khớp CẢ hồ sơ đang mở.
+        var svc = CreateService();
+        _attachmentRepo.Setup(r => r.GetByIdAsync(1L, 7L))
+            .ReturnsAsync(new OfferAttachment { AttachmentId = 7, ApplicationId = 999, FileName = "x.pdf" });
+
+        Assert.False(await svc.DeleteAttachmentAsync(1L, 100L, 7L));
+        _attachmentRepo.Verify(r => r.DeleteAsync(It.IsAny<long>(), It.IsAny<long>()), Times.Never);
     }
 }

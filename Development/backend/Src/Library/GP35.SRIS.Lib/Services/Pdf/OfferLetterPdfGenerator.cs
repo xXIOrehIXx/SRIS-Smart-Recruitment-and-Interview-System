@@ -110,6 +110,7 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
 
                         ComposeClosing(col, m);
                         ComposeSignature(col, m);
+                        ComposeAcceptance(col, m, p);
                     });
             });
         });
@@ -247,8 +248,8 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
     }
 
     /// <summary>
-    /// Chân thư: lời chào + người ký. KHÔNG có ô ký tay — thư mời ở đây là thông báo gửi
-    /// qua email, ứng viên trả lời bằng email chứ không in ra ký rồi gửi lại (5.15).
+    /// Chân thư: lời chào + người ký (chữ ký ĐÁNH MÁY của đại diện công ty). Ô ký tay nằm ở
+    /// khối xác nhận bên dưới — <see cref="ComposeAcceptance"/>.
     /// </summary>
     private static void ComposeSignature(ColumnDescriptor col, OfferLetterModel m)
     {
@@ -264,6 +265,72 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
             if (Has(m.SignerName)) sign.Item().Text(m.SignerName!).Bold().LineHeight(TightLine);
             if (Has(m.SignerTitle)) sign.Item().Text(m.SignerTitle!).LineHeight(TightLine);
             if (Has(m.CompanyName)) sign.Item().Text(m.CompanyName!).LineHeight(TightLine);
+        });
+    }
+
+    /// <summary>
+    /// Khối XÁC NHẬN cuối thư: câu đồng ý điều khoản + hai ô ký tay (ứng viên | đại diện công ty).
+    ///
+    /// Có khối này vì lá thư không dừng ở email nữa: ứng viên IN ra, ký vào câu xác nhận, gửi lại
+    /// cho công ty, Giám đốc ký tiếp, rồi nhân sự scan bản có đủ hai chữ ký và đính vào hồ sơ
+    /// (V058) làm bằng chứng đã ký. Không có sẵn ô ký thì mỗi người tự vẽ một kiểu lên tờ giấy
+    /// được in ra, và bản scan thu về chẳng theo khuôn nào.
+    ///
+    /// Tên hai bên in sẵn DƯỚI nét ký để người ký không phải tự viết lại họ tên; ngày thì để
+    /// trống — ngày ký là ngày ứng viên cầm bút, hệ thống không biết và không được đoán hộ.
+    /// </summary>
+    private static void ComposeAcceptance(ColumnDescriptor col, OfferLetterModel m, LetterPalette p)
+    {
+        col.Item().Height(BlockGap + 6);
+
+        // ShowEntire cho CẢ khối: tách ra là trang sau còn trơ hai nét gạch không ai hiểu ký gì.
+        col.Item().ShowEntire().Column(box =>
+        {
+            box.Item().LineHorizontal(0.8f).LineColor(p.SoftLine);
+            box.Item().Height(BlockGap);
+
+            box.Item().Text("XÁC NHẬN CỦA ỨNG VIÊN").Bold().FontColor(p.Heading);
+            box.Item().Height(5);
+            box.Item().Text(
+                "Tôi đã đọc và đồng ý với mọi điều khoản nêu trong thư mời nhận việc này.");
+
+            box.Item().Height(BlockGap + 4);
+
+            box.Item().Row(row =>
+            {
+                row.RelativeItem().Element(c => ComposeSignatureBox(
+                    c, p, "Ứng viên", m.CandidateName, dateLine: true, subtitle: null));
+                row.ConstantItem(28);
+                row.RelativeItem().Element(c => ComposeSignatureBox(
+                    c, p, "Đại diện công ty", m.SignerName, dateLine: false, subtitle: m.SignerTitle));
+            });
+        });
+    }
+
+    /// <summary>Một ô ký: nhãn vai trò, khoảng trống để ký, nét gạch, rồi họ tên in sẵn.</summary>
+    private static void ComposeSignatureBox(
+        IContainer container, LetterPalette p, string role, string? name, bool dateLine, string? subtitle)
+    {
+        container.Column(box =>
+        {
+            box.Item().Text(role).Bold().LineHeight(TightLine);
+            box.Item().Text("(Ký, ghi rõ họ tên)").FontSize(8.5f).FontColor(p.Muted).LineHeight(TightLine);
+
+            // Khoảng trống đủ cho một chữ ký tay trên giấy A4.
+            box.Item().Height(46);
+            box.Item().LineHorizontal(0.7f).LineColor(p.Muted);
+            box.Item().Height(4);
+
+            // Tên rỗng vẫn chừa dòng trống: hai ô phải cao bằng nhau thì hai nét gạch mới
+            // thẳng hàng trên giấy in.
+            box.Item().Text(Has(name) ? name! : " ").Bold().LineHeight(TightLine);
+
+            if (Has(subtitle))
+                box.Item().Text(subtitle!).FontSize(9).FontColor(p.Muted).LineHeight(TightLine);
+
+            if (dateLine)
+                box.Item().Text("Ngày ký: ......../......../..............")
+                    .FontSize(9).FontColor(p.Muted).LineHeight(TightLine);
         });
     }
 

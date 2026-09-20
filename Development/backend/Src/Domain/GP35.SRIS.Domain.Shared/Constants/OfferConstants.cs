@@ -19,3 +19,15 @@ public static class OfferStatus
     /// <summary>Human Resource/DM ghi nhận ứng viên từ chối -> đẩy Application sang REJECTED.</summary>
     public const string Declined = "DECLINED";
 }
+
+/// <summary>
+/// Loại file đính kèm thư mời (OfferAttachment.kind — V058). Khớp CK_OfferAttachment_kind.
+/// </summary>
+public static class OfferAttachmentKind
+{
+    /// <summary>Bản scan thư mời/hợp đồng đã có chữ ký của ứng viên và đại diện công ty.</summary>
+    public const string SignedContract = "SIGNED_CONTRACT";
+
+    /// <summary>Giấy tờ khác đi kèm (phụ lục, biên bản bàn giao...).</summary>
+    public const string Other = "OTHER";
+}

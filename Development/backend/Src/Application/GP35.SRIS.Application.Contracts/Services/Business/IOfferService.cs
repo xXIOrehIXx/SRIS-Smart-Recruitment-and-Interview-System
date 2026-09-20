@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 
 namespace GP35.SRIS.Application.Contracts.Services.Business;
 
@@ -42,4 +42,21 @@ public interface IOfferService : IBaseService
     /// </summary>
     Task<OfferOutcomeResultDto> RecordOutcomeAsync(
         long companyId, long userId, long applicationId, OfferOutcomeDto dto);
+
+    /// <summary>
+    /// Danh sách file đính kèm của thư mời (bản scan hợp đồng đã ký — V058), mới nhất lên đầu.
+    /// Mỗi dòng kèm link presigned sinh mới, hết hạn ~1 giờ.
+    /// </summary>
+    Task<IReadOnlyList<OfferAttachmentDto>> GetAttachmentsAsync(long companyId, long applicationId);
+
+    /// <summary>
+    /// Đính kèm 1 file cho thư mời. KHÔNG đụng tới trạng thái hồ sơ: đây là lưu bằng chứng giấy
+    /// tờ, không phải một quyết định — đính kèm được cả trước và sau khi ghi nhận nhận việc.
+    /// </summary>
+    Task<OfferAttachmentDto> AddAttachmentAsync(
+        long companyId, long userId, long applicationId,
+        string fileName, string? mimeType, byte[] content, string? note, string? kind);
+
+    /// <summary>Gỡ 1 file đính kèm (upload nhầm). Trả false nếu không tìm thấy.</summary>
+    Task<bool> DeleteAttachmentAsync(long companyId, long applicationId, long attachmentId);
 }

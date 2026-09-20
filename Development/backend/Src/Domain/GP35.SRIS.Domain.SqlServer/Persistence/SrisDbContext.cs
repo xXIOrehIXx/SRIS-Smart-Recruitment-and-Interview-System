@@ -63,6 +63,7 @@ public class SrisDbContext : DbContext
     public DbSet<InterviewScore> InterviewScores => Set<InterviewScore>();
     public DbSet<InterviewFeedback> InterviewFeedbacks => Set<InterviewFeedback>();
     public DbSet<OfferDetail> OfferDetails => Set<OfferDetail>();
+    public DbSet<OfferAttachment> OfferAttachments => Set<OfferAttachment>();
     public DbSet<InternalNote> InternalNotes => Set<InternalNote>();
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<RecruitmentRequest> RecruitmentRequests => Set<RecruitmentRequest>();
@@ -281,6 +282,14 @@ public class SrisDbContext : DbContext
             e.HasKey(x => x.OfferId);
             e.Property(x => x.SalaryAmount).HasColumnType("decimal(18,2)");
             // decided_by / note / expires_at: đã thêm ở migration V005.
+            ConfigureCreatedAt(e.Property(x => x.CreatedAt));
+            e.HasQueryFilter(x => x.CompanyId == _companyId);
+        });
+
+        b.Entity<OfferAttachment>(e =>
+        {
+            e.ToTable("OfferAttachment");
+            e.HasKey(x => x.AttachmentId);
             ConfigureCreatedAt(e.Property(x => x.CreatedAt));
             e.HasQueryFilter(x => x.CompanyId == _companyId);
         });
