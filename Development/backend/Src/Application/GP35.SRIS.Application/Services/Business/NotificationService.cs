@@ -27,6 +27,8 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     private readonly ICompanyRepo _companyRepo;
     private readonly IOfferRepo _offerRepo;
     private readonly IEmailService _email;
+    private readonly IOfferLetterPdfGenerator _pdf;
+    private readonly IBrandLogoFetcher _logo;
     private readonly DefaultConfig _config;
     private readonly ILogger _logger;
 
@@ -37,6 +39,8 @@ public class NotificationService : BaseService<NotificationService>, INotificati
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _offerRepo = serviceProvider.GetRequiredService<IOfferRepo>();
         _email = serviceProvider.GetRequiredService<IEmailService>();
+        _pdf = serviceProvider.GetRequiredService<IOfferLetterPdfGenerator>();
+        _logo = serviceProvider.GetRequiredService<IBrandLogoFetcher>();
         _config = serviceProvider.GetRequiredService<DefaultConfig>();
         _logger = serviceProvider.GetRequiredService<ILogger>().ForContext<NotificationService>();
     }
@@ -94,10 +98,24 @@ public class NotificationService : BaseService<NotificationService>, INotificati
                     $"Liên kết có hiệu lực đến {expiresText}.");
             }
 
-            // KHÔNG đính kèm file: thư mời nằm ngay trong thân email, ứng viên đọc và bấm
-            // Reply để trả lời. Kèm thêm một bản PDF y hệt chỉ làm nặng hộp thư và dễ bị bộ
-            // lọc thư rác soi. Ai cần bản để lưu/in thì tải trong Portal.
-            await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
+            // Thư mời ĐI KÈM bản PDF để in (21/09/2026). Đảo lại ghi chú cũ ở đây ("không
+            // đính kèm file, ai cần bản in thì tải trong Portal"): ghi chú đó viết khi ứng
+            // viên chỉ cần đọc rồi bấm Reply. Giờ họ phải IN thư ra, ký vào khối "Xác nhận
+            // của ứng viên" ở cuối rồi gửi lại bản có chữ ký (V058) — mà thân email thì
+            // không có khối ký, in ra mỗi hộp thư một kiểu, và ứng viên KHÔNG có tài khoản
+            // Portal để tự vào tải. Không đính kèm là cắt đứt luồng ký ngay ở bước đầu.
+            var letterPdf = letter is null ? null : await TryBuildLetterPdfAsync(letter, applicationId);
+            if (letterPdf is not null)
+            {
+                await _email.SendEmailAttachmentOnlyAsync(
+                    subject, body, info.CandidateEmail, new List<string>(), letterPdf);
+            }
+            else
+            {
+                // Dựng PDF hỏng thì vẫn gửi thư: mất file in còn hơn ứng viên không nhận
+                // được lời mời nào.
+                await _email.SendEmailAsync(subject, body, info.CandidateEmail, string.Empty);
+            }
 
             _logger.Information("Notify: gửi email {Purpose} cho {Email} (app={AppId}).",
                 purpose, info.CandidateEmail, applicationId);
@@ -437,6 +455,34 @@ public class NotificationService : BaseService<NotificationService>, INotificati
     }
 
     /// <summary>Gom OfferDetail + Company + tên ứng viên thành dữ liệu in thư. Null = chưa có offer.</summary>
+    /// <summary>
+    /// Dựng file PDF thư mời để đính kèm email. Best-effort như mọi thứ trong service này:
+    /// hỏng thì trả null, phía gọi gửi thư không kèm file.
+    /// </summary>
+    private async Task<List<GP35.SRIS.Lib.Models.EmailAttachment>?> TryBuildLetterPdfAsync(
+        OfferLetterModel letter, long applicationId)
+    {
+        try
+        {
+            letter.LogoBytes = await _logo.TryGetAsync(letter.CompanyLogoUrl);
+            var content = _pdf.Generate(letter);
+
+            // BuildFileName đã kèm đuôi .pdf, mà EmailAttachment ghép FileName + FileExtension
+            // -> bỏ đuôi ra, không thì ứng viên nhận file "....pdf.pdf".
+            var fileName = Path.GetFileNameWithoutExtension(_pdf.BuildFileName(letter));
+            return new List<GP35.SRIS.Lib.Models.EmailAttachment>
+            {
+                new() { FileName = fileName, FileExtension = ".pdf", FileContent = content }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Notify: không dựng được PDF thư mời để đính kèm (app={AppId}).",
+                applicationId);
+            return null;
+        }
+    }
+
     private async Task<OfferLetterModel?> TryBuildLetterModelAsync(long companyId, long applicationId)
     {
         try

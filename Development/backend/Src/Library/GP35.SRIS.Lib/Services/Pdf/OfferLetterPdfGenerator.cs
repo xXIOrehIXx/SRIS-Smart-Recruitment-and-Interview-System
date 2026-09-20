@@ -237,8 +237,10 @@ public class OfferLetterPdfGenerator : IOfferLetterPdfGenerator
             : "";
 
         col.Item().Height(BlockGap);
+        // Bản in: người đọc ĐANG cầm tờ giấy, nên nói "in thư này" chứ không phải "file đính kèm".
         col.Item().Text(
-            $"Vui lòng phản hồi xác nhận việc bạn đồng ý với lời mời nhận việc này{deadline}. " +
+            $"Vui lòng in thư này, ký vào phần Xác nhận của ứng viên ở cuối thư rồi gửi lại bản " +
+            $"đã ký cho chúng tôi{deadline}. " +
             $"Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {BuildHrContactPhrase(m)}.")
             ;
 
