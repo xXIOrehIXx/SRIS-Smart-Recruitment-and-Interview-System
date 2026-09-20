@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Services.Business;
+﻿using GP35.SRIS.Application.Services.Business;
 using GP35.SRIS.Domain.Entities;
 using GP35.SRIS.Domain.Repos;
 using GP35.SRIS.Domain.Shared.Constants;
@@ -23,6 +23,8 @@ public class NotificationServiceTests
     private readonly Mock<ICompanyRepo> _companyRepo = new();
     private readonly Mock<IOfferRepo> _offerRepo = new();
     private readonly Mock<IEmailService> _email = new();
+    private readonly Mock<GP35.SRIS.Lib.Services.Pdf.IOfferLetterPdfGenerator> _pdf = new();
+    private readonly Mock<GP35.SRIS.Lib.Services.Pdf.IBrandLogoFetcher> _logo = new();
 
     private string? _sentSubject;
     private string? _sentBody;
@@ -61,6 +63,8 @@ public class NotificationServiceTests
             s.AddSingleton(_companyRepo.Object);
             s.AddSingleton(_offerRepo.Object);
             s.AddSingleton(_email.Object);
+            s.AddSingleton(_pdf.Object);
+            s.AddSingleton(_logo.Object);
         });
         return new NotificationService(provider);
     }
@@ -104,5 +108,61 @@ public class NotificationServiceTests
         Assert.Equal("Welcome Hoàng Mai Phương", _sentSubject);
         Assert.Contains("hầm B2", _sentBody);
         Assert.Contains("01/10/2026", _sentBody);
+    }
+
+    // ============================================================
+    // Thư mời nhận việc đi kèm bản PDF để in và ký (21/09/2026)
+    // ============================================================
+
+    [Fact]
+    public async Task SendMagicLink_Offer_Should_Attach_Letter_Pdf()
+    {
+        // Ứng viên KHÔNG có tài khoản Portal: không đính kèm thì họ không có đường nào lấy
+        // bản in để ký vào khối "Xác nhận của ứng viên".
+        var service = CreateService();
+        _templateRepo.Setup(r => r.GetActiveByTypeAsync(CompanyId, EmailTemplateType.OfferResponse))
+            .ReturnsAsync((EmailTemplate?)null);
+        _pdf.Setup(g => g.Generate(It.IsAny<GP35.SRIS.Lib.Services.Pdf.OfferLetterModel>()))
+            .Returns(new byte[] { 1, 2, 3 });
+        _pdf.Setup(g => g.BuildFileName(It.IsAny<GP35.SRIS.Lib.Services.Pdf.OfferLetterModel>()))
+            .Returns("Thu-moi-nhan-viec-Hoang-Mai-Phuong.pdf");
+
+        List<GP35.SRIS.Lib.Models.EmailAttachment>? sent = null;
+        _email.Setup(e => e.SendEmailAttachmentOnlyAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<List<string>>(), It.IsAny<List<GP35.SRIS.Lib.Models.EmailAttachment>>()))
+            .Callback<string, string, string, List<string>, List<GP35.SRIS.Lib.Models.EmailAttachment>>(
+                (_, b, to, _, a) => { _sentBody = b; _sentTo = to; sent = a; })
+            .ReturnsAsync("ok");
+
+        await service.SendMagicLinkAsync(
+            CompanyId, AppId, EmailTemplateType.OfferResponse, "tok", DateTime.UtcNow.AddDays(7));
+
+        Assert.Equal("phuong@example.com", _sentTo);
+        var file = Assert.Single(sent!);
+        // Tên file + đuôi ghép lại, không được thành "....pdf.pdf".
+        Assert.Equal("Thu-moi-nhan-viec-Hoang-Mai-Phuong", file.FileName);
+        Assert.Equal(".pdf", file.FileExtension);
+        // Thân thư phải nói ứng viên cần làm gì với file đó.
+        Assert.Contains("Xác nhận của ứng viên", _sentBody);
+    }
+
+    [Fact]
+    public async Task SendMagicLink_Offer_Should_Still_Send_When_Pdf_Fails()
+    {
+        // Dựng PDF hỏng: mất file in còn hơn ứng viên không nhận được lời mời nào.
+        var service = CreateService();
+        _templateRepo.Setup(r => r.GetActiveByTypeAsync(CompanyId, EmailTemplateType.OfferResponse))
+            .ReturnsAsync((EmailTemplate?)null);
+        _pdf.Setup(g => g.Generate(It.IsAny<GP35.SRIS.Lib.Services.Pdf.OfferLetterModel>()))
+            .Throws(new InvalidOperationException("render hỏng"));
+
+        await service.SendMagicLinkAsync(
+            CompanyId, AppId, EmailTemplateType.OfferResponse, "tok", DateTime.UtcNow.AddDays(7));
+
+        Assert.Equal("phuong@example.com", _sentTo);
+        _email.Verify(e => e.SendEmailAttachmentOnlyAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<List<string>>(), It.IsAny<List<GP35.SRIS.Lib.Models.EmailAttachment>>()), Times.Never);
     }
 }

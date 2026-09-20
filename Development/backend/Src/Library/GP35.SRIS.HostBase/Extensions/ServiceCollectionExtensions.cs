@@ -114,6 +114,7 @@ namespace GP35.SRIS.HostBase.Extensions
 
             // Offer
             services.AddScoped<IOfferRepo, OfferRepo>();
+            services.AddScoped<IOfferAttachmentRepo, OfferAttachmentRepo>();
 
             // Dashboard / Analytics
             services.AddScoped<IDashboardRepo, DashboardRepo>();

@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Card, Typography, Button, Space, Descriptions, Divider, Avatar,
-  Popconfirm, Spin, Result, message, Row, Col, Tooltip,
+  Popconfirm, Spin, Result, message, Row, Col, Tooltip, Modal, Upload, Input, List, Empty,
 } from 'antd';
 import {
   ArrowLeftOutlined, UserOutlined, MailOutlined, FileTextOutlined,
   CheckCircleOutlined, CloseCircleOutlined, StopOutlined, SendOutlined,
+  UploadOutlined, PaperClipOutlined, DeleteOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { offerAPI, applicationAPI } from '../../services/api';
@@ -16,6 +17,19 @@ import { getStatusTag, getAppStatusTag, formatSalary, MATCHA_GREEN } from './off
 import '../Dashboard.css';
 
 const { Title, Text } = Typography;
+
+/** Đuôi file nhận cho bản scan — khớp danh sách trắng ở BE (OfferService.AllowedAttachmentTypes). */
+const SIGNED_FILE_ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp';
+
+/** Trần 10MB, cũng khớp BE. Chặn ngay ở đây để người dùng không chờ hết một lượt tải rồi mới báo lỗi. */
+const MAX_SIGNED_FILE_BYTES = 10 * 1024 * 1024;
+
+const formatBytes = (bytes) => {
+  if (!bytes && bytes !== 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 /**
  * TRANG chi tiết thư mời nhận việc (Human Resource) — /offers/:applicationId.
@@ -37,6 +51,16 @@ const OfferDetail = () => {
   const [application, setApplication] = useState(null);
   const [acting, setActing] = useState(false);
 
+  // Bản scan hợp đồng đã ký (V058). Danh sách LỊCH SỬ: tải lên lần nữa không đè bản cũ.
+  const [attachments, setAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Hộp thoại "Đã nhận việc": ô đính kèm nằm NGAY TRONG đó, vì đúng lúc bấm nút này là lúc
+  // nhân sự đang cầm bản scan trên tay. Nhưng để trống vẫn bấm được — giấy hay về chậm vài ngày.
+  const [hireOpen, setHireOpen] = useState(false);
+  const [hireFile, setHireFile] = useState(null);
+  const [hireNote, setHireNote] = useState('');
+
   // Quay lại ĐÚNG bộ lọc vừa xem: có ?jobId= thì về tin đó, không có thì về danh sách TẤT CẢ
   // vị trí (mặc định của màn Thư mời). Không đoán jobId từ hồ sơ nữa — người đang xem tất cả mà
   // bấm Back lại bị thả vào một tin lẻ thì mất luôn các hồ sơ khác vừa thấy.
@@ -48,12 +72,16 @@ const OfferDetail = () => {
     try {
       // Hồ sơ và thư mời là 2 nguồn: thư mời giữ nội dung lá thư, hồ sơ giữ tên/email ứng viên.
       // Gọi song song và cho phép thư mời 404 (hồ sơ chưa gửi thư) mà không làm hỏng cả trang.
-      const [appRes, offerRes] = await Promise.all([
+      // Danh sách file đính kèm cũng cho phép hỏng riêng: chưa có thư mời thì endpoint này
+      // trả rỗng/404, không có lý do gì làm trắng cả trang vì nó.
+      const [appRes, offerRes, filesRes] = await Promise.all([
         applicationAPI.getById(applicationId),
         offerAPI.getByApplication(applicationId).catch(() => null),
+        offerAPI.getAttachments(applicationId).catch(() => null),
       ]);
       setApplication(appRes.data || null);
       setOffer(offerRes?.data || null);
+      setAttachments(filesRes?.data || []);
     } catch (error) {
       console.error('Error loading offer detail:', error);
       message.error(error?.response?.data?.userMsg || 'Không tải được thư mời');
@@ -66,19 +94,79 @@ const OfferDetail = () => {
     fetchAll();
   }, [fetchAll]);
 
-  const handleRecordOutcome = async (accepted) => {
+  const handleRecordOutcome = async (accepted, note = null) => {
     try {
       setActing(true);
-      await offerAPI.recordOutcome(applicationId, accepted, null);
+      await offerAPI.recordOutcome(applicationId, accepted, note);
       message.success(accepted
         ? 'Đã ghi nhận ứng viên nhận việc (hồ sơ chuyển sang Trúng tuyển).'
         : 'Đã ghi nhận ứng viên từ chối (hồ sơ chuyển sang Từ chối).');
       fetchAll();
+      return true;
     } catch (error) {
       message.error(error?.response?.data?.userMsg || 'Không thể ghi nhận kết quả');
+      return false;
     } finally {
       setActing(false);
     }
+  };
+
+  /** Kiểm file trước khi gửi đi — cùng luật với BE, chỉ để báo sớm. */
+  const checkSignedFile = (file) => {
+    if (file.size > MAX_SIGNED_FILE_BYTES) {
+      message.error('File tối đa 10MB — bản scan nặng hơn thì giảm độ phân giải rồi tải lại.');
+      return false;
+    }
+    return true;
+  };
+
+  const uploadAttachment = async (file, note) => {
+    if (!checkSignedFile(file)) return false;
+    try {
+      setUploading(true);
+      const res = await offerAPI.addAttachment(applicationId, file, note);
+      // Chèn thẳng vào đầu danh sách thay vì tải lại cả trang: dòng mới hiện ngay, và
+      // link tải trong res.data còn tươi.
+      setAttachments((prev) => [res.data, ...prev]);
+      return true;
+    } catch (error) {
+      message.error(error?.response?.data?.userMsg || 'Không tải được file lên');
+      return false;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadSigned = async (file) => {
+    if (await uploadAttachment(file, null)) message.success('Đã lưu bản scan hợp đồng đã ký.');
+  };
+
+  const handleDeleteAttachment = async (attachmentId) => {
+    try {
+      await offerAPI.deleteAttachment(applicationId, attachmentId);
+      setAttachments((prev) => prev.filter((a) => a.attachmentId !== attachmentId));
+      message.success('Đã gỡ file.');
+    } catch (error) {
+      message.error(error?.response?.data?.userMsg || 'Không gỡ được file');
+    }
+  };
+
+  const closeHireModal = () => {
+    setHireOpen(false);
+    setHireFile(null);
+    setHireNote('');
+  };
+
+  /**
+   * Bấm xác nhận trong hộp thoại "Đã nhận việc": tải file TRƯỚC rồi mới ghi nhận kết quả.
+   * Thứ tự này có chủ đích — ghi nhận trước mà tải file hỏng thì hồ sơ đã sang Trúng tuyển,
+   * hộp thoại đóng lại và bằng chứng nằm lại trên máy nhân sự; làm ngược lại thì file đã lưu
+   * an toàn, lỗi hiện ra ngay và bấm lại được.
+   */
+  const handleConfirmHire = async () => {
+    if (hireFile && !(await uploadAttachment(hireFile, null))) return;
+    const note = hireNote.trim() || null;
+    if (await handleRecordOutcome(true, note)) closeHireModal();
   };
 
   const handleResend = async () => {
@@ -254,6 +342,74 @@ const OfferDetail = () => {
         </Card>
       )}
 
+      {/* Bản scan hợp đồng đã ký (V058). Hiện ở MỌI trạng thái thư mời, không riêng lúc còn
+          chờ trả lời: giấy ký tay thường về sau khi đã bấm "Đã nhận việc", và sau này người ta
+          quay lại đúng trang này để tra "đã ký hợp đồng chưa". */}
+      <Card
+        style={{ marginTop: 16 }}
+        title={<Space><PaperClipOutlined style={{ color: MATCHA_GREEN }} />Hợp đồng đã ký (bản scan)</Space>}
+        extra={(
+          <Upload
+            accept={SIGNED_FILE_ACCEPT}
+            showUploadList={false}
+            beforeUpload={(file) => { handleUploadSigned(file); return false; }}
+          >
+            <Button icon={<UploadOutlined />} loading={uploading}>Tải lên</Button>
+          </Upload>
+        )}
+      >
+        {attachments.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={(
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Chưa có bản scan nào. Ứng viên in thư mời ra, ký vào phần "Xác nhận của ứng viên"
+                ở cuối thư, Giám đốc ký tiếp — rồi tải bản scan có đủ hai chữ ký lên đây.
+              </Text>
+            )}
+          />
+        ) : (
+          <List
+            size="small"
+            dataSource={attachments}
+            renderItem={(item) => (
+              <List.Item
+                actions={[
+                  <Popconfirm
+                    key="del"
+                    title="Gỡ file này?"
+                    description="Chỉ gỡ khỏi hồ sơ, không ảnh hưởng trạng thái ứng viên."
+                    onConfirm={() => handleDeleteAttachment(item.attachmentId)}
+                    okText="Gỡ" cancelText="Hủy" okButtonProps={{ danger: true }}
+                  >
+                    <Button type="text" danger size="small" icon={<DeleteOutlined />} />
+                  </Popconfirm>,
+                ]}
+              >
+                <List.Item.Meta
+                  avatar={<PaperClipOutlined style={{ color: MATCHA_GREEN, fontSize: 18 }} />}
+                  title={item.fileUrl
+                    ? <a href={item.fileUrl} target="_blank" rel="noreferrer">{item.fileName}</a>
+                    /* Link presigned hỏng thì vẫn hiện tên file — người dùng biết là CÓ bản
+                       scan, chỉ là lúc này storage không trả link. */
+                    : <Text>{item.fileName}</Text>}
+                  description={(
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {[
+                        item.uploadedAt ? dayjs(item.uploadedAt).format('DD/MM/YYYY HH:mm') : null,
+                        item.uploadedByName,
+                        formatBytes(item.fileSize),
+                      ].filter(Boolean).join(' • ')}
+                      {item.note ? ` — ${item.note}` : ''}
+                    </Text>
+                  )}
+                />
+              </List.Item>
+            )}
+          />
+        )}
+      </Card>
+
       {isPending && (
         <Card style={{ marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
@@ -290,21 +446,67 @@ const OfferDetail = () => {
               >
                 <Button icon={<CloseCircleOutlined />} loading={acting}>Từ chối</Button>
               </Popconfirm>
-              <Popconfirm
-                title="Ứng viên đã nhận việc?"
-                description="Hồ sơ sẽ chuyển sang Trúng tuyển."
-                onConfirm={() => handleRecordOutcome(true)}
-                okText="Xác nhận" cancelText="Hủy"
-              >
-                <Button type="primary" icon={<CheckCircleOutlined />} loading={acting}
-                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}>
-                  Đã nhận việc
-                </Button>
-              </Popconfirm>
+              {/* Không dùng Popconfirm như nút Từ chối: bấm nút này là lúc đính kèm bản scan
+                  hợp đồng, cần cả ô chọn file lẫn ô ghi chú nên phải là hộp thoại thật. */}
+              <Button type="primary" icon={<CheckCircleOutlined />} loading={acting}
+                onClick={() => setHireOpen(true)}
+                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}>
+                Đã nhận việc
+              </Button>
             </Space>
           </div>
         </Card>
       )}
+
+      <Modal
+        open={hireOpen}
+        title="Ghi nhận ứng viên đã nhận việc"
+        okText="Xác nhận"
+        cancelText="Hủy"
+        confirmLoading={acting || uploading}
+        onOk={handleConfirmHire}
+        onCancel={closeHireModal}
+      >
+        <Space direction="vertical" size={14} style={{ width: '100%' }}>
+          <Text>Hồ sơ sẽ chuyển sang <Text strong>Trúng tuyển</Text>.</Text>
+
+          <div>
+            <Text strong>Bản scan hợp đồng đã ký</Text>
+            <Text type="secondary"> (không bắt buộc)</Text>
+            <div style={{ marginTop: 8 }}>
+              <Upload
+                accept={SIGNED_FILE_ACCEPT}
+                maxCount={1}
+                fileList={hireFile ? [hireFile] : []}
+                beforeUpload={(file) => {
+                  // return false: giữ file lại trong hộp thoại, chỉ gửi lên khi bấm Xác nhận.
+                  if (checkSignedFile(file)) setHireFile(file);
+                  return false;
+                }}
+                onRemove={() => setHireFile(null)}
+              >
+                <Button icon={<UploadOutlined />}>Chọn file PDF hoặc ảnh</Button>
+              </Upload>
+            </div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Chưa có giấy tờ cũng cứ xác nhận — tải bổ sung sau ở mục "Hợp đồng đã ký".
+            </Text>
+          </div>
+
+          <div>
+            <Text strong>Ghi chú</Text>
+            <Text type="secondary"> (không bắt buộc)</Text>
+            <Input.TextArea
+              rows={2}
+              maxLength={500}
+              style={{ marginTop: 8 }}
+              value={hireNote}
+              onChange={(e) => setHireNote(e.target.value)}
+              placeholder="Vd: ứng viên xác nhận qua điện thoại ngày 20/09, hợp đồng ký ngày 21/09."
+            />
+          </div>
+        </Space>
+      </Modal>
     </div>
   );
 };

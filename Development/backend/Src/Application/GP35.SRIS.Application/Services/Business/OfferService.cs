@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Entities;
@@ -7,6 +7,7 @@ using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
 using GP35.SRIS.Domain.Shared.Exceptions;
 using GP35.SRIS.Lib.Services.Pdf;
+using GP35.SRIS.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -27,12 +28,31 @@ public class OfferService : BaseService<OfferService>, IOfferService
     private const int DefaultOfferTtlDays = 7; // khớp TTL link OFFER_RESPONSE (5.13)
     private const int MaxBenefitsLength = 1000; // sức chứa cột OfferDetail.benefits (V029)
 
+    /// <summary>Trần dung lượng 1 file đính kèm (V058) — bản scan A4 vài trang không quá cỡ này.</summary>
+    private const long MaxAttachmentBytes = 10 * 1024 * 1024;
+
+    /// <summary>
+    /// Đuôi file nhận cho bản scan hợp đồng. PDF là bản máy scan hay xuất ra, ảnh là bản chụp
+    /// bằng điện thoại — công ty nhỏ hay làm kiểu đó, chặn ảnh là họ hết đường nộp bằng chứng.
+    /// Chốt danh sách trắng thay vì tin vào Content-Type client khai.
+    /// </summary>
+    private static readonly Dictionary<string, string> AllowedAttachmentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".pdf"] = "application/pdf",
+        [".png"] = "image/png",
+        [".jpg"] = "image/jpeg",
+        [".jpeg"] = "image/jpeg",
+        [".webp"] = "image/webp"
+    };
+
     private readonly IApplicationRepo _appRepo;
     private readonly IJobRepo _jobRepo;
     private readonly IOfferRepo _offerRepo;
     private readonly ICompanyRepo _companyRepo;
     private readonly IUserRepo _userRepo;
     private readonly IHiringProposalRepo _proposalRepo;
+    private readonly IOfferAttachmentRepo _attachmentRepo;
+    private readonly IFileStorageService _fileStorage;
     private readonly IApplicationStateService _stateService;
     private readonly IMagicLinkService _magicLink;
     private readonly IOfferLetterPdfGenerator _pdf;
@@ -50,6 +70,8 @@ public class OfferService : BaseService<OfferService>, IOfferService
         _companyRepo = serviceProvider.GetRequiredService<ICompanyRepo>();
         _userRepo = serviceProvider.GetRequiredService<IUserRepo>();
         _proposalRepo = serviceProvider.GetRequiredService<IHiringProposalRepo>();
+        _attachmentRepo = serviceProvider.GetRequiredService<IOfferAttachmentRepo>();
+        _fileStorage = serviceProvider.GetRequiredService<IFileStorageService>();
         _stateService = serviceProvider.GetRequiredService<IApplicationStateService>();
         _magicLink = serviceProvider.GetRequiredService<IMagicLinkService>();
         _pdf = serviceProvider.GetRequiredService<IOfferLetterPdfGenerator>();
@@ -317,6 +339,154 @@ public class OfferService : BaseService<OfferService>, IOfferService
             newStatus, offer.OfferId, applicationId);
 
         return new OfferOutcomeResultDto { OfferStatus = newStatus, ApplicationState = appState };
+    }
+
+    // ============================================================
+    // Bản scan hợp đồng đã ký (V058)
+    // ============================================================
+
+    public async Task<IReadOnlyList<OfferAttachmentDto>> GetAttachmentsAsync(long companyId, long applicationId)
+    {
+        var rows = await _attachmentRepo.GetByApplicationAsync(companyId, applicationId);
+        if (rows.Count == 0) return Array.Empty<OfferAttachmentDto>();
+
+        // Tên người tải lên: gom id rồi tra một lượt, không hỏi User cho từng dòng.
+        var uploaderIds = rows.Select(r => r.UploadedBy).OfType<long>().Distinct().ToList();
+        var uploaders = new Dictionary<long, string?>();
+        foreach (var id in uploaderIds)
+            uploaders[id] = NameOrEmail(await _userRepo.GetByIdAsync(companyId, id));
+
+        var list = new List<OfferAttachmentDto>(rows.Count);
+        foreach (var r in rows)
+            list.Add(await MapAttachmentAsync(r, uploaders));
+        return list;
+    }
+
+    public async Task<OfferAttachmentDto> AddAttachmentAsync(
+        long companyId, long userId, long applicationId,
+        string fileName, string? mimeType, byte[] content, string? note, string? kind)
+    {
+        // File đính vào THƯ MỜI nên phải có thư mời đã gửi — không thì attachment trỏ vào đâu.
+        var offer = await _offerRepo.GetByApplicationAsync(companyId, applicationId)
+            ?? throw Conflict("Hồ sơ này chưa được gửi thư mời nhận việc.");
+
+        if (content is null || content.Length == 0)
+            throw Bad("Chưa chọn file.");
+        if (content.LongLength > MaxAttachmentBytes)
+            throw Bad($"File tối đa {MaxAttachmentBytes / (1024 * 1024)}MB — bản scan nặng hơn thì giảm độ phân giải rồi tải lại.");
+
+        var ext = Path.GetExtension(fileName ?? "");
+        if (!AllowedAttachmentTypes.TryGetValue(ext ?? "", out var contentType))
+            throw Bad("Chỉ nhận file PDF hoặc ảnh (PNG, JPG, WEBP).");
+
+        // Tên object do hệ thống sinh -> người dùng không đặt được đường dẫn, không lo tên độc.
+        var objectName = $"offer-signed/{companyId}/{applicationId}/{Guid.NewGuid():N}{ext!.ToLowerInvariant()}";
+
+        // Storage hỏng thì NÉM, khác hẳn luồng nhận CV (ở đó text đã bóc vẫn còn nên mất file
+        // gốc chưa chết ai). Ở đây file CHÍNH LÀ thứ cần lưu: ghi một dòng trỏ vào object không
+        // tồn tại là dựng sẵn một bằng chứng giả, tới lúc cần tra mới biết bấm vào không ra gì.
+        using (var ms = new MemoryStream(content))
+        {
+            await _fileStorage.UploadAsync(objectName, ms, content.LongLength, contentType);
+        }
+
+        var entity = new OfferAttachment
+        {
+            OfferId = offer.OfferId,
+            ApplicationId = applicationId,
+            FileUrl = objectName,
+            FileName = SafeFileName(fileName),
+            FileSize = content.Length,
+            MimeType = contentType,
+            Kind = NormalizeKind(kind),
+            Note = Trim(note),
+            UploadedBy = userId > 0 ? userId : null
+        };
+        entity.AttachmentId = await _attachmentRepo.InsertAsync(companyId, entity);
+
+        await _activityLogRepo.InsertAsync(companyId, new ActivityLog
+        {
+            ApplicationId = applicationId,
+            UserId = userId > 0 ? userId : null,
+            Action = "OFFER_SIGNED_UPLOADED",
+            Detail = entity.FileName
+        });
+
+        _logger.Information("Offer: đính kèm {Kind} cho hồ sơ {AppId} (attachment_id={Id}).",
+            entity.Kind, applicationId, entity.AttachmentId);
+
+        var uploaderName = entity.UploadedBy is long uid
+            ? NameOrEmail(await _userRepo.GetByIdAsync(companyId, uid))
+            : null;
+        return await MapAttachmentAsync(entity, new Dictionary<long, string?>
+        {
+            [entity.UploadedBy ?? 0] = uploaderName
+        });
+    }
+
+    public async Task<bool> DeleteAttachmentAsync(long companyId, long applicationId, long attachmentId)
+    {
+        var row = await _attachmentRepo.GetByIdAsync(companyId, attachmentId);
+        if (row is null || row.ApplicationId != applicationId) return false;
+
+        // Xóa dòng DB trước, file trên storage để lại: object mồ côi chỉ tốn chỗ, còn xóa file
+        // xong mà DB lỗi thì dòng vẫn hiện trên màn hình và bấm vào ra lỗi.
+        if (await _attachmentRepo.DeleteAsync(companyId, attachmentId) == 0) return false;
+
+        await _activityLogRepo.InsertAsync(companyId, new ActivityLog
+        {
+            ApplicationId = applicationId,
+            UserId = _contextData.UserId > 0 ? _contextData.UserId : null,
+            Action = "OFFER_SIGNED_REMOVED",
+            Detail = row.FileName
+        });
+
+        _logger.Information("Offer: gỡ file đính kèm {Id} khỏi hồ sơ {AppId}.", attachmentId, applicationId);
+        return true;
+    }
+
+    /// <summary>Sinh link presigned cho 1 dòng đính kèm. Storage lỗi -> FileUrl null, dòng vẫn hiện.</summary>
+    private async Task<OfferAttachmentDto> MapAttachmentAsync(
+        OfferAttachment a, IReadOnlyDictionary<long, string?> uploaders)
+    {
+        string? url = null;
+        try
+        {
+            url = await _fileStorage.GetPresignedUrlAsync(
+                a.FileUrl, downloadFileName: a.FileName, contentType: a.MimeType);
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Offer: không tạo được link tải file đính kèm {Id}.", a.AttachmentId);
+        }
+
+        return new OfferAttachmentDto
+        {
+            AttachmentId = a.AttachmentId,
+            ApplicationId = a.ApplicationId,
+            Kind = a.Kind,
+            FileName = a.FileName,
+            FileSize = a.FileSize,
+            MimeType = a.MimeType,
+            Note = a.Note,
+            UploadedBy = a.UploadedBy,
+            UploadedByName = a.UploadedBy is long id && uploaders.TryGetValue(id, out var name) ? name : null,
+            UploadedAt = a.CreatedAt,
+            FileUrl = url
+        };
+    }
+
+    private static string NormalizeKind(string? kind)
+        => string.Equals(kind?.Trim(), OfferAttachmentKind.Other, StringComparison.OrdinalIgnoreCase)
+            ? OfferAttachmentKind.Other
+            : OfferAttachmentKind.SignedContract;
+
+    /// <summary>Giữ mỗi tên file, bỏ mọi đường dẫn client gửi kèm; cắt cho vừa cột NVARCHAR(255).</summary>
+    private static string SafeFileName(string? fileName)
+    {
+        var name = Path.GetFileName(fileName ?? "").Trim();
+        if (string.IsNullOrEmpty(name)) name = "ban-scan";
+        return name.Length > 255 ? name[..255] : name;
     }
 
     // ============================================================

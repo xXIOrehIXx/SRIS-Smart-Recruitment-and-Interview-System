@@ -177,3 +177,29 @@ public class OfferOutcomeResultDto
     public string OfferStatus { get; set; } = null!;
     public string ApplicationState { get; set; } = null!;
 }
+
+/// <summary>
+/// 1 file đính kèm của thư mời — chủ yếu là BẢN SCAN hợp đồng đã ký hai bên (V058).
+/// <see cref="FileUrl"/> là link presigned sinh MỚI mỗi lần đọc (hết hạn ~1 giờ), không lưu DB.
+/// </summary>
+public class OfferAttachmentDto
+{
+    public long AttachmentId { get; set; }
+    public long ApplicationId { get; set; }
+
+    /// <summary>SIGNED_CONTRACT (bản scan đã ký) | OTHER.</summary>
+    public string Kind { get; set; } = null!;
+
+    public string FileName { get; set; } = null!;
+    public int? FileSize { get; set; }
+    public string? MimeType { get; set; }
+    public string? Note { get; set; }
+
+    public long? UploadedBy { get; set; }
+    /// <summary>Tên người tải lên (rỗng thì lấy email) — hiện trên dòng lịch sử.</summary>
+    public string? UploadedByName { get; set; }
+    public DateTime? UploadedAt { get; set; }
+
+    /// <summary>Link tải tạm thời. Null nếu storage đang lỗi — dòng vẫn hiện, chỉ không mở được.</summary>
+    public string? FileUrl { get; set; }
+}

@@ -1,4 +1,4 @@
-using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
+﻿using GP35.SRIS.Application.Contracts.Dtos.Business.Offer;
 using GP35.SRIS.Application.Contracts.Services.Business;
 using GP35.SRIS.Domain.Shared.Constants;
 using GP35.SRIS.Domain.Shared.Context;
@@ -86,5 +86,53 @@ public class OfferController : ControllerBase
         var result = await _offerService.RecordOutcomeAsync(
             _contextData.CompanyId, _contextData.UserId, applicationId, dto);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Bản scan hợp đồng đã ký hai bên + giấy tờ kèm theo (V058), mới nhất lên đầu.
+    /// Giám đốc/DM đọc được: họ ký vào chính tờ giấy này và sau đó còn phải tra lại.
+    /// </summary>
+    [HttpGet("attachments")]
+    [WithRole(RoleConstants.HumanResource, RoleConstants.Director, RoleConstants.DepartmentManager)]
+    public async Task<IActionResult> GetAttachments(long applicationId)
+    {
+        return Ok(await _offerService.GetAttachmentsAsync(_contextData.CompanyId, applicationId));
+    }
+
+    /// <summary>
+    /// Tải lên bản scan hợp đồng đã ký (PDF hoặc ảnh, tối đa 10MB). KHÔNG đổi trạng thái hồ sơ —
+    /// đính kèm được cả trước lẫn sau khi bấm "Đã nhận việc", vì giấy ký tay thường về chậm.
+    /// </summary>
+    [HttpPost("attachments")]
+    [RequestSizeLimit(10 * 1024 * 1024 + 8192)]
+    public async Task<IActionResult> AddAttachment(
+        long applicationId,
+        IFormFile file,
+        [FromForm] string? note = null,
+        [FromForm] string? kind = null)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { error = "Chưa chọn file." });
+
+        byte[] bytes;
+        using (var ms = new MemoryStream())
+        {
+            await file.CopyToAsync(ms);
+            bytes = ms.ToArray();
+        }
+
+        var result = await _offerService.AddAttachmentAsync(
+            _contextData.CompanyId, _contextData.UserId, applicationId,
+            file.FileName, file.ContentType, bytes, note, kind);
+        return Ok(result);
+    }
+
+    /// <summary>Gỡ 1 file đính kèm (tải nhầm / bản scan mờ).</summary>
+    [HttpDelete("attachments/{attachmentId:long}")]
+    public async Task<IActionResult> DeleteAttachment(long applicationId, long attachmentId)
+    {
+        var removed = await _offerService.DeleteAttachmentAsync(
+            _contextData.CompanyId, applicationId, attachmentId);
+        return removed ? NoContent() : NotFound();
     }
 }

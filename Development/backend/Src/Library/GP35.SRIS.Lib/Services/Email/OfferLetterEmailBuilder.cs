@@ -166,8 +166,12 @@ public static class OfferLetterEmailBuilder
             : "";
         var closing = new StringBuilder();
         if (Has(m.Note)) closing.Append(Text(EMulti(m.Note!))).Append("<div style=\"height:10px;\">&nbsp;</div>");
+        // Thư mời đi kèm bản PDF để ứng viên IN ra ký (V058) -> câu hướng dẫn phải nói đúng
+        // việc cần làm. Chỉ "phản hồi email này" thì file đính kèm nằm đó không ai mở.
         closing.Append(Text(
-            $"Vui lòng phản hồi email này để xác nhận bạn đồng ý với lời mời nhận việc{deadline}. " +
+            $"Thư mời này được đính kèm dưới dạng file PDF. Vui lòng in ra, ký vào phần " +
+            $"<b style=\"color:{p.Accent};\">Xác nhận của ứng viên</b> ở cuối thư rồi gửi lại bản " +
+            $"đã ký cho chúng tôi{deadline}. " +
             $"Nếu có bất kỳ câu hỏi nào, vui lòng liên hệ {HrContact(m, p)}."));
         closing.Append("<div style=\"height:10px;\">&nbsp;</div>");
         closing.Append(Text("Chúng tôi rất vui mừng chào đón bạn gia nhập đội ngũ và mong được hợp tác cùng bạn!"));

@@ -419,6 +419,27 @@ export const offerAPI = {
 
   // Không có endpoint withdraw riêng — thu hồi offer = reject application
   // (dùng applicationAPI.reject với lý do).
+
+  // --- Bản scan hợp đồng đã ký (V058) ---------------------------------------
+  // Ứng viên in thư mời ra, ký vào khối "Xác nhận của ứng viên", Giám đốc ký tiếp,
+  // nhân sự scan bản có đủ hai chữ ký rồi đính vào đây làm bằng chứng.
+
+  getAttachments: (applicationId) =>
+    api.get(`/applications/${applicationId}/offer/attachments`),
+
+  // Ghi đè Content-Type như mọi endpoint upload khác trong file này — xem chú thích
+  // ở accountAPI.uploadAvatar (axios 1.x biến FormData thành JSON nếu để nguyên).
+  addAttachment: (applicationId, file, note) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (note) formData.append('note', note);
+    return api.post(`/applications/${applicationId}/offer/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteAttachment: (applicationId, attachmentId) =>
+    api.delete(`/applications/${applicationId}/offer/attachments/${attachmentId}`),
 };
 
 // ==================== CRITERIA ====================
