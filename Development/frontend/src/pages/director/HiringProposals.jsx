@@ -24,6 +24,57 @@ const { TextArea } = Input;
 
 const MATCHA_GREEN = '#5D8C3E';
 
+const vnd = (v) => `${Number(v).toLocaleString('vi-VN')} ₫`;
+
+/**
+ * Đối chiếu mức lương sắp chốt với khung lương của vị trí.
+ *
+ * HAI NGUỒN, theo thứ tự:
+ *   1. `job`     — khung ĐĂNG TRÊN TIN (Job.salary_min/max). Đây là con số đã hứa CÔNG KHAI:
+ *                  ứng viên đọc được trước khi nộp hồ sơ.
+ *   2. `request` — khung trong YÊU CẦU TUYỂN DỤNG đã sinh ra tin (V056). Chỉ dùng khi tin đăng
+ *                  "lương thỏa thuận": công ty cố ý không công khai lương, nhưng bên trong DM
+ *                  vẫn ghi ngân sách và chính Giám đốc đã duyệt con số đó lúc duyệt yêu cầu.
+ *                  Khung NỘI BỘ — vượt nó là chuyện ngân sách, không phải chuyện thất hứa.
+ *   3. không có gì -> status 'none'. VẪN trả về một object (không trả null) để màn duyệt NÓI RA
+ *      rằng vị trí này thỏa thuận: im lặng thì Giám đốc không phân biệt được "tin thỏa thuận"
+ *      với "màn hình lỗi, chưa tải được khung".
+ *
+ * Luôn chỉ CẢNH BÁO, không chặn: quyền chốt lương là của Giám đốc (V057) và có lý do chính đáng
+ * để ra ngoài khung. Nhưng chốt ra ngoài mà KHÔNG BIẾT thì đến lúc nhân sự gửi thư mời mới vỡ.
+ */
+const checkSalaryBand = (proposal, salary) => {
+  if (!proposal) return null;
+
+  let min = proposal.jobSalaryMin;
+  let max = proposal.jobSalaryMax;
+  let source = 'job';
+
+  if (min == null && max == null) {
+    min = proposal.requestSalaryMin;
+    max = proposal.requestSalaryMax;
+    source = 'request';
+  }
+  // Tin thỏa thuận VÀ yêu cầu tuyển dụng cũng bỏ trống -> không có gì để so.
+  if (min == null && max == null) return { status: 'none', source: 'none' };
+
+  const label = min != null && max != null
+    ? `${vnd(min)} – ${vnd(max)}`
+    : min != null ? `từ ${vnd(min)}` : `tối đa ${vnd(max)}`;
+
+  const base = { label, min, max, source };
+  if (!(salary > 0)) return { ...base, status: 'unknown' };
+  if (min != null && salary < min) return { ...base, status: 'below', gap: min - salary };
+  if (max != null && salary > max) return { ...base, status: 'above', gap: salary - max };
+  return { ...base, status: 'inside' };
+};
+
+/** Khung này ở đâu ra — dùng chung cho nhãn Alert và câu hỏi lại. */
+const BAND_SOURCE_LABEL = {
+  job: 'Khung lương đăng trên tin',
+  request: 'Khung lương trong Yêu cầu tuyển dụng (tin đăng thỏa thuận)',
+};
+
 const STATUS_TAG = {
   PENDING: { color: 'warning', label: 'Chờ bạn duyệt', icon: <ClockCircleOutlined /> },
   APPROVED: { color: 'success', label: 'Đã duyệt tuyển', icon: <CheckCircleOutlined /> },
@@ -140,6 +191,58 @@ const HiringProposals = () => {
       message.warning('Nhập mức lương chốt — đó là con số thư mời sẽ dùng.');
       return;
     }
+
+    // Lệch khung lương đã đăng trên tin -> HỎI LẠI một lần. Không chặn (Giám đốc có quyền chốt
+    // ngoài khung), nhưng cũng không để lọt im lặng: thư mời gửi đi rồi mới phát hiện thì đã muộn.
+    const band = approving ? checkSalaryBand(selected, salary) : null;
+    if (band && (band.status === 'above' || band.status === 'below')) {
+      const fromRequest = band.source === 'request';
+      Modal.confirm({
+        title: fromRequest
+          ? 'Mức lương chốt vượt ngân sách của yêu cầu tuyển dụng'
+          : 'Mức lương chốt nằm ngoài khung đăng trên tin',
+        okText: 'Vẫn duyệt mức này',
+        cancelText: 'Để tôi sửa lại',
+        okButtonProps: { style: { background: MATCHA_GREEN, borderColor: MATCHA_GREEN } },
+        content: (
+          <div>
+            <p style={{ marginBottom: 8 }}>
+              {fromRequest ? (
+                <>
+                  Tin <strong>{selected?.jobTitle}</strong> đăng <strong>lương thỏa thuận</strong>,
+                  nhưng Yêu cầu tuyển dụng ghi ngân sách <strong>{band.label}</strong>.
+                </>
+              ) : (
+                <>
+                  Tin tuyển dụng <strong>{selected?.jobTitle}</strong> ghi khung lương{' '}
+                  <strong>{band.label}</strong>.
+                </>
+              )}
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              Bạn đang chốt <strong>{vnd(salary)}</strong> —{' '}
+              {band.status === 'above' ? 'cao hơn trần' : 'thấp hơn sàn'}{' '}
+              <strong>{vnd(band.gap)}</strong>.
+            </p>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {fromRequest
+                // Tin thỏa thuận -> ứng viên chưa đọc con số nào, chỉ là chuyện ngân sách nội bộ.
+                ? 'Ứng viên chưa biết con số nào (tin đăng thỏa thuận) nên không có chuyện lệch so với lời hứa — chỉ là mức này ra ngoài ngân sách bộ phận đã trình. Nên ghi lý do ở ô ghi chú.'
+                : band.status === 'above'
+                  ? 'Duyệt được, nhưng mức này vượt khung đã đăng cho vị trí — cân nhắc ghi lý do ở ô ghi chú để bộ phận nhân sự nắm.'
+                  : 'Duyệt được, nhưng đây là mức thấp hơn con số đã đăng công khai — ứng viên có thể đã đọc khung lương đó trước khi ứng tuyển.'}
+            </Text>
+          </div>
+        ),
+        onOk: () => sendDecision(),
+      });
+      return;
+    }
+
+    await sendDecision();
+  };
+
+  const sendDecision = async () => {
     try {
       setActionLoading(true);
       await hiringProposalAPI.decide(selected.proposalId, {
@@ -360,6 +463,26 @@ const HiringProposals = () => {
                 {selected.createdAt ? dayjs(selected.createdAt).format('DD/MM/YYYY HH:mm') : '—'}
               </Descriptions.Item>
               <Descriptions.Item label="Lương đề xuất">{money(selected.proposedSalary)}</Descriptions.Item>
+              {/* Khung đăng trên tin — để so ngay với mức trưởng bộ phận đề xuất, không phải mở
+                  tin tuyển dụng ra tra. */}
+              <Descriptions.Item label="Khung lương của vị trí">
+                {(() => {
+                  const band = checkSalaryBand(selected, selected.proposedSalary);
+                  if (!band || band.status === 'none') {
+                    return <Text type="secondary">Thỏa thuận — không có khung để đối chiếu</Text>;
+                  }
+                  return (
+                    <Space size={6} wrap>
+                      <Text>{band.label}</Text>
+                      {band.source === 'request' && (
+                        <Tag>theo yêu cầu tuyển dụng — tin đăng thỏa thuận</Tag>
+                      )}
+                      {band.status === 'above' && <Tag color="warning">đề xuất vượt trần</Tag>}
+                      {band.status === 'below' && <Tag color="warning">đề xuất dưới sàn</Tag>}
+                    </Space>
+                  );
+                })()}
+              </Descriptions.Item>
               <Descriptions.Item label="Lý do đề xuất" span={2}>
                 {selected.proposalNote || <Text type="secondary">Không ghi</Text>}
               </Descriptions.Item>
@@ -500,6 +623,53 @@ const HiringProposals = () => {
               Trưởng bộ phận đề xuất {money(selected?.proposedSalary)}. Giữ nguyên hoặc sửa thành mức
               bạn muốn — đây là con số thư mời sẽ dùng, bộ phận nhân sự không sửa được.
             </Text>
+
+            {/* Đối chiếu với khung lương ĐÃ ĐĂNG TRÊN TIN: đó là con số ứng viên đọc được trước
+                khi nộp hồ sơ. Hiện thường trực (không đợi lệch mới báo) để Giám đốc biết mình
+                đang chốt ở đâu trong khoảng đó. Tin không ghi lương -> bỏ hẳn khối này. */}
+            {(() => {
+              const band = checkSalaryBand(selected, salary);
+              if (!band) return null;
+
+              // Vị trí đăng lương thỏa thuận và yêu cầu tuyển dụng cũng không ghi ngân sách:
+              // nói thẳng là không có gì để đối chiếu, thay vì im lặng.
+              if (band.status === 'none') {
+                return (
+                  <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginTop: 12 }}
+                    message="Vị trí này đăng lương thỏa thuận"
+                    description={`Tin tuyển dụng không ghi khung lương và Yêu cầu tuyển dụng cũng để trống, nên không có khoảng nào để đối chiếu. Căn cứ duy nhất là mức trưởng bộ phận đề xuất (${money(selected?.proposedSalary)}) — mức bạn chốt ở đây sẽ là con số chính thức đầu tiên của vị trí này.`}
+                  />
+                );
+              }
+
+              const tone = band.status === 'inside' ? 'success'
+                : band.status === 'unknown' ? 'info' : 'warning';
+              const isRequest = band.source === 'request';
+              const insideText = isRequest
+                ? 'Mức bạn đang chốt nằm trong ngân sách của yêu cầu tuyển dụng. Tin đăng thỏa thuận nên ứng viên chưa biết con số nào.'
+                : 'Mức bạn đang chốt nằm trong khung — khớp với con số đã đăng cho ứng viên.';
+              const outText = (dir) =>
+                `Mức bạn đang chốt ${dir === 'above' ? 'cao hơn trần' : 'thấp hơn sàn'} ${vnd(band.gap)}. `
+                + 'Vẫn duyệt được, nhưng sẽ hỏi lại một lần trước khi ghi.';
+
+              return (
+                <Alert
+                  type={tone}
+                  showIcon
+                  style={{ marginTop: 12 }}
+                  message={`${BAND_SOURCE_LABEL[band.source]}: ${band.label}`}
+                  description={
+                    band.status === 'inside' ? insideText
+                      : band.status === 'above' ? outText('above')
+                        : band.status === 'below' ? outText('below')
+                          : 'Nhập mức lương chốt để đối chiếu với khung này.'
+                  }
+                />
+              );
+            })()}
           </div>
         ) : (
           <Alert

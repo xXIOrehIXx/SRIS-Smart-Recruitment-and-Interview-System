@@ -16,6 +16,8 @@ import {
   Avatar,
   message,
   Popconfirm,
+  Tooltip,
+  Divider,
 } from 'antd';
 import {
   FileTextOutlined,
@@ -261,79 +263,118 @@ const DeptRecruitmentRequests = () => {
       title: 'Thao tác',
       key: 'actions',
       fixed: 'right',
-      width: 180,
-      render: (_, record) => (
-        <Space size={4}>
-          <Button
-            type="text"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => {
-              setSelectedRequest(record);
-              setDetailModal(true);
-            }}
-          />
-          {/* Giám đốc/Admin: duyệt / từ chối khi PENDING */}
-          {isApprover && record.status === 'PENDING' && (
-            <>
-              <Popconfirm
-                title="Phê duyệt yêu cầu này?"
-                onConfirm={() => handleReview(record, true)}
-                okText="Duyệt"
-                cancelText="Hủy"
-              >
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<CheckCircleOutlined />}
-                  style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-                />
-              </Popconfirm>
+      width: 248,
+      render: (_, record) => {
+        const canReview = isApprover && record.status === 'PENDING';
+        const canCreateJob = isRecruiter && record.status === 'APPROVED';
+        const canEdit = isRequester && record.status === 'PENDING';
+        // Admin gánh cả ba vai nên ô này có thể ra tới 5 nút — tách nhóm bằng Divider để hàng
+        // nút không dính thành một khối, và cho phép xuống dòng thay vì tràn ngang.
+        const hasPrimary = canReview || canCreateJob;
+
+        return (
+          <Space size={4} wrap>
+            {/* Việc NHÌN (ai cũng làm được) — icon trần, nhẹ hơn hẳn nhóm hành động bên phải. */}
+            <Tooltip title="Xem chi tiết yêu cầu">
               <Button
                 type="text"
                 size="small"
-                danger
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleReview(record, false)}
+                icon={<EyeOutlined />}
+                aria-label="Xem chi tiết yêu cầu"
+                onClick={() => {
+                  setSelectedRequest(record);
+                  setDetailModal(true);
+                }}
               />
-            </>
-          )}
-          {/* Nhân sự/Admin: tạo tin tuyển dụng từ yêu cầu ĐÃ được Giám đốc duyệt */}
-          {isRecruiter && record.status === 'APPROVED' && (
-            <Button
-              type="primary"
-              size="small"
-              icon={<PlusOutlined />}
-              style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
-              onClick={() => navigate(`/human-resource/jobs/create?requestId=${record.id}`)}
-            >
-              Tạo tin
-            </Button>
-          )}
-          {/* DM (và Admin): sửa lại đề bài khi Giám đốc chưa duyệt (duyệt xong BE khóa để giữ audit) */}
-          {isRequester && record.status === 'PENDING' && (
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              title="Sửa yêu cầu"
-              onClick={() => navigate(`/dept/edit-request/${record.id}`)}
-            />
-          )}
-          {/* DM (và Admin): hủy yêu cầu khi còn PENDING */}
-          {isRequester && record.status === 'PENDING' && (
-            <Popconfirm
-              title="Hủy yêu cầu này?"
-              onConfirm={() => handleCancel(record)}
-              okText="Hủy yêu cầu"
-              cancelText="Không"
-              okButtonProps={{ danger: true }}
-            >
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+            </Tooltip>
+
+            {hasPrimary && <Divider type="vertical" style={{ margin: '0 2px' }} />}
+
+            {/* Giám đốc/Admin: duyệt / từ chối khi PENDING.
+                Hai nút này là CẶP — cùng cỡ, cùng có chữ, chỉ khác màu. Bản cũ để nút duyệt là
+                ô vuông xanh đặc còn nút từ chối là icon trần không viền, nên hai việc ngang nhau
+                về hệ quả lại trông một nặng một nhẹ, và không có chữ thì phải đoán icon. */}
+            {canReview && (
+              <>
+                <Popconfirm
+                  title="Phê duyệt yêu cầu này?"
+                  description="Duyệt xong, bộ phận nhân sự tạo được tin tuyển dụng từ yêu cầu."
+                  onConfirm={() => handleReview(record, true)}
+                  okText="Duyệt"
+                  cancelText="Hủy"
+                  okButtonProps={{ style: { background: MATCHA_GREEN, borderColor: MATCHA_GREEN } }}
+                >
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<CheckCircleOutlined />}
+                    style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                  >
+                    Duyệt
+                  </Button>
+                </Popconfirm>
+                <Button
+                  size="small"
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => handleReview(record, false)}
+                >
+                  Từ chối
+                </Button>
+              </>
+            )}
+
+            {/* Nhân sự/Admin: tạo tin tuyển dụng từ yêu cầu ĐÃ được Giám đốc duyệt */}
+            {canCreateJob && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<PlusOutlined />}
+                style={{ background: MATCHA_GREEN, borderColor: MATCHA_GREEN }}
+                onClick={() => navigate(`/human-resource/jobs/create?requestId=${record.id}`)}
+              >
+                Tạo tin
+              </Button>
+            )}
+
+            {/* DM (và Admin): sửa lại đề bài / hủy khi Giám đốc chưa duyệt (duyệt xong BE khóa
+                để giữ audit). Hai việc phụ -> giữ icon trần, nhưng PHẢI có tooltip: trước đây
+                nút hủy chỉ là một icon thùng rác đỏ không nhãn, đứng cạnh nút từ chối cũng đỏ. */}
+            {canEdit && (
+              <>
+                {hasPrimary && <Divider type="vertical" style={{ margin: '0 2px' }} />}
+                <Tooltip title="Sửa yêu cầu">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined />}
+                    aria-label="Sửa yêu cầu"
+                    onClick={() => navigate(`/dept/edit-request/${record.id}`)}
+                  />
+                </Tooltip>
+                <Popconfirm
+                  title="Hủy yêu cầu này?"
+                  description="Yêu cầu sẽ dừng lại, Giám đốc không thấy nó trong hàng đợi nữa."
+                  onConfirm={() => handleCancel(record)}
+                  okText="Hủy yêu cầu"
+                  cancelText="Không"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Tooltip title="Hủy yêu cầu">
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      aria-label="Hủy yêu cầu"
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              </>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -440,7 +481,7 @@ const DeptRecruitmentRequests = () => {
             showSizeChanger: true,
             showTotal: (total) => `Tổng ${total} yêu cầu`,
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1280 }}
         />
       </Card>
 
@@ -469,7 +510,12 @@ const DeptRecruitmentRequests = () => {
                   Sửa yêu cầu
                 </Button>
               )}
-              {isRecruiter && (
+              {/* Duyệt yêu cầu tuyển dụng là cửa của GIÁM ĐỐC (V047) — endpoint
+                  POST /api/recruitment-requests/{id}/review gác [WithRole(Director)].
+                  Trước đây khối này gác bằng isRecruiter (di sản thời nhân sự còn duyệt): nhân sự
+                  thấy nút rồi bấm thì ăn 403, còn Giám đốc mở chi tiết ra lại KHÔNG có nút nào,
+                  phải đóng modal về bảng mới duyệt được. */}
+              {isApprover && (
                 <>
                   <Button
                     danger
