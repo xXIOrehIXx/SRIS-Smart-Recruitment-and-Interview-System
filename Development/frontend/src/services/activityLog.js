@@ -12,10 +12,19 @@ const ACTION_LABELS = {
   INTERVIEW_SCHEDULED: 'Chốt lịch phỏng vấn',
   INTERVIEW_CANCELLED: 'Hủy lịch phỏng vấn',
   INTERVIEW_NO_SLOT_FITS: 'Ứng viên báo bận hết khung giờ',
+  INTERVIEW_RESCHEDULED: 'Dời lịch phỏng vấn',
+  INTERVIEWERS_ASSIGNED: 'Chỉ định người phỏng vấn',
+  HIRING_PROPOSED: 'Gửi đề xuất tuyển',
+  HIRING_APPROVED: 'Giám đốc duyệt đề xuất tuyển',
+  // TRẢ LẠI, không phải loại ứng viên: hồ sơ ở lại vòng phỏng vấn và Trưởng bộ phận
+  // đề xuất lại được (V043). Ghi "từ chối" ở đây là đọc nhầm thành ứng viên bị loại.
+  HIRING_PROPOSAL_REJECTED: 'Giám đốc trả lại đề xuất tuyển',
   OFFER_LETTER_SENT: 'Gửi thư mời nhận việc',
   OFFER_MADE: 'Gửi thư mời nhận việc',
   OFFER_ACCEPTED: 'Ứng viên nhận việc',
   OFFER_DECLINED: 'Ứng viên từ chối nhận việc',
+  OFFER_SIGNED_UPLOADED: 'Tải lên bản scan hợp đồng đã ký',
+  OFFER_SIGNED_REMOVED: 'Gỡ bản scan hợp đồng đã ký',
 };
 
 export const actionLabel = (action) => ACTION_LABELS[action] || action || '—';
