@@ -24,6 +24,7 @@ import {
   SolutionOutlined,
   AuditOutlined,
   FileAddOutlined,
+  HistoryOutlined,
 } from "@ant-design/icons";
 import { useAuth, ROLES } from "../contexts/AuthContext";
 import { useCompany } from "../contexts/CompanyContext";
@@ -56,6 +57,9 @@ const ICON_MAP = {
   // "Yêu Cầu Tuyển Dụng" (nhân sự/Admin) và "Duyệt Yêu Cầu Tuyển Dụng" (Giám đốc, V047) —
   // cùng một cái thiếu như trên: có trong ROLE_MENUS mà không có ở đây thì icon hiện trống.
   FileAddOutlined: <FileAddOutlined />,
+  // "Lịch Sử Phỏng Vấn" (Interviewer) dùng tên này từ lâu mà đây không có -> mục đó vẫn đang
+  // hiện trống chỗ icon; hai mục Lịch Sử Đề Xuất / Lịch Sử Quyết Định cũng dùng chung nó.
+  HistoryOutlined: <HistoryOutlined />,
 };
 
 const AdminLayout = () => {

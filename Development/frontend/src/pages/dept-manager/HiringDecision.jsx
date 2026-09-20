@@ -31,6 +31,7 @@ import {
   CalendarOutlined,
   ClockCircleOutlined,
   FileTextOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -427,6 +428,11 @@ const HiringDecision = () => {
             Ứng viên đã phỏng vấn xong — bạn đề xuất, Giám đốc quyết tuyển
           </Text>
         </div>
+        {/* Bảng này chỉ có hồ sơ ĐANG ở bước Phỏng vấn: Giám đốc duyệt xong là hồ sơ sang bước
+            Quyết định và rơi khỏi đây. Người vừa tuyển được tra lại ở sổ lịch sử. */}
+        <Button icon={<HistoryOutlined />} onClick={() => navigate('/dept/proposal-history')}>
+          Lịch sử đề xuất
+        </Button>
       </div>
 
       <Alert
@@ -434,7 +440,7 @@ const HiringDecision = () => {
         showIcon
         style={{ marginBottom: 16 }}
         message="Bạn đề xuất, Giám đốc quyết"
-        description="Gửi đề xuất kèm lý do (và mức lương, ngày vào làm nếu có ý kiến) để Giám đốc duyệt. Giám đốc duyệt thì hồ sơ tự sang bước Quyết định và bộ phận nhân sự soạn thư mời."
+        description="Gửi đề xuất kèm lý do và mức lương đề xuất (bắt buộc) để Giám đốc duyệt. Giám đốc duyệt thì hồ sơ tự sang bước Quyết định và bộ phận nhân sự soạn thư mời theo mức Giám đốc chốt — ngày vào làm do nhân sự gọi ứng viên chốt sau, không nằm ở phiếu này."
         />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>

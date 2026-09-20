@@ -32,6 +32,7 @@ import DeptRecruitmentRequests from "./pages/dept-manager/RecruitmentRequests";
 import HiringDecision from "./pages/dept-manager/HiringDecision";
 import ScreeningApproval from "./pages/dept-manager/ScreeningApproval";
 import HiringProposals from "./pages/director/HiringProposals";
+import ProposalHistory from "./pages/hiring/ProposalHistory";
 import CreateRecruitmentRequest from "./pages/dept-manager/CreateRecruitmentRequest";
 import OfferManagement from "./pages/offer/OfferManagement";
 import OfferDetail from "./pages/offer/OfferDetail";
@@ -150,6 +151,10 @@ const App = () => {
         {/* Cửa 1 của DM: chọn ai được vào vòng phỏng vấn (SCREENING→INTERVIEW) */}
         <Route path="/dept/screening" element={<ScreeningApproval />} />
         <Route path="/dept/hiring-decision" element={<HiringDecision />} />
+        {/* Xem lại phiếu ĐÃ XONG: màn trên lấy dữ liệu từ cột Phỏng vấn của Kanban nên hồ sơ
+            vừa được duyệt là rơi khỏi bảng — đúng người mình vừa tuyển được thì không tra lại
+            được. Dùng chung màn với Giám đốc, nội dung đổi theo role. */}
+        <Route path="/dept/proposal-history" element={<ProposalHistory />} />
         <Route path="/dept/hiring-decision/:id" element={<HiringDecision />} />
         <Route
           path="/dept/create-request"
@@ -171,6 +176,10 @@ const App = () => {
         }
       >
         <Route path="/director/proposals" element={<HiringProposals />} />
+        {/* Sổ tay quyết định: màn duyệt ở trên mở sẵn tab Chờ duyệt và bày mức ĐỀ XUẤT — đúng
+            cho lúc quyết, nhưng xem lại thì cần mức đã CHỐT, chốt hôm nào, người đó có vào làm
+            không. */}
+        <Route path="/director/proposal-history" element={<ProposalHistory />} />
         {/* V047: Giám đốc duyệt Yêu cầu tuyển dụng của trưởng bộ phận (mở vị trí = cam kết
             chi tiền, nên cùng người chịu trách nhiệm quyết tuyển). Dùng chung màn với DM/nhân
             sự — nút hiện theo role. */}

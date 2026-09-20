@@ -23,13 +23,24 @@ public class HiringProposalRepo : BaseRepo<long, HiringProposal>, IHiringProposa
         return proposal.ProposalId;
     }
 
-    public async Task<IReadOnlyList<HiringProposalRow>> GetListAsync(long companyId, string? status)
+    public async Task<IReadOnlyList<HiringProposalRow>> GetListAsync(
+        long companyId, string? status, long? departmentManagerId = null)
     {
         // Global Query Filter tự kèm company_id. Join sẵn ứng viên + vị trí: màn Giám đốc là
         // một hàng đợi, gọi thêm API cho từng dòng thì 20 đề xuất là 20 request.
         var query = _db.HiringProposals.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(p => p.Status == status);
+
+        // Thu hẹp về phạm vi 1 Trưởng bộ phận (cùng lối viết với DashboardRepo.ScopedApplications):
+        // phiếu đề xuất mang MỨC LƯƠNG của từng người, bộ phận này không có việc gì đọc con số
+        // của bộ phận kia. Kèm p.CreatedBy để vị trí sang tay DM khác thì họ vẫn xem lại được
+        // phiếu chính mình đã viết.
+        if (departmentManagerId is long dmId)
+            query = query.Where(p =>
+                p.CreatedBy == dmId
+                || _db.Applications.Any(a => a.ApplicationId == p.ApplicationId
+                    && _db.Jobs.Any(j => j.JobId == a.JobId && j.DepartmentManagerId == dmId)));
 
         return await (
             from p in query

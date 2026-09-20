@@ -5,7 +5,7 @@ import {
 } from 'antd';
 import {
   CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, SearchOutlined,
-  UserOutlined, ClockCircleOutlined, FileTextOutlined,
+  UserOutlined, ClockCircleOutlined, FileTextOutlined, HistoryOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -365,6 +365,11 @@ const HiringProposals = () => {
             Trưởng bộ phận đề xuất kèm mức lương — bạn quyết tuyển và chốt mức lương
           </Text>
         </div>
+        {/* Màn này là bàn làm việc của việc ĐANG CHỜ. Xem lại chuyện đã quyết (mức đã chốt,
+            người đó có vào làm không) thì sang sổ lịch sử. */}
+        <Button icon={<HistoryOutlined />} onClick={() => navigate('/director/proposal-history')}>
+          Lịch sử quyết định
+        </Button>
       </div>
 
       <Alert
