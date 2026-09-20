@@ -57,7 +57,11 @@ public class HiringProposalServiceTests
             .ReturnsAsync(() => new List<HiringProposalRow>
             {
                 new(CurrentProposal, "Ngô Thị Lan", null, "Trần Văn Nam", "nam@example.com",
-                    JobId, "Bếp chính", "Bếp", "INTERVIEW")
+                    JobId, "Bếp chính", "Bếp", "INTERVIEW",
+                    // Khung lương đăng trên tin — màn duyệt của Giám đốc đối chiếu mức chốt với nó.
+                    12_000_000m, 18_000_000m, "VND",
+                    // Khung trong Yêu cầu tuyển dụng — chỉ dùng khi tin đăng "lương thỏa thuận".
+                    12_000_000m, 18_000_000m)
             });
         _proposalRepo.Setup(r => r.InsertAsync(CompanyId, It.IsAny<HiringProposal>()))
             .ReturnsAsync(ProposalId)

@@ -69,6 +69,26 @@ public class HiringProposalDto
     public string JobTitle { get; set; } = null!;
     public string? Department { get; set; }
 
+    /// <summary>
+    /// Khung lương ĐĂNG TRÊN TIN tuyển dụng (Job.salary_min/max) — không phải mức đề xuất.
+    /// Màn duyệt của Giám đốc đối chiếu con số sắp chốt với khoảng này rồi CẢNH BÁO nếu lệch:
+    /// đó là mức đã hứa công khai với ứng viên, chốt ra ngoài mà không biết thì đến lúc gửi
+    /// thư mời mới vỡ. Chỉ cảnh báo — quyền chốt lương vẫn là của Giám đốc (V057).
+    /// Tin không ghi lương thì cả hai NULL và màn duyệt bỏ phần đối chiếu.
+    /// </summary>
+    public decimal? JobSalaryMin { get; set; }
+    public decimal? JobSalaryMax { get; set; }
+    public string? JobCurrency { get; set; }
+
+    /// <summary>
+    /// Khung lương trong YÊU CẦU TUYỂN DỤNG đã sinh ra tin này — chỉ dùng khi tin đăng
+    /// "lương thỏa thuận" (<see cref="JobSalaryMin"/>/<see cref="JobSalaryMax"/> đều NULL).
+    /// Đây là ngân sách NỘI BỘ Giám đốc đã duyệt lúc duyệt yêu cầu, KHÔNG phải con số đã hứa
+    /// công khai với ứng viên — màn duyệt phải nói rõ sự khác nhau đó khi cảnh báo.
+    /// </summary>
+    public decimal? RequestSalaryMin { get; set; }
+    public decimal? RequestSalaryMax { get; set; }
+
     /// <summary>Trạng thái hiện tại của hồ sơ (INTERVIEW/OFFER/...) — phát hiện phiếu đã lỗi thời.</summary>
     public string ApplicationState { get; set; } = null!;
 }

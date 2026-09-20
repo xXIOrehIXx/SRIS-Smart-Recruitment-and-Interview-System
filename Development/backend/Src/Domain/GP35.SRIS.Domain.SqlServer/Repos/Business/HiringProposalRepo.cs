@@ -40,6 +40,10 @@ public class HiringProposalRepo : BaseRepo<long, HiringProposal>, IHiringProposa
             from uc in gc.DefaultIfEmpty()
             join ud in _db.Users.AsNoTracking() on p.DecidedBy equals (long?)ud.UserId into gd
             from ud in gd.DefaultIfEmpty()
+            // Yêu cầu tuyển dụng đã sinh ra tin này — chỉ dùng khung lương của nó khi tin đăng
+            // "thỏa thuận". LEFT JOIN: job cũ (trước V056) có thể không gắn yêu cầu nào.
+            join rq in _db.RecruitmentRequests.AsNoTracking() on (long?)j.JobId equals rq.JobId into grq
+            from rq in grq.DefaultIfEmpty()
             orderby p.ProposalId descending
             select new HiringProposalRow(
                 p,
@@ -50,7 +54,12 @@ public class HiringProposalRepo : BaseRepo<long, HiringProposal>, IHiringProposa
                 j.JobId,
                 j.Title,
                 j.Department,
-                a.CurrentState))
+                a.CurrentState,
+                j.SalaryMin,
+                j.SalaryMax,
+                j.Currency,
+                rq != null ? rq.SalaryMin : null,
+                rq != null ? rq.SalaryMax : null))
             .ToListAsync();
     }
 

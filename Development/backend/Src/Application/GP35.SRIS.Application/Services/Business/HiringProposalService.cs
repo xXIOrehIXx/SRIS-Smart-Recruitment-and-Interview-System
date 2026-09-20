@@ -223,7 +223,12 @@ public class HiringProposalService : BaseService<HiringProposalService>, IHiring
         JobId = row.JobId,
         JobTitle = row.JobTitle,
         Department = row.Department,
-        ApplicationState = row.ApplicationState
+        ApplicationState = row.ApplicationState,
+        JobSalaryMin = row.JobSalaryMin,
+        JobSalaryMax = row.JobSalaryMax,
+        JobCurrency = row.JobCurrency,
+        RequestSalaryMin = row.RequestSalaryMin,
+        RequestSalaryMax = row.RequestSalaryMax
     };
 
     private static string? Normalize(string? text)

@@ -15,7 +15,18 @@ public record HiringProposalRow(
     long JobId,
     string JobTitle,
     string? Department,
-    string ApplicationState);
+    string ApplicationState,
+    // Khung lương ĐĂNG TRÊN TIN (Job.salary_min/max) — join sẵn để lúc duyệt, Giám đốc thấy
+    // ngay mức mình sắp chốt nằm trong hay ngoài khoảng đã hứa với ứng viên ở tin tuyển dụng.
+    decimal? JobSalaryMin,
+    decimal? JobSalaryMax,
+    string? JobCurrency,
+    // Khung lương trong YÊU CẦU TUYỂN DỤNG đã sinh ra tin này (RecruitmentRequest.job_id).
+    // Dùng khi tin đăng "lương thỏa thuận" (hai cột trên NULL): công ty không muốn công khai
+    // lương, nhưng bên trong DM vẫn ghi ngân sách và Giám đốc đã duyệt chính con số đó — vẫn có
+    // cái để đối chiếu, chỉ là khung NỘI BỘ chứ không phải lời hứa với ứng viên.
+    decimal? RequestSalaryMin,
+    decimal? RequestSalaryMax);
 
 public interface IHiringProposalRepo : IBaseRepo<long, HiringProposal>
 {
