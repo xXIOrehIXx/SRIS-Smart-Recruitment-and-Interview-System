@@ -1,11 +1,11 @@
 ﻿id_tin,so_moc_phai_co,so_moc_bi_bo_sot,ghi_chu
-C01_khong_ghi_so_nam,4,,
-C02_ketoan_khop,5,,
-C03_fresher_mong,3,,
-C04_trai_nganh,3,,
-C05_nhay_viec_nhieu_moc,3,,
-C06_text_pdf_lon_xon,3,,
-C07_song_ngu,4,,
-C08_thanh_tich_nhieu_so,4,,
-C09_khoang_trong_su_nghiep,4,,
-C10_liet_ke_cong_nghe,4,,
+C01_khong_ghi_so_nam,4,0,
+C02_ketoan_khop,5,0,
+C03_fresher_mong,3,1,Mất 'Cao đẳng FPT'
+C04_trai_nganh,3,0,
+C05_nhay_viec_nhieu_moc,3,1,Chỉ kể 2/5 nơi làm — mất ý 'nhiều nơi làm việc'
+C06_text_pdf_lon_xon,3,2,"Mất 'kỹ sư cơ khí', tên trường Cao Thắng"
+C07_song_ngu,4,2,"Mất mốc 2020, 'ĐH Ngoại thương'"
+C08_thanh_tich_nhieu_so,4,1,Mất mốc 2021 (thay bằng '3 năm kinh nghiệm' tự tính)
+C09_khoang_trong_su_nghiep,4,1,Mất 'ĐH Lao động Xã hội'
+C10_liet_ke_cong_nghe,4,1,"PHÂN VÂN: mốc 2022 chỉ xuất hiện ở năm tốt nghiệp, không phải mốc bắt đầu đi làm"

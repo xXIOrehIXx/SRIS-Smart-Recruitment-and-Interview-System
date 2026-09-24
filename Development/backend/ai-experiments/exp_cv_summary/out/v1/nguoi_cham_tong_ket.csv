@@ -1,0 +1,12 @@
+﻿id,so_cau,dung,bo_sot,bia,suydien,saiso,saorong,precision,recall,f1
+C01_khong_ghi_so_nam,3,2,1,0,0,1,0,0.667,0.667,0.667
+C02_ketoan_khop,2,2,0,0,0,0,0,1.0,1.0,1.0
+C03_fresher_mong,3,2,1,0,1,0,0,0.667,0.667,0.667
+C04_trai_nganh,3,2,0,0,0,1,0,0.667,1.0,0.8
+C05_nhay_viec_nhieu_moc,3,1,1,0,0,1,1,0.333,0.5,0.4
+C06_text_pdf_lon_xon,3,2,2,0,0,1,0,0.667,0.5,0.571
+C07_song_ngu,5,3,2,0,1,1,0,0.6,0.6,0.6
+C08_thanh_tich_nhieu_so,4,3,2,0,0,1,0,0.75,0.6,0.667
+C09_khoang_trong_su_nghiep,5,4,2,0,0,1,0,0.8,0.667,0.727
+C10_liet_ke_cong_nghe,3,1,1,0,1,1,0,0.333,0.5,0.4
+TONG,34,22,12,0,3,8,1,0.647,0.647,0.647

@@ -97,18 +97,54 @@ def tinh(ver: str, im: bool = False) -> dict | None:
         "ti_le_bia_saiso": round(ti_bia_saiso, 3),
         "ti_le_saorong": round(ti_saorong, 3),
         "so_cau_da_cham": len(da_cham),
-        "so_cau_phan_van": sum(1 for r in da_cham if (r.get("ghi_chu") or "").strip()),
+        # Chỉ dòng người chấm đánh dấu PHÂN VÂN — ghi chú giải thích thường không tính.
+        "so_cau_phan_van": sum(1 for r in da_cham if (r.get("ghi_chu") or "").startswith("PHÂN VÂN")),
         **{f"n_{n}": dem[n] for n in TAT_CA},
     }
 
-    with (thu_muc / "nguoi_cham_tong_ket.csv").open("w", newline="", encoding="utf-8-sig") as f:
-        w = csv.DictWriter(f, fieldnames=list(kq.keys()))
-        w.writeheader()
-        w.writerow(kq)
+    _ghi_tong_ket(thu_muc, da_cham, sot)
 
     if not im:
         _in(ver, kq, dem, da_cham, sot)
     return kq
+
+
+def _prf(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
+    p = tp / (tp + fp) if (tp + fp) else 0.0
+    r = tp / (tp + fn) if (tp + fn) else 0.0
+    return p, r, (2 * p * r / (p + r) if (p + r) else 0.0)
+
+
+def _ghi_tong_ket(thu_muc: Path, da_cham: list[dict], sot: list[dict]) -> None:
+    """
+    out/<ver>/nguoi_cham_tong_ket.csv: mỗi CV một dòng + dòng TONG, cùng khuôn với
+    exp_criteria_extract để script 4 dựng được tab TheoTin / NguoiCham_TongKet.
+    """
+    theo = defaultdict(lambda: defaultdict(int))
+    for r in da_cham:
+        theo[r["id_tin"]][(r["nhan"] or "").strip().upper()] += 1
+    sot_map = {r["id_tin"]: int(r["so_moc_bi_bo_sot"]) for r in sot
+               if (r.get("so_moc_bi_bo_sot") or "").strip().isdigit()}
+
+    def dong(ma: str, d: dict, fn: int) -> dict:
+        tp = d[NHAN_DUNG]
+        fp = sum(d[n] for n in NHAN_LOI)
+        p, r_, f1 = _prf(tp, fp, fn)
+        return {"id": ma, "so_cau": tp + fp, "dung": tp, "bo_sot": fn,
+                **{n.lower(): d[n] for n in NHAN_LOI},
+                "precision": round(p, 3), "recall": round(r_, 3), "f1": round(f1, 3)}
+
+    rows = [dong(ma, theo[ma], sot_map.get(ma, 0)) for ma in sorted(theo)]
+    tong = defaultdict(int)
+    for d in theo.values():
+        for k, v in d.items():
+            tong[k] += v
+    rows.append(dong("TONG", tong, sum(sot_map.values())))
+
+    with (thu_muc / "nguoi_cham_tong_ket.csv").open("w", newline="", encoding="utf-8-sig") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
 
 
 def _muc(gia_tri: float, tot: float, chap_nhan: float) -> str:
