@@ -98,7 +98,23 @@ Ba điều rút ra (chi tiết + trích dẫn thật ở `out/KET_QUA.md`):
 mốc rời** và một khoảng nghỉ, cả 4 bậc kể cả V4 đều tự cộng thành *"4 năm kinh nghiệm"* và
 bỏ mất giai đoạn 2016–2020. Luật cấm tự cộng số năm chỉ ăn khi CV có **một** mốc.
 
-**Tầng người: chưa chấm.** Xem mục 6.
+**Tầng người (chấm theo câu, 25/09/2026):**
+
+| Bậc | Precision | Recall | F1 | BIA+SAISO | SAORONG |
+|---|---|---|---|---|---|
+| V1 | 0,647 | 0,647 | 0,647 | 23,5% | 2,9% |
+| V2 | **0,309** | 0,763 | 0,439 | 11,7% | **38,3%** |
+| V3 | 0,854 | **0,872** | **0,863** | 14,6% | 0 |
+| **V4** | **0,853** | 0,784 | 0,817 | **8,8%** | 0 |
+
+Tầng người **sửa lại một phần kết luận của tầng máy**: V4 ít số tự tính nhất (SAISO 7→3 so với
+V3), nhưng precision ngang V3 và **F1 thấp hơn V3** vì trần 3-5 câu làm rơi mốc (C09 mất trọn
+giai đoạn 2016–2020). V2 tệ nhất hẳn: schema cho 1500 ký tự thì model viết cho đủ, C08 lặp y
+hệt một câu 13 lần. Chi tiết: tab `TongHop` của `out/KET_QUA_TONG_HOP.xlsx`.
+
+> ⚠️ **Nguồn nhãn:** trợ lý AI (Claude) soạn sơ bộ theo `LUAT_NGUOI_CHAM.md`, người làm đề
+> tài duyệt lại — ưu tiên các dòng đánh dấu `PHÂN VÂN`. Cùng cách làm với `exp_criteria_extract`.
+> Khi trích số phải nói rõ nguồn này.
 
 ---
 
