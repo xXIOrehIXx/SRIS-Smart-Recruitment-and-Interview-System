@@ -628,7 +628,7 @@ const DeptRecruitmentRequests = () => {
             <RequestCriteriaPanel
               requestId={selectedRequest.id}
               status={selectedRequest.status}
-              canEdit={!CRITERIA_LOCKED_STATUSES.includes(selectedRequest.status)}
+              canEdit={isRequester && !CRITERIA_LOCKED_STATUSES.includes(selectedRequest.status)}
             />
           </div>
         )}
